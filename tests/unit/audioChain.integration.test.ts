@@ -7,7 +7,7 @@ import { createInitialWorldState } from '../../src/world/WorldState';
 import { FakeAudioContext, FakeGainNode, FakeNode } from './audioFakes';
 
 /**
- * Integration: the full M1 audio wiring as Game.unlock() builds it.
+ * Integration: the full audio wiring as Game.unlock() builds it (M2: three resonators).
  * Every source node path must terminate at audioEngine.getOutputNode()
  * (spec §12: single AudioContext, one master chain).
  */
@@ -24,7 +24,7 @@ async function buildWiredEngine(): Promise<{
   const playerTone = new PlayerTone(engine.context, output);
   playerTone.start(createInitialFrequencyState());
   const spatialAudio = new SpatialAudio(engine.context, output);
-  for (const resonator of createInitialWorldState().resonators) {
+  for (const resonator of createInitialWorldState('audio-chain-test-seed').resonators) {
     if (resonator.active) spatialAudio.addResonator(resonator);
   }
   return { engine, ctx, playerTone, spatialAudio };
@@ -48,9 +48,9 @@ describe('audio chain integration (Game.unlock wiring)', () => {
     }
   });
 
-  it('spawns exactly one resonator source in M1', async () => {
+  it('spawns exactly three resonator sources in M2 (spec §7)', async () => {
     const { ctx } = await buildWiredEngine();
-    expect(ctx.createdPanners).toHaveLength(1);
+    expect(ctx.createdPanners).toHaveLength(3);
   });
 
   it('master chain ends at the context destination via the compressor', async () => {

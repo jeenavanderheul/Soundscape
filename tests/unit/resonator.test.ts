@@ -71,15 +71,33 @@ describe('createFirstResonator (M1 single resonator)', () => {
   });
 });
 
-describe('WorldState', () => {
-  it('initial world contains exactly the one M1 resonator', () => {
-    const world = createInitialWorldState();
-    expect(world.resonators).toHaveLength(1);
+describe('WorldState (M2: three seeded resonators, spec §7)', () => {
+  const SEED = 'worldstate-test-seed';
+
+  it('initial world contains the three M2 resonators, first one unchanged', () => {
+    const world = createInitialWorldState(SEED);
+    expect(world.resonators).toHaveLength(3);
     expect(world.resonators[0]).toEqual(createFirstResonator());
   });
 
+  it('resonators differ clearly in frequency and timbre', () => {
+    const world = createInitialWorldState(SEED);
+    const hzValues = world.resonators.map((r) => r.baseHz);
+    const waveforms = world.resonators.map((r) => r.waveform);
+    expect(new Set(hzValues).size).toBe(3);
+    expect(new Set(waveforms).size).toBe(3);
+  });
+
+  it('is deterministic per seed and varies across seeds', () => {
+    expect(createInitialWorldState(SEED)).toEqual(createInitialWorldState(SEED));
+    const other = createInitialWorldState('another-seed');
+    const positionsA = createInitialWorldState(SEED).resonators.map((r) => r.position);
+    const positionsB = other.resonators.map((r) => r.position);
+    expect(positionsA).not.toEqual(positionsB);
+  });
+
   it('store holds world state and supports immutable updates', () => {
-    const store = createWorldStore();
+    const store = createWorldStore(SEED);
     const before = store.getState();
     store.setState((current) => ({
       resonators: current.resonators.map((r) => ({ ...r, active: false })),
@@ -89,7 +107,7 @@ describe('WorldState', () => {
   });
 
   it('store state is frozen (no mutation possible)', () => {
-    const store = createWorldStore();
+    const store = createWorldStore(SEED);
     const state = store.getState();
     expect(Object.isFrozen(state)).toBe(true);
     expect(Object.isFrozen(state.resonators[0])).toBe(true);

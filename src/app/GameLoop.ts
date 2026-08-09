@@ -40,3 +40,22 @@ export class GameLoop {
     this.onTick(deltaMs, this.clock.elapsedMs);
   };
 }
+
+/**
+ * Fixed-interval gate for the lower-frequency logical loop (spec §15):
+ * accumulates render-frame deltas and fires at most once per call when the
+ * interval elapses. Clock deltas are already clamped, so the remainder
+ * carry-over cannot burst after tab suspension.
+ */
+export class LogicInterval {
+  private accumulatedMs = 0;
+
+  constructor(private readonly stepMs: number) {}
+
+  shouldStep(deltaMs: number): boolean {
+    this.accumulatedMs += deltaMs;
+    if (this.accumulatedMs < this.stepMs) return false;
+    this.accumulatedMs %= this.stepMs;
+    return true;
+  }
+}

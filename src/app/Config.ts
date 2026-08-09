@@ -2,6 +2,12 @@
 /** Deterministic seed for all procedural world content (spec §16). */
 export const WORLD_SEED = 'frequency-m1';
 
+/**
+ * Lower-frequency logical loop interval (spec §15): resonance evaluation runs
+ * at ~10 Hz inside the RAF loop, never per render frame.
+ */
+export const LOGIC_STEP_MS = 100;
+
 export const RENDER_CONFIG = {
   clearColor: 0x020202, // near-black void
   maxPixelRatio: 2,

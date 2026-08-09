@@ -1,5 +1,6 @@
 import { AudioEngine } from '../audio/AudioEngine';
 import { PlayerTone } from '../audio/PlayerTone';
+import { ResonanceAudio } from '../audio/ResonanceAudio';
 import { SpatialAudio } from '../audio/SpatialAudio';
 import { Clock } from '../core/Clock';
 import { createEventBus, EventBus } from '../core/EventBus';
@@ -8,21 +9,34 @@ import { InputManager } from '../input/InputManager';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
 import { FrequencyController } from '../player/FrequencyController';
 import { createInitialFrequencyState, FrequencyState } from '../player/FrequencyState';
+import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ParticleSystem } from '../rendering/ParticleSystem';
 import { Renderer } from '../rendering/Renderer';
+import { ResonanceEngine } from '../resonance/ResonanceEngine';
+import type { ResonanceEvents } from '../resonance/ResonanceEngine';
+import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { attachIntroHint } from '../ui/Intro';
-import { createWorldStore } from '../world/WorldState';
-import { WORLD_SEED } from './Config';
-import { GameLoop } from './GameLoop';
+import { createWorldStore, WorldState } from '../world/WorldState';
+import { LOGIC_STEP_MS, WORLD_SEED } from './Config';
+import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
-export type GameEvents = {
+export type GameEvents = ResonanceEvents & {
   'audio:unlocked': null;
   'game:started': null;
   'game:suspended': null;
   'game:resumed': null;
 };
+
+/** Dev-only inspection handle (M1 verifier follow-up); excluded from production via the DEV guard. */
+interface FrequencyDebug {
+  getFrequencyState(): Readonly<FrequencyState>;
+  getWorldState(): Readonly<WorldState>;
+  getLastResonanceEvents(): ResonanceEvent[];
+}
+
+type DebugWindow = Window & { __FREQUENCY_DEBUG__?: FrequencyDebug };
 
 export interface GameElements {
   container: HTMLElement;
@@ -50,9 +64,14 @@ export class Game {
   private readonly controller: FrequencyController;
   private readonly particles: ParticleSystem;
   private readonly detachIntroHint: () => void;
-  private readonly worldStore = createWorldStore();
+  private readonly worldStore = createWorldStore(WORLD_SEED);
+  private readonly resonanceEngine: ResonanceEngine;
+  private readonly logicInterval = new LogicInterval(LOGIC_STEP_MS);
+  private readonly interference: InterferenceVisuals;
+  private readonly detachInterference: () => void;
   private playerTone: PlayerTone | null = null;
   private spatialAudio: SpatialAudio | null = null;
+  private resonanceAudio: ResonanceAudio | null = null;
   private unlocked = false;
 
   constructor(private readonly elements: GameElements) {
@@ -65,6 +84,23 @@ export class Game {
     this.particles = new ParticleSystem(WORLD_SEED);
     this.renderer.scene.add(this.particles.points);
     this.detachIntroHint = attachIntroHint(this.events);
+    // Resonance core (§8, P5): engine emits the one shared event on this.events.
+    this.resonanceEngine = new ResonanceEngine(this.events);
+    // Visuals subscribe once at startup; positions resolve from the stores (§15).
+    this.interference = new InterferenceVisuals(WORLD_SEED);
+    this.renderer.scene.add(this.interference.lines);
+    this.detachInterference = this.interference.subscribe(this.events, (event) =>
+      this.resolveEventPositions(event.targetId),
+    );
+    // Dev-only debug handle; the whole block is dropped from production builds.
+    if (import.meta.env.DEV) {
+      (window as DebugWindow).__FREQUENCY_DEBUG__ = {
+        getFrequencyState: () => this.frequencyStore.getState(),
+        getWorldState: () => this.worldStore.getState(),
+        // Bounded copy: the engine history is already capped (§10).
+        getLastResonanceEvents: () => [...this.resonanceEngine.history],
+      };
+    }
     elements.container.addEventListener('click', this.onContainerClick);
     elements.unlockButton.addEventListener('click', this.onUnlockClick);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
@@ -79,22 +115,32 @@ export class Game {
     this.pointerLock.detach();
     this.input.detach();
     this.detachIntroHint();
+    this.detachInterference();
     this.playerTone?.dispose();
     this.spatialAudio?.dispose();
+    this.resonanceAudio?.dispose();
     this.renderer.scene.remove(this.particles.points);
     this.particles.dispose();
+    this.renderer.scene.remove(this.interference.lines);
+    this.interference.dispose();
     this.renderer.dispose();
+    if (import.meta.env.DEV) delete (window as DebugWindow).__FREQUENCY_DEBUG__;
     await this.audioEngine.dispose();
   }
 
   /** One frame: input snapshot → controller → store → audio + particles + camera (spec §15, §16). */
-  private readonly tick = (deltaMs: number): void => {
+  private readonly tick = (deltaMs: number, elapsedMs: number): void => {
     this.controller.update(this.input.snapshot(), deltaMs);
     const state = this.frequencyStore.getState();
     const dtSeconds = deltaMs / 1000;
+    // Lower-frequency logical loop (§15): resonance never runs per render frame.
+    if (this.logicInterval.shouldStep(deltaMs)) {
+      this.resonanceEngine.tick(elapsedMs, state, this.worldStore.getState().resonators);
+    }
     this.playerTone?.update(state, dtSeconds);
     this.spatialAudio?.setListenerPose(state.position, state.direction, WORLD_UP);
     this.particles.update(state, dtSeconds);
+    this.interference.update(dtSeconds);
     const camera = this.renderer.camera.instance;
     const { position, direction } = state;
     camera.position.set(position.x, position.y, position.z);
@@ -131,12 +177,24 @@ export class Game {
     for (const resonator of this.worldStore.getState().resonators) {
       if (resonator.active) this.spatialAudio.addResonator(resonator);
     }
+    // Audible consequence of the same shared event the visuals react to (P5).
+    // Subscribes to this.events in its constructor; needs the unlocked context.
+    this.resonanceAudio = new ResonanceAudio(this.audioEngine.context, output, this.events);
     this.input.attach();
     // The unlock click is a user gesture, so pointer lock may be requested here.
     this.pointerLock.request();
     this.loop.start();
     this.events.emit('audio:unlocked', null);
     this.events.emit('game:started', null);
+  }
+
+  /** Stores own the positions (§16): resolve event ids to current world/player positions. */
+  private resolveEventPositions(
+    targetId: string,
+  ): { source: FrequencyState['position']; target: FrequencyState['position'] } | null {
+    const resonator = this.worldStore.getState().resonators.find((r) => r.id === targetId);
+    if (!resonator) return null;
+    return { source: this.frequencyStore.getState().position, target: resonator.position };
   }
 
   private readonly onVisibilityChange = (): void => {

@@ -1,17 +1,19 @@
+import { createRng } from '../core/rng';
 import { createStore } from '../core/stores';
 import type { Store } from '../core/stores';
-import { createFirstResonator } from './Resonator';
 import type { ResonatorData } from './Resonator';
+import { createInitialResonators } from './resonators';
 
 /** Serializable world slice (spec §6, §16). No Three.js objects or AudioNodes. */
 export interface WorldState {
   resonators: ResonatorData[];
 }
 
-export function createInitialWorldState(): WorldState {
-  return { resonators: [createFirstResonator()] };
+/** M2 (spec §7): three seeded resonators with clearly different frequency, timbre and location. */
+export function createInitialWorldState(seed: string): WorldState {
+  return { resonators: createInitialResonators(createRng(seed)) };
 }
 
-export function createWorldStore(): Store<WorldState> {
-  return createStore(createInitialWorldState());
+export function createWorldStore(seed: string): Store<WorldState> {
+  return createStore(createInitialWorldState(seed));
 }
