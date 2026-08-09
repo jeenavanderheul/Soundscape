@@ -1,0 +1,79 @@
+:root {
+  --void: #020202;
+  --text: #e8e8e8;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--void);
+  color: var(--text);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+#app canvas {
+  display: block;
+}
+
+#unlock-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  background: var(--void);
+  text-align: center;
+}
+
+#unlock-overlay[hidden] {
+  display: none;
+}
+
+#unlock-overlay h1 {
+  font-size: 1.2rem;
+  font-weight: 400;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+}
+
+#unlock-button {
+  padding: 0.9rem 1.8rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--text);
+  cursor: pointer;
+}
+
+#unlock-button:hover:not(:disabled),
+#unlock-button:focus-visible {
+  background: var(--text);
+  color: var(--void);
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+#unlock-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+[data-unlock-error] {
+  color: #ff5540;
+  max-width: 32rem;
+}
