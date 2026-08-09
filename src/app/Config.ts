@@ -1,4 +1,7 @@
 // Central typed configuration (spec §13 visual direction, §22 performance).
+/** Deterministic seed for all procedural world content (spec §16). */
+export const WORLD_SEED = 'frequency-m1';
+
 export const RENDER_CONFIG = {
   clearColor: 0x020202, // near-black void
   maxPixelRatio: 2,
