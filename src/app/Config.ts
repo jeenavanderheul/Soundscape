@@ -8,6 +8,12 @@ export const WORLD_SEED = 'frequency-m1';
  */
 export const LOGIC_STEP_MS = 100;
 
+/** Debounce for autosaved world snapshots (spec §18). */
+export const AUTOSAVE_DEBOUNCE_MS = 1500;
+
+/** Periodic save cadence while persistent structures exist (spec §18). */
+export const AUTOSAVE_INTERVAL_MS = 15_000;
+
 export const RENDER_CONFIG = {
   clearColor: 0x020202, // near-black void
   maxPixelRatio: 2,

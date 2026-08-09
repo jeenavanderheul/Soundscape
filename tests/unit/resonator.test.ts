@@ -100,6 +100,7 @@ describe('WorldState (M2: three seeded resonators, spec §7)', () => {
     const store = createWorldStore(SEED);
     const before = store.getState();
     store.setState((current) => ({
+      ...current,
       resonators: current.resonators.map((r) => ({ ...r, active: false })),
     }));
     expect(store.getState().resonators[0]!.active).toBe(false);

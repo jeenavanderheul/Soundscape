@@ -1,4 +1,4 @@
-import { AdditiveBlending, ShaderMaterial } from 'three';
+import { AdditiveBlending, MeshBasicMaterial, ShaderMaterial } from 'three';
 
 /**
  * Shared material definitions (spec §13: share materials, monochrome,
@@ -44,5 +44,20 @@ export function createWindParticleMaterial(): ShaderMaterial {
     blending: AdditiveBlending,
     transparent: true,
     depthWrite: false,
+  });
+}
+
+/**
+ * One shared material for all M3 structures (§13: share materials). Thin
+ * monochrome wireframe over the near-black void; per-structure brightness
+ * (persistence) lives in vertex colors, not per-mesh material clones.
+ */
+export function createStructureMaterial(): MeshBasicMaterial {
+  return new MeshBasicMaterial({
+    wireframe: true,
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    blending: AdditiveBlending,
   });
 }

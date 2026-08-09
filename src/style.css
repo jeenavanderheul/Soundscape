@@ -77,3 +77,52 @@ body {
   color: #ff5540;
   max-width: 32rem;
 }
+
+/* Esc pause overlay (spec §5): minimal, monochrome, not a DAW. */
+#pause-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.4rem;
+  background: rgb(2 2 2 / 88%);
+  text-align: center;
+}
+
+#pause-overlay[hidden] {
+  display: none;
+}
+
+#pause-overlay h2 {
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+}
+
+#pause-overlay button {
+  min-width: 12rem;
+  padding: 0.7rem 1.4rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--text);
+  cursor: pointer;
+}
+
+#pause-overlay button:hover,
+#pause-overlay button:focus-visible {
+  background: var(--text);
+  color: var(--void);
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+#pause-overlay p {
+  min-height: 1.4em;
+  font-size: 0.8rem;
+  color: #9a9a9a;
+}
