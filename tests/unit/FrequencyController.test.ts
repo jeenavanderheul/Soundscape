@@ -8,6 +8,7 @@ import {
   FREQUENCY_CONFIG,
   CRUISE_SPEED,
   FULL_SPEED,
+  THROTTLE_NOTCHES,
   FrequencyController,
   directionFromLook,
   mapWheelToHz,
@@ -245,5 +246,43 @@ describe('§46 speed is the throttle, not a gearbox', () => {
     expect(justAfter).toBeGreaterThan(CRUISE_SPEED * 2);
     fly(false, 6000);
     expect(store.getState().velocity).toBeLessThanOrEqual(CRUISE_SPEED + 0.01);
+  });
+});
+
+describe('§51 the throttle is notched, so tapping steers the speed', () => {
+  function press(controller: FrequencyController, downMs: number, upMs: number): void {
+    for (let t = 0; t < downMs; t += 16) {
+      controller.update(snapshot({ buttons: { accelerate: true, windHold: true } }), 16);
+    }
+    for (let t = 0; t < upMs; t += 16) {
+      controller.update(snapshot({ buttons: { accelerate: false, windHold: false } }), 16);
+    }
+  }
+
+  it('a single tap moves it by a visible amount', () => {
+    const controller = new FrequencyController(createStore(createInitialFrequencyState()));
+    press(controller, 60, 0);
+    expect(controller.throttleLevel).toBeGreaterThan(0.05);
+    expect(controller.throttleLevel).toBeLessThan(0.3);
+  });
+
+  it('tapping repeatedly climbs, and letting go walks back down', () => {
+    const controller = new FrequencyController(createStore(createInitialFrequencyState()));
+    for (let i = 0; i < 6; i++) press(controller, 60, 60);
+    const tapped = controller.throttleLevel;
+    expect(tapped).toBeGreaterThan(0.3);
+    press(controller, 0, 600);
+    const after = controller.throttleLevel;
+    expect(after).toBeLessThan(tapped);
+    expect(after).toBeGreaterThan(0); // it steps down, it does not fall off
+  });
+
+  it('rests on quarters of a block, never between them', () => {
+    const controller = new FrequencyController(createStore(createInitialFrequencyState()));
+    for (let i = 0; i < 40; i++) {
+      press(controller, 32, 48);
+      const notch = controller.throttleLevel * THROTTLE_NOTCHES;
+      expect(Math.abs(notch - Math.round(notch))).toBeLessThan(1e-9);
+    }
   });
 });

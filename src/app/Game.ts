@@ -32,7 +32,7 @@ import { createInitialTrackState, trackGrowth, TrackEvents, TrackState } from '.
 import type { TrackGenre } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
-import { FrequencyController, FULL_SPEED } from '../player/FrequencyController';
+import { FrequencyController } from '../player/FrequencyController';
 import {
   createInitialProgression,
   isComposerUnlocked,
@@ -693,7 +693,7 @@ export class Game {
     this.hud.update(state, {
       heading: headingLabel(Math.atan2(flightDir.x, -flightDir.z)),
       biome: this.placeGenre ?? 'the void',
-      speed: state.velocity / FULL_SPEED,
+      speed: this.controller.throttleLevel,
       track: this.trackBuilder.trackNumber,
       layers: countUnlocked(this.trackStore.getState()),
       maxLayers: 7,

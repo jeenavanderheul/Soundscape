@@ -68,10 +68,17 @@ export class HUD {
   }
 }
 
-/** Five notches: how fast the world is going past, and the track with it. */
+/**
+ * Five blocks, each split into four quarters (§51): a tap moves the bar by a
+ * visible amount and letting go walks it back down quarter by quarter.
+ */
+const QUARTERS = ['\u2591', '\u258e', '\u258c', '\u258a', '\u2588'] as const;
+
 function bar(value: number): string {
-  const filled = Math.round(Math.min(1, Math.max(0, value)) * 5);
+  const quarters = Math.round(Math.min(1, Math.max(0, value)) * 20);
   let out = '';
-  for (let i = 1; i <= 5; i++) out += i <= filled ? '\u2588' : '\u2591';
+  for (let block = 0; block < 5; block++) {
+    out += QUARTERS[Math.min(4, Math.max(0, quarters - block * 4))]!;
+  }
   return out;
 }

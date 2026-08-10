@@ -134,9 +134,19 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
  */
 export const CRUISE_SPEED = 13;
 export const FULL_SPEED = 66;
-/** Seconds to open the throttle fully, and to let it fall all the way back. */
-const THROTTLE_RISE_S = 0.6;
-const THROTTLE_FALL_S = 2.6;
+/**
+ * §51 (user decision): the throttle is NOTCHED. Five blocks of four quarters,
+ * twenty notches in all. A tap gives you a notch straight away and letting go
+ * steps back down one quarter at a time, so speed is something you tap and
+ * ride rather than a slider you hold — and the HUD bar shows exactly the notch
+ * you are on.
+ */
+export const THROTTLE_NOTCHES = 20;
+/** Notches a single press adds immediately — a tap has to DO something. */
+const TAP_NOTCHES = 2;
+/** Seconds per notch: holding fills the bar in ~1.2s, releasing empties in ~2.6s. */
+const NOTCH_RISE_S = 1.2 / THROTTLE_NOTCHES;
+const NOTCH_FALL_S = 2.6 / THROTTLE_NOTCHES;
 
 export class FrequencyController {
   private yaw = 0;
@@ -159,9 +169,9 @@ export class FrequencyController {
     return this.yawRateValue;
   }
 
-  /** 0..1 how far the throttle is open right now — what the HUD shows. */
+  /** 0..1 how far the throttle is open right now — what the HUD bar draws. */
   get throttleLevel(): number {
-    return this.throttle;
+    return this.notches / THROTTLE_NOTCHES;
   }
 
   /** Vertical speed in units/s: positive is climbing (§29.7 arrangement). */
@@ -176,8 +186,10 @@ export class FrequencyController {
   }
   private velocityVec: Vec3Data = { x: 0, y: 0, z: 0 };
   private yawRateValue = 0;
-  /** 0 = cruising, 1 = wide open. Eases both ways so speed is something you ride. */
-  private throttle = 0;
+  /** 0..THROTTLE_NOTCHES — the notch the throttle is resting on. */
+  private notches = 0;
+  private notchTimer = 0;
+  private wasThrottling = false;
 
   constructor(private readonly store: Store<FrequencyState>) {}
 
@@ -212,10 +224,23 @@ export class FrequencyController {
     // lets it fall away slowly, so boosting and releasing IS how you steer your
     // speed (user decision) — never an on/off switch.
     const seconds = deltaMs / 1000;
-    this.throttle = input.buttons.accelerate
-      ? Math.min(1, this.throttle + seconds / THROTTLE_RISE_S)
-      : Math.max(0, this.throttle - seconds / THROTTLE_FALL_S);
-    const topSpeed = CRUISE_SPEED + (FULL_SPEED - CRUISE_SPEED) * this.throttle;
+    const throttling = input.buttons.accelerate;
+    // A press is worth a notch on its own: tapping is how you steer the speed.
+    if (throttling && !this.wasThrottling) {
+      this.notches = Math.min(THROTTLE_NOTCHES, this.notches + TAP_NOTCHES);
+      this.notchTimer = 0;
+    }
+    this.wasThrottling = throttling;
+    this.notchTimer += seconds;
+    const step = throttling ? NOTCH_RISE_S : NOTCH_FALL_S;
+    while (this.notchTimer >= step) {
+      this.notchTimer -= step;
+      this.notches = throttling
+        ? Math.min(THROTTLE_NOTCHES, this.notches + 1)
+        : Math.max(0, this.notches - 1);
+    }
+    const topSpeed =
+      CRUISE_SPEED + (FULL_SPEED - CRUISE_SPEED) * (this.notches / THROTTLE_NOTCHES);
     const accelMagnitude = Math.max(
       FLIGHT_CONFIG.acceleration,
       topSpeed * FLIGHT_CONFIG.drag * 1.25,
