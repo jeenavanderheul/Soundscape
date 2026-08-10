@@ -176,3 +176,21 @@ describe('§47 only the flight builds and drops', () => {
     expect(run(engine, 9000, 0.6, 0, 18_500)).toBe('groove');
   });
 });
+
+describe('§34 the altitude regions are places you go, not side effects', () => {
+  const inHouse = { x: 110, y: 0, z: 110 }; // south-east, well inside the region
+
+  it('an ordinary cruise over another region stays in that region', () => {
+    for (const y of [10, 25, 35, 45]) {
+      expect(dominantZone(zoneAffinity({ ...inHouse, y }))).toBe('house');
+    }
+  });
+
+  it('but climbing to the top of the world really does take you to Experimental', () => {
+    expect(dominantZone(zoneAffinity({ ...inHouse, y: 68 }))).toBe('experimental');
+  });
+
+  it('and skimming the floor takes you to Dub', () => {
+    expect(dominantZone(zoneAffinity({ ...inHouse, y: -3 }))).toBe('dub');
+  });
+});
