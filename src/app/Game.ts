@@ -1,6 +1,7 @@
 import { attachAudioAnalyser, AudioAnalyser } from '../audio/AudioAnalyser';
 import { AudioEngine } from '../audio/AudioEngine';
 import { nextMotionLevel } from '../audio/MotionGate';
+import { performanceFrom } from '../music/Performance';
 import { PlayerTone } from '../audio/PlayerTone';
 import { ResonanceAudio } from '../audio/ResonanceAudio';
 import { SpatialAudio } from '../audio/SpatialAudio';
@@ -666,6 +667,15 @@ export class Game {
   /** §11: rebuild the layer graph from MusicState; hand Strudel only real diffs at bar boundaries. */
   private updateStrudelGraph(): void {
     if (!this.unlocked) return;
+    const flight = this.frequencyStore.getState();
+    // §3: the eleven elements as behaviour — altitude above the actual ground,
+    // the wind in your hand, the register you are in and the dissonance you are
+    // causing shape every voice, continuously.
+    const performance = performanceFrom(this.musicStore.getState(), {
+      altitude: flight.position.y - this.terrain.groundHeightAt(flight.position.x, flight.position.z),
+      amplitude: flight.amplitude,
+      velocity: flight.velocity,
+    });
     const next = buildLayerGraph(
       this.musicStore.getState(),
       this.genreEngine.current?.affinity,
@@ -676,6 +686,7 @@ export class Game {
       // ~1.5s, so stopping fades the world out rather than switching it off.
       this.motionLevel,
     );
+    next.performance = performance;
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     this.lastLayerGraph = next;
     this.strudelEngine.setLayerGraph(next, 'bar');

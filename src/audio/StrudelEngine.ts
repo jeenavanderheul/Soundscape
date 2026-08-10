@@ -34,10 +34,12 @@
  */
 import { getSuperdoughAudioController, initStrudel, samples, type StrudelRepl } from '@strudel/web';
 import { guardPattern } from '../ai/PatternGuard';
+import type { Performance } from '../music/Performance';
 import {
   diffLayerGraph,
   createEmptyLayerGraph,
   LAYER_NAMES,
+  type LayerName,
   type MusicalAction,
   type MusicalLayer,
   type MusicalLayerGraph,
@@ -569,13 +571,44 @@ function renderAction(action: MusicalAction): string {
   return `s("[~ white]").decay(.08).sustain(0).bpf(2200).gain(${gain})`;
 }
 
+/**
+ * §3: the flight plays the track. Brightness, space, push, note length and grit
+ * come from how the player is flying and are applied to every voice here.
+ *
+ * Strudel treats these as single-use controls: chaining one that the template
+ * already set OVERRIDES the template. So anything the template chose for itself
+ * (its own filter, its own reverb) wins, and the performance only fills in what
+ * the voice left open. `postgain` is never used in a template, so the wind's
+ * force always reaches the mix.
+ */
+function applyPerformance(code: string, layer: LayerName, perf?: Performance): string {
+  if (perf === undefined) return code;
+  let out = code;
+  if (!out.includes('.lpf(')) out += `.lpf(${Math.round(perf.brightHz)})`;
+  if (!out.includes('.room(')) out += `.room(${perf.space.toFixed(2)})`;
+  // §3.8 duration is memory — only for voices that hold a note; clipping a
+  // drum sample just chokes it.
+  if (SUSTAINED_LAYERS.has(layer) && !out.includes('.clip(')) {
+    out += `.clip(${perf.length.toFixed(2)})`;
+  }
+  if (perf.grit > 0.02 && !out.includes('.shape(')) out += `.shape(${perf.grit.toFixed(2)})`;
+  // §3.1: skimming the ground IS the low register — it leans on the bass.
+  const push = layer === 'bass' ? perf.push * (0.8 + perf.weight * 0.5) : perf.push;
+  return `${out}.postgain(${clamp(push, 0, 2).toFixed(2)})`;
+}
+
+/** Layers whose voices hold a note long enough for note length to mean anything. */
+const SUSTAINED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>([
+  'bass', 'harmony', 'melody', 'texture', 'atmosphere',
+]);
+
 /** Deterministically map a layer graph (plus one-shot actions) to pattern code. */
 export function buildPatternCode(graph: MusicalLayerGraph, actions: MusicalAction[] = []): string {
   const parts: string[] = [];
   for (const name of LAYER_NAMES) {
     const layer = graph.layers[name];
     for (const primitive of layer.primitives) {
-      parts.push(renderPrimitive(primitive, layer));
+      parts.push(applyPerformance(renderPrimitive(primitive, layer), name, graph.performance));
     }
   }
   for (const action of actions) {
@@ -591,7 +624,10 @@ export function trackParts(graph: MusicalLayerGraph): Array<{ id: string; code: 
   for (const name of LAYER_NAMES) {
     const layer = graph.layers[name];
     for (const primitive of layer.primitives) {
-      parts.push({ id: primitive.id, code: renderPrimitive(primitive, layer) });
+      parts.push({
+        id: primitive.id,
+        code: applyPerformance(renderPrimitive(primitive, layer), name, graph.performance),
+      });
     }
   }
   return parts;

@@ -1443,3 +1443,117 @@
 [ 1240839ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [ 1242296ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [ 1242314ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1557271ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1557272ms] [LOG] %c[cyclist] start background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1560002ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1562098ms] [LOG] %c[superdough] AudioWorklets loaded background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1562098ms] [LOG] %c[superdough] ready background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1562669ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1570718ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1570875ms] [LOG] %c[sampler] load sound "RolandTR909_hh:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1570880ms] [LOG] %c[sampler] load sound "RolandTR909_hh:0:0"... done! loaded 20.7 KiB in 4ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1571475ms] [LOG] %c[sampler] load sound "RolandTR909_oh:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1571482ms] [LOG] %c[sampler] load sound "RolandTR909_oh:0:0"... done! loaded 133.2 KiB in 6ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1572637ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1573676ms] [LOG] %c[sampler] load sound "RolandTR909_bd:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1573679ms] [LOG] %c[sampler] load sound "RolandTR909_bd:0:0"... done! loaded 80.3 KiB in 4ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1575277ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1577228ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1578966ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1579176ms] [LOG] %c[sampler] load sound "RolandTR909_cp:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1579181ms] [LOG] %c[sampler] load sound "RolandTR909_cp:0:0"... done! loaded 132.8 KiB in 4ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1580703ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1580778ms] [LOG] %c[sampler] load sound "AkaiMPC60_hh:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1580782ms] [LOG] %c[sampler] load sound "AkaiMPC60_hh:0:0"... done! loaded 20.1 KiB in 5ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1582447ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1584183ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1585924ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1587662ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1589400ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1591197ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1591277ms] [LOG] %c[sampler] load sound "AlesisHR16_hh:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1591283ms] [LOG] %c[sampler] load sound "AlesisHR16_hh:0:0"... done! loaded 14.6 KiB in 5ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1591475ms] [LOG] %c[sampler] load sound "AlesisHR16_cp:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1591480ms] [LOG] %c[sampler] load sound "AlesisHR16_cp:0:0"... done! loaded 65.3 KiB in 5ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1592276ms] [LOG] %c[sampler] load sound "AlesisHR16_bd:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1592281ms] [LOG] %c[sampler] load sound "AlesisHR16_bd:0:0"... done! loaded 58.3 KiB in 4ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1595232ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1595281ms] [LOG] %c[sampler] load sound "RolandTR707_oh:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1595281ms] [LOG] %c[sampler] load sound "RolandTR707_hh:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1595283ms] [LOG] %c[sampler] load sound "RolandTR707_hh:0:0"... done! loaded 25.4 KiB in 2ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1595284ms] [LOG] %c[sampler] load sound "RolandTR707_oh:0:0"... done! loaded 55.4 KiB in 4ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1595976ms] [LOG] %c[sampler] load sound "RolandTR707_bd:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1595980ms] [LOG] %c[sampler] load sound "RolandTR707_bd:0:0"... done! loaded 25.7 KiB in 4ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1598976ms] [LOG] %c[getTrigger] error: sound piano not found! Is it loaded? background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1599145ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1601104ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1602877ms] [LOG] %c[getTrigger] error: sound piano not found! Is it loaded? background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1603049ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1604276ms] [LOG] %c[sampler] load sound "LinnDrum_rim:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1604282ms] [LOG] %c[sampler] load sound "LinnDrum_rim:0:0"... done! loaded 20.3 KiB in 7ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1605001ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1606777ms] [LOG] %c[getTrigger] error: sound piano not found! Is it loaded? background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1606965ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1606975ms] [LOG] %c[sampler] load sound "cabasa:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1606979ms] [LOG] %c[sampler] load sound "cabasa:0:0"... done! loaded 140.0 KiB in 3ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1608902ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1610576ms] [LOG] %c[getTrigger] error: sound piano not found! Is it loaded? background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1610788ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1611684ms] [LOG] %c[sampler] load sound "RolandR8_rim:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1611689ms] [LOG] %c[sampler] load sound "RolandR8_rim:0:0"... done! loaded 11.9 KiB in 4ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1612347ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1613835ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1615337ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1615878ms] [LOG] %c[sampler] load sound "RolandTR909_rim:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1615882ms] [LOG] %c[sampler] load sound "RolandTR909_rim:0:0"... done! loaded 45.3 KiB in 5ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1617045ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1618906ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1620781ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1622658ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1635783ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1639397ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1639675ms] [LOG] %c[sampler] load sound "RolandTR909_sd:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1639681ms] [LOG] %c[sampler] load sound "RolandTR909_sd:0:0"... done! loaded 49.9 KiB in 5ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1641273ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1643076ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1644884ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1646713ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1648577ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1650456ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1652329ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1654208ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1659151ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1659178ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1671705ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1671725ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1683490ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1683507ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1688666ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1688750ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1699540ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1699556ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1716224ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1716243ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1720658ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1720740ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1731432ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1731451ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1736819ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1736838ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1744122ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1744140ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1752319ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1752337ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1756626ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1756645ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5173/:0
+[ 1814962ms] [LOG] %c[superdough] AudioWorklets loaded background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1814962ms] [LOG] %c[superdough] ready background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1815020ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1815020ms] [LOG] %c[cyclist] start background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1817758ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1819570ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1819626ms] [LOG] %c[sampler] load sound "RolandTR909_hh:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1819631ms] [LOG] %c[sampler] load sound "RolandTR909_hh:0:0"... done! loaded 20.7 KiB in 6ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1820226ms] [LOG] %c[sampler] load sound "RolandTR909_oh:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1820229ms] [LOG] %c[sampler] load sound "RolandTR909_oh:0:0"... done! loaded 133.2 KiB in 4ms background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[ 1821307ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5173/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10

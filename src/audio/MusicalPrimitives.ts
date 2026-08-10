@@ -12,6 +12,7 @@
  */
 import { sectionMix } from '../music/ArrangementEngine';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
+import type { Performance } from '../music/Performance';
 import { LEVEL_DEEP, type TrackGenre, type TrackState } from '../music/TrackState';
 
 export type PrimitiveKind =
@@ -43,6 +44,12 @@ export interface MusicalLayer {
 export interface MusicalLayerGraph {
   bpm: number;
   layers: Record<LayerName, MusicalLayer>;
+  /**
+   * §3: how the flight itself is playing the track right now — brightness,
+   * space, push, note length, grit, weight. Absent means "no performance
+   * shaping", which is what the tests and the empty graph use.
+   */
+  performance?: Performance;
 }
 
 /** Whitelisted transform names per primitive kind (spec §11, rule §25.9). */
@@ -116,6 +123,8 @@ export interface MusicalAction {
 
 export type GraphChange =
   | { type: 'tempo'; bpm: number }
+  /** §3: the flight is playing the track differently (brightness, space, push…). */
+  | { type: 'performance' }
   | { type: 'layer-gain'; layer: LayerName; gain: number }
   | { type: 'add'; layer: LayerName; primitive: MusicalPrimitive }
   | { type: 'remove'; layer: LayerName; id: string }
@@ -1014,6 +1023,11 @@ export function diffLayerGraph(prev: MusicalLayerGraph, next: MusicalLayerGraph)
   if (prev.bpm !== next.bpm) {
     changes.push({ type: 'tempo', bpm: next.bpm });
   }
+  // §3: the flight shapes every voice, so a changed performance is a changed
+  // track even when the primitives are identical.
+  if (performanceChanged(prev.performance, next.performance)) {
+    changes.push({ type: 'performance' });
+  }
   for (const layer of LAYER_NAMES) {
     const prevLayer = prev.layers[layer];
     const nextLayer = next.layers[layer];
@@ -1049,4 +1063,17 @@ export function diffLayerGraph(prev: MusicalLayerGraph, next: MusicalLayerGraph)
     }
   }
   return changes;
+}
+
+function performanceChanged(prev?: Performance, next?: Performance): boolean {
+  if (prev === next) return false;
+  if (prev === undefined || next === undefined) return true;
+  return (
+    prev.brightHz !== next.brightHz ||
+    prev.space !== next.space ||
+    prev.push !== next.push ||
+    prev.length !== next.length ||
+    prev.grit !== next.grit ||
+    prev.weight !== next.weight
+  );
 }
