@@ -86,6 +86,9 @@ const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
  */
 const CAMERA_DISTANCE = 1.8;
 const CAMERA_HEIGHT = 0.62;
+/** How far down the flight path the camera aims, and how far above it. */
+const CAMERA_LOOK_AHEAD = 11;
+const CAMERA_LOOK_LIFT = 0.5;
 /** How fast the camera swings in behind a turn (1/s); low is a lazy chase. */
 const CAMERA_FOLLOW_RATE = 3.5;
 /** The camera never goes below this above the landscape (§35). */
@@ -746,10 +749,13 @@ export class Game {
       this.terrain.groundHeightAt(camX, camZ) + CAMERA_GROUND_CLEARANCE,
     );
     camera.position.set(camX, camY, camZ);
+    // The camera stays where it is and aims further down the flight path, so
+    // the orb sits forward and low in the frame with the world opening up
+    // ahead of it — rather than dead centre with its own back filling the view.
     camera.lookAt(
-      position.x + direction.x * 3,
-      position.y + direction.y * 3,
-      position.z + direction.z * 3,
+      position.x + direction.x * CAMERA_LOOK_AHEAD,
+      position.y + direction.y * CAMERA_LOOK_AHEAD + CAMERA_LOOK_LIFT,
+      position.z + direction.z * CAMERA_LOOK_AHEAD,
     );
     this.renderer.render();
   };
