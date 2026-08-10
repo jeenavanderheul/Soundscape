@@ -8,8 +8,10 @@ export interface HudPlace {
   biome: string;
   /** 0..1 how fast the track is developing right now (§46). */
   speed: number;
-  /** Which track of the endless journey is playing, and how full it is. */
+  /** Which track of the endless journey is playing, its grammar, and how full. */
   track: number;
+  /** §47: the track keeps the grammar it was born in — which is not always `here`. */
+  trackGenre: string;
   layers: number;
   maxLayers: number;
 }
@@ -55,7 +57,7 @@ export class HUD {
       place === undefined
         ? ''
         : `\n\nspeed ${bar(place.speed)}` +
-          `\ntrack ${String(place.track).padStart(2, '0')} · ${place.layers}/${place.maxLayers} layers` +
+          `\ntrack ${String(place.track).padStart(2, '0')} · ${place.trackGenre} · ${place.layers}/${place.maxLayers} layers` +
           `\n\nflying: ${place.heading}\nhere:   ${place.biome}`;
     const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
     if (text === this.lastText) return;

@@ -695,6 +695,7 @@ export class Game {
       biome: this.placeGenre ?? 'the void',
       speed: this.controller.throttleLevel,
       track: this.trackBuilder.trackNumber,
+      trackGenre: this.trackStore.getState().genre ?? 'forming',
       layers: countUnlocked(this.trackStore.getState()),
       maxLayers: 7,
     });
