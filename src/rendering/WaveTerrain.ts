@@ -6,6 +6,11 @@ import {
   ShaderMaterial,
 } from 'three';
 import type { Vec3Data } from '../player/FrequencyState';
+import {
+  createNoiseTable,
+  TERRAIN_FIELD_GLSL,
+  terrainHeight,
+} from './terrainField';
 
 /**
  * §13 waveform landscape, poster direction: an oscilloscope field of scan
@@ -61,17 +66,7 @@ varying float vGlow;
 varying vec3 vZone;
 varying float vRidge;
 
-// Cheap value noise — enough for a horizon that differs per direction.
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-}
-float noise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
-}
+${TERRAIN_FIELD_GLSL}
 
 vec3 zoneColor(float hzn) {
   // poster palette: low = red mass, high = green detail, mid = purple harmonics
@@ -89,13 +84,10 @@ void main() {
     sin(world.x * 0.045 + uTime * 0.35) * sin(world.y * 0.06 + uTime * 0.22);
   // §29.6: the bassline IS the moving ridge landscape.
   h += uBass * 2.2 * sin(world.x * 0.028 + uTime * 0.55) * cos(world.y * 0.021 - uTime * 0.4);
-  // §33: REGION RELIEF. Two octaves of noise, scaled by how mountainous this
-  // direction is, and fading in with distance from spawn — so the void stays
-  // flat and every compass direction grows its own horizon.
-  float fromSpawn = clamp((length(world) - 30.0) / 120.0, 0.0, 1.0);
-  float ridge = noise(world * 0.012) * 0.75 + noise(world * 0.034) * 0.25;
-  ridge = pow(ridge, 1.6);
-  float relief = ridge * uRelief * fromSpawn * 26.0;
+  // §33/§35: REGION RELIEF — the standing shape of the land, identical to
+  // the CPU-side height function the collision uses.
+  float fromSpawn = clamp((length(world) - 20.0) / 120.0, 0.0, 1.0);
+  float relief = terrainRelief(world, uRelief);
   h += relief;
   vRidge = relief;
   float glow = uBass * 0.25;
@@ -145,12 +137,17 @@ void main() {
 
 export class WaveTerrain {
   readonly lines: LineSegments;
+  /** Shared with the collision: one table, one landscape (§35). */
+  private readonly noise: Float32Array;
+  private relief = 0.12;
+  private elapsedSeconds = 0;
   private readonly material: ShaderMaterial;
   private readonly sources: TerrainSource[] = [];
   private readonly sourceArray: Float32Array;
   private pulse = 0;
 
-  constructor() {
+  constructor(seed = 'frequency') {
+    this.noise = createNoiseTable(seed);
     const geometry = buildScanLineGrid();
     this.sourceArray = new Float32Array(TERRAIN_CONFIG.maxSources * 4);
     this.material = new ShaderMaterial({
@@ -169,6 +166,7 @@ export class WaveTerrain {
         uSourceCount: { value: 0 },
         uZoneColor: { value: [0.16, 0.2, 0.24] },
         uRelief: { value: 0.12 },
+        uNoise: { value: Array.from(this.noise) },
       },
     });
     this.lines = new LineSegments(geometry, this.material);
@@ -188,6 +186,17 @@ export class WaveTerrain {
     uniform[1] = color.g;
     uniform[2] = color.b;
     this.material.uniforms['uRelief']!.value = relief;
+    this.relief = relief;
+  }
+
+  /**
+   * §35: the height of the solid landscape at a world position. This is what
+   * the orb collides with — the same field the shader draws.
+   */
+  groundHeightAt(x: number, z: number): number {
+    return (
+      TERRAIN_CONFIG.planeY + terrainHeight(this.noise, x, z, this.elapsedSeconds, this.relief)
+    );
   }
 
   /** §29.6: bassline level — the terrain grows moving ridges. */
@@ -253,6 +262,7 @@ export class WaveTerrain {
       if (!s.permanent && s.strength <= 0.01) this.sources.splice(i, 1);
     }
     this.flash = Math.max(0, this.flash - dt * 5);
+    this.elapsedSeconds = elapsedSeconds;
     this.material.uniforms.uTime!.value = elapsedSeconds;
     this.material.uniforms.uPulse!.value = Math.min(1.5, this.pulse + this.flash);
     this.material.uniforms.uBass!.value = this.bassLevel;

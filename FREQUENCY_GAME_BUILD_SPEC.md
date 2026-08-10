@@ -1275,6 +1275,26 @@ All of it runs on the maps loaded in §32.5: 73 drum machines plus VCSL instrume
 
 ---
 
+## 35. The landscape is solid (v8 amendment — NORMATIVE, HARD RULE)
+
+**The orb may never be under the landscape.** Touching it bumps the orb back out along the surface, absorbing most of the downward speed. A bump, never a wall, never a fall-through.
+
+### 35.1 One height field, two consumers
+
+The shape the player SEES and the shape the player HITS must be the same shape. The field therefore lives in one module (`src/rendering/terrainField.ts`) that exports both the TypeScript function and the GLSL the terrain shader includes.
+
+This rules out the usual `fract(sin(dot(...)))` hash: GPU `sin` is approximate, JS `sin` is exact, and multiplying that difference by 43758 produces completely different terrain on each side. Both sides instead read the same 256-entry noise table with integer lattice lookups and the same smoothstep — no trigonometric hashing anywhere.
+
+### 35.2 What counts as ground
+
+Only the STANDING shape: the idle ripple and the region's relief. Excitation bumps and the moving bass ridge are performance, not ground — colliding with those would make the floor punch the player on every beat.
+
+### 35.3 The floor is the land
+
+`FLIGHT_CONFIG.minY` sits below the deepest terrain, so what stops the orb is the landscape itself and not an invisible plane. The ceiling still applies.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

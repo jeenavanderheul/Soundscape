@@ -103,6 +103,7 @@ interface FrequencyDebug {
   saveNow(): { ok: boolean };
   loadInfo(): LoadInfo;
   resetWorld(): void;
+  groundHeightAt(x: number, z: number): number;
   teleport(x: number, z: number, y?: number): void;
 }
 
@@ -145,7 +146,7 @@ export class Game {
   private readonly detachResonanceCapture: () => void;
   // M4 analysis→world sync (§12, §20): one depth-capped pulse across renderers.
   // Visual world (poster direction): scan-line terrain, player orb, HUD.
-  private readonly terrain = new WaveTerrain();
+  private readonly terrain = new WaveTerrain(WORLD_SEED);
   private readonly orb = new PlayerOrb();
   private readonly hud = new HUD();
   private readonly forest = new ForestSystem(WORLD_SEED, this.worldStore.getState().resonators);
@@ -230,6 +231,9 @@ export class Game {
     this.pointerLock = new PointerLock(elements.container, this.pointerLockBus);
     this.pointerLock.attach();
     this.controller = new FrequencyController(this.frequencyStore);
+    // §35: the landscape is the floor. One height field, shared by the
+    // shader that draws it and the collision that stops the orb.
+    this.controller.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
     this.particles = new ParticleSystem(WORLD_SEED);
     this.renderer.scene.add(this.particles.points);
     this.detachIntroHint = attachIntroHint(this.events);
@@ -367,6 +371,7 @@ export class Game {
         resetWorld: () => this.resetWorld(),
         // Reaching a genre region means flying 150 units; this makes each
         // region reachable in a test without waiting for the trip.
+        groundHeightAt: (x: number, z: number) => this.terrain.groundHeightAt(x, z),
         teleport: (x: number, z: number, y?: number) =>
           this.frequencyStore.setState((s) => ({
             ...s,
