@@ -375,7 +375,7 @@ export class Game {
     this.renderer.scene.add(this.terrain.lines);
     this.renderer.scene.add(this.orb.mesh);
     this.renderer.scene.add(this.orbTrail.mesh);
-    this.renderer.scene.add(this.forest.mesh);
+    this.renderer.scene.add(this.forest.group);
     this.renderer.scene.add(this.markers.mesh);
     this.renderer.scene.add(this.melodyTrail.line);
     this.renderer.scene.add(this.harmonyBridges.lines);
@@ -510,7 +510,7 @@ export class Game {
     this.structures.dispose();
     this.renderer.scene.remove(this.terrain.lines);
     this.terrain.dispose();
-    this.renderer.scene.remove(this.forest.mesh);
+    this.renderer.scene.remove(this.forest.group);
     this.forest.dispose();
     this.renderer.scene.remove(this.markers.mesh);
     this.markers.dispose();
@@ -682,6 +682,7 @@ export class Game {
       this.terrain.excite('player', state.position, state.hz, state.amplitude * 0.12);
     }
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
+    this.forest.setDepth(trackGrowth(this.trackStore.getState()));
     this.forest.update(
       state.position,
       this.placeGenre,

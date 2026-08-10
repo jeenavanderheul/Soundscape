@@ -53,8 +53,22 @@ export interface Growth {
 }
 
 /** How each grammar shapes its ecosystem (§36 abstract forests). */
+/**
+ * §55: the SHAPE language of a world. Ten worlds shared one tapered spire,
+ * which is why they read as the same forest in different colours. Each world
+ * now has its own pair of forms, and the mix between them is what you
+ * recognise from the air — before the colour, before the first kick.
+ *
+ * All of them stay abstract line work (§13): a pillar, a shard, an arch — never
+ * a literal tree.
+ */
+export type FormName = 'pillar' | 'shard' | 'spire' | 'arch' | 'membrane' | 'ring' | 'monolith';
+
 export interface Ecology {
   name: string;
+  /** Primary and accent form; `formBias` is how often the primary wins. */
+  forms: readonly [FormName, FormName];
+  formBias: number;
   /** Growths per cell — density of the forest. */
   density: number;
   /** Multiplies every height: verticality is the strongest genre signal. */
@@ -81,6 +95,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Machine forest: tall thin waveform pillars, perfectly upright.
   techno: {
     name: 'MACHINE FOREST',
+    forms: ['pillar', 'arch'],
+    formBias: 0.85,
     density: 1,
     heightScale: 1.5,
     irregularity: 0.05,
@@ -90,6 +106,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Cloud forest: almost no trunks, membranes and spores drifting.
   ambient: {
     name: 'CLOUD FOREST',
+    forms: ['membrane', 'spire'],
+    formBias: 0.8,
     density: 0.7,
     heightScale: 0.7,
     irregularity: 0.5,
@@ -99,6 +117,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Improvised forest: branching, asymmetric, reaching sideways.
   jazz: {
     name: 'IMPROVISED FOREST',
+    forms: ['spire', 'arch'],
+    formBias: 0.6,
     density: 0.9,
     heightScale: 1.1,
     irregularity: 1,
@@ -108,6 +128,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Velocity forest: sharp vertical shards, canyons, things that flash past.
   dnb: {
     name: 'VELOCITY FOREST',
+    forms: ['shard', 'pillar'],
+    formBias: 0.85,
     density: 1.3,
     heightScale: 1.7,
     irregularity: 0.3,
@@ -117,6 +139,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Mutation forest: nothing keeps its form; inverted and floating growths.
   experimental: {
     name: 'MUTATION FOREST',
+    forms: ['monolith', 'ring'],
+    formBias: 0.5,
     density: 1.1,
     heightScale: 1.3,
     irregularity: 1.6,
@@ -126,6 +150,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Skip forest: everything slightly off its own grid.
   garage: {
     name: 'SKIP FOREST',
+    forms: ['ring', 'shard'],
+    formBias: 0.7,
     density: 1.1,
     heightScale: 1.1,
     irregularity: 0.55,
@@ -135,6 +161,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Warm forest: low, round, generous.
   house: {
     name: 'WARM FOREST',
+    forms: ['arch', 'membrane'],
+    formBias: 0.7,
     density: 1,
     heightScale: 0.9,
     irregularity: 0.35,
@@ -144,6 +172,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Weight forest: enormous heavy masses, sparse and slow.
   trap: {
     name: 'WEIGHT FOREST',
+    forms: ['monolith', 'pillar'],
+    formBias: 0.8,
     density: 0.6,
     heightScale: 2.1,
     irregularity: 0.25,
@@ -153,6 +183,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Echo forest: deep roots, wide canopy, long empty spaces between.
   dub: {
     name: 'ECHO FOREST',
+    forms: ['membrane', 'monolith'],
+    formBias: 0.65,
     density: 0.5,
     heightScale: 1.2,
     irregularity: 0.7,
@@ -162,6 +194,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Hall forest: colonnades — the most ordered ecosystem of all.
   classical: {
     name: 'HALL FOREST',
+    forms: ['arch', 'pillar'],
+    formBias: 0.55,
     density: 0.8,
     heightScale: 1.4,
     irregularity: 0.15,
@@ -172,6 +206,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
 
 export const NEUTRAL_ECOLOGY: Ecology = {
   name: 'THE VOID',
+  forms: ['spire', 'membrane'],
+  formBias: 0.7,
   density: 0.25,
   heightScale: 0.5,
   irregularity: 0.3,

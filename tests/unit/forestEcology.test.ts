@@ -88,3 +88,30 @@ describe('§36 the forest is the score', () => {
     expect(sum / n).toBeLessThan(0.6);
   });
 });
+
+describe('§55 every world has its own shape language', () => {
+  const WORLDS = [
+    'techno', 'garage', 'jazz', 'house', 'ambient',
+    'classical', 'dnb', 'trap', 'dub', 'experimental',
+  ] as const;
+
+  it('no two worlds are built from the same pair of forms', () => {
+    const pairs = WORLDS.map((genre) => ecologyFor(genre).forms.join('+'));
+    expect(new Set(pairs).size).toBe(WORLDS.length);
+  });
+
+  it('and no world is built from one form twice', () => {
+    for (const genre of WORLDS) {
+      const [primary, accent] = ecologyFor(genre).forms;
+      expect(`${genre}:${primary}`).not.toBe(`${genre}:${accent}`);
+    }
+  });
+
+  it('keeps the machine straight and the cloud soft', () => {
+    expect(ecologyFor('techno').forms[0]).toBe('pillar');
+    expect(ecologyFor('ambient').forms[0]).toBe('membrane');
+    expect(ecologyFor('dnb').forms[0]).toBe('shard');
+    expect(ecologyFor('trap').forms[0]).toBe('monolith');
+    expect(ecologyFor('classical').forms[0]).toBe('arch');
+  });
+});
