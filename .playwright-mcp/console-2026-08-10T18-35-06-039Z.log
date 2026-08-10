@@ -1,0 +1,10 @@
+[     364ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[     398ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[   15902ms] [LOG] %c[superdough] AudioWorklets loaded background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   15902ms] [LOG] %c[superdough] ready background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   16005ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   16005ms] [LOG] %c[cyclist] start background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   18738ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   20893ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   21214ms] [LOG] %c[sampler] load sound "RolandTR909_bd:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   21220ms] [LOG] %c[sampler] load sound "RolandTR909_bd:0:0"... done! loaded 80.3 KiB in 5ms background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
