@@ -188,7 +188,11 @@ export function buildLayerGraph(
 ): MusicalLayerGraph {
   const playerTempo = music.tempoConfidence >= TEMPO_CONFIDENCE_THRESHOLD && music.bpm > 0;
   const heartbeat = music.dynamics >= HEARTBEAT_DYNAMICS_THRESHOLD;
-  if (!playerTempo && !heartbeat) {
+  // §29 (user decision): once a layer is EARNED it STAYS in the track — the
+  // unlocked drums carry themselves on the track's own clock, through
+  // stillness, through the whole world. Layering is permanent.
+  const trackCarries = (track?.drums.kick.unlocked ?? false) && (track?.bpm ?? 0) > 0;
+  if (!playerTempo && !heartbeat && !trackCarries) {
     // §9.2: Ambient needs no pulse — sustained behavior alone can carry a
     // drone in the tempo-less void (at a slow default clock).
     const ambientOnly = clamp01(genre?.ambient ?? 0);
@@ -228,7 +232,9 @@ export function buildLayerGraph(
   // §4/§5: the WORLD HEARTBEAT — flying with wind alone wakes a soft pulse at
   // a movement-derived tempo. The player's own rhythm, once confident,
   // ALWAYS takes over and the world quantizes to it (§3.4).
-  const bpm = playerTempo ? music.bpm : heartbeatBpm(music.dynamics);
+  // Clock priority: the player's own rhythm → the earned track clock → the
+  // movement heartbeat (pre-kick only).
+  const bpm = playerTempo ? music.bpm : trackCarries ? track!.bpm : heartbeatBpm(music.dynamics);
   // §29.3: before the KICK is unlocked the pulse stays a GHOST — audible
   // timekeeping, deliberately thin, so the unlocked kick lands as a reward.
   const kickUnlocked = track ? track.drums.kick.unlocked : true;

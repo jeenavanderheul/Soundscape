@@ -72,6 +72,21 @@ describe('graph from TrackState (§29.3 ghost → kick → clap)', () => {
     expect(pulse.parameters['gain']).toBeLessThanOrEqual(0.25);
   });
 
+  it('earned layers STAY in the track through stillness (§29, user decision)', () => {
+    const still = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0 };
+    const track = createInitialTrackState();
+    track.bpm = 128;
+    track.drums.kick = { unlocked: true, level: 1 };
+    track.drums.snare = { unlocked: true, level: 1 };
+    track.drums.hats = { unlocked: true, level: 1 };
+    const graph = buildLayerGraph(still, undefined, [], track);
+    expect(graph.bpm).toBe(128);
+    const kinds = graph.layers.drums.primitives.map((p) => p.kind);
+    expect(kinds).toContain('pulse');
+    expect(kinds).toContain('snare');
+    expect(kinds).toContain('hat');
+  });
+
   it('brings the kick in at full weight once unlocked, and adds the backbeat clap', () => {
     const track = createInitialTrackState();
     track.drums.kick = { unlocked: true, level: 1 };
