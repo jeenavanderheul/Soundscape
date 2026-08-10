@@ -206,3 +206,22 @@ describe('a place has a place name, a grammar has a grammar name', () => {
     expect(placeName(null)).toBe('the void');
   });
 });
+
+describe('§53 turning towards a world takes you there', () => {
+  /** Where the player counts as being: a little ahead while moving. */
+  const ahead = (p: { x: number; z: number }, dir: { x: number; z: number }, reach = 110) =>
+    ({ x: p.x + dir.x * reach, y: 0, z: p.z + dir.z * reach });
+
+  it('flying north-west out of the techno region arrives in trap', () => {
+    const outNorth = { x: 0, z: -90 }; // deep in techno
+    expect(dominantZone(zoneAffinity({ ...outNorth, y: 0 }))).toBe('techno');
+    // Turn north-west and keep flying: within one look-ahead you are in trap.
+    const nw = { x: -Math.SQRT1_2, z: -Math.SQRT1_2 };
+    expect(dominantZone(zoneAffinity(ahead(outNorth, nw)))).toBe('trap');
+  });
+
+  it('and standing still still reads exactly where the orb is', () => {
+    const inHouse = { x: 110, y: 0, z: 110 };
+    expect(dominantZone(zoneAffinity(inHouse))).toBe('house');
+  });
+});

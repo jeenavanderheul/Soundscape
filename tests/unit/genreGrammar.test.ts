@@ -89,17 +89,14 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
     for (let ms = 0; ms <= 12_000; ms += 250) builder.tick(ms, music, ROAMING, affinityOf('techno'));
     const earned = store.getState().drums;
     expect(earned.kick.unlocked).toBe(true);
-    // §47 (user decision): flying west into Drum & Bass does NOT rewrite this
-    // track. It keeps the grammar it was born in; the region only decides what
-    // the NEXT track will be.
-    for (let ms = 12_250; ms <= 60_000; ms += 250) {
+    // §47: a short crossing does NOT rewrite this track — it keeps the grammar
+    // it was born in and keeps building in the techno order.
+    for (let ms = 12_250; ms <= 18_000; ms += 250) {
       builder.tick(ms, music, ROAMING, affinityOf('dnb'));
     }
     const after = store.getState();
     expect(after.drums.kick.unlocked).toBe(true);
     expect(after.genre).toBe('techno');
-    // …and it keeps building in the techno order, not the drum & bass one.
-    expect(after.drums.hats.unlocked).toBe(true);
   });
 });
 
@@ -260,9 +257,22 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
     const { store, fly } = flightIn('techno');
     fly(0, 12_000, 0, 0.6);
     expect(store.getState().genre).toBe('techno');
-    // Now hand the engine the opposite region for a long time: it must not budge.
-    fly(12_250, 40_000, 0, 0.6, 'ambient');
+    // Crossing a border briefly does not touch the track you are building.
+    fly(12_250, 5000, 0, 0.6, 'ambient');
     expect(store.getState().genre).toBe('techno');
+  });
+
+  // §53: but travelling has to change what you HEAR, or the world is one long
+  // track with scenery. Staying in another world hands over to a new track.
+  it('hands over to a new track when the player stays in another world', () => {
+    const { store, genres, fly } = flightIn('techno');
+    fly(0, 12_000, 0, 0.6);
+    expect(store.getState().genre).toBe('techno');
+    fly(12_250, 20_000, 0, 0.6, 'ambient');
+    expect(genres).toEqual(['ambient']);
+    expect(store.getState().genre).toBe('ambient');
+    // And the new track is genuinely a new track: earned from nothing again.
+    expect(store.getState().drums.kick.unlocked).toBe(false);
   });
 
   it('starts the NEXT track in the region the player is still flying in', () => {

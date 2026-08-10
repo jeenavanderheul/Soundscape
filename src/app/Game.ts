@@ -79,6 +79,19 @@ import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
+/** How far ahead of the orb the world is sampled while it is moving. */
+const REGION_LOOKAHEAD = 110;
+
+/** The point whose region the player counts as being in (§53). */
+function lookAhead(state: Readonly<FrequencyState>): { x: number; y: number; z: number } {
+  const reach = Math.min(1, state.velocity / 12) * REGION_LOOKAHEAD;
+  return {
+    x: state.position.x + state.direction.x * reach,
+    y: state.position.y,
+    z: state.position.z + state.direction.z * reach,
+  };
+}
+
 /** How much of the track exists, for the HUD (§46). */
 function countUnlocked(track: TrackState): number {
   return [
@@ -571,7 +584,12 @@ export class Game {
       );
       // §29.5: WHERE you are is a genre too — every direction of the world
       // leans toward one attractor; behaviour and place carry equal weight.
-      const zone = zoneAffinity(state.position);
+      // §53: the region has to answer the way you are FLYING. Sampling only
+      // the position means that once you are out north, turning north-west
+      // barely moves your bearing from spawn and you stay stuck in Techno.
+      // Sampling a little ahead of the orb makes a turn arrive within seconds,
+      // and standing still still reads exactly where you are.
+      const zone = zoneAffinity(lookAhead(state));
       this.genreEngine.update(elapsedMs, this.musicStore.getState(), zone);
       const genre = this.genreEngine.current;
       // §29: the Track Builder interprets intent into layers. Flight speed is
@@ -607,7 +625,10 @@ export class Game {
       // §45: what you SEE follows where you ARE. The track's genre is smoothed
       // behaviour and can lag or stay null; the land must never lie about the
       // region you are standing in.
-      this.placeGenre = dominantZone(zone, 0.2);
+      // 0.2 claimed a region while the player was still drifting out of the
+      // neutral middle, so spawn already read as Techno. 0.4 means you are
+      // genuinely inside one before the world says so.
+      this.placeGenre = dominantZone(zone, 0.4);
       // §9.5 world tendency: mutation destabilizes existing form.
       this.structures.setMutation(genre?.affinity.experimental ?? 0);
       this.codeOverlay.update(this.strudelEngine.code);

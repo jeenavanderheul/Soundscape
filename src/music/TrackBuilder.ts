@@ -78,6 +78,13 @@ export interface TrackBuilderConfig {
   /** Pace multiplier at a standstill and at full speed (§46). */
   paceAtRest: number;
   paceAtFullSpeed: number;
+  /**
+   * §53: time spent inside a DIFFERENT region before the current track hands
+   * over and a new one is born there. A track never changes grammar (§47), so
+   * this is the only way travelling can change what you hear — and travelling
+   * has to change what you hear, or the world is one long track with scenery.
+   */
+  regionSwitchMs: number;
 }
 
 export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
@@ -102,6 +109,7 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   fullSpeed: 66,
   paceAtRest: 0.55,
   paceAtFullSpeed: 2.4,
+  regionSwitchMs: 9000,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -154,6 +162,8 @@ export class TrackBuilder {
   private lastTickMs: number | null = null;
   private paceClockMs = 0;
   private lastRegion: TrackGenre = null;
+  /** Paced time spent inside a region that is not this track's own (§53). */
+  private awayMs = 0;
   private trackNumberValue = 1;
   private turn = 0;
   private layerVariations: LayerVariations = {};
@@ -213,6 +223,7 @@ export class TrackBuilder {
     this.layerVariations = {};
     this.handingOver = false;
     this.lastRegion = null;
+    this.awayMs = 0;
   }
 
   /**
@@ -267,6 +278,7 @@ export class TrackBuilder {
     this.melody.reset();
     this.conversation.reset();
     this.arrangement.reset();
+    this.awayMs = 0;
     this.bus.emit('track:new', { number: this.trackNumberValue, atMs: nowMs });
   }
 
@@ -371,6 +383,15 @@ export class TrackBuilder {
     // --- Fase 11: ARRANGEMENT. Movement becomes form (§29.7).
     // Where the player actually is — the next track will be born here (§47).
     this.lastRegion = this.dominant(affinity);
+    // §53: fly into another world and stay there, and the world takes over:
+    // the track you were building ends and a new one starts in this grammar.
+    const away = this.lastRegion !== null && track.genre !== null && this.lastRegion !== track.genre;
+    this.awayMs = away ? this.awayMs + paced : 0;
+    if (this.awayMs >= config.regionSwitchMs) {
+      this.awayMs = 0;
+      this.startNextTrack(nowMs);
+      return;
+    }
     // The arrangement runs on the paced clock too: sections arrive sooner when
     // the player is moving through the world quickly.
     const section = this.arrangement.tick(
