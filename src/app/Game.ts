@@ -84,11 +84,15 @@ const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
  * the orb is a small body at a single tone and grows to five times that, so
  * the camera has to start on top of it or the world reads as empty.
  */
-const CAMERA_DISTANCE = 1.8;
-const CAMERA_HEIGHT = 0.62;
-/** How far down the flight path the camera aims, and how far above it. */
-const CAMERA_LOOK_AHEAD = 11;
-const CAMERA_LOOK_LIFT = 0.5;
+const CAMERA_DISTANCE = 3.2;
+const CAMERA_HEIGHT = 1.15;
+/**
+ * The camera aims just past the orb rather than far down the path: a long aim
+ * flattens the world into a horizon and you lose the overview. The orb flies
+ * ahead of the anchor instead, which is where the parallax comes from.
+ */
+const CAMERA_LOOK_AHEAD = 4;
+const CAMERA_LOOK_LIFT = 0.2;
 /** How fast the camera swings in behind a turn (1/s); low is a lazy chase. */
 const CAMERA_FOLLOW_RATE = 3.5;
 /** The camera never goes below this above the landscape (§35). */
