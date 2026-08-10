@@ -7,7 +7,6 @@ export interface HudPlace {
   region: string;
   /** 0..1 how fast the track is developing right now (§46). */
   speed: number;
-  bpm: number;
   /** Which track of the endless journey is playing, and how full it is. */
   track: number;
   layers: number;
@@ -54,7 +53,7 @@ export class HUD {
     const where =
       place === undefined
         ? ''
-        : `\n\nspeed ${bar(place.speed)}${place.bpm > 0 ? ` · ${Math.round(place.bpm)} bpm` : ''}` +
+        : `\n\nspeed ${bar(place.speed)}` +
           `\ntrack ${String(place.track).padStart(2, '0')} · ${place.layers}/${place.maxLayers} layers` +
           `\n\nhead: ${place.heading}\nbiome: ${place.biome}\nregion: ${place.region}`;
     const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;

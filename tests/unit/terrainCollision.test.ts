@@ -4,7 +4,12 @@ import { createStore } from '../../src/core/stores';
 import { createInitialFrequencyState } from '../../src/player/FrequencyState';
 import { FLIGHT_CONFIG, FrequencyController } from '../../src/player/FrequencyController';
 import type { InputSnapshot } from '../../src/input/InputManager';
-import { createNoiseTable, terrainHeight, valueNoise } from '../../src/rendering/terrainField';
+import {
+  createNoiseTable,
+  terrainHeight,
+  terrainMotion,
+  valueNoise,
+} from '../../src/rendering/terrainField';
 
 function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
   return {
@@ -136,5 +141,29 @@ describe('§35 HARD RULE — the orb never gets under the landscape', () => {
     const before = store.getState().position.y;
     for (let i = 0; i < 40; i++) controller.update(snapshot({}), 16);
     expect(store.getState().position.y).toBeGreaterThan(before);
+  });
+});
+
+describe('§35 the grid IS the ground, waves and all (user decision)', () => {
+  const table = createNoiseTable('solid-grid');
+  const standing = (x: number, z: number) => terrainHeight(table, x, z, 0, 1);
+
+  it('an excitation that lifts the drawn grid lifts the floor with it', () => {
+    const source = { x: 0, z: 0, strength: 1, hzn: 0 };
+    const lift = terrainMotion(0, 0, 0, 0, 0, [source]);
+    expect(lift).toBeGreaterThan(1); // the grid visibly rises here
+    // Whatever the shader draws, groundHeightAt has to return the same surface.
+    const drawn = standing(0, 0) + lift;
+    expect(drawn).toBeGreaterThan(standing(0, 0));
+  });
+
+  it('falls back to the standing shape once the excitation dies away', () => {
+    expect(terrainMotion(0, 0, 0, 0, 0, [])).toBe(0);
+    expect(terrainMotion(0, 0, 0, 0, 0, [{ x: 0, z: 0, strength: 0, hzn: 0 }])).toBe(0);
+  });
+
+  it('a wave far away does not lift the ground under the orb', () => {
+    const far = terrainMotion(300, 300, 0, 0, 0, [{ x: 0, z: 0, strength: 1, hzn: 0 }]);
+    expect(Math.abs(far)).toBeLessThan(0.001);
   });
 });

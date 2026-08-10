@@ -691,7 +691,6 @@ export class Game {
       biome: this.placeGenre ?? 'void',
       region: ecologyFor(this.placeGenre).name,
       speed: state.velocity / FULL_SPEED,
-      bpm: this.trackStore.getState().bpm,
       track: this.trackBuilder.trackNumber,
       layers: countUnlocked(this.trackStore.getState()),
       maxLayers: 7,

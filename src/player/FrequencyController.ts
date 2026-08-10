@@ -134,6 +134,9 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
  */
 export const CRUISE_SPEED = 13;
 export const FULL_SPEED = 66;
+/** Seconds to open the throttle fully, and to let it fall all the way back. */
+const THROTTLE_RISE_S = 0.6;
+const THROTTLE_FALL_S = 2.6;
 
 export class FrequencyController {
   private yaw = 0;
@@ -150,6 +153,11 @@ export class FrequencyController {
     return this.yawRateValue;
   }
 
+  /** 0..1 how far the throttle is open right now — what the HUD shows. */
+  get throttleLevel(): number {
+    return this.throttle;
+  }
+
   /** Vertical speed in units/s: positive is climbing (§29.7 arrangement). */
   get climbRate(): number {
     return this.velocityVec.y;
@@ -162,6 +170,8 @@ export class FrequencyController {
   }
   private velocityVec: Vec3Data = { x: 0, y: 0, z: 0 };
   private yawRateValue = 0;
+  /** 0 = cruising, 1 = wide open. Eases both ways so speed is something you ride. */
+  private throttle = 0;
 
   constructor(private readonly store: Store<FrequencyState>) {}
 
@@ -192,8 +202,14 @@ export class FrequencyController {
     }
     // Drag alone would settle far below full speed, so the pull scales with the
     // ceiling: opening the throttle has to feel like opening a throttle.
-    // Holding the wind opens the throttle all the way (§3.2 dynamics = force).
-    const topSpeed = input.buttons.accelerate ? FULL_SPEED : CRUISE_SPEED;
+    // Holding the wind opens the throttle (§3.2 dynamics = force); letting go
+    // lets it fall away slowly, so boosting and releasing IS how you steer your
+    // speed (user decision) — never an on/off switch.
+    const seconds = deltaMs / 1000;
+    this.throttle = input.buttons.accelerate
+      ? Math.min(1, this.throttle + seconds / THROTTLE_RISE_S)
+      : Math.max(0, this.throttle - seconds / THROTTLE_FALL_S);
+    const topSpeed = CRUISE_SPEED + (FULL_SPEED - CRUISE_SPEED) * this.throttle;
     const accelMagnitude = Math.max(
       FLIGHT_CONFIG.acceleration,
       topSpeed * FLIGHT_CONFIG.drag * 1.25,

@@ -221,4 +221,29 @@ describe('§46 speed is the throttle, not a gearbox', () => {
   it('full speed is a different kind of flying, not a nudge', () => {
     expect(settleSpeed(true)).toBeGreaterThan(settleSpeed(false) * 3);
   });
+
+  it('releasing the throttle coasts down slowly instead of dropping', () => {
+    const store = createStore(createInitialFrequencyState());
+    const controller = new FrequencyController(store);
+    const fly = (throttle: boolean, ms: number) => {
+      for (let t = 0; t < ms; t += 16) {
+        controller.update(
+          snapshot({
+            axes: { moveX: 0, moveZ: 1 },
+            buttons: { accelerate: throttle, windHold: throttle },
+          }),
+          16,
+        );
+      }
+    };
+    fly(true, 6000);
+    const wideOpen = store.getState().velocity;
+    fly(false, 700);
+    const justAfter = store.getState().velocity;
+    // Still clearly fast a moment later: the boost is something you ride out.
+    expect(justAfter).toBeLessThan(wideOpen);
+    expect(justAfter).toBeGreaterThan(CRUISE_SPEED * 2);
+    fly(false, 6000);
+    expect(store.getState().velocity).toBeLessThanOrEqual(CRUISE_SPEED + 0.01);
+  });
 });

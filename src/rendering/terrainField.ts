@@ -49,14 +49,68 @@ export const TERRAIN_FIELD = {
   reliefSpan: 120,
   /** Height of a full-relief region, in world units. */
   reliefHeight: 26,
+  /**
+   * §35 (user decision): the grid IS the ground, so everything that lifts it
+   * must lift the floor with it. These are the amplitudes of the moving part —
+   * the bass ridge and the excitation waves — kept modest exactly because they
+   * are now solid.
+   */
+  bassAmplitude: 1.4,
+  exciteAmpLow: 4,
+  exciteAmpHigh: 1.2,
 } as const;
+
+/** One excitation source, in world space, as both shader and collision see it. */
+export interface FieldSource {
+  x: number;
+  z: number;
+  /** 0..1 how strongly it is exciting the field. */
+  strength: number;
+  /** 0..1 pitch: low is a broad slow hill, high a tight fast ripple (§3.1). */
+  hzn: number;
+}
+
+/**
+ * Everything ON TOP of the standing shape: the bass ridge and the excitation
+ * waves. Mirrors the loop in the terrain shader exactly — this is what makes
+ * the drawn grid and the solid ground the same surface.
+ */
+export function terrainMotion(
+  x: number,
+  z: number,
+  timeSeconds: number,
+  bass: number,
+  pulse: number,
+  sources: readonly FieldSource[],
+): number {
+  let h =
+    bass *
+    TERRAIN_FIELD.bassAmplitude *
+    Math.sin(x * 0.028 + timeSeconds * 0.55) *
+    Math.cos(z * 0.021 - timeSeconds * 0.4);
+  for (const source of sources) {
+    const dx = x - source.x;
+    const dz = z - source.z;
+    const d = Math.hypot(dx, dz);
+    const radius = 46 + (14 - 46) * source.hzn;
+    const k = 0.12 + (0.85 - 0.12) * source.hzn;
+    const speed = 0.6 + (2.4 - 0.6) * source.hzn;
+    const envelope = Math.exp(-(d * d) / (radius * radius)) * source.strength;
+    const wave = Math.sin(d * k - timeSeconds * speed) * 0.5 + 0.72;
+    const amp =
+      TERRAIN_FIELD.exciteAmpLow +
+      (TERRAIN_FIELD.exciteAmpHigh - TERRAIN_FIELD.exciteAmpLow) * source.hzn;
+    h += envelope * wave * amp * (1 + pulse * 0.35);
+  }
+  return h;
+}
 
 /**
  * Landscape height above the terrain plane at a world position.
  *
- * Only the STANDING shape counts: the idle ripple and the region's relief.
- * Excitation bumps and the moving bass ridge are performance, not ground —
- * colliding with those would make the floor punch the player on every beat.
+ * The STANDING shape: the idle ripple and the region's relief. What moves on
+ * top of it lives in `terrainMotion` — and since the grid is solid (§35, user
+ * decision), the collision adds both together.
  */
 export function terrainHeight(
   table: Float32Array,

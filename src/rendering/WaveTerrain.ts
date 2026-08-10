@@ -8,8 +8,10 @@ import {
 import type { Vec3Data } from '../player/FrequencyState';
 import {
   createNoiseTable,
+  TERRAIN_FIELD,
   TERRAIN_FIELD_GLSL,
   terrainHeight,
+  terrainMotion,
 } from './terrainField';
 
 /**
@@ -85,7 +87,7 @@ void main() {
   float h = ${TERRAIN_CONFIG.idleAmplitude.toFixed(2)} *
     sin(world.x * 0.045 + uTime * 0.35) * sin(world.y * 0.06 + uTime * 0.22);
   // §29.6: the bassline IS the moving ridge landscape.
-  h += uBass * 2.2 * sin(world.x * 0.028 + uTime * 0.55) * cos(world.y * 0.021 - uTime * 0.4);
+  h += uBass * ${TERRAIN_FIELD.bassAmplitude.toFixed(2)} * sin(world.x * 0.028 + uTime * 0.55) * cos(world.y * 0.021 - uTime * 0.4);
   // §33/§35: REGION RELIEF — the standing shape of the land, identical to
   // the CPU-side height function the collision uses.
   float fromSpawn = clamp((length(world) - 20.0) / 120.0, 0.0, 1.0);
@@ -104,7 +106,7 @@ void main() {
     float speed = mix(0.6, 2.4, s.w);
     float envelope = exp(-(d * d) / (radius * radius)) * s.z;
     float wave = sin(d * k - uTime * speed) * 0.5 + 0.72;
-    float amp = mix(7.0, 1.6, s.w);
+    float amp = mix(${TERRAIN_FIELD.exciteAmpLow.toFixed(1)}, ${TERRAIN_FIELD.exciteAmpHigh.toFixed(1)}, s.w);
     h += envelope * wave * amp * (1.0 + uPulse * 0.35);
     glow += envelope;
     zone += zoneColor(s.w) * envelope;
@@ -195,9 +197,17 @@ export class WaveTerrain {
    * §35: the height of the solid landscape at a world position. This is what
    * the orb collides with — the same field the shader draws.
    */
+  /**
+   * §35 (user decision): the grid is solid, so the ground is the WHOLE drawn
+   * surface — the standing shape plus the bass ridge and every excitation wave
+   * that lifts it. Anything less and the orb can end up under a grid it is
+   * looking straight at.
+   */
   groundHeightAt(x: number, z: number): number {
     return (
-      TERRAIN_CONFIG.planeY + terrainHeight(this.noise, x, z, this.elapsedSeconds, this.relief)
+      TERRAIN_CONFIG.planeY +
+      terrainHeight(this.noise, x, z, this.elapsedSeconds, this.relief) +
+      terrainMotion(x, z, this.elapsedSeconds, this.bassLevel, this.pulse, this.sources)
     );
   }
 
