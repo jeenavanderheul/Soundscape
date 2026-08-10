@@ -284,6 +284,15 @@ export interface GenreGrammar {
   drumBank: string;
   percBank: string;
   /**
+   * §49 (user decision): every world has its own SOUND, not only its own
+   * pattern. These are the voices its bass, chords and lead are played on —
+   * acoustic where the genre is acoustic, synthetic where it is synthetic, and
+   * always a name that exists in the loaded library (§38 audits it).
+   */
+  bassVoice: string;
+  chordVoice: string;
+  leadVoice: string;
+  /**
    * §39: the tempo range of this grammar. Flight speed still chooses WHERE in
    * the range you sit — but a region has its own natural pace, so ambient can
    * never race and drum & bass can never crawl.
@@ -314,6 +323,9 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
   drive: 0.25,
   drumBank: 'RolandTR909',
   percBank: 'RolandTR808',
+  bassVoice: 'sawtooth',
+  chordVoice: 'square',
+  leadVoice: 'square',
   bpmMin: 90,
   bpmMax: 140,
   kickGain: 0.95,
@@ -328,6 +340,10 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
 const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   techno: { ...NEUTRAL_GRAMMAR },
   dnb: {
+    // §49 the sound of this world: sawtooth bass, square chords, sine lead.
+    bassVoice: 'sawtooth',
+    chordVoice: 'square',
+    leadVoice: 'sine',
     kickStyle: 'break',
     hatStyle: 'sixteenth',
     snareStyle: 'break',
@@ -352,6 +368,10 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureGain: 0.12,
   },
   ambient: {
+    // §49 the sound of this world: sine bass, harp chords, vibraphone lead.
+    bassVoice: 'sine',
+    chordVoice: 'harp',
+    leadVoice: 'vibraphone',
     kickStyle: 'sparse',
     hatStyle: 'sparse',
     snareStyle: 'ghost',
@@ -375,6 +395,10 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureGain: 0.25,
   },
   jazz: {
+    // §49 the sound of this world: piano bass, piano chords, sax lead.
+    bassVoice: 'piano',
+    chordVoice: 'piano',
+    leadVoice: 'sax',
     kickStyle: 'swing',
     hatStyle: 'swing',
     snareStyle: 'ghost',
@@ -398,6 +422,10 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureGain: 0.12,
   },
   experimental: {
+    // §49 the sound of this world: square bass, marimba chords, tubularbells lead.
+    bassVoice: 'square',
+    chordVoice: 'marimba',
+    leadVoice: 'tubularbells',
     kickStyle: 'irregular',
     hatStyle: 'sparse',
     snareStyle: 'ghost',
@@ -424,6 +452,10 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 UK GARAGE — displacement: the grid slides off its own centre.
   garage: {
+    // §49 the sound of this world: sine bass, organ_full chords, vibraphone lead.
+    bassVoice: 'sine',
+    chordVoice: 'organ_full',
+    leadVoice: 'vibraphone',
     kickStyle: 'twostep',
     hatStyle: 'shuffle',
     snareStyle: 'clap',
@@ -448,6 +480,10 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 HOUSE — warmth: the machine plays, the hands answer.
   house: {
+    // §49 the sound of this world: sawtooth bass, piano chords, organ_full lead.
+    bassVoice: 'sawtooth',
+    chordVoice: 'piano',
+    leadVoice: 'organ_full',
     kickStyle: 'four',
     hatStyle: 'offbeat',
     snareStyle: 'clap',
@@ -472,6 +508,10 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 TRAP — weight: half-time, and the low end slides.
   trap: {
+    // §49 the sound of this world: sine bass, glockenspiel chords, glockenspiel lead.
+    bassVoice: 'sine',
+    chordVoice: 'glockenspiel',
+    leadVoice: 'glockenspiel',
     kickStyle: 'halftime',
     hatStyle: 'roll',
     snareStyle: 'rim',
@@ -496,6 +536,10 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 DUB — echo: what was played comes back, changed.
   dub: {
+    // §49 the sound of this world: sine bass, organ_full chords, harmonica lead.
+    bassVoice: 'sine',
+    chordVoice: 'organ_full',
+    leadVoice: 'harmonica',
     kickStyle: 'echo',
     hatStyle: 'sparse',
     snareStyle: 'rim',
@@ -520,6 +564,10 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 CLASSICAL — orchestration: no drum machine anywhere in this region.
   classical: {
+    // §49 the sound of this world: harp bass, piano chords, glockenspiel lead.
+    bassVoice: 'harp',
+    chordVoice: 'piano',
+    leadVoice: 'glockenspiel',
     kickStyle: 'timpani',
     hatStyle: 'sparse',
     snareStyle: 'ghost',
@@ -827,6 +875,7 @@ export function buildLayerGraph(
                 .join(' ')
             : [0, 0, 3, 7].map((semitones) => midiToNoteName(rootMidi + semitones)).join(' '),
         drive: grammar.drive,
+        voice: grammar.bassVoice,
         gain: round2(grammar.bassGain * mix.bass),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.bass],
@@ -866,6 +915,7 @@ export function buildLayerGraph(
       kind: 'chord',
       layer: 'harmony',
       parameters: {
+        voice: grammar.chordVoice,
         notes: (track.harmonyIntervals.length > 0 ? track.harmonyIntervals : [0])
           .slice(0, 4)
           .map((semitones) => midiToNoteName(rootMidi + 12 + semitones))
@@ -907,6 +957,7 @@ export function buildLayerGraph(
       kind: 'melody',
       layer: 'melody',
       parameters: {
+        voice: grammar.leadVoice,
         notes: track.melodyNotes
           .slice(0, 8)
           .map((midi) => midiToNoteName(midi))
@@ -948,6 +999,7 @@ export function buildLayerGraph(
       kind: 'response',
       layer: 'melody',
       parameters: {
+        voice: grammar.leadVoice,
         notes: track.responseNotes
           .slice(0, 4)
           .map((midi) => midiToNoteName(midi))

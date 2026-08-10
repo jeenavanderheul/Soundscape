@@ -2,9 +2,10 @@ import type { FrequencyState } from '../player/FrequencyState';
 
 /** §36: where the player is, in the world's own words. */
 export interface HudPlace {
+  /** Compass point you are flying towards, and the grammar that lies there. */
   heading: string;
+  /** The grammar you are actually IN right now. */
   biome: string;
-  region: string;
   /** 0..1 how fast the track is developing right now (§46). */
   speed: number;
   /** Which track of the endless journey is playing, and how full it is. */
@@ -55,7 +56,7 @@ export class HUD {
         ? ''
         : `\n\nspeed ${bar(place.speed)}` +
           `\ntrack ${String(place.track).padStart(2, '0')} · ${place.layers}/${place.maxLayers} layers` +
-          `\n\nhead: ${place.heading}\nbiome: ${place.biome}\nregion: ${place.region}`;
+          `\n\nflying: ${place.heading}\nhere:   ${place.biome}`;
     const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
     if (text === this.lastText) return;
     this.lastText = text;

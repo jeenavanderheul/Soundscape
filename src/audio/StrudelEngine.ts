@@ -215,6 +215,25 @@ const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic', 'shaker', 'tape'] as
  * sounds (sbd, white noise, sine/triangle/sawtooth) so the track is audible
  * without loading any sample bank over the network.
  */
+/**
+ * §49 (user decision): every world plays its own instruments. The templates
+ * write the FIGURE — a two-step sub, a jazz voicing, a stab — and the grammar
+ * says which voice plays it, so garage stabs come out of an organ and jazz
+ * chords out of a piano without duplicating a single pattern.
+ *
+ * Only a name that exists in the loaded library is accepted; anything else
+ * leaves the template's own choice standing, because an unknown sound is
+ * SILENCE, not an error (§38).
+ */
+const VOICED_KINDS = new Set(['bass', 'chord', 'melody', 'response']);
+
+function withVoice(code: string, primitive: MusicalPrimitive): string {
+  if (!VOICED_KINDS.has(primitive.kind)) return code;
+  const voice = primitive.parameters['voice'];
+  if (typeof voice !== 'string' || !VOICE_SOUNDS.has(voice)) return code;
+  return code.replace(/\.s\("[a-z_0-9]+"\)/, `.s("${voice}")`);
+}
+
 function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): string {
   const layerGain = clamp(finite(layer.gain, `${primitive.id}.layer.gain`), 0, 1);
   const gain = (
@@ -733,7 +752,7 @@ export function buildPatternCode(graph: MusicalLayerGraph, actions: MusicalActio
         applyProduction(
           applyVariation(
             applyPerformance(
-              renderPrimitive(primitive, layer),
+              withVoice(renderPrimitive(primitive, layer), primitive),
               name,
               graph.performance,
               (graph.production?.duck ?? 0) > 0.05,
@@ -765,7 +784,7 @@ export function trackParts(graph: MusicalLayerGraph): Array<{ id: string; code: 
         code: applyProduction(
           applyVariation(
             applyPerformance(
-              renderPrimitive(primitive, layer),
+              withVoice(renderPrimitive(primitive, layer), primitive),
               name,
               graph.performance,
               (graph.production?.duck ?? 0) > 0.05,

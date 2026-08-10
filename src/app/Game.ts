@@ -47,7 +47,6 @@ import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer } from '../rendering/ForestRenderer';
-import { ecologyFor } from '../rendering/ForestEcology';
 import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
 import { ParticleSystem } from '../rendering/ParticleSystem';
 import { PlayerOrb } from '../rendering/PlayerOrb';
@@ -688,10 +687,12 @@ export class Game {
       },
       dtSeconds,
     );
+    // The heading is the way you are actually FLYING (user decision) — at a
+    // standstill it keeps the way you are looking, so it never spins.
+    const flightDir = state.velocity > 0.6 ? this.camDir : state.direction;
     this.hud.update(state, {
-      heading: headingLabel(Math.atan2(state.direction.x, -state.direction.z)),
-      biome: this.placeGenre ?? 'void',
-      region: ecologyFor(this.placeGenre).name,
+      heading: headingLabel(Math.atan2(flightDir.x, -flightDir.z)),
+      biome: this.placeGenre ?? 'the void',
       speed: state.velocity / FULL_SPEED,
       track: this.trackBuilder.trackNumber,
       layers: countUnlocked(this.trackStore.getState()),

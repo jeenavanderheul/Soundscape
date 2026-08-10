@@ -184,3 +184,30 @@ describe('§31 Jazz — the world answers', () => {
     expect(conversation.turns).toBe(2);
   });
 });
+
+describe('§49 every world has its own voices', () => {
+  it('gives each grammar its own bass, chords and lead', () => {
+    const jazz = genreGrammar('jazz');
+    const techno = genreGrammar('techno');
+    expect(jazz.leadVoice).toBe('sax');
+    expect(jazz.chordVoice).toBe('piano');
+    expect(techno.chordVoice).not.toBe(jazz.chordVoice);
+    // Acoustic where the genre is acoustic, synthetic where it is synthetic.
+    expect(['sine', 'square', 'sawtooth', 'triangle']).toContain(techno.bassVoice);
+    expect(genreGrammar('classical').chordVoice).toBe('piano');
+    expect(genreGrammar('dub').leadVoice).toBe('harmonica');
+  });
+
+  it('plays the same figure on the instruments of the region it is in', () => {
+    const track = createInitialTrackState();
+    track.bpm = 128;
+    track.harmony = { unlocked: true, level: 1 };
+    track.harmonyIntervals = [0, 3, 7];
+    const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6 };
+    const code = (genre: Exclude<TrackGenre, null>) =>
+      buildPatternCode(buildLayerGraph(music, affinityOf(genre), [], track));
+    expect(code('jazz')).toContain('"piano"');
+    expect(code('house')).toContain('"piano"');
+    expect(code('techno')).not.toContain('"piano"');
+  });
+});
