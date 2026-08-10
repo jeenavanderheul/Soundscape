@@ -104,9 +104,9 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
   it('still offers the ladder to a player who does nothing in particular', () => {
     // Patience, not a schedule: it arrives, but later than flying for it — and
     // §46 means a slow flight develops the track more slowly.
-    expect(flyAt(19, 8000).drums.kick.unlocked).toBe(false);
-    expect(flyAt(19, 14_000).drums.kick.unlocked).toBe(true);
-    expect(flyAt(19, 60_000).bass.unlocked).toBe(true);
+    expect(flyAt(19, 4000).drums.kick.unlocked).toBe(false);
+    expect(flyAt(19, 9000).drums.kick.unlocked).toBe(true);
+    expect(flyAt(19, 45_000).bass.unlocked).toBe(true);
   });
 
   it('does not accumulate during stillness', () => {

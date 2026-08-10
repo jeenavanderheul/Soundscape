@@ -103,11 +103,18 @@ const HOUSE: readonly LadderStep[] = [
 ];
 
 /** Trap: weight. The low end arrives before anything else. */
+/**
+ * §65: Trap opens with the 808 BOOM, not with the sub underneath it. Opening
+ * on the bass meant the first thing you earned was a 55 Hz sine — inaudible on
+ * a laptop — and the next rung was twenty seconds away, so a trap track began
+ * with nothing you could hear. In trap the 808 and the kick are the same
+ * instrument anyway; the sub is what deepens it.
+ */
 const TRAP: readonly LadderStep[] = [
-  { layer: 'bass', atMs: 3000 },
-  { layer: 'kick', atMs: 7000 },
-  { layer: 'hats', atMs: 11_000 },
-  { layer: 'snare', atMs: 15_000 },
+  { layer: 'kick', atMs: 3000 },
+  { layer: 'hats', atMs: 6000 },
+  { layer: 'bass', atMs: 9000 },
+  { layer: 'snare', atMs: 13_000 },
   { layer: 'melody', atMs: 22_000 },
   { layer: 'harmony', atMs: 30_000 },
   { layer: 'texture', atMs: 40_000 },

@@ -485,7 +485,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return `note("<${root} ~ [~ ${notes[1] ?? root}] ~ ${notes[2] ?? root} ~ ~ [${root} ~]>").s("sine").decay(.16).sustain(0).gain(${gain})`;
         // §34 trap: the 808 that slides between its notes.
         case 'slide':
-          return `note("<${root} ~ ${notes[2] ?? root} ~>").s("sine").slide(1).decay(.9).sustain(.3).lpf(180).gain(${gain})`;
+          // §34 trap: the 808 IS the low end, so it has to be heard on a
+          // laptop as well as felt. `slide(1)` was a ZZFX control that a plain
+          // sine ignores; the classic 808 glide is a pitch envelope, and the
+          // filter opens far enough for the body to carry (§21: the low
+          // register must stay perceptible).
+          return `note("<${root} ~ ${notes[2] ?? root} ~>").s("sine").penv(-12).pdec(.14).decay(.9).sustain(.3).lpf(560).shape(.25).gain(${gain})`;
         // §34 dub: mostly silence, and a long decay into the room.
         case 'dubwise':
           return `note("<${root} ~ ~ [${notes[1] ?? root} ~] ~ ~ ${notes[2] ?? root} ~>").s("sine").decay(.5).sustain(.2).room(.3).gain(${gain})`;
@@ -796,27 +801,41 @@ const SUSTAINED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>([
   'bass', 'harmony', 'melody', 'texture', 'atmosphere',
 ]);
 
-/** Deterministically map a layer graph (plus one-shot actions) to pattern code. */
-export function buildPatternCode(graph: MusicalLayerGraph, actions: MusicalAction[] = []): string {
+/**
+ * Deterministically map a layer graph (plus one-shot actions) to pattern code.
+ *
+ * `plain` strips everything decorative — the §3 performance, the §53
+ * variations and the §48 production — leaving the parts themselves. It is what
+ * the engine falls back to when a pattern fails to evaluate: ONE bad
+ * expression must never take the whole track down with it (§65).
+ */
+export function buildPatternCode(
+  graph: MusicalLayerGraph,
+  actions: MusicalAction[] = [],
+  plain = false,
+): string {
   const parts: string[] = [];
   for (const name of LAYER_NAMES) {
     const layer = graph.layers[name];
     for (const primitive of layer.primitives) {
+      const voice = withVoice(renderPrimitive(primitive, layer), primitive);
       parts.push(
-        applyProduction(
-          applyVariation(
-            applyPerformance(
-              withVoice(renderPrimitive(primitive, layer), primitive),
+        plain
+          ? voice
+          : applyProduction(
+              applyVariation(
+                applyPerformance(
+                  voice,
+                  name,
+                  graph.performance,
+                  (graph.production?.duck ?? 0) > 0.05,
+                ),
+                name,
+                graph.variations,
+              ),
               name,
-              graph.performance,
-              (graph.production?.duck ?? 0) > 0.05,
+              graph.production,
             ),
-            name,
-            graph.variations,
-          ),
-          name,
-          graph.production,
-        ),
       );
     }
   }
@@ -1160,13 +1179,21 @@ export class StrudelEngine implements StrudelEnginePort {
   private lastCode = '';
 
   /** Diagnostic status (dev debug handle): playing state, bpm and evaluation count. */
-  get status(): { playing: boolean; bpm: number; evaluations: number; samples: boolean; local: boolean } {
+  get status(): {
+    playing: boolean;
+    bpm: number;
+    evaluations: number;
+    samples: boolean;
+    local: boolean;
+    degraded: boolean;
+  } {
     return {
       playing: this.playing,
       bpm: this.appliedGraph.bpm,
       evaluations: this.evaluations,
       samples: this.samplesReady,
       local: this.localSamples,
+      degraded: this.degraded,
     };
   }
 
@@ -1178,8 +1205,21 @@ export class StrudelEngine implements StrudelEnginePort {
     this.evaluations += 1;
     this.startBeatTicker();
     void repl.evaluate(code, true).catch((error: unknown) => {
-      // Audio boundary: a bad pattern must not take down the game loop.
+      // §65 audio boundary: a bad pattern must not take the game loop down —
+      // and it must not take the MUSIC down either. Everything decorative is
+      // dropped and the parts alone are played, so the track keeps sounding
+      // while the console says exactly what failed.
       console.error('StrudelEngine: pattern evaluation failed', error);
+      const bare = buildPatternCode(this.appliedGraph, [], true);
+      if (bare === '' || bare === code) return;
+      this.degraded = true;
+      this.lastCode = bare;
+      void repl.evaluate(bare, true).catch((fallbackError: unknown) => {
+        console.error('StrudelEngine: even the bare pattern failed', fallbackError);
+      });
     });
   }
+
+  /** True once a pattern failed and the engine dropped back to bare parts. */
+  private degraded = false;
 }

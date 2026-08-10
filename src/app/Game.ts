@@ -166,6 +166,7 @@ interface FrequencyDebug {
     evaluations: number;
     samples: boolean;
     local: boolean;
+    degraded: boolean;
   };
   getGenreSnapshot(): unknown;
   getProgression(): unknown;

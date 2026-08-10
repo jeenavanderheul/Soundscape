@@ -105,7 +105,11 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   activityFloor: 0.12,
   maxTickDeltaMs: 500,
   deepenIntervalMs: 11_000,
-  patienceFactor: 2.5,
+  // §65: 2.5 turned a three-second rung into eight and a seven-second rung
+  // into twenty — long enough that a track read as "nothing is happening".
+  // Behaviour still earns a layer instantly; this is only how long the world
+  // waits for a player who is doing nothing in particular.
+  patienceFactor: 1.6,
   groundAltitude: 8,
   airAltitude: 30,
   groundMs: 3500,

@@ -64,8 +64,12 @@ function flyThroughADrop(builder: TrackBuilder, fromMs: number): number {
 describe('the endless journey (user decision)', () => {
   it('hands over to the next track only when everything is earned AND deep', () => {
     const { store, builder, tracks } = setup();
-    // A half-built track never hands over, however long you fly.
-    flyThroughADrop(builder, 0);
+    // A half-built track never hands over on its own — but with the world
+    // patient enough it fills up, so start from a track that cannot complete:
+    // §64 needs the bass AND four layers AND a minute before a peak exists.
+    for (let t = 0; t <= 20_000; t += 250) {
+      builder.tick(t, { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, dynamics: 0.6 }, { ...FLYING, energy: 0.1 });
+    }
     expect(tracks).toEqual([]);
 
     store.setState(complete);

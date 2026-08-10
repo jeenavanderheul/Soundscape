@@ -131,7 +131,8 @@ describe('arriving somewhere new starts a track in that world', () => {
     // rung is given the moment you arrive, so the crossing announces itself.
     const first = ladderFor('trap')[0]!.layer;
     expect(layerUnlocked(trapTrack, first)).toBe(true);
-    expect(first).toBe('bass'); // and it is TRAP's first rung, not techno's
+    // §65: trap opens on the 808 boom — the thing you can actually hear.
+    expect(first).toBe('kick');
   });
 
   it('§58 height is a tape: up is faster and higher, down is slower and deeper', () => {
