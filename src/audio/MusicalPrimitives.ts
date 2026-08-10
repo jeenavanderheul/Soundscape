@@ -5,7 +5,7 @@
  * nodes. `StrudelEngine.ts` turns this graph into whitelisted pattern
  * templates. Primitives are declarative — never executable user data.
  */
-import type { MusicState } from '../music/MusicState';
+import type { GenreAffinity, MusicState } from '../music/MusicState';
 
 export type PrimitiveKind =
   | 'pulse' | 'kick' | 'snare' | 'hat' | 'break'
@@ -128,19 +128,36 @@ export function subNoteFromHz(hz: number): string {
  * tone still sounds. Above it: a pulse at the detected BPM whose density
  * follows rhythmDensity, plus a soft sub on the octave-reduced pitch root.
  */
-export function buildLayerGraph(music: MusicState): MusicalLayerGraph {
+export function buildLayerGraph(music: MusicState, genre?: GenreAffinity): MusicalLayerGraph {
   if (music.tempoConfidence < TEMPO_CONFIDENCE_THRESHOLD || music.bpm <= 0) {
     return createEmptyLayerGraph();
   }
   const graph = createEmptyLayerGraph(music.bpm);
   const density = clamp01(music.rhythmDensity);
+  const techno = clamp01(genre?.techno ?? 0);
   const pulse: MusicalPrimitive = {
     id: 'pulse',
     kind: 'pulse',
     layer: 'drums',
-    parameters: { steps: 1 + Math.round(density * 3), gain: 0.8 },
+    // §9.1: under Techno attraction the pulse organizes toward four-on-the-floor.
+    parameters: {
+      steps: techno >= 0.5 ? 4 : 1 + Math.round(density * 3),
+      gain: 0.8,
+    },
     allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
   };
+  const drumPrimitives: MusicalPrimitive[] = [pulse];
+  if (techno >= 0.5) {
+    drumPrimitives.push({
+      id: 'techno-hat',
+      kind: 'hat',
+      layer: 'drums',
+      // Quantized bands, not a continuous value: keeps the graph diff-stable
+      // while affinity drifts (§11 — no recompilation churn).
+      parameters: { steps: techno >= 0.75 ? 4 : 2, gain: 0.35 },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
+    });
+  }
   const sub: MusicalPrimitive = {
     id: 'sub',
     kind: 'sub',
@@ -152,7 +169,7 @@ export function buildLayerGraph(music: MusicState): MusicalLayerGraph {
     ...graph,
     layers: {
       ...graph.layers,
-      drums: { ...graph.layers.drums, primitives: [pulse], density },
+      drums: { ...graph.layers.drums, primitives: drumPrimitives, density },
       bass: { ...graph.layers.bass, primitives: [sub] },
     },
   };

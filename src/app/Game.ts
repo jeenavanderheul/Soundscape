@@ -11,6 +11,8 @@ import { InputManager } from '../input/InputManager';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
 import { buildLayerGraph, diffLayerGraph } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
+import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
+import type { GenreEvents } from '../genres/GenreAffinityEngine';
 import { createInitialMusicState, MusicState } from '../music/MusicState';
 import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
 import { RhythmDetector } from '../music/RhythmDetector';
@@ -37,7 +39,7 @@ import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
-export type GameEvents = ResonanceEvents & StructureEvents & {
+export type GameEvents = ResonanceEvents & StructureEvents & GenreEvents & {
   /** Strudel-clock beat boundary (§20 M4); consumed by BeatSync. */
   'beat': BeatEvent;
   'audio:unlocked': null;
@@ -63,6 +65,7 @@ interface FrequencyDebug {
   getInterferenceActiveCount(): number;
   getMusicState(): Readonly<MusicState>;
   getStrudelInfo(): { playing: boolean; bpm: number; evaluations: number };
+  getGenreSnapshot(): unknown;
   saveNow(): { ok: boolean };
   loadInfo(): LoadInfo;
   resetWorld(): void;
@@ -118,6 +121,8 @@ export class Game {
   private readonly musicAnalyzer = new MusicStateAnalyzer(this.musicStore, this.rhythmDetector);
   /** Last graph handed to Strudel; setLayerGraph only on real changes (§11 diffs). */
   private lastLayerGraph: MusicalLayerGraph | null = null;
+  /** §9/§20 M5: genre affinity evaluated in the logic loop, never per frame. */
+  private readonly genreEngine = new GenreAffinityEngine(this.events);
   /** Bus events buffered between logic steps; drained into FormEmergence.tick. */
   private readonly pendingResonanceEvents: ResonanceEvent[] = [];
   // §18 / MVP item 13: local save, load and reset of the serializable stores.
@@ -205,6 +210,7 @@ export class Game {
         getInterferenceActiveCount: () => this.interference.activeCount,
         getMusicState: () => this.musicStore.getState(),
         getStrudelInfo: () => this.strudelEngine.status,
+        getGenreSnapshot: () => this.genreEngine.current,
         saveNow: () => this.saveManager.save(this.snapshotWorld()),
         loadInfo: () => ({ ...this.startupLoadInfo }),
         resetWorld: () => this.resetWorld(),
@@ -268,7 +274,12 @@ export class Game {
       this.formEmergence.tick(elapsedMs, this.pendingResonanceEvents, resonators);
       this.pendingResonanceEvents.length = 0;
       // §10: analyzers run in this lower-frequency loop, never per render frame.
-      this.musicAnalyzer.update(elapsedMs, state);
+      this.musicAnalyzer.update(elapsedMs, state, this.audioAnalyser?.snapshot.lowBand ?? 0);
+      // §9: genre affinity from the same MusicState the patterns come from.
+      this.genreEngine.update(elapsedMs, this.musicStore.getState());
+      const genre = this.genreEngine.current;
+      // §9.1 world tendency: repetition organizes structures onto the grid.
+      this.structures.setOrganization(genre?.affinity.techno ?? 0);
       this.updateStrudelGraph();
       if (this.audioAnalyser) {
         const stepSeconds = LOGIC_STEP_MS / 1000;
@@ -299,7 +310,7 @@ export class Game {
   /** §11: rebuild the layer graph from MusicState; hand Strudel only real diffs at bar boundaries. */
   private updateStrudelGraph(): void {
     if (!this.unlocked) return;
-    const next = buildLayerGraph(this.musicStore.getState());
+    const next = buildLayerGraph(this.musicStore.getState(), this.genreEngine.current?.affinity);
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     this.lastLayerGraph = next;
     this.strudelEngine.setLayerGraph(next, 'bar');
@@ -416,7 +427,7 @@ export class Game {
       musicState: this.musicStore.getState(),
       resonators: [...world.resonators],
       structures: [...world.structures],
-      genreHistory: [],
+      genreHistory: [...this.genreEngine.history],
       progression: { controlsRevealed: 0 },
     };
   }

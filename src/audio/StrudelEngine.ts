@@ -118,6 +118,13 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       );
       return `s("bd*${steps}").gain(${gain})`;
     }
+    case 'hat': {
+      // Techno hats (§9.1): off-beat or 16th closed hats depending on density.
+      const steps = Math.round(
+        clamp(finite(primitive.parameters['steps'] ?? 2, `${primitive.id}.steps`), 1, 4),
+      );
+      return steps <= 2 ? `s("[~ hh]*${steps * 2}").gain(${gain})` : `s("hh*${steps * 2}").gain(${gain})`;
+    }
     case 'sub': {
       const note = primitive.parameters['note'];
       if (typeof note !== 'string' || !NOTE_RE.test(note)) {
@@ -126,7 +133,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       return `note("${note}").s("sine").gain(${gain})`;
     }
     default:
-      throw new Error(`StrudelEngine: primitive kind "${primitive.kind}" is not in the M4 template library`);
+      throw new Error(`StrudelEngine: primitive kind "${primitive.kind}" is not in the template library`);
   }
 }
 

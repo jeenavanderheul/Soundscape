@@ -29,6 +29,9 @@ export interface MusicStateAnalyzerConfig {
   /** Clamp on a single logic-step delta (tab suspension safety). */
   maxDeltaMs: number;
   maxBpm: number;
+  /** M5 genre signals: smoothing rates for repetition and low-end energy. */
+  repetitionRate: number;
+  lowEndRate: number;
 }
 
 export const MUSIC_STATE_ANALYZER_CONFIG: MusicStateAnalyzerConfig = {
@@ -43,6 +46,16 @@ export const MUSIC_STATE_ANALYZER_CONFIG: MusicStateAnalyzerConfig = {
   introHoldMs: 3000,
   maxDeltaMs: 500,
   maxBpm: 300,
+  repetitionRate: 1.5,
+  lowEndRate: 3,
+};
+
+const WAVEFORM_NOISE: Record<FrequencyState['waveform'], number> = {
+  sine: 0,
+  triangle: 0.05,
+  square: 0.15,
+  saw: 0.25,
+  noise: 1,
 };
 
 const WAVEFORM_BRIGHTNESS: Record<FrequencyState['waveform'], number> = {
@@ -81,8 +94,9 @@ export class MusicStateAnalyzer {
     private readonly config: MusicStateAnalyzerConfig = MUSIC_STATE_ANALYZER_CONFIG,
   ) {}
 
-  /** Logic-loop step: advance rhythm time and publish a smoothed MusicState. */
-  update(nowMs: number, frequency: Readonly<FrequencyState>): void {
+  /** Logic-loop step: advance rhythm time and publish a smoothed MusicState.
+   * `lowBand` is the smoothed low-band energy from the audio analyser (§12). */
+  update(nowMs: number, frequency: Readonly<FrequencyState>, lowBand = 0): void {
     const { config, rhythm } = this;
     const rawDelta = this.lastNowMs === null ? 0 : nowMs - this.lastNowMs;
     this.lastNowMs = nowMs;
@@ -118,6 +132,22 @@ export class MusicStateAnalyzer {
         ),
         transientDensity: clamp01(
           smooth(current.transientDensity, transientTarget, config.transientRate, deltaSec),
+        ),
+        // §9 genre signals: repetition is regular, confident pulse over time;
+        // low end and timbre noise feed the Techno/Ambient profiles.
+        repetition: clamp01(
+          smooth(
+            current.repetition,
+            clamp01(rhythm.rhythmicRegularity * rhythm.tempoConfidence),
+            config.repetitionRate,
+            deltaSec,
+          ),
+        ),
+        lowEndEnergy: clamp01(
+          smooth(current.lowEndEnergy, clamp01(lowBand), config.lowEndRate, deltaSec),
+        ),
+        timbreNoise: clamp01(
+          smooth(current.timbreNoise, WAVEFORM_NOISE[frequency.waveform], config.brightnessRate, deltaSec),
         ),
         formPhase: this.nextFormPhase(current.formPhase, amplitude, rawDelta),
       };

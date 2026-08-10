@@ -32,7 +32,14 @@ export const STRUCTURE_RENDER_CONFIG = {
   minJitterHz: 0.4,
   maxJitterHz: 1.3,
   instabilityThreshold: 0.5,
+  /** §9.1 Techno world tendency: grid cell size structures organize onto. */
+  gridCell: 8,
 } as const;
+
+/** Nearest grid line for the Techno organization lerp (§9.1). */
+export function gridSnap(value: number, cell: number = STRUCTURE_RENDER_CONFIG.gridCell): number {
+  return Math.round(value / cell) * cell;
+}
 
 interface StructureBusLike {
   on<K extends keyof StructureEvents>(
@@ -71,6 +78,13 @@ export class StructureRenderer {
    * Shared material color multiplies the per-vertex persistence colors. */
   setPulse(value: number): void {
     this.material.color.setScalar(1 + value);
+  }
+
+  /** §9.1: chaos organizes into grid. 0 = free placement, 1 = full grid pull. */
+  private organization = 0;
+
+  setOrganization(amount: number): void {
+    this.organization = Math.min(1, Math.max(0, amount));
   }
 
   get count(): number {
@@ -164,14 +178,21 @@ export class StructureRenderer {
       entry.scaleFactor += (entry.targetScaleFactor - entry.scaleFactor) * blend;
       entry.mesh.scale.setScalar(spawnEase * entry.scaleFactor);
 
+      // §9.1 Techno organization: lerp the resting position toward the grid.
+      const org = this.organization;
+      const ox = entry.baseX + (gridSnap(entry.baseX) - entry.baseX) * org;
+      const oy = entry.baseY + (gridSnap(entry.baseY) - entry.baseY) * org;
+      const oz = entry.baseZ + (gridSnap(entry.baseZ) - entry.baseZ) * org;
       if (entry.stability < cfg.instabilityThreshold) {
         const amp = cfg.jitterAmplitude * (1 - entry.stability);
         const w = entry.ageSeconds * entry.jitterHz * Math.PI * 2;
         entry.mesh.position.set(
-          entry.baseX + Math.sin(w + entry.jitterPhaseX) * amp,
-          entry.baseY + Math.sin(w * 1.31 + entry.jitterPhaseY) * amp,
-          entry.baseZ + Math.sin(w * 0.79 + entry.jitterPhaseZ) * amp,
+          ox + Math.sin(w + entry.jitterPhaseX) * amp,
+          oy + Math.sin(w * 1.31 + entry.jitterPhaseY) * amp,
+          oz + Math.sin(w * 0.79 + entry.jitterPhaseZ) * amp,
         );
+      } else {
+        entry.mesh.position.set(ox, oy, oz);
       }
     }
   }
