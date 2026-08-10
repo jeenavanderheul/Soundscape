@@ -80,12 +80,72 @@ const EXPERIMENTAL: readonly LadderStep[] = [
   { layer: 'harmony', atMs: 42_000 },
 ];
 
+/** UK Garage: displacement. The shuffle comes first, the kick answers it. */
+const GARAGE: readonly LadderStep[] = [
+  { layer: 'hats', atMs: 3000 },
+  { layer: 'kick', atMs: 7000 },
+  { layer: 'snare', atMs: 10_000 },
+  { layer: 'bass', atMs: 14_000 },
+  { layer: 'harmony', atMs: 21_000 },
+  { layer: 'melody', atMs: 28_000 },
+  { layer: 'texture', atMs: 38_000 },
+];
+
+/** House: warmth. Four to the floor, then the hands. */
+const HOUSE: readonly LadderStep[] = [
+  { layer: 'kick', atMs: 3000 },
+  { layer: 'hats', atMs: 7000 },
+  { layer: 'harmony', atMs: 12_000 },
+  { layer: 'snare', atMs: 16_000 },
+  { layer: 'bass', atMs: 20_000 },
+  { layer: 'melody', atMs: 28_000 },
+  { layer: 'texture', atMs: 38_000 },
+];
+
+/** Trap: weight. The low end arrives before anything else. */
+const TRAP: readonly LadderStep[] = [
+  { layer: 'bass', atMs: 3000 },
+  { layer: 'kick', atMs: 7000 },
+  { layer: 'hats', atMs: 11_000 },
+  { layer: 'snare', atMs: 15_000 },
+  { layer: 'melody', atMs: 22_000 },
+  { layer: 'harmony', atMs: 30_000 },
+  { layer: 'texture', atMs: 40_000 },
+];
+
+/** Dub: echo. The bass and the space, long before any pattern. */
+const DUB: readonly LadderStep[] = [
+  { layer: 'bass', atMs: 3000 },
+  { layer: 'texture', atMs: 8000 },
+  { layer: 'kick', atMs: 13_000 },
+  { layer: 'harmony', atMs: 19_000 },
+  { layer: 'snare', atMs: 26_000 },
+  { layer: 'melody', atMs: 33_000 },
+  { layer: 'hats', atMs: 44_000 },
+];
+
+/** Classical: orchestration. Harmony and melody carry it; percussion is rare. */
+const CLASSICAL: readonly LadderStep[] = [
+  { layer: 'harmony', atMs: 3000 },
+  { layer: 'melody', atMs: 9000 },
+  { layer: 'bass', atMs: 15_000 },
+  { layer: 'texture', atMs: 24_000 },
+  { layer: 'kick', atMs: 36_000 },
+  { layer: 'hats', atMs: 60_000 },
+  { layer: 'snare', atMs: 85_000 },
+];
+
 export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderStep[]> = {
   techno: TECHNO,
   ambient: AMBIENT,
   jazz: JAZZ,
   dnb: DNB,
   experimental: EXPERIMENTAL,
+  garage: GARAGE,
+  house: HOUSE,
+  trap: TRAP,
+  dub: DUB,
+  classical: CLASSICAL,
 };
 
 /** The neutral void builds like Techno: a pulse you can immediately feel. */

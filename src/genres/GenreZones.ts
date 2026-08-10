@@ -19,6 +19,13 @@ export const ZONE_CONFIG = {
   experimentalFloor: 25,
   /** Altitude of full Experimental influence. */
   experimentalCeiling: 60,
+  /**
+   * §34: Dub is the LOW band — skimming the ground, down in the valleys.
+   * Flight altitude is clamped to [-3, 70] (FLIGHT_CONFIG), so a region
+   * "under the world" would be unreachable; the echo chamber is the floor.
+   */
+  dubCeiling: 1,
+  dubFloor: -3,
 } as const;
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
@@ -29,17 +36,32 @@ function angleDelta(a: number, b: number): number {
   return d > Math.PI ? Math.PI * 2 - d : d;
 }
 
-/** Compass headings in radians: 0 = north (−Z), clockwise. */
-const BEARINGS = { north: 0, east: Math.PI / 2, south: Math.PI, west: -Math.PI / 2 } as const;
+/** Compass headings in radians: 0 = north (−Z), clockwise (§34: eight points). */
+const BEARINGS = {
+  north: 0,
+  northEast: Math.PI / 4,
+  east: Math.PI / 2,
+  southEast: (Math.PI * 3) / 4,
+  south: Math.PI,
+  southWest: (-Math.PI * 3) / 4,
+  west: -Math.PI / 2,
+  northWest: -Math.PI / 4,
+} as const;
 
 type Compass = keyof typeof BEARINGS;
+/** The vertical axis is its own dimension: mutation above, echo below (§34). */
+export type GroundGenre = Exclude<keyof GenreAffinity, 'experimental' | 'dub'>;
 
 /** Which genre lies in each direction; a world recipe may reassign it (§30). */
-let assignment: Record<Compass, Exclude<keyof GenreAffinity, 'experimental'>> = {
+let assignment: Record<Compass, GroundGenre> = {
   north: 'techno',
+  northEast: 'garage',
   east: 'jazz',
+  southEast: 'house',
   south: 'ambient',
+  southWest: 'classical',
   west: 'dnb',
+  northWest: 'trap',
 };
 
 export function setZoneGenres(next: Partial<typeof assignment>): void {
@@ -55,7 +77,18 @@ export function zoneGenres(): Readonly<typeof assignment> {
  * The player never sees numbers — they hear the world change as they travel.
  */
 export function zoneAffinity(position: Vec3Data): GenreAffinity {
-  const affinity: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, experimental: 0 };
+  const affinity: GenreAffinity = {
+    techno: 0,
+    ambient: 0,
+    jazz: 0,
+    dnb: 0,
+    garage: 0,
+    house: 0,
+    trap: 0,
+    classical: 0,
+    dub: 0,
+    experimental: 0,
+  };
   const distance = Math.hypot(position.x, position.z);
   const span = ZONE_CONFIG.fullInfluenceDistance - ZONE_CONFIG.neutralRadius;
   const influence = clamp01((distance - ZONE_CONFIG.neutralRadius) / span);
@@ -63,18 +96,25 @@ export function zoneAffinity(position: Vec3Data): GenreAffinity {
     // atan2(x, -z): 0 points north, +π/2 east — matches HEADINGS.
     const heading = Math.atan2(position.x, -position.z);
     for (const [compass, target] of Object.entries(BEARINGS) as [Compass, number][]) {
-      // Cosine lobe: full at the compass point, zero at 90° away, so two
-      // neighbouring directions blend into a hybrid halfway between them.
-      const lobe = Math.max(0, Math.cos(angleDelta(heading, target)));
+      // Cosine lobe, sharpened for eight points: full at the compass point,
+      // about a third at the 45° neighbour, zero at 90° and beyond. Narrowing
+      // it by doubling the angle instead would make the OPPOSITE direction
+      // come back to full strength.
+      const cosine = Math.max(0, Math.cos(angleDelta(heading, target)));
+      const lobe = cosine * cosine * cosine;
       const genre = assignment[compass];
       affinity[genre] = Math.max(affinity[genre], influence * lobe);
     }
   }
-  // Altitude is its own axis: climbing takes the world into mutation (§9.5).
+  // Altitude is its own axis: climbing takes the world into mutation (§9.5),
+  // diving takes it into the echo chamber (§34).
   const height =
     (position.y - ZONE_CONFIG.experimentalFloor) /
     (ZONE_CONFIG.experimentalCeiling - ZONE_CONFIG.experimentalFloor);
   affinity.experimental = clamp01(height);
+  const depth =
+    (position.y - ZONE_CONFIG.dubCeiling) / (ZONE_CONFIG.dubFloor - ZONE_CONFIG.dubCeiling);
+  affinity.dub = clamp01(depth);
   return affinity;
 }
 

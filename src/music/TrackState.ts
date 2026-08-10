@@ -17,7 +17,18 @@ export const LEVEL_EARNED = 0.5;
 /** A layer grown into a produced part: body + detail stacked (§32). */
 export const LEVEL_DEEP = 1;
 
-export type TrackGenre = 'techno' | 'ambient' | 'jazz' | 'dnb' | 'experimental' | null;
+export type TrackGenre =
+  | 'techno'
+  | 'ambient'
+  | 'jazz'
+  | 'dnb'
+  | 'garage'
+  | 'house'
+  | 'trap'
+  | 'classical'
+  | 'dub'
+  | 'experimental'
+  | null;
 
 export interface TrackState {
   bpm: number;

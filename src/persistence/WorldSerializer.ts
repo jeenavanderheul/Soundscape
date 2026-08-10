@@ -1,5 +1,5 @@
 import type { GenreAffinity, MusicState } from '../music/MusicState';
-import { createInitialMusicState } from '../music/MusicState';
+import { createInitialMusicState, GENRE_NAMES } from '../music/MusicState';
 import type { FrequencyState, Vec3Data, Waveform } from '../player/FrequencyState';
 import type { ResonatorData } from '../world/Resonator';
 import { HZ_SCALE_RANGE, type StructureData } from '../world/StructureData';
@@ -171,12 +171,17 @@ function genreSnapshot(raw: unknown): GenreSnapshot | null {
   const a = raw.affinity;
   const affinity: GenreAffinity = {
     techno: num(a.techno, 0, 0, 1),
+    garage: num(a.garage, 0, 0, 1),
+    house: num(a.house, 0, 0, 1),
+    trap: num(a.trap, 0, 0, 1),
+    classical: num(a.classical, 0, 0, 1),
+    dub: num(a.dub, 0, 0, 1),
     ambient: num(a.ambient, 0, 0, 1),
     jazz: num(a.jazz, 0, 0, 1),
     dnb: num(a.dnb, 0, 0, 1),
     experimental: num(a.experimental, 0, 0, 1),
   };
-  const dominant = ['techno', 'ambient', 'jazz', 'dnb', 'experimental'].includes(
+  const dominant = (GENRE_NAMES as readonly string[]).includes(
     raw.dominant as string,
   )
     ? (raw.dominant as keyof GenreAffinity)
@@ -223,7 +228,7 @@ function validateTrackState(raw: unknown): TrackState {
           .map((v) => Math.min(max, Math.max(min, Math.round(v))))
           .slice(0, 8)
       : [];
-  const GENRES = ['techno', 'ambient', 'jazz', 'dnb', 'experimental'];
+  const GENRES: readonly string[] = GENRE_NAMES;
   const FORMS = ['none', 'intro', 'groove', 'build', 'drop', 'break', 'return', 'mutation'];
   return {
     ...base,

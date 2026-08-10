@@ -7,22 +7,39 @@ import type { ResonanceEvent } from '../../src/resonance/ResonanceEvent';
 
 describe('GenreZones — every direction is a genre (§29.5)', () => {
   it('keeps the void around spawn genre-less', () => {
-    const near = zoneAffinity({ x: 5, y: 0, z: -5 });
+    // Altitude is its own axis (§34), so the compass void is measured at
+    // cruising height — down on the floor the echo chamber is supposed to pull.
+    const near = zoneAffinity({ x: 5, y: 10, z: -5 });
     expect(Math.max(...Object.values(near))).toBeLessThan(0.05);
   });
 
-  it('maps north to techno, east to jazz, south to ambient, west to dnb', () => {
+  it('maps each of the eight points to its own grammar (§34)', () => {
     expect(dominantZone(zoneAffinity({ x: 0, y: 0, z: -200 }))).toBe('techno');
     expect(dominantZone(zoneAffinity({ x: 200, y: 0, z: 0 }))).toBe('jazz');
     expect(dominantZone(zoneAffinity({ x: 0, y: 0, z: 200 }))).toBe('ambient');
     expect(dominantZone(zoneAffinity({ x: -200, y: 0, z: 0 }))).toBe('dnb');
+    expect(dominantZone(zoneAffinity({ x: 140, y: 0, z: -140 }))).toBe('garage');
+    expect(dominantZone(zoneAffinity({ x: 140, y: 0, z: 140 }))).toBe('house');
+    expect(dominantZone(zoneAffinity({ x: -140, y: 0, z: 140 }))).toBe('classical');
+    expect(dominantZone(zoneAffinity({ x: -140, y: 0, z: -140 }))).toBe('trap');
   });
 
-  it('blends neighbouring directions into a hybrid', () => {
+  it('blends neighbouring directions into a hybrid, and ignores the far side', () => {
     const northEast = zoneAffinity({ x: 140, y: 0, z: -140 });
-    expect(northEast.techno).toBeGreaterThan(0.4);
-    expect(northEast.jazz).toBeGreaterThan(0.4);
+    // The point itself leads, but both neighbours still sound underneath it.
+    expect(northEast.garage).toBeGreaterThan(0.9);
+    expect(northEast.techno).toBeGreaterThan(0.2);
+    expect(northEast.jazz).toBeGreaterThan(0.2);
+    // The opposite side of the world has no say here.
     expect(northEast.ambient).toBe(0);
+    expect(northEast.classical).toBe(0);
+  });
+
+  it('turns skimming the floor into dub — the echo chamber (§34)', () => {
+    // Cruising height is clean; hugging the ground fills with echo.
+    expect(zoneAffinity({ x: 0, y: 10, z: 0 }).dub).toBe(0);
+    expect(zoneAffinity({ x: 0, y: -3, z: 0 }).dub).toBe(1);
+    expect(zoneAffinity({ x: 0, y: -1, z: 0 }).dub).toBeGreaterThan(0.4);
   });
 
   it('turns altitude into experimental', () => {

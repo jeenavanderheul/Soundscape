@@ -101,7 +101,23 @@ export const SAMPLE_MAPS = [
 export const DRUM_MACHINES_URL = SAMPLE_MAPS[0];
 
 const NOTE_RE = /^[a-g]#?[0-8]$/;
-const VOICE_SOUNDS = new Set(['sine', 'triangle', 'square', 'sawtooth']);
+/** Synth voices plus the sampled instruments the grammars call for (§34). */
+const VOICE_SOUNDS = new Set([
+  'sine',
+  'triangle',
+  'square',
+  'sawtooth',
+  'piano',
+  'organ_full',
+  'glockenspiel',
+  'vibraphone',
+  'marimba',
+  'harp',
+  'harmonica',
+  'sax',
+  'timpani',
+  'tubularbells',
+]);
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
@@ -157,13 +173,19 @@ function styleOf<T extends string>(value: unknown, allowed: readonly T[], fallba
     : fallback;
 }
 
-const KICK_STYLES = ['four', 'break', 'sparse', 'swing', 'irregular'] as const;
-const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse', 'dirt'] as const;
-const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body'] as const;
-const BASS_STYLES = ['repetitive', 'sub', 'walking', 'rolling'] as const;
-const CHORD_STYLES = ['stab', 'pad', 'jazz'] as const;
-const MELODY_STYLES = ['motif', 'stab', 'long', 'improv', 'hook', 'fragment'] as const;
-const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic'] as const;
+const KICK_STYLES = [
+  'four', 'break', 'sparse', 'swing', 'irregular', 'twostep', 'halftime', 'echo', 'timpani',
+] as const;
+const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse', 'dirt', 'shuffle', 'roll'] as const;
+const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body', 'rim', 'clap'] as const;
+const BASS_STYLES = [
+  'repetitive', 'sub', 'walking', 'rolling', 'skip', 'slide', 'dubwise', 'arco',
+] as const;
+const CHORD_STYLES = ['stab', 'pad', 'jazz', 'piano', 'organ', 'skank'] as const;
+const MELODY_STYLES = [
+  'motif', 'stab', 'long', 'improv', 'hook', 'fragment', 'bell', 'vocal', 'melodica',
+] as const;
+const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic', 'shaker', 'tape'] as const;
 
 /**
  * Whitelisted template library (spec §11, §29.5): primitive kind + genre
@@ -210,6 +232,27 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `s("bd ~ [~ bd] ~").bank("${DRUM_BANK}").gain(${gain})`
             : `s("sbd ~ [~ sbd] ~").gain(${gain})`;
+        // §34 garage: TWO-STEP. The second beat is left empty on purpose —
+        // that hole is what the whole groove leans into.
+        case 'twostep':
+          return samplesLoaded
+            ? `s("bd ~ ~ [~ bd]").bank("RolandTR909")${shaped}.gain(${gain})`
+            : `s("sbd ~ ~ [~ sbd]").gain(${gain})`;
+        // §34 trap: half-time, and the 808 is allowed to ring.
+        case 'halftime':
+          return samplesLoaded
+            ? `s("bd ~ ~ ~ ~ ~ [~ bd] ~").bank("RolandTR808").lpf(120)${shaped}.gain(${gain})`
+            : `s("sbd ~ ~ ~ ~ ~ [~ sbd] ~").gain(${gain})`;
+        // §34 dub: one kick, then room for the echo to answer.
+        case 'echo':
+          return samplesLoaded
+            ? `s("bd ~ ~ ~").bank("RolandTR909").room(.4).lpf(180).gain(${gain})`
+            : `s("sbd ~ ~ ~").room(.4).gain(${gain})`;
+        // §34 classical: this region has no drum machine at all.
+        case 'timpani':
+          return samplesLoaded
+            ? `s("timpani ~ ~ ~").room(.6).gain(${gain})`
+            : `note("a1 ~ ~ ~").s("sine").decay(.6).sustain(0).room(.6).gain(${gain})`;
         // §9.5 mutation: grouping that refuses to settle.
         case 'irregular':
           return samplesLoaded
@@ -228,6 +271,18 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         return samplesLoaded
           ? `s("[~ cp ~ cp]").bank("${DRUM_BANK}").degradeBy(.4).gain(${gain})`
           : `s("[~ white ~ white]").decay(.06).sustain(0).bpf(1500).degradeBy(.4).gain(${gain})`;
+      }
+      // §34 trap/dub: a rim on the third beat instead of a backbeat.
+      if (style === 'rim') {
+        return samplesLoaded
+          ? `s("~ ~ rim ~").bank("RolandTR808").room(.25).gain(${gain})`
+          : `s("~ ~ white ~").decay(.05).sustain(0).bpf(2400).room(.25).gain(${gain})`;
+      }
+      // §34 garage/house: the clap IS the backbeat, wide and bright.
+      if (style === 'clap') {
+        return samplesLoaded
+          ? `s("~ cp ~ cp").bank("RolandTR909").room(.2).gain(${gain})`
+          : `s("~ white ~ white").decay(.1).sustain(0).bpf(1700).room(.2).gain(${gain})`;
       }
       // §32: the second snare — an 808 body a hair behind the clap.
       if (style === 'body') {
@@ -261,6 +316,16 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           : `s("white*32").decay(.015).sustain(0).hpf(9500).gain(${gain})`;
       }
       switch (style) {
+        // §34 garage: skippy shuffled sixteenths — the displacement itself.
+        case 'shuffle':
+          return samplesLoaded
+            ? `stack(s("hh*8").bank("RolandTR909").late("<0 .02 .01 .03>").gain("${gain} ${(Number(gain) * 0.5).toFixed(3)} ${(Number(gain) * 0.85).toFixed(3)} ${(Number(gain) * 0.4).toFixed(3)}"), s("~ ~ oh ~").bank("RolandTR909").gain(${(Number(gain) * 0.7).toFixed(3)}))`
+            : `s("white*8").decay(.03).sustain(0).hpf(7000).late("<0 .02 .01 .03>").gain(${gain})`;
+        // §34 trap: rolls that subdivide the bar under your feet.
+        case 'roll':
+          return samplesLoaded
+            ? `s("hh*8 [hh*16] hh*8 [hh*32]").bank("RolandTR808").gain("${gain} ${(Number(gain) * 0.6).toFixed(3)}")`
+            : `s("white*8 [white*16] white*8 [white*32]").decay(.02).sustain(0).hpf(8000).gain(${gain})`;
         case 'sixteenth':
           return samplesLoaded
             ? `stack(s("hh*16").bank("${DRUM_BANK}").hpf(6500).gain("${(Number(gain) * 0.5).toFixed(2)} ${gain} ${(Number(gain) * 0.4).toFixed(2)} ${(Number(gain) * 1.1).toFixed(2)}"), s("~ oh ~ oh").bank("${DRUM_BANK}").hpf(5000).gain(${(Number(gain) * 0.8).toFixed(3)}))`
@@ -322,6 +387,18 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           const line = [0, 1, 2, 3].map((i) => notes[i % notes.length]!).join(' ');
           return `note("${line}").s("triangle").decay(.3).sustain(.2).gain(${gain})`;
         }
+        // §34 garage: short syncopated sub stabs, all holes and accents.
+        case 'skip':
+          return `note("<${root} ~ [~ ${notes[1] ?? root}] ~ ${notes[2] ?? root} ~ ~ [${root} ~]>").s("sine").decay(.16).sustain(0).gain(${gain})`;
+        // §34 trap: the 808 that slides between its notes.
+        case 'slide':
+          return `note("<${root} ~ ${notes[2] ?? root} ~>").s("sine").slide(1).decay(.9).sustain(.3).lpf(180).gain(${gain})`;
+        // §34 dub: mostly silence, and a long decay into the room.
+        case 'dubwise':
+          return `note("<${root} ~ ~ [${notes[1] ?? root} ~] ~ ~ ${notes[2] ?? root} ~>").s("sine").decay(.5).sustain(.2).room(.3).gain(${gain})`;
+        // §34 classical: the left hand, bowed and sustained.
+        case 'arco':
+          return `note("<${root} ~ ${notes[2] ?? root} ~>").s("triangle").attack(.4).release(1.2).room(.5).gain(${gain})`;
         case 'rolling':
           return `note("${root} ~ ${root} ${root} ~ ${root} ${root} ~").s("sawtooth").decay(.12).sustain(0).lpf(900).gain(${gain})`;
         default: {
@@ -348,6 +425,18 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         if (style === 'jazz') {
           return `note("[${stacked}]").s("triangle").slow(${slow}).lpf(2200).decay(.5).sustain(.25).late(.02).room(.25).gain(${gain})`;
         }
+        // §34 house/classical: real hands on a real instrument.
+        if (style === 'piano') {
+          return `note("[${stacked}]").s("piano").slow(${slow}).room(.3).gain(${gain})`;
+        }
+        // §34 house: the organ chord that carries a room.
+        if (style === 'organ') {
+          return `note("[${stacked}]").s("organ_full").slow(${slow}).room(.35).gain(${gain})`;
+        }
+        // §34 dub: the off-beat skank, drowned in delay.
+        if (style === 'skank') {
+          return `note("[${stacked}]").s("triangle").struct("~ x ~ x").decay(.14).sustain(0).delay(.5).delayfeedback(.6).room(.5).gain(${gain})`;
+        }
         // Techno/DnB: stabs, not pads — the filter sweep makes them speak.
         return `note("[${stacked}]").s("sawtooth").slow(${slow}).lpf("<900 1600 1100 2200>")${shaped}.room(.18).gain(${gain})`;
       }
@@ -369,6 +458,15 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // Techno: not a tune but a dark stab — the hook is the rhythm.
         case 'stab':
           return `note("${notes}").s("square").slow(${slow}).lpf("<500 900 650 1300>")${shaped}.decay(.18).sustain(0).gain(${gain})`;
+        // §34 trap/classical: bells and mallets, bright and struck.
+        case 'bell':
+          return `note("${notes}").s("glockenspiel").slow(${slow}).room(.45).gain(${gain})`;
+        // §34 garage: the chopped vocal-like hook.
+        case 'vocal':
+          return `note("${notes}").s("triangle").slow(${slow}).chop(4).decay(.2).sustain(.05).delay(.25).room(.3).gain(${gain})`;
+        // §34 dub: the melodica line, always one echo behind.
+        case 'melodica':
+          return `note("${notes}").s("harmonica").slow(${slow}).delay(.6).delayfeedback(.65).room(.5).gain(${gain})`;
         // Ambient: long tones that hang in the room and overlap each other.
         case 'long':
           return `note("${notes}").s("sine").slow(${slow * 2}).attack(1).release(3).delay(.35).room(.9).gain(${gain})`;
@@ -407,6 +505,14 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `s("hh*8").bank("${DRUM_BANK}").hpf(9000).slow(4).room(.9).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)}")`
             : `s("white*8").decay(.02).sustain(0).hpf(9000).slow(4).room(.9).gain(${gain})`;
+        // §34 garage/house: hand percussion keeping the top end alive.
+        case 'shaker':
+          return samplesLoaded
+            ? `s("cabasa*8").gain("${(Number(gain) * 0.5).toFixed(3)} ${gain} ${(Number(gain) * 0.35).toFixed(3)} ${(Number(gain) * 0.8).toFixed(3)}")`
+            : `s("white*8").decay(.02).sustain(0).hpf(8000).gain(${gain})`;
+        // §34 dub/classical: air and tape, the room breathing.
+        case 'tape':
+          return `s("brown").slow(6).lpf(900).room(.7).gain(${gain})`;
         // DnB: high-frequency noise riding over the break.
         case 'noise':
           return `s("white").slow(2).hpf(7000).decay(.3).sustain(.1).gain(${gain})`;

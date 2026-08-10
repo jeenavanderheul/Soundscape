@@ -10,7 +10,7 @@ import {
 } from '../../src/genres/ZonePalette';
 import type { GenreAffinity } from '../../src/music/MusicState';
 
-const NONE: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, experimental: 0 };
+const NONE: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, garage: 0, house: 0, trap: 0, classical: 0, dub: 0, experimental: 0 };
 
 describe('§33 zone palette — every direction is a place you can see', () => {
   it('leaves the void neutral', () => {

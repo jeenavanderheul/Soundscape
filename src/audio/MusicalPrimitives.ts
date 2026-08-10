@@ -168,14 +168,57 @@ export function subNoteFromHz(hz: number): string {
 // §29.5 Genre grammar
 // ---------------------------------------------------------------------------
 
-export type DrumStyle = 'four' | 'break' | 'sparse' | 'swing' | 'irregular';
-export type HatStyle = 'offbeat' | 'sixteenth' | 'swing' | 'sparse';
-export type SnareStyle = 'backbeat' | 'ghost' | 'break';
-export type BassStyle = 'repetitive' | 'sub' | 'walking' | 'rolling';
+export type DrumStyle =
+  | 'four'
+  | 'break'
+  | 'sparse'
+  | 'swing'
+  | 'irregular'
+  /** §34 garage: two-step — the kick leaves the second beat empty. */
+  | 'twostep'
+  /** §34 trap: half-time, long 808 booms. */
+  | 'halftime'
+  /** §34 dub: one deep kick, then space. */
+  | 'echo'
+  /** §34 classical: a timpani, not a machine. */
+  | 'timpani';
+export type HatStyle =
+  | 'offbeat'
+  | 'sixteenth'
+  | 'swing'
+  | 'sparse'
+  | 'dirt'
+  /** §34 garage: skippy, shuffled sixteenths. */
+  | 'shuffle'
+  /** §34 trap: rolls that subdivide. */
+  | 'roll';
+export type SnareStyle = 'backbeat' | 'ghost' | 'break' | 'body' | 'rim' | 'clap';
+export type BassStyle =
+  | 'repetitive'
+  | 'sub'
+  | 'walking'
+  | 'rolling'
+  /** §34 garage: short, syncopated sub stabs. */
+  | 'skip'
+  /** §34 trap: the 808 that slides between notes. */
+  | 'slide'
+  /** §34 dub: a bass that is mostly silence and decay. */
+  | 'dubwise'
+  /** §34 classical: the left hand. */
+  | 'arco';
 /** §31: harmony behaves differently per grammar — a stab is not a pad. */
-export type ChordStyle = 'stab' | 'pad' | 'jazz';
-export type MelodyStyle = 'motif' | 'stab' | 'long' | 'improv' | 'hook' | 'fragment';
-export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic';
+export type ChordStyle = 'stab' | 'pad' | 'jazz' | 'piano' | 'organ' | 'skank';
+export type MelodyStyle =
+  | 'motif'
+  | 'stab'
+  | 'long'
+  | 'improv'
+  | 'hook'
+  | 'fragment'
+  | 'bell'
+  | 'vocal'
+  | 'melodica';
+export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic' | 'shaker' | 'tape';
 
 export interface GenreGrammar {
   kickStyle: DrumStyle;
@@ -306,6 +349,106 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     harmonySlow: 3,
     melodySlow: 2,
     textureGain: 0.3,
+  },
+  // §34 UK GARAGE — displacement: the grid slides off its own centre.
+  garage: {
+    kickStyle: 'twostep',
+    hatStyle: 'shuffle',
+    snareStyle: 'clap',
+    bassStyle: 'skip',
+    chordStyle: 'stab',
+    melodyStyle: 'vocal',
+    textureStyle: 'shaker',
+    hatCycle: 4,
+    percCycle: 4,
+    drive: 0.12,
+    kickGain: 0.9,
+    hatGain: 0.34,
+    snareGain: 0.72,
+    bassGain: 0.72,
+    harmonySlow: 2,
+    melodySlow: 2,
+    textureGain: 0.14,
+  },
+  // §34 HOUSE — warmth: the machine plays, the hands answer.
+  house: {
+    kickStyle: 'four',
+    hatStyle: 'offbeat',
+    snareStyle: 'clap',
+    bassStyle: 'repetitive',
+    chordStyle: 'piano',
+    melodyStyle: 'motif',
+    textureStyle: 'shaker',
+    hatCycle: 4,
+    percCycle: 4,
+    drive: 0,
+    kickGain: 0.88,
+    hatGain: 0.3,
+    snareGain: 0.6,
+    bassGain: 0.6,
+    harmonySlow: 2,
+    melodySlow: 2,
+    textureGain: 0.14,
+  },
+  // §34 TRAP — weight: half-time, and the low end slides.
+  trap: {
+    kickStyle: 'halftime',
+    hatStyle: 'roll',
+    snareStyle: 'rim',
+    bassStyle: 'slide',
+    chordStyle: 'stab',
+    melodyStyle: 'bell',
+    textureStyle: 'noise',
+    hatCycle: 4,
+    percCycle: 0,
+    drive: 0.2,
+    kickGain: 0.95,
+    hatGain: 0.26,
+    snareGain: 0.8,
+    bassGain: 0.9,
+    harmonySlow: 4,
+    melodySlow: 2,
+    textureGain: 0.1,
+  },
+  // §34 DUB — echo: what was played comes back, changed.
+  dub: {
+    kickStyle: 'echo',
+    hatStyle: 'sparse',
+    snareStyle: 'rim',
+    bassStyle: 'dubwise',
+    chordStyle: 'skank',
+    melodyStyle: 'melodica',
+    textureStyle: 'tape',
+    hatCycle: 4,
+    percCycle: 4,
+    drive: 0,
+    kickGain: 0.85,
+    hatGain: 0.2,
+    snareGain: 0.5,
+    bassGain: 0.85,
+    harmonySlow: 4,
+    melodySlow: 4,
+    textureGain: 0.2,
+  },
+  // §34 CLASSICAL — orchestration: no drum machine anywhere in this region.
+  classical: {
+    kickStyle: 'timpani',
+    hatStyle: 'sparse',
+    snareStyle: 'ghost',
+    bassStyle: 'arco',
+    chordStyle: 'piano',
+    melodyStyle: 'bell',
+    textureStyle: 'tape',
+    hatCycle: 4,
+    percCycle: 0,
+    drive: 0,
+    kickGain: 0.55,
+    hatGain: 0.1,
+    snareGain: 0.15,
+    bassGain: 0.5,
+    harmonySlow: 4,
+    melodySlow: 4,
+    textureGain: 0.18,
   },
 };
 

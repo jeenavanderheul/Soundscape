@@ -32,6 +32,8 @@ Write real Strudel pattern code, one expression per layer, for whichever of drum
   Pick a drum machine with .bank("RolandTR909"), .bank("RolandTR808"), .bank("AkaiLinn") etc.
   synth voices — sine, triangle, square, sawtooth, supersaw, pulse, and the
   noise colours white, pink, brown. Use note("c2 e2") with .s("sawtooth") for pitched parts.
+  sampled instruments — piano, organ_full, glockenspiel, vibraphone, marimba, harp,
+  harmonica, sax, timpani, tubularbells, and hand percussion (conga, bongo, cabasa, clave).
 - One chained expression per layer, no variables, no semicolons, no arrow functions, no backticks. Example shape: s("sbd*4").gain(0.8)
 - Keep gains modest (0.15-0.8) so layers stack without clipping.
 - Make each layer sound like the world the player described.
@@ -43,12 +45,20 @@ CLOCK → RHYTHM → DRUMS → BASS → HARMONY → MELODY → TEXTURE.
 The player must be able to say "I caused the kick", "that flight path became the melody".
 So: write each layer as a part that stands alone and stacks, never as a finished arrangement.
 
-The five grammars, and what they do to a layer:
+The grammars, and what they do to a layer:
 - techno — repetition. Hypnotic and mechanical, 4/4, minimal harmonic movement, short motif.
 - ambient — space. Sparse or drumless, long sustained tones, wide reverb; what you leave out is the composition.
 - jazz — conversation. Swing and syncopation, rich chords, phrases that vary rather than repeat.
 - dnb — velocity. Broken breakbeats, heavy sub, sharp transients, short hooks.
+- garage — displacement. Two-step kick leaving beat two empty, shuffled skippy hats, short syncopated sub.
+- house — warmth. Four to the floor, offbeat open hat, clap on 2 and 4, piano or organ chords.
+- trap — weight. Half-time 808 kick that rings, hi-hat rolls that subdivide, sliding sub, bright bells.
+- classical — orchestration. NO drum machine: piano, harp, glockenspiel, marimba, timpani, tubular bells; dynamics carry the form.
 - experimental — mutation. Polymetric cycle lengths (5, 7) against 4, dissonance allowed, fragmentary.
+- dub — echo. Mostly silence, one deep kick, offbeat skank chords, everything drenched in delay feedback.
+
+The eight compass directions carry the ground grammars. Experimental lies high above
+the world and dub deep below it, so neither is assignable to a direction.
 
 Answer only with the structured recipe.`;
 

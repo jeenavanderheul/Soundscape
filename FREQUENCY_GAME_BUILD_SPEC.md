@@ -1236,6 +1236,45 @@ The HUD names the compass point and the region it leads to (`N · techno`). Dire
 
 ---
 
+## 34. Ten grammars, eight directions, two altitudes (v7 amendment — NORMATIVE, supersedes §31.1's five-genre table)
+
+### 34.1 The map
+
+| Where | Grammar | Principle |
+|---|---|---|
+| North | Techno | repetition |
+| North-east | UK Garage | displacement |
+| East | Jazz | conversation |
+| South-east | House | warmth |
+| South | Ambient | space |
+| South-west | Classical | orchestration |
+| West | Drum & Bass | velocity |
+| North-west | Trap | weight |
+| High altitude | Experimental | mutation |
+| Low, skimming the ground | Dub | echo |
+
+Compass lobes are `cos³` of the angle: full at the point, about a third at the 45° neighbour, silent at 90°. Narrowing by doubling the angle instead is wrong — it brings the OPPOSITE direction back to full strength.
+
+Altitude is its own axis. Flight is clamped to −3..70, so "under the world" is unreachable: Dub is the low band you reach by diving to the floor, not a basement.
+
+### 34.2 The five new principles
+
+- **UK Garage — displacement.** Two-step kick that leaves beat two empty, shuffled skippy hats pushed late, short syncopated sub stabs, chopped vocal-like hook.
+- **House — warmth.** Four to the floor, offbeat open hat, clap on 2 and 4, and real piano or organ chords. The only ground region built around hands rather than machines.
+- **Trap — weight.** Half-time 808 kick allowed to ring, hi-hat rolls that subdivide the bar, a sub that slides between its notes, bright bells on top.
+- **Dub — echo.** Mostly silence: one deep kick, an offbeat skank chord and a melodica line, everything drenched in delay feedback.
+- **Classical — orchestration.** The only region with **no drum machine anywhere**: piano, harp, glockenspiel, marimba, timpani and tubular bells, with harmony and melody earned first and percussion barely at all.
+
+### 34.3 Not every grammar scores from behaviour
+
+Techno, Ambient, Jazz, DnB and Experimental are scored from what the player PLAYS (§9). The five added here are places you travel to: their pull is purely spatial. Blending them against a behaviour score of zero would halve them unfairly, so spatial-only grammars take the zone value directly.
+
+### 34.4 Sound sources
+
+All of it runs on the maps loaded in §32.5: 73 drum machines plus VCSL instruments. Strings and brass are NOT in the loaded set — Classical is deliberately a piano-and-percussion region, not a synthetic orchestra.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

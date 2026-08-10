@@ -28,13 +28,36 @@ export interface MusicState {
   formPhase: FormPhase;
 }
 
+/**
+ * §34: ten grammars. Eight lie on the compass, two on the vertical axis —
+ * experimental above (mutation), dub below (echo).
+ */
 export interface GenreAffinity {
   techno: number;
   ambient: number;
   jazz: number;
   dnb: number;
+  garage: number;
+  house: number;
+  trap: number;
+  classical: number;
+  dub: number;
   experimental: number;
 }
+
+/** Every grammar, in one place (§34) — the list all validation reads from. */
+export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = [
+  'techno',
+  'ambient',
+  'jazz',
+  'dnb',
+  'garage',
+  'house',
+  'trap',
+  'classical',
+  'dub',
+  'experimental',
+];
 
 export function createInitialMusicState(): MusicState {
   return {

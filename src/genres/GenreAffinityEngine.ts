@@ -34,8 +34,26 @@ const ZERO_AFFINITY: GenreAffinity = {
   ambient: 0,
   jazz: 0,
   dnb: 0,
+  garage: 0,
+  house: 0,
+  trap: 0,
+  classical: 0,
+  dub: 0,
   experimental: 0,
 };
+
+/**
+ * §34: these four are scored from what the player PLAYS (§9). The regions
+ * added later are places you travel to — their pull is spatial, so blending
+ * them with a behaviour score of zero would halve them unfairly.
+ */
+const BEHAVIOURAL: ReadonlySet<keyof GenreAffinity> = new Set([
+  'techno',
+  'ambient',
+  'jazz',
+  'dnb',
+  'experimental',
+]);
 
 /**
  * Genres emerge from MusicState (spec §9). M5 activates only the Techno
@@ -76,6 +94,7 @@ export class GenreAffinityEngine {
       dnb: scoreDnb(music),
     };
     const behaviour: GenreAffinity = {
+      ...ZERO_AFFINITY,
       ...base,
       // §9.5: experimental feeds on conflict between the other attractors.
       experimental: scoreExperimental(music, base),
@@ -85,7 +104,10 @@ export class GenreAffinityEngine {
     const raw = { ...behaviour };
     if (zone) {
       for (const key of Object.keys(raw) as (keyof GenreAffinity)[]) {
-        raw[key] = Math.min(1, (behaviour[key] * 0.5 + zone[key] * 0.5) * audible);
+        raw[key] = Math.min(
+          1,
+          (BEHAVIOURAL.has(key) ? behaviour[key] * 0.5 + zone[key] * 0.5 : zone[key]) * audible,
+        );
       }
     }
     const blend = 1 - Math.exp(-this.config.smoothingRate * deltaSec);

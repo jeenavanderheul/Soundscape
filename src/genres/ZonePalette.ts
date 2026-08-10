@@ -43,6 +43,16 @@ export const GENRE_LOOKS: Record<keyof GenreAffinity, ZoneLook> = {
   dnb: { color: { r: 0.4, g: 1.0, b: 0.35 }, relief: 0.7, haze: 0.3 },
   // Violet mutation: the sky above everything.
   experimental: { color: { r: 0.72, g: 0.35, b: 1.0 }, relief: 0.55, haze: 0.5 },
+  // Cool cyan, rolling and skippy — the ground never quite settles.
+  garage: { color: { r: 0.25, g: 0.85, b: 0.95 }, relief: 0.5, haze: 0.28 },
+  // Warm gold, soft hills: the friendliest region in the world.
+  house: { color: { r: 1.0, g: 0.55, b: 0.3 }, relief: 0.3, haze: 0.4 },
+  // Deep purple with steep cliffs — weight you can see.
+  trap: { color: { r: 0.55, g: 0.2, b: 0.75 }, relief: 0.95, haze: 0.22 },
+  // Almost black-green, cut by deep ravines: the echo chamber below.
+  dub: { color: { r: 0.1, g: 0.65, b: 0.5 }, relief: 0.65, haze: 0.7 },
+  // Ivory, wide and low: a hall rather than a landscape.
+  classical: { color: { r: 0.95, g: 0.92, b: 0.82 }, relief: 0.22, haze: 0.45 },
 };
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
@@ -99,13 +109,15 @@ export function compassPoint(heading: number): (typeof POINTS)[number] {
 export function headingLabel(heading: number): string {
   const point = compassPoint(heading);
   const zones = zoneGenres();
-  const genre =
-    point === 'N' || point === 'NE' || point === 'NW'
-      ? zones.north
-      : point === 'E' || point === 'SE'
-        ? zones.east
-        : point === 'S' || point === 'SW'
-          ? zones.south
-          : zones.west;
-  return `${point} · ${genre}`;
+  const byPoint = {
+    N: zones.north,
+    NE: zones.northEast,
+    E: zones.east,
+    SE: zones.southEast,
+    S: zones.south,
+    SW: zones.southWest,
+    W: zones.west,
+    NW: zones.northWest,
+  } as const;
+  return `${point} · ${byPoint[point]}`;
 }

@@ -1,4 +1,4 @@
-import type { GenreAffinity, MusicState } from '../music/MusicState';
+import type { MusicState } from '../music/MusicState';
 
 /**
  * Experimental attractor — MUTATION (spec §9.5).
@@ -25,14 +25,16 @@ function clamp01(value: number): number {
 }
 
 /** Conflict: how strongly multiple genres pull at once (second-highest affinity). */
-export function affinityConflict(others: Omit<GenreAffinity, 'experimental'>): number {
+/** The behavioural attractors that can conflict — not every grammar scores
+ * from behaviour (§34), so this takes whatever scores exist. */
+export function affinityConflict(others: Readonly<Record<string, number>>): number {
   const values = Object.values(others).sort((a, b) => b - a);
   return clamp01((values[1] ?? 0) * 2);
 }
 
 export function scoreExperimental(
   music: MusicState,
-  others: Omit<GenreAffinity, 'experimental'>,
+  others: Readonly<Record<string, number>>,
   weights: ExperimentalProfileWeights = EXPERIMENTAL_WEIGHTS,
 ): number {
   const score =
