@@ -14,7 +14,7 @@ import { CallResponse, respondTo } from '../../src/music/CallResponse';
 import { GENRE_LADDERS, ladderFor, nextStep } from '../../src/music/GenreLadder';
 import { createInitialMusicState, type GenreAffinity } from '../../src/music/MusicState';
 import { TrackBuilder, type FlightState } from '../../src/music/TrackBuilder';
-import { createInitialTrackState, TrackEvents, type TrackGenre } from '../../src/music/TrackState';
+import { LEVEL_DEEP, createInitialTrackState, TrackEvents, type TrackGenre } from '../../src/music/TrackState';
 
 const ROAMING: FlightState = { velocity: 12, hz: 220, energy: 0.5 };
 
@@ -237,5 +237,72 @@ describe('§50 the reference presets are the tempo and the mix', () => {
     // Ambient and classical invert it: the kick is the quietest thing there.
     expect(genreGrammar('ambient').kickGain).toBeLessThan(genreGrammar('ambient').bassGain);
     expect(genreGrammar('classical').kickGain).toBeLessThan(genreGrammar('classical').harmonyGain * 2);
+  });
+});
+
+describe('§47 a direction is a promise: techno can only become more techno', () => {
+  function flightIn(genre: Exclude<TrackGenre, null>) {
+    const store = createStore(createInitialTrackState());
+    const bus = createEventBus<TrackEvents>();
+    const genres: (string | null)[] = [];
+    bus.on('track:new', () => genres.push(store.getState().genre));
+    const builder = new TrackBuilder(store, bus);
+    const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, dynamics: 0.6 };
+    const fly = (from: number, ms: number, climb: number, energy: number, region = genre) => {
+      for (let t = from; t <= from + ms; t += 250) {
+        builder.tick(t, music, { velocity: 12, hz: 220, energy, altitude: 12, climb }, affinityOf(region));
+      }
+    };
+    return { store, builder, genres, fly };
+  }
+
+  it('never changes the grammar of a track that is already playing', () => {
+    const { store, fly } = flightIn('techno');
+    fly(0, 12_000, 0, 0.6);
+    expect(store.getState().genre).toBe('techno');
+    // Now hand the engine the opposite region for a long time: it must not budge.
+    fly(12_250, 40_000, 0, 0.6, 'ambient');
+    expect(store.getState().genre).toBe('techno');
+  });
+
+  it('starts the NEXT track in the region the player is still flying in', () => {
+    const { store, genres, fly } = flightIn('techno');
+    const deep = { unlocked: true, level: LEVEL_DEEP };
+    store.setState((t) => ({
+      ...t, bpm: 132,
+      drums: { kick: deep, snare: deep, hats: deep },
+      bass: deep, harmony: deep, melody: deep, texture: deep,
+    }));
+    fly(0, 12_000, 6, 0.8);   // climb into a build
+    fly(12_250, 1500, -6, 0.8); // dive: the drop
+    fly(14_000, 30_000, 0, 0.1); // float out of it
+    // Track 02 is born in the same place, so it is techno again — a different
+    // techno, never an ambient one.
+    expect(genres).toEqual(['techno']);
+  });
+
+  it('and keeps the grammar rather than going neutral over empty space', () => {
+    const store = createStore(createInitialTrackState());
+    const bus = createEventBus<TrackEvents>();
+    const genres: (string | null)[] = [];
+    bus.on('track:new', () => genres.push(store.getState().genre));
+    const builder = new TrackBuilder(store, bus);
+    const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, dynamics: 0.6 };
+    const deep = { unlocked: true, level: LEVEL_DEEP };
+    store.setState((t) => ({
+      ...t, bpm: 132, genre: 'techno',
+      drums: { kick: deep, snare: deep, hats: deep },
+      bass: deep, harmony: deep, melody: deep, texture: deep,
+    }));
+    // The handover happens out over the neutral void: no region to be born in.
+    const fly = (from: number, ms: number, climb: number, energy: number) => {
+      for (let t = from; t <= from + ms; t += 250) {
+        builder.tick(t, music, { velocity: 12, hz: 220, energy, altitude: 12, climb });
+      }
+    };
+    fly(0, 12_000, 6, 0.8);
+    fly(12_250, 1500, -6, 0.8);
+    fly(14_000, 30_000, 0, 0.1);
+    expect(genres).toEqual(['techno']);
   });
 });
