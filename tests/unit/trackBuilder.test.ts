@@ -70,20 +70,41 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
   });
 });
 
-describe('auto-ladder: roaming alone builds the whole track (§29.2, §29.3)', () => {
-  it('stages kick → hats → snare → bass → harmony → melody while flying', () => {
+describe('the flight earns the layers; time is only patience (§29.3, §31.2)', () => {
+  const roamingMusic = { ...createInitialMusicState(), bpm: 112, dynamics: 0.5 };
+
+  /** Fly for `ms` at a fixed height above the ground. */
+  function flyAt(altitude: number, ms: number) {
     const { store, builder } = setup();
-    const roamingMusic = { ...createInitialMusicState(), bpm: 112, dynamics: 0.5 };
-    const at = (ms: number) => {
-      for (let t = 0; t <= ms; t += 100) builder.tick(t, roamingMusic, ROAMING);
-      return store.getState();
-    };
-    expect(at(3200).drums.kick.unlocked).toBe(true);
-    expect(at(7300).drums.hats.unlocked).toBe(true);
-    expect(at(11_400).drums.snare.unlocked).toBe(true);
-    expect(at(16_400).bass.unlocked).toBe(true);
-    expect(at(23_400).harmony.unlocked).toBe(true);
-    expect(at(31_400).melody.unlocked).toBe(true);
+    for (let t = 0; t <= ms; t += 100) {
+      builder.tick(t, roamingMusic, { ...ROAMING, altitude });
+    }
+    return store.getState();
+  }
+
+  it('§3.1 skimming the ground earns the kick — that is where the mass is', () => {
+    expect(flyAt(3, 4000).drums.kick.unlocked).toBe(true);
+    // Same four seconds at a neutral height earns nothing yet.
+    expect(flyAt(19, 4000).drums.kick.unlocked).toBe(false);
+  });
+
+  it('§3.1 climbing into the air earns the hats, without skipping the ladder', () => {
+    const { store, builder } = setup();
+    // Down first for the kick, then up: the ladder still cannot be skipped.
+    for (let t = 0; t <= 4000; t += 100) builder.tick(t, roamingMusic, { ...ROAMING, altitude: 3 });
+    for (let t = 4100; t <= 30_000; t += 100) {
+      builder.tick(t, roamingMusic, { ...ROAMING, altitude: 50 });
+    }
+    const track = store.getState();
+    expect(track.drums.hats.unlocked).toBe(true);
+    // Texture is the last rung: flying high cannot jump the queue (§31.2).
+    expect(track.texture.unlocked).toBe(false);
+  });
+
+  it('still offers the ladder to a player who does nothing in particular', () => {
+    // Patience, not a schedule: it arrives, but later than flying for it.
+    expect(flyAt(19, 8000).drums.kick.unlocked).toBe(true);
+    expect(flyAt(19, 40_000).bass.unlocked).toBe(true);
   });
 
   it('does not accumulate during stillness', () => {

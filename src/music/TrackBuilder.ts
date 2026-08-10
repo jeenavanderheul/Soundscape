@@ -51,6 +51,20 @@ export interface TrackBuilderConfig {
   maxTickDeltaMs: number;
   /** §32: active time between one layer growing its second voice and the next. */
   deepenIntervalMs: number;
+  /**
+   * The ladder timings are PATIENCE, not a schedule (§29.3, §31.2): behaviour
+   * earns a layer, and only a player who does nothing in particular waits this
+   * multiple of the ladder time for the world to offer it anyway.
+   */
+  patienceFactor: number;
+  /** Altitude below which the orb is skimming the ground — that is the low register. */
+  groundAltitude: number;
+  /** Altitude above which the orb is in open air. */
+  airAltitude: number;
+  /** Time skimming the ground that earns the kick, and (×2) the bass. */
+  groundMs: number;
+  /** Time in open air that earns the hats, and (×2) the texture. */
+  airMs: number;
 }
 
 export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
@@ -66,6 +80,11 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   activityFloor: 0.12,
   maxTickDeltaMs: 500,
   deepenIntervalMs: 11_000,
+  patienceFactor: 2.5,
+  groundAltitude: 8,
+  airAltitude: 30,
+  groundMs: 3500,
+  airMs: 3500,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -83,6 +102,8 @@ export interface FlightState {
   hz: number;
   /** 0..1 how hard the player is pushing; drives the arrangement (§29.7). */
   energy: number;
+  /** Height above the terrain right under the orb (§3.1 low = mass, high = air). */
+  altitude?: number;
 }
 
 function prune(times: number[], nowMs: number, windowMs: number): void {
@@ -103,6 +124,8 @@ export class TrackBuilder {
   private readonly strongActions: number[] = [];
   private activeMs = 0;
   private lowRegisterMs = 0;
+  private groundMs = 0;
+  private airMs = 0;
   private lastDeepenMs = 0;
   private lastTickMs: number | null = null;
   readonly conversation = new CallResponse();
@@ -123,6 +146,8 @@ export class TrackBuilder {
     this.strongActions.length = 0;
     this.activeMs = 0;
     this.lowRegisterMs = 0;
+    this.groundMs = 0;
+    this.airMs = 0;
     this.lastDeepenMs = 0;
     this.lastTickMs = null;
     this.conversation.reset();
@@ -169,6 +194,12 @@ export class TrackBuilder {
     const active = moving || (music.bpm > 0 && music.tempoConfidence > 0.3);
     if (active) this.activeMs += delta;
     this.lowRegisterMs = flight.hz < config.bassHz && active ? this.lowRegisterMs + delta : 0;
+    // §3.1: WHERE you fly is which part of the register you are in. Skimming
+    // the ground is mass; open air is detail. Both are earned by flying there,
+    // not by waiting.
+    const altitude = flight.altitude ?? (config.groundAltitude + config.airAltitude) / 2;
+    this.groundMs = altitude <= config.groundAltitude && active ? this.groundMs + delta : 0;
+    this.airMs = altitude >= config.airAltitude && active ? this.airMs + delta : 0;
 
     this.harmony.tick(nowMs);
     this.melody.tick(nowMs, flight.hz);
@@ -233,7 +264,12 @@ export class TrackBuilder {
     const current = this.store.getState();
     const ladder = ladderFor(genre);
     const step = nextStep(current, ladder);
-    if (step !== null && (this.intent(step.layer) || this.activeMs >= step.atMs)) {
+    // Behaviour earns the layer. The ladder time is only the world's patience
+    // with a player who is doing nothing in particular (§29.3) — it must never
+    // be the mechanism, or the track becomes a progress bar instead of a
+    // consequence.
+    const patience = step === null ? 0 : step.atMs * config.patienceFactor;
+    if (step !== null && (this.intent(step.layer) || this.activeMs >= patience)) {
       this.unlock(step.layer, nowMs);
       return;
     }
@@ -272,21 +308,23 @@ export class TrackBuilder {
   private intent(layer: TrackLayerName): boolean {
     const { config } = this;
     switch (layer) {
+      // Low excitations, or simply flying down where the mass is (§3.1).
       case 'kick':
-        return this.lowActions.length >= config.kickActionsNeeded;
+        return this.lowActions.length >= config.kickActionsNeeded || this.groundMs >= config.groundMs;
+      // High excitations, or climbing into the air where the detail lives.
       case 'hats':
-        return this.highActions.length >= config.hatActionsNeeded;
+        return this.highActions.length >= config.hatActionsNeeded || this.airMs >= config.airMs;
       case 'snare':
         return this.strongActions.length >= config.clapActionsNeeded;
       case 'bass':
-        return this.lowRegisterMs >= config.lowRegisterMs;
+        return this.lowRegisterMs >= config.lowRegisterMs || this.groundMs >= config.groundMs * 2;
       case 'harmony':
         return this.harmony.discovered;
       case 'melody':
         return this.melody.discovered;
-      // Texture is atmosphere: it arrives with time in the world, not with aim.
+      // §3.10 texture is space: staying up in the open air fills it in.
       case 'texture':
-        return false;
+        return this.airMs >= config.airMs * 2;
     }
   }
 

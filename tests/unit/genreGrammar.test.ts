@@ -77,8 +77,8 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
   });
 
   it('Jazz opens with harmony and DnB with the sub', () => {
-    expect(flyThrough('jazz', 10)[0]).toBe('harmony');
-    expect(flyThrough('dnb', 8).slice(0, 2)).toEqual(['bass', 'snare']);
+    expect(flyThrough('jazz', 12)[0]).toBe('harmony');
+    expect(flyThrough('dnb', 20).slice(0, 2)).toEqual(['bass', 'snare']);
   });
 
   it('keeps every earned layer when the player crosses into another region', () => {
