@@ -47,6 +47,7 @@ export class CodeOverlay {
   // see what their flight is writing. C hides it.
   private visible = true;
   private lastCode = '';
+  private lastStatus = '';
 
   constructor(container: HTMLElement = document.body) {
     this.root = document.createElement('pre');
@@ -86,6 +87,17 @@ export class CodeOverlay {
   }
 
   /** Logic-loop rate; touches the DOM only when the pattern actually changed. */
+  /**
+   * §41: a one-line truth about what is actually playing — whether the real
+   * kit loaded, which region's grammar is running, on which machine, at what
+   * tempo. "I hear no difference" becomes checkable in one glance.
+   */
+  setStatus(text: string): void {
+    if (text === this.lastStatus) return;
+    this.lastStatus = text;
+    if (this.visible) this.render(this.lastCode);
+  }
+
   update(code: string): void {
     if (code === this.lastCode) return;
     this.lastCode = code;
@@ -97,7 +109,9 @@ export class CodeOverlay {
     const header = document.createElement('span');
     header.style.opacity = '0.5';
     header.textContent =
-      code.trim() === '' ? '// the void is silent' : '// your world is playing\n';
+      code.trim() === ''
+        ? `// the void is silent\n${this.lastStatus ? `// ${this.lastStatus}\n` : ''}`
+        : `// your world is playing\n${this.lastStatus ? `// ${this.lastStatus}\n` : ''}`;
     this.root.appendChild(header);
     for (const token of tokenize(code)) {
       if (token.kind === 'plain') {

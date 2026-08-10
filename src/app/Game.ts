@@ -9,7 +9,12 @@ import { createEventBus, EventBus } from '../core/EventBus';
 import { createStore, Store } from '../core/stores';
 import { InputManager } from '../input/InputManager';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
-import { buildLayerGraph, createEmptyLayerGraph, diffLayerGraph } from '../audio/MusicalPrimitives';
+import {
+  buildLayerGraph,
+  createEmptyLayerGraph,
+  diffLayerGraph,
+  genreGrammar,
+} from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
 import { setZoneGenres, zoneAffinity } from '../genres/GenreZones';
@@ -543,6 +548,14 @@ export class Game {
       // §9.5 world tendency: mutation destabilizes existing form.
       this.structures.setMutation(genre?.affinity.experimental ?? 0);
       this.codeOverlay.update(this.strudelEngine.code);
+      // §41: the one line that makes "I hear no difference" checkable.
+      const info = this.strudelEngine.status;
+      const playing = this.trackStore.getState();
+      this.codeOverlay.setStatus(
+        `${info.samples ? 'real drum kit' : 'SYNTH FALLBACK — samples failed'} · ` +
+          `${playing.genre ?? 'void'} · ${genreGrammar(playing.genre).drumBank} · ` +
+          `${Math.round(playing.bpm)} bpm`,
+      );
       // Context hints: whispered at the teachable moment, once each.
       this.hints.update({
         elapsedMs,
