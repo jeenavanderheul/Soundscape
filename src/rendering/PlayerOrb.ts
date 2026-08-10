@@ -62,7 +62,7 @@ void main() {
 `;
 
 /** Radius of the untouched orb; a finished track is BASE_RADIUS × 5.4 across. */
-export const ORB_BASE_RADIUS = 0.26;
+export const ORB_BASE_RADIUS = 0.52;
 
 const FORWARD_AXIS = new Vector3(0, 0, 1);
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));

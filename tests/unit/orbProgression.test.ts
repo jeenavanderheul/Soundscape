@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { PlayerOrb } from '../../src/rendering/PlayerOrb';
+import { ORB_BASE_RADIUS, PlayerOrb } from '../../src/rendering/PlayerOrb';
+import { FLIGHT_CONFIG } from '../../src/player/FrequencyController';
 import { createInitialFrequencyState } from '../../src/player/FrequencyState';
 import {
   LEVEL_DEEP,
@@ -84,13 +85,17 @@ describe('§29.6 the orb becomes the track', () => {
     orb.dispose();
   });
 
-  it('stays inside the collision radius at full growth', () => {
+  it('reports the radius it actually measures, so the collision can follow it', () => {
     const orb = new PlayerOrb();
+    fly(orb, 1);
+    const small = orb.radius;
+    expect(small).toBeCloseTo(ORB_BASE_RADIUS, 2);
     orb.setGrowth(1);
     fly(orb, 30);
-    const ORB_COLLISION_RADIUS = 1.6;
-    const BASE_RADIUS = 0.26;
-    expect(BASE_RADIUS * orb.mesh.scale.x).toBeLessThan(ORB_COLLISION_RADIUS);
+    // §35: the orb outgrows the old fixed clearance, which is exactly why the
+    // controller is fed this number every frame instead of a constant.
+    expect(orb.radius).toBeGreaterThan(small * 4);
+    expect(orb.radius).toBeGreaterThan(FLIGHT_CONFIG.orbRadius);
     orb.dispose();
   });
 });
