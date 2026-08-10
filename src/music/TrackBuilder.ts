@@ -5,11 +5,18 @@ import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { ArrangementEngine } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
-import { ladderFor, nextStep } from './GenreLadder';
+import { ladderFor, layerUnlocked, nextStep } from './GenreLadder';
 import { HarmonyEngine } from './HarmonyEngine';
 import { MelodyTracker } from './MelodyTracker';
 import type { MusicState } from './MusicState';
-import type { TrackEvents, TrackGenre, TrackLayerName, TrackState } from './TrackState';
+import {
+  LEVEL_DEEP,
+  LEVEL_EARNED,
+  type TrackEvents,
+  type TrackGenre,
+  type TrackLayerName,
+  type TrackState,
+} from './TrackState';
 
 /**
  * §29.5: the Track Builder — translates musical interpretation into track
@@ -42,6 +49,8 @@ export interface TrackBuilderConfig {
   activityFloor: number;
   /** Clamp per-tick delta so tab suspensions never auto-unlock everything. */
   maxTickDeltaMs: number;
+  /** §32: active time between one layer growing its second voice and the next. */
+  deepenIntervalMs: number;
 }
 
 export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
@@ -56,6 +65,7 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   lowRegisterMs: 4000,
   activityFloor: 0.12,
   maxTickDeltaMs: 500,
+  deepenIntervalMs: 11_000,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -93,6 +103,7 @@ export class TrackBuilder {
   private readonly strongActions: number[] = [];
   private activeMs = 0;
   private lowRegisterMs = 0;
+  private lastDeepenMs = 0;
   private lastTickMs: number | null = null;
   readonly conversation = new CallResponse();
   readonly harmony = new HarmonyEngine();
@@ -112,6 +123,7 @@ export class TrackBuilder {
     this.strongActions.length = 0;
     this.activeMs = 0;
     this.lowRegisterMs = 0;
+    this.lastDeepenMs = 0;
     this.lastTickMs = null;
     this.conversation.reset();
     this.harmony.reset();
@@ -218,10 +230,41 @@ export class TrackBuilder {
     // track always emerges layer by layer in its own grammar.
     if (!tempoExists) return;
     const current = this.store.getState();
-    const step = nextStep(current, ladderFor(genre));
+    const ladder = ladderFor(genre);
+    const step = nextStep(current, ladder);
     if (step !== null && (this.intent(step.layer) || this.activeMs >= step.atMs)) {
       this.unlock(step.layer, nowMs);
+      return;
     }
+
+    // §32: a track also has to grow in DEPTH, not only in width. Staying in
+    // the world stacks a second voice onto a layer you already earned — the
+    // 808 body under the clap, the dirty saw under the sub — so a flight ends
+    // on a produced track instead of a sketch.
+    if (this.activeMs - this.lastDeepenMs >= config.deepenIntervalMs) {
+      const shallow = ladder.find(
+        (candidate) =>
+          layerUnlocked(current, candidate.layer) &&
+          levelOf(current, candidate.layer) < LEVEL_DEEP,
+      );
+      if (shallow) {
+        this.lastDeepenMs = this.activeMs;
+        this.deepen(shallow.layer, nowMs);
+      }
+    }
+  }
+
+  private deepen(layer: TrackLayerName, atMs: number): void {
+    this.store.setState((t) => {
+      if (layer === 'kick' || layer === 'hats' || layer === 'snare') {
+        return {
+          ...t,
+          drums: { ...t.drums, [layer]: { unlocked: true, level: LEVEL_DEEP } },
+        };
+      }
+      return { ...t, [layer]: { unlocked: true, level: LEVEL_DEEP } };
+    });
+    this.bus.emit('track:depth', { layer, atMs });
   }
 
   /** Deliberate play that earns a layer ahead of the clock (§29.3). */
@@ -278,12 +321,17 @@ export class TrackBuilder {
   private unlock(layer: TrackLayerName, atMs: number): void {
     this.store.setState((t) => {
       if (layer === 'kick' || layer === 'hats' || layer === 'snare') {
-        return { ...t, drums: { ...t.drums, [layer]: { unlocked: true, level: 1 } } };
+        return { ...t, drums: { ...t.drums, [layer]: { unlocked: true, level: LEVEL_EARNED } } };
       }
-      return { ...t, [layer]: { unlocked: true, level: 1 } };
+      return { ...t, [layer]: { unlocked: true, level: LEVEL_EARNED } };
     });
     this.bus.emit('track:layer', { layer, atMs });
   }
+}
+
+function levelOf(track: Readonly<TrackState>, layer: TrackLayerName): number {
+  if (layer === 'kick' || layer === 'hats' || layer === 'snare') return track.drums[layer].level;
+  return track[layer].level;
 }
 
 function sameNumbers(a: readonly number[], b: readonly number[]): boolean {

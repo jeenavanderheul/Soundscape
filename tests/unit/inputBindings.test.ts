@@ -24,6 +24,7 @@ describe('DEFAULT_BINDINGS', () => {
       'accelerate',
       'resonancePulse',
       'toggleCode',
+      'exportTrack',
       'pause',
     ];
     for (const action of Object.values(DEFAULT_BINDINGS.keys)) {

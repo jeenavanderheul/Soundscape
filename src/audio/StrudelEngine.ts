@@ -139,11 +139,11 @@ function styleOf<T extends string>(value: unknown, allowed: readonly T[], fallba
 }
 
 const KICK_STYLES = ['four', 'break', 'sparse', 'swing', 'irregular'] as const;
-const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse'] as const;
-const SNARE_STYLES = ['backbeat', 'ghost', 'break'] as const;
+const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse', 'dirt'] as const;
+const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body'] as const;
 const BASS_STYLES = ['repetitive', 'sub', 'walking', 'rolling'] as const;
 const CHORD_STYLES = ['stab', 'pad', 'jazz'] as const;
-const MELODY_STYLES = ['motif', 'long', 'improv', 'hook', 'fragment'] as const;
+const MELODY_STYLES = ['motif', 'stab', 'long', 'improv', 'hook', 'fragment'] as const;
 const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic'] as const;
 
 /**
@@ -158,6 +158,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
     clamp(finite(primitive.parameters['gain'] ?? 1, `${primitive.id}.gain`), 0, 1) * layerGain
   ).toFixed(3);
   const p = primitive.parameters;
+  // §32: saturation. Techno and DnB are driven; Ambient and Jazz stay clean.
+  const drive = clamp(finite(p['drive'] ?? 0, `${primitive.id}.drive`), 0, 0.6);
+  const shaped = drive > 0 ? `.shape(${drive.toFixed(2)})` : '';
   // §30: authored/AI source is rendered ONLY if it passes the allowlist
   // grammar — the same boundary every other parameter crosses.
   if (typeof p['code'] === 'string') {
@@ -196,7 +199,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         default:
           // Per-step velocity keeps a straight kick from sounding mechanical.
           return samplesLoaded
-            ? `s("bd*${steps}").bank("${DRUM_BANK}").gain("${gain} ${(Number(gain) * 0.94).toFixed(2)} ${gain} ${(Number(gain) * 0.96).toFixed(2)}").shape(.2)`
+            ? `s("bd*${steps}").bank("${DRUM_BANK}").gain("${gain} ${(Number(gain) * 0.94).toFixed(2)} ${gain} ${(Number(gain) * 0.96).toFixed(2)}")${shaped}`
             : `s("sbd*${steps}").gain(${gain})`;
       }
     }
@@ -206,6 +209,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         return samplesLoaded
           ? `s("[~ cp ~ cp]").bank("${DRUM_BANK}").degradeBy(.4).gain(${gain})`
           : `s("[~ white ~ white]").decay(.06).sustain(0).bpf(1500).degradeBy(.4).gain(${gain})`;
+      }
+      // §32: the second snare — an 808 body a hair behind the clap.
+      if (style === 'body') {
+        return samplesLoaded
+          ? `s("~ sd ~ sd").bank("RolandTR808").late(.01).gain(${gain})`
+          : `s("~ white ~ white").decay(.12).sustain(0).bpf(1200).late(.01).gain(${gain})`;
       }
       if (style === 'break') {
         return samplesLoaded
@@ -225,6 +234,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         return samplesLoaded
           ? `s("hh*${cycle}").bank("${DRUM_BANK}").hpf(8000).gain(${gain})`
           : `s("white*${cycle}").decay(.03).sustain(0).hpf(8000).gain(${gain})`;
+      }
+      // §32: the second hat voice — 32nds of dirt at the very top.
+      if (style === 'dirt') {
+        return samplesLoaded
+          ? `s("hh*32").bank("${DRUM_BANK}").hpf(9500).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 1.2).toFixed(3)}")`
+          : `s("white*32").decay(.015).sustain(0).hpf(9500).gain(${gain})`;
       }
       switch (style) {
         case 'sixteenth':
@@ -251,11 +266,24 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
     // against the 4 in Experimental.
     case 'perc': {
       const cycle = Math.round(clamp(finite(p['cycle'] ?? 3, `${primitive.id}.cycle`), 2, 16));
-      return samplesLoaded
+      if (!samplesLoaded) {
+        return `s("white*${cycle}").decay(.02).sustain(0).bpf(3200).gain(${gain})`;
+      }
+      // On the grid the percussion is a broken figure that shifts every bar;
+      // off the grid (5, 7) it stays even, because the cycle length is the
+      // point (§31 polymeter).
+      return cycle > 4
         ? `s("rim*${cycle}").bank("RolandTR808").pan("<.25 .7 .45 .8>").gain(${gain})`
-        : `s("white*${cycle}").decay(.02).sustain(0).bpf(3200).gain(${gain})`;
+        : `s("<rim [~ rim] rim [rim ~]>").bank("RolandTR808").fast(${cycle / 2}).pan("<.25 .75 .4 .65>").gain("${gain} ${(Number(gain) * 1.5).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)} ${(Number(gain) * 1.3).toFixed(3)}")`;
     }
     case 'sub': {
+      // §32: the sub moves with the bass rather than sitting on one note —
+      // rests are what make a sub read as weight instead of as a drone.
+      if (typeof p['notes'] === 'string') {
+        const notes = noteList(p['notes'], primitive.id, ' ').split(' ');
+        const [root = 'a1', , third = 'a1', fifth = 'a1'] = notes;
+        return `note("<${root} ~ ${root} ~ ${third} ~ [${root} ${fifth}] ~>").s("sine").gain(${gain})`;
+      }
       const note = p['note'];
       if (typeof note !== 'string' || !NOTE_RE.test(note)) {
         throw new TypeError(`StrudelEngine: invalid note for primitive "${primitive.id}"`);
@@ -270,7 +298,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       switch (style) {
         case 'sub':
           // Heavy sub: resonant and moving, not a held sine.
-          return `note("<${root} ${root} ~ ${notes[2] ?? root}>").s("sawtooth").lpf("<180 240 150 320>").lpq(10).gain(${gain})`;
+          return `note("<${root} ${root} ~ ${notes[2] ?? root}>").s("sawtooth").lpf("<180 240 150 320>").lpq(10)${shaped}.gain(${gain})`;
         case 'walking': {
           const line = [0, 1, 2, 3].map((i) => notes[i % notes.length]!).join(' ');
           return `note("${line}").s("triangle").decay(.3).sustain(.2).gain(${gain})`;
@@ -281,7 +309,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           // Moving root figure through a resonant low-pass — the funk in the
           // reference track comes from lpq, not from more notes.
           const line = [0, 1, 2, 3].map((i) => notes[i % notes.length]!).join(' ');
-          return `note("<${line}>").s("sawtooth").lpf(420).lpq(8).gain(${gain})`;
+          return `note("<${line}>").s("sawtooth").lpf(420).lpq(8)${shaped}.gain(${gain})`;
         }
       }
     }
@@ -302,7 +330,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return `note("[${stacked}]").s("triangle").slow(${slow}).lpf(2200).decay(.5).sustain(.25).late(.02).room(.25).gain(${gain})`;
         }
         // Techno/DnB: stabs, not pads — the filter sweep makes them speak.
-        return `note("[${stacked}]").s("sawtooth").slow(${slow}).lpf("<900 1600 1100 2200>").room(.18).gain(${gain})`;
+        return `note("[${stacked}]").s("sawtooth").slow(${slow}).lpf("<900 1600 1100 2200>")${shaped}.room(.18).gain(${gain})`;
       }
       const note = p['note'];
       if (typeof note !== 'string' || !NOTE_RE.test(note)) {
@@ -319,6 +347,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'triangle';
       const style = styleOf(p['style'], MELODY_STYLES, 'motif');
       switch (style) {
+        // Techno: not a tune but a dark stab — the hook is the rhythm.
+        case 'stab':
+          return `note("${notes}").s("square").slow(${slow}).lpf("<500 900 650 1300>")${shaped}.decay(.18).sustain(0).gain(${gain})`;
         // Ambient: long tones that hang in the room and overlap each other.
         case 'long':
           return `note("${notes}").s("sine").slow(${slow * 2}).attack(1).release(3).delay(.35).room(.9).gain(${gain})`;
@@ -404,6 +435,18 @@ export function buildPatternCode(graph: MusicalLayerGraph, actions: MusicalActio
   }
   if (parts.length === 0) return '';
   return `stack(\n  ${parts.join(',\n  ')}\n)`;
+}
+
+/** Every voice in the track, in playing order — the parts of the score (§32). */
+export function trackParts(graph: MusicalLayerGraph): Array<{ id: string; code: string }> {
+  const parts: Array<{ id: string; code: string }> = [];
+  for (const name of LAYER_NAMES) {
+    const layer = graph.layers[name];
+    for (const primitive of layer.primitives) {
+      parts.push({ id: primitive.id, code: renderPrimitive(primitive, layer) });
+    }
+  }
+  return parts;
 }
 
 export class StrudelEngine implements StrudelEnginePort {

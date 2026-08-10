@@ -9,7 +9,7 @@ import { createEventBus, EventBus } from '../core/EventBus';
 import { createStore, Store } from '../core/stores';
 import { InputManager } from '../input/InputManager';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
-import { buildLayerGraph, diffLayerGraph } from '../audio/MusicalPrimitives';
+import { buildLayerGraph, createEmptyLayerGraph, diffLayerGraph } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
 import { setZoneGenres, zoneAffinity } from '../genres/GenreZones';
@@ -47,6 +47,8 @@ import { ResonanceEngine } from '../resonance/ResonanceEngine';
 import type { ResonanceEvents } from '../resonance/ResonanceEngine';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { CodeOverlay } from '../ui/CodeOverlay';
+import { ExportOverlay } from '../ui/ExportOverlay';
+import { exportTrack } from '../music/TrackExport';
 import { PromptOverlay } from '../ui/PromptOverlay';
 import { loadApiKey, requestWorld, saveApiKey } from '../ai/WorldPromptClient';
 import type { LayerPatterns } from '../audio/MusicalPrimitives';
@@ -149,6 +151,9 @@ export class Game {
   private readonly harmonyBridges = new HarmonyBridges();
   private readonly hints = new Hints();
   private readonly codeOverlay = new CodeOverlay();
+  private readonly exportOverlay = new ExportOverlay();
+  /** Flight time so far, for the export header (§32). */
+  private flightMs = 0;
   /** §30: the world the player described, if they described one. */
   private readonly promptOverlay = new PromptOverlay(
     {
@@ -408,6 +413,7 @@ export class Game {
     this.harmonyBridges.dispose();
     this.hints.dispose();
     this.codeOverlay.dispose();
+    this.exportOverlay.dispose();
     this.promptOverlay.dispose();
     this.layerCue.dispose();
     this.renderer.scene.remove(this.orb.mesh);
@@ -425,6 +431,17 @@ export class Game {
     // §3.3: timed excitations (LMB release, Space) are the rhythm onsets.
     // §11: reveal the pattern the world wrote — read-only, never a REPL.
     if (snapshot.codeToggled) this.codeOverlay.toggle();
+    this.flightMs += deltaMs;
+    // §32: hand the finished track back as source.
+    if (snapshot.trackExported) {
+      this.exportOverlay.toggle(
+        exportTrack({
+          graph: this.lastLayerGraph ?? createEmptyLayerGraph(),
+          genre: this.trackStore.getState().genre,
+          flownSeconds: this.flightMs / 1000,
+        }),
+      );
+    }
     const deliberateRelease =
       snapshot.windReleased && !snapshot.resonancePulse && this.windHeldMs >= 400;
     this.windHeldMs = snapshot.buttons.windHold ? this.windHeldMs + deltaMs : 0;

@@ -9,6 +9,7 @@ export type KeyAction =
   | 'accelerate'
   | 'resonancePulse'
   | 'toggleCode'
+  | 'exportTrack'
   | 'pause';
 
 export type MouseButtonAction = 'windHold';
@@ -34,6 +35,7 @@ export const DEFAULT_BINDINGS: DesktopBindings = {
     ShiftRight: 'accelerate',
     Space: 'resonancePulse',
     KeyC: 'toggleCode',
+    KeyE: 'exportTrack',
     Escape: 'pause',
   },
   mouseButtons: {

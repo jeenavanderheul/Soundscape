@@ -20,6 +20,7 @@ function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
     windReleased: false,
     resonancePulse: false,
     pausePressed: false,
+    trackExported: false,
     codeToggled: false,
     wheelDelta: 0,
     mouseDelta: { x: 0, y: 0 },

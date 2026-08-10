@@ -1161,6 +1161,47 @@ Each layer carries an active state, an intensity, and an entry condition. Layers
 
 ---
 
+## 32. Production level: a flight must end on a finished track (v5 amendment — NORMATIVE)
+
+### 32.1 The standard
+
+This is not a genre rule. **Whatever grammar the player flew through, the end of a flight must sound like a produced track, not a sketch.** A finished flight reaches at least nine simultaneous voices, mixed, driven and stacked the way a released track is.
+
+### 32.2 Width and depth
+
+A track grows in two directions:
+
+- **Width** — the §31 ladder: new roles arrive (kick, hats, snare, bass, harmony, melody, texture).
+- **Depth** — staying with what you earned stacks a SECOND VOICE onto a role. Every layer therefore has two levels: `LEVEL_EARNED` when the player wins it, `LEVEL_DEEP` once the world has grown its body.
+
+The second voices, in every grammar:
+
+| Role | Second voice |
+|---|---|
+| kick | broken percussion on its own cycle |
+| hats | high-frequency dirt (32nds at the top of the spectrum) |
+| snare | a second machine a hair late — the body under the clap |
+| bass | the sub stays UNDER the bass instead of being replaced |
+| harmony | a wide voice an octave up behind the chord |
+| melody | the phrase an octave up, half as loud, twice as slow |
+| texture | a second, contrasting texture |
+
+Body-plus-detail on one role is what separates a produced part from a programmed one. Layers deepen in ladder order, oldest first, so the track thickens where the player has spent their time.
+
+### 32.3 Mix and drive
+
+Mix aggression is grammar data, not one global setting. Techno and Drum & Bass are driven — kick near unity, saturation on kick, bass and stabs. Ambient and Jazz stay clean and dynamic. The master limiter of §21 always sits underneath: stacking must never clip.
+
+### 32.4 Melody follows the grammar
+
+The melody layer is earned the same way everywhere, but the grammar decides whether it sings or stabs. In Techno and Drum & Bass it is a short dark stab; in Ambient a long tone; in Jazz an improvised phrase.
+
+### 32.5 The flight leaves a score
+
+Pressing **E** hands the track back as source: a numbered, commented Strudel block that is copied to the clipboard and can be pasted straight into strudel.cc. Voices are flattened so each part is one numbered line, and named (`KICK / FOUNDATION`, `SNARE BODY`, `SUB`) rather than exposing internal ids. Exporting before anything is earned says so honestly instead of printing an empty stack.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

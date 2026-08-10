@@ -12,7 +12,7 @@
  */
 import { sectionMix } from '../music/ArrangementEngine';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
-import type { TrackGenre, TrackState } from '../music/TrackState';
+import { LEVEL_DEEP, type TrackGenre, type TrackState } from '../music/TrackState';
 
 export type PrimitiveKind =
   | 'pulse' | 'kick' | 'snare' | 'hat' | 'perc' | 'break'
@@ -174,7 +174,7 @@ export type SnareStyle = 'backbeat' | 'ghost' | 'break';
 export type BassStyle = 'repetitive' | 'sub' | 'walking' | 'rolling';
 /** §31: harmony behaves differently per grammar — a stab is not a pad. */
 export type ChordStyle = 'stab' | 'pad' | 'jazz';
-export type MelodyStyle = 'motif' | 'long' | 'improv' | 'hook' | 'fragment';
+export type MelodyStyle = 'motif' | 'stab' | 'long' | 'improv' | 'hook' | 'fragment';
 export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic';
 
 export interface GenreGrammar {
@@ -193,6 +193,8 @@ export interface GenreGrammar {
   hatCycle: number;
   /** 0 = this grammar has no separate percussion voice. */
   percCycle: number;
+  /** §32 saturation on kick, bass and stabs. 0 keeps a layer clean and dynamic. */
+  drive: number;
   kickGain: number;
   hatGain: number;
   snareGain: number;
@@ -210,14 +212,15 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
   snareStyle: 'backbeat',
   bassStyle: 'repetitive',
   chordStyle: 'stab',
-  melodyStyle: 'motif',
+  melodyStyle: 'stab',
   textureStyle: 'hats',
   hatCycle: 4,
-  percCycle: 0,
-  kickGain: 0.85,
+  percCycle: 4,
+  drive: 0.25,
+  kickGain: 0.95,
   hatGain: 0.35,
-  snareGain: 0.5,
-  bassGain: 0.5,
+  snareGain: 0.62,
+  bassGain: 0.6,
   harmonySlow: 4,
   melodySlow: 2,
   textureGain: 0.15,
@@ -236,10 +239,11 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     hatCycle: 4,
     // Ghost percussion against the break — the near-misses in the flight.
     percCycle: 3,
-    kickGain: 0.85,
-    hatGain: 0.3,
-    snareGain: 0.55,
-    bassGain: 0.7,
+    drive: 0.35,
+    kickGain: 0.95,
+    hatGain: 0.32,
+    snareGain: 0.7,
+    bassGain: 0.85,
     harmonySlow: 4,
     melodySlow: 1,
     textureGain: 0.12,
@@ -254,6 +258,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureStyle: 'air',
     hatCycle: 4,
     percCycle: 0,
+    drive: 0,
     kickGain: 0.3,
     hatGain: 0.12,
     snareGain: 0.12,
@@ -271,7 +276,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodyStyle: 'improv',
     textureStyle: 'metallic',
     hatCycle: 4,
-    percCycle: 0,
+    percCycle: 3,
+    drive: 0,
     kickGain: 0.6,
     hatGain: 0.3,
     snareGain: 0.3,
@@ -292,7 +298,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     // so the region never settles into a bar you can count (§31 mutation).
     hatCycle: 7,
     percCycle: 5,
-    kickGain: 0.6,
+    drive: 0.3,
+    kickGain: 0.7,
     hatGain: 0.25,
     snareGain: 0.3,
     bassGain: 0.55,
@@ -446,6 +453,11 @@ export function buildLayerGraph(
   const graph = createEmptyLayerGraph(bpm);
   const density = clamp01(music.rhythmDensity);
   const kickUnlocked = track ? track.drums.kick.unlocked : true;
+  // §32: a layer the player kept flying with has grown its second voice.
+  const deep = (layer: 'kick' | 'hats' | 'snare'): boolean =>
+    (track?.drums[layer].level ?? 0) >= LEVEL_DEEP;
+  const deepOf = (layer: 'bass' | 'harmony' | 'melody' | 'texture'): boolean =>
+    (track?.[layer].level ?? 0) >= LEVEL_DEEP;
   const rootMidi = track?.rootMidi ?? 45;
 
   // --- Drums (§29.2 fase 2) ---
@@ -461,6 +473,7 @@ export function buildLayerGraph(
         // Techno locks four-on-the-floor; everywhere else the player's own
         // density writes the pulse (§9.1 vs §3.3).
         steps: resolvedGenre === 'techno' ? 4 : 1 + Math.round(density * 3),
+        drive: grammar.drive,
         gain: round2(kickUnlocked ? grammar.kickGain * mix.drums : 0.2),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
@@ -478,20 +491,35 @@ export function buildLayerGraph(
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
     });
-    // A percussion voice on its own cycle length: ghost hits in DnB, true
-    // polymeter in Experimental (§31).
-    if (grammar.percCycle > 0) {
+    // §32: the second hat voice — fine dirt right at the top of the spectrum.
+    if (deep('hats')) {
       drums.push({
-        id: 'track-perc',
-        kind: 'perc',
+        id: 'track-hat-dirt',
+        kind: 'hat',
         layer: 'drums',
         parameters: {
-          cycle: grammar.percCycle,
-          gain: round2(grammar.hatGain * 0.7 * mix.drums),
+          style: 'dirt',
+          cycle: grammar.hatCycle,
+          gain: round2(grammar.hatGain * 0.35 * mix.drums),
         },
-        allowedTransforms: [...ALLOWED_TRANSFORMS.perc],
+        allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
       });
     }
+  }
+  // A percussion voice on its own cycle length: broken groove in Techno,
+  // ghost hits in DnB, true polymeter in Experimental (§31). It is the
+  // kick's second voice, so it arrives once the pulse has been lived with.
+  if (grammar.percCycle > 0 && deep('kick')) {
+    drums.push({
+      id: 'track-perc',
+      kind: 'perc',
+      layer: 'drums',
+      parameters: {
+        cycle: grammar.percCycle,
+        gain: round2(grammar.hatGain * 0.7 * mix.drums),
+      },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.perc],
+    });
   }
   if (track?.drums.snare.unlocked) {
     drums.push({
@@ -501,6 +529,17 @@ export function buildLayerGraph(
       parameters: { style: grammar.snareStyle, gain: round2(grammar.snareGain * mix.drums) },
       allowedTransforms: [...ALLOWED_TRANSFORMS.snare],
     });
+    // §32: the body under the clap — a second machine, a hair late, which is
+    // what makes a backbeat sound produced rather than programmed.
+    if (deep('snare')) {
+      drums.push({
+        id: 'track-snare-body',
+        kind: 'snare',
+        layer: 'drums',
+        parameters: { style: 'body', gain: round2(grammar.snareGain * 0.5 * mix.drums) },
+        allowedTransforms: [...ALLOWED_TRANSFORMS.snare],
+      });
+    }
   }
 
   // --- Bass (§29.2 fase 3) ---
@@ -522,10 +561,27 @@ export function buildLayerGraph(
                 .map((semitones) => midiToNoteName(rootMidi + semitones))
                 .join(' ')
             : [0, 0, 3, 7].map((semitones) => midiToNoteName(rootMidi + semitones)).join(' '),
+        drive: grammar.drive,
         gain: round2(grammar.bassGain * mix.bass),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.bass],
     });
+    // §32: sub AND body. The sine carries the weight, the filtered voice
+    // carries the movement — together they read as one big bass.
+    if (deepOf('bass')) {
+      bass.push({
+        id: 'track-sub',
+        kind: 'sub',
+        layer: 'bass',
+        parameters: {
+          notes: [0, 0, 3, 7]
+            .map((semitones) => midiToNoteName(rootMidi - 12 + semitones))
+            .join(' '),
+          gain: round2(grammar.bassGain * 0.9 * mix.bass),
+        },
+        allowedTransforms: [...ALLOWED_TRANSFORMS.sub],
+      });
+    }
   } else {
     // Pre-unlock the sub still anchors the heartbeat, quietly (§29 fase 1).
     bass.push({
@@ -551,11 +607,31 @@ export function buildLayerGraph(
           .join(','),
         sound: 'triangle',
         style: grammar.chordStyle,
+        drive: grammar.drive,
         slow: grammar.harmonySlow,
         gain: round2(0.3 * mix.harmony),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.chord],
     });
+    // §32: a wide voice an octave up behind the chord — the air around it.
+    if (deepOf('harmony')) {
+      harmony.push({
+        id: 'track-harmony-wide',
+        kind: 'chord',
+        layer: 'harmony',
+        parameters: {
+          notes: (track.harmonyIntervals.length > 0 ? track.harmonyIntervals : [0])
+            .slice(0, 4)
+            .map((semitones) => midiToNoteName(rootMidi + 24 + semitones))
+            .join(','),
+          sound: 'triangle',
+          style: 'pad',
+          slow: grammar.harmonySlow * 2,
+          gain: round2(0.14 * mix.harmony),
+        },
+        allowedTransforms: [...ALLOWED_TRANSFORMS.chord],
+      });
+    }
   }
 
   // --- Melody (§29.2 fase 5): the phrase traced through pitch space ---
@@ -572,11 +648,32 @@ export function buildLayerGraph(
           .join(' '),
         sound: 'triangle',
         style: grammar.melodyStyle,
+        drive: grammar.drive,
         slow: grammar.melodySlow,
         gain: round2(0.3 * mix.melody),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.melody],
     });
+    // §32: the same phrase an octave up, half as loud and twice as slow —
+    // the counter-line every finished track has.
+    if (deepOf('melody')) {
+      melody.push({
+        id: 'track-melody-octave',
+        kind: 'melody',
+        layer: 'melody',
+        parameters: {
+          notes: track.melodyNotes
+            .slice(0, 4)
+            .map((midi) => midiToNoteName(midi + 12))
+            .join(' '),
+          sound: 'triangle',
+          style: grammar.melodyStyle,
+          slow: grammar.melodySlow * 2,
+          gain: round2(0.13 * mix.melody),
+        },
+        allowedTransforms: [...ALLOWED_TRANSFORMS.melody],
+      });
+    }
   }
 
   // §31 Jazz: the world's reply, a distinct voice answering the player.
@@ -609,6 +706,19 @@ export function buildLayerGraph(
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
     });
+    // §32: a slow-moving second texture, so the top end never sits still.
+    if (deepOf('texture')) {
+      texture.push({
+        id: 'track-texture-wide',
+        kind: 'texture',
+        layer: 'texture',
+        parameters: {
+          style: grammar.textureStyle === 'air' ? 'metallic' : 'air',
+          gain: round2(grammar.textureGain * 0.5 * mix.texture),
+        },
+        allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
+      });
+    }
   }
   const atmosphere: MusicalPrimitive[] =
     ambientAffinity >= GENRE_LAYER_THRESHOLD

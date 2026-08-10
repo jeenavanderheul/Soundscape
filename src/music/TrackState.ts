@@ -5,9 +5,17 @@
 
 export interface PatternState {
   unlocked: boolean;
-  /** 0..1 intensity/density of the layer once unlocked. */
+  /**
+   * How complete this layer is: LEVEL_EARNED once the player has it,
+   * LEVEL_DEEP once staying in the world has grown its second voice (§32).
+   */
   level: number;
 }
+
+/** A layer just earned: one voice, the part itself. */
+export const LEVEL_EARNED = 0.5;
+/** A layer grown into a produced part: body + detail stacked (§32). */
+export const LEVEL_DEEP = 1;
 
 export type TrackGenre = 'techno' | 'ambient' | 'jazz' | 'dnb' | 'experimental' | null;
 
@@ -62,6 +70,8 @@ export type TrackLayerName = 'kick' | 'hats' | 'snare' | 'bass' | 'harmony' | 'm
 export type TrackEvents = {
   /** Emitted once when a layer unlocks (§29.3): audible + visual + one word. */
   'track:layer': { layer: TrackLayerName; atMs: number };
+  /** Emitted when a layer grows its second voice (§32). */
+  'track:depth': { layer: TrackLayerName; atMs: number };
   /** Emitted when the world's grammar changes region (§29.5). */
   'track:genre': { genre: TrackGenre; atMs: number };
   /** Emitted when the arrangement moves to a new section (§29.7). */
