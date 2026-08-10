@@ -117,17 +117,17 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
 
 describe('tempo follows flight speed (§29, user decision)', () => {
   it('maps speed into stable bands', () => {
-    // Eight bands, one per gear (user decision).
-    expect(speedToBpm(0)).toBe(60);
-    expect(speedToBpm(5)).toBe(85);
-    expect(speedToBpm(8)).toBe(110);
-    expect(speedToBpm(12)).toBe(128);
+    // Twelve bands, one per gear (user decision).
+    expect(speedToBpm(0)).toBe(45);
+    expect(speedToBpm(3.5)).toBe(60);
+    expect(speedToBpm(8)).toBe(108);
+    expect(speedToBpm(11.5)).toBe(128);
     expect(speedToBpm(15)).toBe(142);
-    expect(speedToBpm(19)).toBe(158);
+    expect(speedToBpm(18)).toBe(158);
     expect(speedToBpm(22)).toBe(172);
     expect(speedToBpm(26)).toBe(190);
     // Inside a band the tempo does not wobble.
-    expect(speedToBpm(10.5)).toBe(speedToBpm(13.4));
+    expect(speedToBpm(11.1)).toBe(speedToBpm(12.4));
   });
 
   it('writes the flight tempo into the track, and the player rhythm overrides it', () => {

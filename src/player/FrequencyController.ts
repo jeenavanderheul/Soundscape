@@ -127,24 +127,32 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
  * attack/release amplitude and velocity → energy. All updates immutable.
  */
 /**
- * Eight gears (user decision). Flight speed is the clock (§29), so a gear IS a
+ * Twelve gears (user decision). Flight speed is the clock (§29), so a gear IS a
  * tempo: each top speed sits inside one of the TEMPO_BANDS, and the region
  * stretches those bands into its own range (§39). Shifting up is the player
  * deciding the track should move faster — deliberate, not a twitch.
  *
- *   1  60 bpm   drone        5  142 bpm  club
- *   2  85 bpm   downtempo    6  158 bpm  breaks
- *   3  110 bpm  groove       7  172 bpm  drum & bass
- *   4  128 bpm  house        8  190 bpm  extreme
+ *   1   45 bpm  drone        7  128 bpm  house
+ *   2   60 bpm  ambient      8  134 bpm  techno
+ *   3   78 bpm  downtempo    9  142 bpm  club
+ *   4   92 bpm  trip        10  158 bpm  breaks
+ *   5  108 bpm  groove      11  172 bpm  drum & bass
+ *   6  118 bpm  deep        12  190 bpm  extreme
  */
-export const GEAR_SPEEDS: readonly number[] = [2.5, 5, 8, 11.5, 15, 18.5, 22, 26];
+export const GEAR_SPEEDS: readonly number[] = [
+  2, 3.5, 5, 6.5, 8, 9.5, 11.5, 13, 15, 18, 22, 26,
+];
 
 /** What each gear feels like, shown in the HUD so the gear is never a number alone. */
 export const GEAR_LABELS: readonly string[] = [
   'drone',
+  'ambient',
   'downtempo',
+  'trip',
   'groove',
+  'deep',
   'house',
+  'techno',
   'club',
   'breaks',
   'dnb',

@@ -212,7 +212,7 @@ describe('the gearbox is the speed (user decision: five gears)', () => {
   }
 
   it('every gear has its own top speed, and they only go up', () => {
-    const speeds = [1, 2, 3, 4, 5, 6, 7, 8].map(topSpeedIn);
+    const speeds = Array.from({ length: MAX_GEAR }, (_, i) => topSpeedIn(i + 1));
     for (let i = 1; i < speeds.length; i++) {
       expect(speeds[i]!).toBeGreaterThan(speeds[i - 1]!);
     }
@@ -228,7 +228,7 @@ describe('the gearbox is the speed (user decision: five gears)', () => {
   });
 
   it('each gear lands in its own tempo band — the gear IS the tempo (§29)', () => {
-    const bpms = [1, 2, 3, 4, 5, 6, 7, 8].map((gear) => speedToBpm(topSpeedIn(gear)));
-    expect(bpms).toEqual([60, 85, 110, 128, 142, 158, 172, 190]);
+    const bpms = Array.from({ length: MAX_GEAR }, (_, i) => speedToBpm(topSpeedIn(i + 1)));
+    expect(bpms).toEqual([45, 60, 78, 92, 108, 118, 128, 134, 142, 158, 172, 190]);
   });
 });

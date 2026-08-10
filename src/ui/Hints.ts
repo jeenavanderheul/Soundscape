@@ -39,7 +39,7 @@ const HINTS: HintDef[] = [
   },
   {
     id: 'gear',
-    text: 'shift changes gear 1-8 and wraps back · hold LMB for wind and boost',
+    text: 'shift changes gear 1-12 and wraps back · hold LMB for wind and boost',
     when: (ctx) => ctx.elapsedMs > 14_000,
   },
   {
