@@ -85,13 +85,15 @@ describe('§35 HARD RULE — the orb never gets under the landscape', () => {
     // Top gear, so the dive is as fast as the game allows.
     while (controller.gear !== MAX_GEAR) controller.update(snapshot({ gearUp: true }), 16);
     const breaches: number[] = [];
+    let closest = Infinity;
     for (let i = 0; i < steps; i++) {
       controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 }, buttons: { accelerate: true, windHold: false } }), 16);
       const p = store.getState().position;
       const clearance = p.y - ground(p.x, p.z);
+      closest = Math.min(closest, clearance);
       if (clearance < FLIGHT_CONFIG.orbRadius - 0.01) breaches.push(+clearance.toFixed(2));
     }
-    return { breaches, final: store.getState().position };
+    return { breaches, closest, final: store.getState().position };
   }
 
   it('never lets the orb sink below the surface, however hard it dives', () => {
@@ -118,5 +120,24 @@ describe('§35 HARD RULE — the orb never gets under the landscape', () => {
       controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 }, buttons: { accelerate: true, windHold: false } }), 16);
     }
     expect(store.getState().position.y).toBeLessThanOrEqual(FLIGHT_CONFIG.maxY);
+  });
+
+  it('catches a full-speed dive well before the surface', () => {
+    const { breaches, closest } = flyInto(4000, 400);
+    expect(breaches).toEqual([]);
+    // Caught by the field, not by the hard clamp: it never even grazes it.
+    expect(closest).toBeGreaterThan(FLIGHT_CONFIG.orbRadius + 0.05);
+  });
+
+  it('pushes back up when the orb is inside the field', () => {
+    const store = createStore({
+      ...createInitialFrequencyState(),
+      position: { x: 200, y: ground(200, 200) + FLIGHT_CONFIG.orbRadius + 0.4, z: 200 },
+    });
+    const controller = new FrequencyController(store);
+    controller.setGroundSampler(ground);
+    const before = store.getState().position.y;
+    for (let i = 0; i < 40; i++) controller.update(snapshot({}), 16);
+    expect(store.getState().position.y).toBeGreaterThan(before);
   });
 });

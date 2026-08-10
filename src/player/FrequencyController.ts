@@ -39,6 +39,17 @@ export const FLIGHT_CONFIG = {
   bumpSpeed: 7,
   /** Fraction of downward speed kept after a bump: the rest is absorbed. */
   bumpRestitution: 0.25,
+  /**
+   * §35 HARD RULE, made unmissable: an invisible field above the landscape.
+   * Inside this clearance the orb is pushed back up ever harder, so in practice
+   * it never reaches the surface at all — the hard clamp below is the backstop,
+   * not the mechanism.
+   */
+  repelClearance: 3.2,
+  /** units/s² lifting the orb out, strongest right above the surface. */
+  repelAcceleration: 34,
+  /** Descent speed allowed at the top of the field; it scales to 0 at the surface. */
+  repelMaxDescent: 14,
 } as const;
 
 export const LOOK_CONFIG = {
@@ -203,6 +214,15 @@ export class FrequencyController {
     if (input.gearUp) this.gearIndex = (this.gearIndex + 1) % MAX_GEAR;
 
     const accelDirection = this.accelDirection(direction, input.axes);
+    // Inside the field you cannot even STEER into the ground: the downward part
+    // of the thrust is cancelled as the gap closes (§35). Without this, holding
+    // forward while looking straight down out-pushes any repulsion.
+    const here = this.store.getState().position;
+    const gap =
+      here.y - ((this.groundAt?.(here.x, here.z) ?? FLIGHT_CONFIG.minY) + FLIGHT_CONFIG.orbRadius);
+    if (gap < FLIGHT_CONFIG.repelClearance && accelDirection.y < 0) {
+      accelDirection.y *= Math.max(0, gap) / FLIGHT_CONFIG.repelClearance;
+    }
     // The gear is the ceiling: W pushes you up to the top speed of the gear you
     // are in, and shifting is what lets the track go faster. Drag alone would
     // settle below the higher gears, so each gear pulls harder — a high gear
@@ -226,6 +246,19 @@ export class FrequencyController {
       // out and absorbs most of the downward speed — a bump, never a wall and
       // never a fall through the floor.
       const floor = (this.groundAt?.(x, z) ?? FLIGHT_CONFIG.minY) + FLIGHT_CONFIG.orbRadius;
+      // The force field: the closer to the ground, the harder it lifts, and it
+      // eats downward speed so a dive is caught instead of stopped dead.
+      const clearance = y - floor;
+      if (clearance < FLIGHT_CONFIG.repelClearance) {
+        const room = Math.max(0, clearance) / FLIGHT_CONFIG.repelClearance;
+        // How fast you are still allowed to fall shrinks with the room left,
+        // so the remaining gap can only ever be a fraction of itself: the orb
+        // is caught by the field and never reaches the surface at all.
+        const allowedDescent = room * FLIGHT_CONFIG.repelMaxDescent;
+        if (this.velocityVec.y < -allowedDescent) this.velocityVec.y = -allowedDescent;
+        // And it is pushed back out, hardest right above the ground.
+        this.velocityVec.y += FLIGHT_CONFIG.repelAcceleration * (1 - room) * (1 - room) * dt;
+      }
       if (y < floor) {
         y = floor;
         this.velocityVec.y =

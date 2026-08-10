@@ -79,6 +79,9 @@ import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
+/** The camera never goes below this above the landscape (§35). */
+const CAMERA_GROUND_CLEARANCE = 1.4;
+
 /** Radians/s that count as banking hard enough to throw a gesture (§33). */
 const TURN_THROW_RATE = 1.8;
 /** Turning must fall back below this before another throw is armed. */
@@ -670,11 +673,15 @@ export class Game {
     // Third-person: the camera trails the orb along the flight direction.
     const camera = this.renderer.camera.instance;
     const { position, direction } = state;
-    camera.position.set(
-      position.x - direction.x * 5,
+    const camX = position.x - direction.x * 5;
+    const camZ = position.z - direction.z * 5;
+    // The camera stays above the landscape too. Letting it dip under the grid
+    // is what made the orb look like it was inside the terrain (§35).
+    const camY = Math.max(
       position.y - direction.y * 5 + 1.6,
-      position.z - direction.z * 5,
+      this.terrain.groundHeightAt(camX, camZ) + CAMERA_GROUND_CLEARANCE,
     );
+    camera.position.set(camX, camY, camZ);
     camera.lookAt(
       position.x + direction.x * 3,
       position.y + direction.y * 3,
