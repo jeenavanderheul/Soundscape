@@ -136,6 +136,11 @@ export class FrequencyController {
     null;
   private grounded = false;
 
+  /** Turn rate in radians/s: positive is banking left (§33 turn throws). */
+  get yawRate(): number {
+    return this.yawRateValue;
+  }
+
   /** Vertical speed in units/s: positive is climbing (§29.7 arrangement). */
   get climbRate(): number {
     return this.velocityVec.y;
@@ -153,13 +158,16 @@ export class FrequencyController {
     this.gearIndex = 1;
   }
   private velocityVec: Vec3Data = { x: 0, y: 0, z: 0 };
+  private yawRateValue = 0;
 
   constructor(private readonly store: Store<FrequencyState>) {}
 
   update(input: InputSnapshot, deltaMs: number): void {
     if (deltaMs <= 0) return;
 
-    this.yaw -= input.mouseDelta.x * LOOK_CONFIG.radiansPerPixel;
+    const yawDelta = -input.mouseDelta.x * LOOK_CONFIG.radiansPerPixel;
+    this.yawRateValue = yawDelta / (deltaMs / 1000);
+    this.yaw += yawDelta;
     this.pitch = clamp(
       this.pitch - input.mouseDelta.y * LOOK_CONFIG.radiansPerPixel,
       -LOOK_CONFIG.maxPitch,

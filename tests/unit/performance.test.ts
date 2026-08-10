@@ -15,6 +15,7 @@ import {
   createEmptyLayerGraph,
   diffLayerGraph,
   type MusicalLayerGraph,
+  throwStyleFor,
   type MusicalPrimitive,
 } from '../../src/audio/MusicalPrimitives';
 
@@ -122,3 +123,25 @@ describe('§3 performance reaches the rendered pattern', () => {
 function count(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
 }
+
+describe('§33 a turn throws one gesture, in the grammar you are in', () => {
+  it('left and right differ, and each grammar has its own pair', () => {
+    expect(throwStyleFor('techno', 'left')).not.toBe(throwStyleFor('techno', 'right'));
+    // A region built on echo throws echo; a drumless one throws a bell.
+    expect(throwStyleFor('dub', 'left')).toBe('echo');
+    expect(throwStyleFor('classical', 'left')).toBe('bell');
+    expect(throwStyleFor(null, 'left')).toBeTruthy();
+  });
+
+  it('renders to a real one-shot voice for every style', () => {
+    for (const genre of ['techno', 'dub', 'classical', 'dnb', null] as const) {
+      for (const side of ['left', 'right'] as const) {
+        const code = buildPatternCode(createEmptyLayerGraph(120), [
+          { kind: 'throw', gain: 0.5, style: throwStyleFor(genre, side) },
+        ]);
+        expect(code).toContain('gain(');
+        expect(code.length).toBeGreaterThan(20);
+      }
+    }
+  });
+});

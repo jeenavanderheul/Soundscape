@@ -16,6 +16,7 @@ import {
   createEmptyLayerGraph,
   diffLayerGraph,
   genreGrammar,
+  throwStyleFor,
 } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
@@ -77,6 +78,13 @@ import { AUTOSAVE_DEBOUNCE_MS, AUTOSAVE_INTERVAL_MS, LOGIC_STEP_MS, WORLD_SEED }
 import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
+
+/** Radians/s that count as banking hard enough to throw a gesture (§33). */
+const TURN_THROW_RATE = 1.8;
+/** Turning must fall back below this before another throw is armed. */
+const TURN_RELEASE_RATE = 0.6;
+/** Floor between throws, so a shaky hand cannot machine-gun them. */
+const TURN_THROW_GAP_MS = 1200;
 
 export type GameEvents = ResonanceEvents & StructureEvents & GenreEvents & TrackEvents & {
   /** Strudel-clock beat boundary (§20 M4); consumed by BeatSync. */
@@ -237,6 +245,9 @@ export class Game {
   private readonly startupLoadInfo: LoadInfo;
   /** §42 gate: starts closed, so a flight begins in silence. */
   private motionLevel = 0;
+  /** §33 turn throws: one gesture per turn, never a stream. */
+  private turnArmed = true;
+  private lastThrowMs = -Infinity;
   private playerTone: PlayerTone | null = null;
   private spatialAudio: SpatialAudio | null = null;
   private resonanceAudio: ResonanceAudio | null = null;
@@ -548,6 +559,7 @@ export class Game {
         genre?.affinity,
       );
       const track = this.trackStore.getState();
+      this.throwOnTurn(elapsedMs, track.genre);
       // §29.6: every layer has a visual system.
       this.particles.setSparkle(track.drums.hats.unlocked);
       this.terrain.setBass(track.bass.unlocked ? 1 : 0);
@@ -745,6 +757,35 @@ export class Game {
     if (this.paused) this.resume();
     else this.pause();
   };
+
+  /**
+   * §33: banking hard throws one gesture into the track — a delay throw, a
+   * riser, a sweep or a bell, whichever belongs to the grammar you are flying
+   * through (user decision). It fires once per turn: the rate has to fall back
+   * to level before another can go, and never within TURN_THROW_GAP_MS.
+   */
+  private throwOnTurn(nowMs: number, genre: TrackGenre): void {
+    const rate = this.controller.yawRate;
+    if (Math.abs(rate) < TURN_RELEASE_RATE) this.turnArmed = true;
+    if (
+      !this.turnArmed ||
+      Math.abs(rate) < TURN_THROW_RATE ||
+      nowMs - this.lastThrowMs < TURN_THROW_GAP_MS ||
+      this.motionLevel < 0.25 // §42: a still world stays still
+    ) {
+      return;
+    }
+    this.turnArmed = false;
+    this.lastThrowMs = nowMs;
+    this.strudelEngine.schedule(
+      {
+        kind: 'throw',
+        gain: 0.5 * this.motionLevel,
+        style: throwStyleFor(genre, rate > 0 ? 'left' : 'right'),
+      },
+      'beat',
+    );
+  }
 
   /** §32: the flight so far as Strudel source — from E and from the pause menu. */
   private exportedTrack(): string {

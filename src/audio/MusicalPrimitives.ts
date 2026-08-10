@@ -115,10 +115,39 @@ export function speedToBpm(velocity: number, grammar?: GenreGrammar): number {
 
 export type MusicParameter = 'bpm' | 'gain';
 
+/**
+ * §33 turns: a hard bank left or right throws ONE gesture into the track
+ * (user decision) — it fires and decays on its own, it is not a held effect.
+ * Which gesture depends on the grammar, so a turn always sounds like the music
+ * it is in.
+ */
+export type ThrowStyle = 'echo' | 'riser' | 'sweep' | 'bell';
+
 /** One-shot musical event routed through the port (spec §11 schedule()). */
 export interface MusicalAction {
-  kind: 'accent' | 'response';
+  kind: 'accent' | 'response' | 'throw';
   gain: number;
+  style?: ThrowStyle;
+}
+
+/** Left and right throw for each grammar, in that grammar's own palette. */
+const THROWS: Record<Exclude<TrackGenre, null> | 'void', readonly [ThrowStyle, ThrowStyle]> = {
+  techno: ['echo', 'riser'],
+  house: ['echo', 'sweep'],
+  garage: ['echo', 'riser'],
+  trap: ['sweep', 'riser'],
+  dnb: ['riser', 'sweep'],
+  jazz: ['bell', 'sweep'],
+  ambient: ['bell', 'sweep'],
+  classical: ['bell', 'sweep'],
+  dub: ['echo', 'sweep'],
+  experimental: ['riser', 'echo'],
+  void: ['sweep', 'riser'],
+};
+
+export function throwStyleFor(genre: TrackGenre, direction: 'left' | 'right'): ThrowStyle {
+  const pair = THROWS[genre ?? 'void'];
+  return direction === 'left' ? pair[0] : pair[1];
 }
 
 export type GraphChange =

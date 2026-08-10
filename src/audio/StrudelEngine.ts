@@ -567,6 +567,24 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
 
 function renderAction(action: MusicalAction): string {
   const gain = clamp(finite(action.gain, 'action.gain'), 0, 1).toFixed(3);
+  if (action.kind === 'throw') {
+    // One gesture per turn, thrown into the track and left to decay (§33).
+    switch (action.style) {
+      case 'echo':
+        return samplesLoaded
+          ? `s("~ cp").bank("${DEFAULT_BANK}").delay("0.55:0.375:0.72").room(.35).gain(${gain})`
+          : `s("~ white").decay(.09).sustain(0).bpf(1800).delay("0.55:0.375:0.72").gain(${gain})`;
+      case 'riser':
+        return `s("white").hpf(1400).attack(.35).decay(.5).sustain(0).room(.45).gain(${gain})`;
+      case 'bell':
+        return samplesLoaded
+          ? `s("vibraphone").room(.6).gain(${gain})`
+          : `note("a4").s("sine").decay(.9).sustain(0).room(.6).gain(${gain})`;
+      case 'sweep':
+      default:
+        return `s("white").lpf(700).attack(.2).decay(.7).sustain(0).room(.3).gain(${gain})`;
+    }
+  }
   // Both M4 action kinds share one off-beat clap accent template.
   return `s("[~ white]").decay(.08).sustain(0).bpf(2200).gain(${gain})`;
 }
