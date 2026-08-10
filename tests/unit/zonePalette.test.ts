@@ -1,4 +1,4 @@
-import { guideLines, trueAltitudeBand } from '../../src/ui/Guide';
+import { bandOffset, guideLines, inBand, trueAltitudeBand } from '../../src/ui/Guide';
 import { describe, expect, it } from 'vitest';
 
 import { setZoneGenres } from '../../src/genres/GenreZones';
@@ -174,5 +174,27 @@ describe('§67 the guide tells you where and how high, and nothing else', () => 
   it('and asks for a direction while nothing is playing yet', () => {
     const empty = guideLines({ altitude: 18, genre: null, heading: 'N · techno', energy: 0.5 });
     expect(empty[1]).toContain('pick a direction');
+  });
+});
+
+describe('§67b the crosshair: something to line up, not a number to read', () => {
+  it('settles on the cross inside the band and rides above it below', () => {
+    const band = trueAltitudeBand();
+    expect(bandOffset((band.low + band.high) / 2)).toBe(0);
+    expect(inBand(band.low + 0.1)).toBe(true);
+    // Below the band the tick sits ABOVE the cross: climb towards it.
+    expect(bandOffset(2)).toBeGreaterThan(0);
+    // Above it, the other way round.
+    expect(bandOffset(60)).toBeLessThan(0);
+  });
+
+  it('saturates instead of flying off the screen', () => {
+    expect(bandOffset(-50)).toBeLessThanOrEqual(1);
+    expect(bandOffset(500)).toBeGreaterThanOrEqual(-1);
+  });
+
+  it('moves the further you are from the good height', () => {
+    expect(bandOffset(2)).toBeGreaterThan(bandOffset(14));
+    expect(Math.abs(bandOffset(70))).toBeGreaterThan(Math.abs(bandOffset(28)));
   });
 });

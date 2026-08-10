@@ -51,6 +51,25 @@ export function homePoint(genre: TrackGenre): string | null {
   return null;
 }
 
+/**
+ * §67b: where the ideal band sits relative to the orb, as −1..1 for the
+ * crosshair. Positive means the band is ABOVE you, so the tick rides above the
+ * cross and you climb towards it; 0 means you are in it.
+ */
+export function bandOffset(altitude: number): number {
+  const band = trueAltitudeBand();
+  const centre = (band.low + band.high) / 2;
+  if (altitude >= band.low && altitude <= band.high) return 0;
+  // Half the band's own width is one "notch"; the tick saturates after eight.
+  const notch = Math.max(1, (band.high - band.low) / 2);
+  return Math.max(-1, Math.min(1, (centre - altitude) / (notch * 8)));
+}
+
+export function inBand(altitude: number): boolean {
+  const band = trueAltitudeBand();
+  return altitude >= band.low && altitude <= band.high;
+}
+
 export interface GuideState {
   /** Height above the terrain right under the orb. */
   altitude: number;
@@ -83,9 +102,48 @@ export function guideLines(state: GuideState): string[] {
 
 export class Guide {
   private readonly root: HTMLDivElement;
+  /** §67b: the crosshair, and the tick that shows where the good height is. */
+  private readonly cross: HTMLDivElement;
+  private readonly tick: HTMLDivElement;
   private last = '';
+  private lastTick = '';
 
   constructor(container: HTMLElement = document.body) {
+    this.cross = document.createElement('div');
+    this.cross.setAttribute('aria-hidden', 'true');
+    Object.assign(this.cross.style, {
+      position: 'fixed',
+      left: '50%',
+      top: '50%',
+      width: '13px',
+      height: '13px',
+      marginLeft: '-6.5px',
+      marginTop: '-6.5px',
+      pointerEvents: 'none',
+      zIndex: '10',
+      // A cross of two hairlines: the smallest thing that reads as "here".
+      background:
+        'linear-gradient(rgba(210,225,228,.5),rgba(210,225,228,.5)) 50% 0/1px 100% no-repeat,' +
+        'linear-gradient(rgba(210,225,228,.5),rgba(210,225,228,.5)) 0 50%/100% 1px no-repeat',
+      transition: 'opacity .2s ease',
+    });
+    this.tick = document.createElement('div');
+    this.tick.setAttribute('aria-hidden', 'true');
+    Object.assign(this.tick.style, {
+      position: 'fixed',
+      left: '50%',
+      top: '50%',
+      width: '26px',
+      height: '1px',
+      marginLeft: '-13px',
+      pointerEvents: 'none',
+      zIndex: '10',
+      background: 'rgba(210, 225, 228, 0.75)',
+    });
+    container.appendChild(this.cross);
+    container.appendChild(this.tick);
+    this.cross.hidden = true;
+    this.tick.hidden = true;
     this.root = document.createElement('div');
     this.root.setAttribute('aria-hidden', 'true');
     Object.assign(this.root.style, {
@@ -110,14 +168,32 @@ export class Guide {
 
   toggle(): void {
     this.root.hidden = !this.root.hidden;
+    this.cross.hidden = this.root.hidden;
+    this.tick.hidden = this.root.hidden;
   }
 
   show(): void {
     this.root.hidden = false;
+    this.cross.hidden = false;
+    this.tick.hidden = false;
   }
 
   update(state: GuideState): void {
     if (this.root.hidden) return;
+    // §67b: the tick rides above the cross while the good height is above you
+    // and settles onto it when you are there — no numbers to read, just a
+    // thing to line up.
+    const offset = bandOffset(state.altitude);
+    const settled = inBand(state.altitude);
+    const marker = `${(-offset * 46).toFixed(0)}:${settled ? 1 : 0}`;
+    if (marker !== this.lastTick) {
+      this.lastTick = marker;
+      this.tick.style.transform = `translateY(${(-offset * 46).toFixed(1)}px)`;
+      this.tick.style.opacity = settled ? '0.95' : '0.6';
+      this.tick.style.width = settled ? '13px' : '26px';
+      this.tick.style.marginLeft = settled ? '-6.5px' : '-13px';
+      this.cross.style.opacity = settled ? '1' : '0.45';
+    }
     const text = guideLines(state).join('\n');
     if (text === this.last) return;
     this.last = text;
@@ -126,5 +202,7 @@ export class Guide {
 
   dispose(): void {
     this.root.remove();
+    this.cross.remove();
+    this.tick.remove();
   }
 }
