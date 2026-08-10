@@ -287,9 +287,8 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
       drums: { kick: deep, snare: deep, hats: deep },
       bass: deep, harmony: deep, melody: deep, texture: deep,
     }));
-    fly(0, 12_000, 6, 0.8);   // climb into a build
-    fly(12_250, 1500, -6, 0.8); // dive: the drop
-    fly(14_000, 30_000, 0, 0.1); // float out of it
+    fly(0, 40_000, 0, 0.9);      // push: groove → build → drop
+    fly(40_250, 30_000, 0, 0.1); // ease off: break, and the handover
     // Track 02 is born in the same place, so it is techno again — a different
     // techno, never an ambient one.
     expect(genres).toEqual(['techno']);
@@ -314,9 +313,8 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
         builder.tick(t, music, { velocity: 12, hz: 220, energy, altitude: 12, climb });
       }
     };
-    fly(0, 12_000, 6, 0.8);
-    fly(12_250, 1500, -6, 0.8);
-    fly(14_000, 30_000, 0, 0.1);
+    fly(0, 40_000, 0, 0.9);
+    fly(40_250, 30_000, 0, 0.1);
     expect(genres).toEqual(['techno']);
   });
 });

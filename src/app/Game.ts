@@ -773,6 +773,8 @@ export class Game {
       this.motionLevel,
     );
     next.performance = performance;
+    // §58: height runs the track like a tape — the clock goes with the pitch.
+    if (next.bpm > 0) next.bpm = Math.round(next.bpm * performance.tempoRatio);
     // Endless journey: which variation each layer is playing right now.
     next.variations = this.trackBuilder.variations;
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;

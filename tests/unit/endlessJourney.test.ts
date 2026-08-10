@@ -46,16 +46,16 @@ function complete(track: TrackState): TrackState {
   };
 }
 
-/** Run the builder with a climb/energy profile that reaches a drop and leaves it. */
+/**
+ * §58: the form is energy and time. Push hard for long enough and the track
+ * builds and drops; ease off and it breaks down — which is when a finished
+ * track hands over.
+ */
 function flyThroughADrop(builder: TrackBuilder, fromMs: number): number {
   const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, dynamics: 0.6 };
   let t = fromMs;
-  // Climb into a build…
-  for (; t < fromMs + 12_000; t += 250) builder.tick(t, music, { ...FLYING, climb: 6, energy: 0.8 });
-  // …then dive out of it: that is the drop.
-  for (; t < fromMs + 14_000; t += 250) builder.tick(t, music, { ...FLYING, climb: -6, energy: 0.8 });
-  // Float, so the drop gives way and the next track starts.
-  for (; t < fromMs + 40_000; t += 250) builder.tick(t, music, { ...FLYING, climb: 0, energy: 0.1 });
+  for (; t < fromMs + 40_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.9 });
+  for (; t < fromMs + 70_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.1 });
   return t;
 }
 

@@ -284,6 +284,14 @@ export class TrackBuilder {
       rootMidi: travelled ? createInitialTrackState().rootMidi : rootMidi,
       melodyNotes: travelled ? [] : motif,
     }));
+    // §58 (user decision): arriving somewhere new gives you its FIRST layer at
+    // once — 4/7 of one world becomes 1/7 of the next, not 0/7. Without that
+    // there is a hole where the new world should announce itself, and the
+    // crossing reads as the music stopping instead of somewhere beginning.
+    if (travelled) {
+      const first = ladderFor(bornIn)[0];
+      if (first) this.unlock(first.layer, nowMs);
+    }
     this.activeMs = 0;
     this.lastDeepenMs = 0;
     this.lowRegisterMs = 0;
@@ -414,12 +422,7 @@ export class TrackBuilder {
     }
     // The arrangement runs on the paced clock too: sections arrive sooner when
     // the player is moving through the world quickly.
-    const section = this.arrangement.tick(
-      this.paceClockMs,
-      paced,
-      flight.energy,
-      flight.climb ?? 0,
-    );
+    const section = this.arrangement.tick(this.paceClockMs, paced, flight.energy);
 
     if (
       nextBpm !== track.bpm ||

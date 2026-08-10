@@ -45,6 +45,13 @@ export interface Performance {
    * it always stays in tune (user decision). Climbing raises the pitch.
    */
   transpose: number;
+  /**
+   * §58 (user decision): height runs the track like a tape. Up is faster AND
+   * higher, down by the ground is slower and deeper — one gesture, one
+   * meaning, nothing else attached to it. Clamped, because the top of the
+   * pitch range would otherwise double the tempo into nonsense.
+   */
+  tempoRatio: number;
 }
 
 /** Height at which the world is fully "air" rather than "ground". */
@@ -67,6 +74,8 @@ export function performanceFrom(music: MusicState, flight: FlightPose): Performa
   // §3.1 + §3.7: register and timbre brightness, pulled down by flying low.
   const tone = clamp01(0.35 * music.timbreBrightness + 0.35 * pitchNorm(music.pitchCenter) + 0.3 * air);
   const weight = step(ground * ground, 8);
+  const semitones =
+    PITCH_STEPS[Math.min(PITCH_STEPS.length - 1, Math.floor(air * PITCH_STEPS.length))]!;
   return {
     // Skimming the ground closes the filter down hard: low is dark and heavy.
     brightHz: quantizeLog((300 + tone * 8700) * (1 - 0.45 * weight), 300, 9000),
@@ -81,7 +90,10 @@ export function performanceFrom(music: MusicState, flight: FlightPose): Performa
     // §3.1: low frequencies are mass. Skimming the ground IS the low register.
     weight,
     // Climbing lifts the whole track, in steps of its own key.
-    transpose: PITCH_STEPS[Math.min(PITCH_STEPS.length - 1, Math.floor(air * PITCH_STEPS.length))]!,
+    transpose: semitones,
+    // …and carries the tempo with it, the way a tape does. The bands are
+    // already discrete, so this is diff-stable without further quantizing.
+    tempoRatio: Math.round(clamp(Math.pow(2, semitones / 12), 0.75, 1.6) * 1000) / 1000,
   };
 }
 

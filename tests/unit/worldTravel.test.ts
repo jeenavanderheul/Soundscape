@@ -7,6 +7,8 @@ vi.mock('@strudel/web', () => ({
 }));
 
 import { genreGrammar } from '../../src/audio/MusicalPrimitives';
+import { ladderFor, layerUnlocked } from '../../src/music/GenreLadder';
+import { performanceFrom } from '../../src/music/Performance';
 import { dominantZone, zoneAffinity } from '../../src/genres/GenreZones';
 import { placeName } from '../../src/genres/ZonePalette';
 import { createEventBus } from '../../src/core/EventBus';
@@ -125,8 +127,22 @@ describe('arriving somewhere new starts a track in that world', () => {
     // Earned from nothing again, in trap's own order and at trap's own tempo.
     expect(trapTrack.bpm).toBe(genreGrammar('trap').bpmCentre);
     expect(builder.trackNumber).toBe(2);
-    // You hear the new world at once: the kick you earned is now a trap kick.
-    expect(trapTrack.drums.kick.unlocked).toBe(true);
+    // §58: you land on 1/7 of the new world, never on nothing — its first
+    // rung is given the moment you arrive, so the crossing announces itself.
+    const first = ladderFor('trap')[0]!.layer;
+    expect(layerUnlocked(trapTrack, first)).toBe(true);
+    expect(first).toBe('bass'); // and it is TRAP's first rung, not techno's
+  });
+
+  it('§58 height is a tape: up is faster and higher, down is slower and deeper', () => {
+    const music = createInitialMusicState();
+    const high = performanceFrom(music, { altitude: 60, amplitude: 0, velocity: 20 });
+    const low = performanceFrom(music, { altitude: 1, amplitude: 0, velocity: 20 });
+    expect(high.transpose).toBeGreaterThan(low.transpose);
+    expect(high.tempoRatio).toBeGreaterThan(1);
+    expect(low.tempoRatio).toBeLessThan(1);
+    // Never so far that the sub drops out of hearing (§21).
+    expect(low.transpose).toBeGreaterThanOrEqual(-5);
   });
 
   it('and the sounds of that world come with it', () => {
