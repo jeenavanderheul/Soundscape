@@ -100,7 +100,13 @@ interface FrequencyDebug {
   getStructures(): WorldState['structures'];
   getInterferenceActiveCount(): number;
   getMusicState(): Readonly<MusicState>;
-  getStrudelInfo(): { playing: boolean; bpm: number; evaluations: number };
+  getStrudelInfo(): {
+    playing: boolean;
+    bpm: number;
+    evaluations: number;
+    samples: boolean;
+    local: boolean;
+  };
   getGenreSnapshot(): unknown;
   getProgression(): unknown;
   getAnalysis(): unknown;
@@ -552,7 +558,7 @@ export class Game {
       const info = this.strudelEngine.status;
       const playing = this.trackStore.getState();
       this.codeOverlay.setStatus(
-        `${info.samples ? 'real drum kit' : 'SYNTH FALLBACK — samples failed'} · ` +
+        `${info.samples ? (info.local ? 'local kit' : 'remote kit') : 'SYNTH FALLBACK — samples failed'} · ` +
           `${playing.genre ?? 'void'} · ${genreGrammar(playing.genre).drumBank} · ` +
           `${Math.round(playing.bpm)} bpm`,
       );

@@ -1388,6 +1388,23 @@ The live pattern code is visible from the first second of flight, not hidden beh
 
 ---
 
+## 42. Movement is the music (v12 amendment — NORMATIVE)
+
+When the orb is still, the world is silent. Layer gains follow flight speed, quantized in eight steps so a drifting gain can never re-evaluate the pattern per frame (§11).
+
+Earned layers are **never lost** — they simply stop sounding until the player moves again. This resolves the tension with the earlier rule that a discovered layer stays in the track: it stays *earned*, not *audible*.
+
+## 43. The sound library is local (v12 amendment)
+
+`npm run sounds:vendor` downloads the sample maps and every audio file they reference into `public/samples/` and writes a `strudel.json` that points at them. The engine loads that first and only falls back to the remote maps when it is absent.
+
+- The game then runs fully offline and does not depend on a third-party repository staying online.
+- `public/samples/` is **git-ignored**: it is gigabytes, and the script is the reproducible way to rebuild it.
+- `npm run sounds:vendor:used` fetches only what the grammars can utter (~80 MB) for a fast checkout.
+- The status line above the live code says `local kit`, `remote kit` or `SYNTH FALLBACK` so which one is in use is never a guess.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

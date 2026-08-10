@@ -2,3 +2,6 @@ node_modules
 dist
 .DS_Store
 *.local
+
+# §43: vendored sample library — gigabytes, rebuilt with npm run sounds:vendor
+public/samples/

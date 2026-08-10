@@ -101,6 +101,14 @@ const DEFAULT_BANK = 'RolandTR909';
  * - VCSL: acoustic and orchestral instruments
  * - EmuSP12 / Dirt-Samples: the classic tracker and Tidal kits
  */
+/**
+ * §43: the vendored library, served by our own origin. Tried FIRST so the
+ * game works offline and does not depend on a third-party repository staying
+ * up; the GitHub maps below remain the fallback for a checkout that has not
+ * run `npm run sounds:vendor` yet.
+ */
+export const LOCAL_SAMPLE_MAP = '/samples/strudel.json';
+
 export const SAMPLE_MAPS = [
   'https://raw.githubusercontent.com/felixroos/dough-samples/main/tidal-drum-machines.json',
   'https://raw.githubusercontent.com/felixroos/dough-samples/main/vcsl.json',
@@ -595,6 +603,8 @@ export class StrudelEngine implements StrudelEnginePort {
   private repl: StrudelRepl | null = null;
   private started = false;
   private disposed = false;
+  /** §43: true once the vendored local library is in use. */
+  private localSamples = false;
 
   private appliedGraph: MusicalLayerGraph = createEmptyLayerGraph();
   private baseCode = '';
@@ -626,12 +636,26 @@ export class StrudelEngine implements StrudelEnginePort {
     // offline — the templates fall back to built-in synth voices and the
     // world still sounds. Never blocks the unlock.
     void Promise.resolve()
-      // The drum machines decide whether the kit is real; the rest are extra
-      // palette and must not be able to hold the drums back.
-      .then(() => samples(DRUM_MACHINES_URL))
+      // Local first (§43). If it is not vendored yet, fall back to the remote
+      // maps — the drum machines decide whether the kit is real, and the rest
+      // are extra palette that must not be able to hold the drums back.
+      .then(async () => {
+        try {
+          const probe = await fetch(LOCAL_SAMPLE_MAP, { method: 'HEAD' });
+          if (probe.ok) {
+            await samples(LOCAL_SAMPLE_MAP);
+            this.localSamples = true;
+            return;
+          }
+        } catch {
+          // No local library: use the network maps below.
+        }
+        await samples(DRUM_MACHINES_URL);
+      })
       .then(() => {
         this.samplesReady = true;
         setSamplesLoaded(true);
+        if (this.localSamples) return; // everything is already in-house
         for (const map of SAMPLE_MAPS.slice(1)) {
           void Promise.resolve()
             .then(() => samples(map))
@@ -840,12 +864,13 @@ export class StrudelEngine implements StrudelEnginePort {
   private lastCode = '';
 
   /** Diagnostic status (dev debug handle): playing state, bpm and evaluation count. */
-  get status(): { playing: boolean; bpm: number; evaluations: number; samples: boolean } {
+  get status(): { playing: boolean; bpm: number; evaluations: number; samples: boolean; local: boolean } {
     return {
       playing: this.playing,
       bpm: this.appliedGraph.bpm,
       evaluations: this.evaluations,
       samples: this.samplesReady,
+      local: this.localSamples,
     };
   }
 
