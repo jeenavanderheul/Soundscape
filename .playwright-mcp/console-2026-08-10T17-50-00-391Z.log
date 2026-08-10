@@ -24,3 +24,9 @@
 [   28533ms] [LOG] %c[sampler] load sound "RolandTR808_rim:0:0"... done! loaded 21.6 KiB in 189ms background-color: black;color:white;border-radius:15px @ http://localhost:5208/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [   28905ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5208/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [   30317ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5208/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  291538ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5208/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  291565ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5208/:0
+[  308570ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5208/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  308588ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5208/:0
+[  328584ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5208/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  328603ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5208/:0

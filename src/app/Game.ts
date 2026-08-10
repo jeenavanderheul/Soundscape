@@ -37,7 +37,8 @@ import { createInitialFrequencyState, FrequencyState } from '../player/Frequency
 import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
-import { ForestSystem } from '../rendering/ForestSystem';
+import { ForestRenderer } from '../rendering/ForestRenderer';
+import { ecologyFor } from '../rendering/ForestEcology';
 import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
 import { ParticleSystem } from '../rendering/ParticleSystem';
 import { PlayerOrb } from '../rendering/PlayerOrb';
@@ -149,7 +150,7 @@ export class Game {
   private readonly terrain = new WaveTerrain(WORLD_SEED);
   private readonly orb = new PlayerOrb();
   private readonly hud = new HUD();
-  private readonly forest = new ForestSystem(WORLD_SEED, this.worldStore.getState().resonators);
+  private readonly forest = new ForestRenderer(WORLD_SEED);
   private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
   private readonly melodyTrail = new MelodyTrail();
   private readonly streaks = new SpeedStreaks(WORLD_SEED);
@@ -234,6 +235,9 @@ export class Game {
     // §35: the landscape is the floor. One height field, shared by the
     // shader that draws it and the collision that stops the orb.
     this.controller.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
+    // §36: giants are solid too — you fly around them, never through them.
+    this.controller.setObstacleSource(() => this.forest.solidObstacles());
+    this.forest.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
     this.particles = new ParticleSystem(WORLD_SEED);
     this.renderer.scene.add(this.particles.points);
     this.detachIntroHint = attachIntroHint(this.events);
@@ -347,6 +351,7 @@ export class Game {
       if (this.unlocked && !this.paused) this.pause();
     });
     window.addEventListener('keydown', this.onKeyDown);
+    if (import.meta.env.DEV) window.addEventListener('keydown', this.onRegionKey);
     // Dev-only debug handle; the whole block is dropped from production builds.
     if (import.meta.env.DEV) {
       (window as DebugWindow).__FREQUENCY_DEBUG__ = {
@@ -389,6 +394,7 @@ export class Game {
     this.elements.unlockButton.removeEventListener('click', this.onUnlockClick);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('keydown', this.onRegionKey);
     this.detachPointerLockPause();
     this.pauseOverlay.dispose();
     this.loop.stop();
@@ -570,7 +576,14 @@ export class Game {
       this.terrain.excite('player', state.position, state.hz, state.amplitude * 0.12);
     }
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
-    this.forest.update(elapsedMs / 1000);
+    this.forest.update(
+      state.position,
+      this.trackStore.getState().genre,
+      this.trackStore.getState(),
+      elapsedMs / 1000,
+    );
+    // §36: speed widens the lens.
+    this.renderer.camera.setSpeedFactor(state.energy);
     this.markers.update(elapsedMs / 1000);
     this.melodyTrail.update(state.position, dtSeconds);
     // Bridges connect the sounding things: resonators plus born structures.
@@ -590,7 +603,12 @@ export class Game {
       },
       dtSeconds,
     );
-    this.hud.update(state, headingLabel(Math.atan2(state.direction.x, -state.direction.z)));
+    const genre = this.trackStore.getState().genre;
+    this.hud.update(state, {
+      heading: headingLabel(Math.atan2(state.direction.x, -state.direction.z)),
+      biome: genre ?? 'void',
+      region: ecologyFor(genre).name,
+    });
     // Third-person: the camera trails the orb along the flight direction.
     const camera = this.renderer.camera.instance;
     const { position, direction } = state;
@@ -621,6 +639,32 @@ export class Game {
     this.lastLayerGraph = next;
     this.strudelEngine.setLayerGraph(next, 'bar');
   }
+
+  /**
+   * Dev-only region jump: 1-8 drop the player into the heart of a compass
+   * region, 9 climbs into Experimental, 0 dives into Dub. Verifying that a
+   * direction really does rewrite the music takes seconds instead of a
+   * two-minute flight. Dropped from production builds.
+   */
+  private readonly onRegionKey = (event: KeyboardEvent): void => {
+    if (!this.unlocked || this.paused) return;
+    const spots: Record<string, [number, number, number]> = {
+      Digit1: [0, -140, 8],
+      Digit2: [100, -100, 8],
+      Digit3: [140, 0, 8],
+      Digit4: [100, 100, 8],
+      Digit5: [0, 140, 8],
+      Digit6: [-100, 100, 8],
+      Digit7: [-140, 0, 8],
+      Digit8: [-100, -100, 8],
+      Digit9: [0, 0, 65],
+      Digit0: [0, 0, -2.5],
+    };
+    const spot = spots[event.code];
+    if (!spot) return;
+    const [x, z, y] = spot;
+    this.frequencyStore.setState((state) => ({ ...state, position: { x, y, z } }));
+  };
 
   private readonly onUnlockClick = (): void => {
     void this.unlock();

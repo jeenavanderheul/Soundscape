@@ -120,6 +120,9 @@ export class FrequencyController {
   private pitch = 0;
   /** §35: samples the solid landscape; unset means the old flat floor. */
   private groundAt: ((x: number, z: number) => number) | null = null;
+  /** §36: the largest formations are solid too — they push the orb aside. */
+  private obstacles: (() => readonly { x: number; z: number; radius: number; height: number }[]) | null =
+    null;
   private grounded = false;
 
   /** Reset world (§17): look level again, matching the fresh spawn state. */
@@ -168,6 +171,21 @@ export class FrequencyController {
       } else {
         this.grounded = false;
       }
+      // §36: push out of any solid formation, horizontally — you fly AROUND a
+      // giant, you never fly through it. Only the largest are solid.
+      let px = x;
+      let pz = z;
+      for (const solid of this.obstacles?.() ?? []) {
+        const groundY = this.groundAt?.(solid.x, solid.z) ?? FLIGHT_CONFIG.minY;
+        if (y > groundY + solid.height) continue; // above the canopy: clear
+        const dx = px - solid.x;
+        const dz = pz - solid.z;
+        const distance = Math.hypot(dx, dz);
+        const clear = solid.radius + FLIGHT_CONFIG.orbRadius;
+        if (distance >= clear || distance < 1e-6) continue;
+        px = solid.x + (dx / distance) * clear;
+        pz = solid.z + (dz / distance) * clear;
+      }
       return {
         ...state,
         hz: mapWheelToHz(state.hz, input.wheelDelta),
@@ -175,7 +193,7 @@ export class FrequencyController {
         velocity: speed,
         energy: clamp(speed / FLIGHT_CONFIG.maxSpeed, 0, 1),
         direction,
-        position: { x, y, z },
+        position: { x: px, y, z: pz },
       };
     });
   }
@@ -183,6 +201,13 @@ export class FrequencyController {
   /** §35: the landscape height sampler. Without one the old flat floor applies. */
   setGroundSampler(sampler: (x: number, z: number) => number): void {
     this.groundAt = sampler;
+  }
+
+  /** §36: the solid formations to fly around. */
+  setObstacleSource(
+    source: () => readonly { x: number; z: number; radius: number; height: number }[],
+  ): void {
+    this.obstacles = source;
   }
 
   /** True on the frame the orb is resting on the landscape. */

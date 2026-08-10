@@ -1,5 +1,12 @@
 import type { FrequencyState } from '../player/FrequencyState';
 
+/** §36: where the player is, in the world's own words. */
+export interface HudPlace {
+  heading: string;
+  biome: string;
+  region: string;
+}
+
 /**
  * Poster-style minimal readout (user decision): freq / amp / wave in
  * monospace, top-left. Feedback, never a DAW (§21 UX).
@@ -36,9 +43,12 @@ export class HUD {
    * §33: the heading line tells the player which region they are flying into,
    * so a direction is never just "away".
    */
-  update(state: Readonly<FrequencyState>, heading?: string): void {
-    const compass = heading === undefined ? '' : `\nhead: ${heading}`;
-    const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${compass}`;
+  update(state: Readonly<FrequencyState>, place?: HudPlace): void {
+    const where =
+      place === undefined
+        ? ''
+        : `\n\nhead: ${place.heading}\nbiome: ${place.biome}\nregion: ${place.region}`;
+    const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
     if (text === this.lastText) return;
     this.lastText = text;
     this.root.textContent = text;

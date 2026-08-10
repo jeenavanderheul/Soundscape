@@ -1295,6 +1295,46 @@ Only the STANDING shape: the idle ripple and the region's relief. Excitation bum
 
 ---
 
+## 36. The forest is the score (v9 amendment — NORMATIVE)
+
+### 36.1 Vegetation is music, not decoration
+
+Every growth carries a musical role, so a player sees where the music is before hearing it:
+
+| Growth | Layer |
+|---|---|
+| thick trunk | kick |
+| thin needle | hats |
+| root, reaching below | bass |
+| branch, reaching sideways | melody |
+| canopy overhead | harmony |
+| drifting spore | texture |
+| giant formation | a new element |
+
+Each growth exists in two states: **potential** (thin, dim — what this place could give you) and **earned** (full size and brightness — what you took from it). Both, deliberately: the potential forest gives a reason to fly somewhere, and the earned forest records what the flight made.
+
+### 36.2 Every grammar is an ecosystem
+
+Ten forests, distinguished by verticality, density, irregularity and motion rather than by literal species: MACHINE (techno, straight tall pillars), CLOUD (ambient, spores and membranes), IMPROVISED (jazz, branching), VELOCITY (dnb, sharp shards), MUTATION (experimental, nothing keeps its form), SKIP (garage), WARM (house), WEIGHT (trap, enormous masses), ECHO (dub, deep roots and wide canopies), HALL (classical, colonnades). Everything stays monochrome, wireframe and abstract — never a literal tree.
+
+### 36.3 Placement is a pure function
+
+Growths come from `growthsInCell(seed, cx, cz, ecology, track)` — deterministic per world cell, so the forest is infinite, identical across sessions, and unchanged when the player flies away and returns. The renderer rebuilds only when the player crosses a cell boundary or the region changes, never per frame.
+
+### 36.4 Only the largest formations are solid
+
+Giants and the thickest trunks push the orb aside horizontally (§35 governs the ground). Needles, spores and branches are flown straight through — a dense forest must stay flyable.
+
+### 36.5 Speed is communicated five ways at once
+
+Orb trail length, foreground streaks, vegetation parallax (near trunks move far faster than the horizon), wind streaks, and a camera FOV that widens with velocity. All subtle: it must stay arty, never a racing game.
+
+### 36.6 The HUD names the place
+
+`heading` (compass point and the grammar it leads to), `biome` (the grammar underfoot) and `region` (the ecosystem's name). Discovery is exploration, never a menu.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.
