@@ -37,6 +37,7 @@ const strudel = vi.hoisted(() => {
 vi.mock('@strudel/web', () => ({
   initStrudel: strudel.initStrudel,
   getSuperdoughAudioController: () => ({ output: { destinationGain: strudel.destinationGain } }),
+  samples: vi.fn(async () => undefined),
 }));
 
 const QUIET_SNAPSHOT: AnalysisSnapshot = {

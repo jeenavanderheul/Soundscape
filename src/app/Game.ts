@@ -12,7 +12,7 @@ import { PointerLock, PointerLockEvents } from '../input/PointerLock';
 import { buildLayerGraph, diffLayerGraph } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
-import { zoneAffinity } from '../genres/GenreZones';
+import { setZoneGenres, zoneAffinity } from '../genres/GenreZones';
 import type { GenreEvents } from '../genres/GenreAffinityEngine';
 import { createInitialMusicState, MusicState } from '../music/MusicState';
 import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
@@ -47,6 +47,10 @@ import { ResonanceEngine } from '../resonance/ResonanceEngine';
 import type { ResonanceEvents } from '../resonance/ResonanceEngine';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { CodeOverlay } from '../ui/CodeOverlay';
+import { PromptOverlay } from '../ui/PromptOverlay';
+import { loadApiKey, requestWorld, saveApiKey } from '../ai/WorldPromptClient';
+import type { LayerPatterns } from '../audio/MusicalPrimitives';
+import type { WorldRecipe } from '../ai/WorldRecipe';
 import { Hints } from '../ui/Hints';
 import { LayerCue } from '../ui/LayerCue';
 import { HUD } from '../ui/HUD';
@@ -144,6 +148,25 @@ export class Game {
   private readonly harmonyBridges = new HarmonyBridges();
   private readonly hints = new Hints();
   private readonly codeOverlay = new CodeOverlay();
+  /** §30: the world the player described, if they described one. */
+  private readonly promptOverlay = new PromptOverlay(
+    {
+      onSubmit: async (description, apiKey) => {
+        const { validation } = await requestWorld(description, apiKey);
+        saveApiKey(apiKey);
+        this.applyRecipe(validation.recipe);
+        if (validation.rejected.length > 0) {
+          // Honest about what was refused rather than silently dropping it.
+          console.warn('FREQUENCY: rejected generated patterns', validation.rejected);
+        }
+      },
+      onSkip: () => {
+        this.promptOverlay.hide();
+      },
+    },
+    loadApiKey(),
+  );
+  private worldPatterns: LayerPatterns = {};
   private readonly layerCue = new LayerCue(this.events);
   private readonly beatSync: BeatSync;
   private readonly detachBeatSync: () => void;
@@ -380,6 +403,7 @@ export class Game {
     this.harmonyBridges.dispose();
     this.hints.dispose();
     this.codeOverlay.dispose();
+    this.promptOverlay.dispose();
     this.layerCue.dispose();
     this.renderer.scene.remove(this.orb.mesh);
     this.orb.dispose();
@@ -539,6 +563,7 @@ export class Game {
       this.genreEngine.current?.affinity,
       this.worldStore.getState().structures,
       this.trackStore.getState(),
+      this.worldPatterns,
     );
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     this.lastLayerGraph = next;
@@ -556,6 +581,12 @@ export class Game {
 
   /** Esc toggles pause when pointer lock isn't holding it (locked Esc arrives as lock release). */
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (this.unlocked && (event.key === 'p' || event.key === 'P')) {
+      // §30: describe a new world mid-flight.
+      if (this.promptOverlay.isVisible) this.promptOverlay.hide();
+      else this.promptOverlay.show();
+      return;
+    }
     if (event.key !== 'Escape' || !this.unlocked) return;
     if (this.paused) this.resume();
     else this.pause();
@@ -618,12 +649,52 @@ export class Game {
       console.error('FREQUENCY: Strudel engine failed to start', error);
     }
     this.hud.show();
+    this.promptOverlay.show();
     this.input.attach();
     // The unlock click is a user gesture, so pointer lock may be requested here.
     this.pointerLock.request();
     this.loop.start();
     this.events.emit('audio:unlocked', null);
     this.events.emit('game:started', null);
+  }
+
+  /**
+   * §30: become the world the player described. Everything here arrives
+   * already validated and clamped by `validateRecipe`.
+   */
+  private applyRecipe(recipe: WorldRecipe): void {
+    setZoneGenres(recipe.zones);
+    this.renderer.setAtmosphere(recipe.fog);
+    this.worldPatterns = recipe.patterns;
+    if (recipe.resonators.length > 0) {
+      const resonators = recipe.resonators.map((entry, index) => {
+        const radians = (entry.angleDeg * Math.PI) / 180;
+        return {
+          id: `world-resonator-${index + 1}`,
+          position: {
+            x: Math.sin(radians) * entry.distance,
+            y: 0,
+            z: -Math.cos(radians) * entry.distance,
+          },
+          baseHz: entry.hz,
+          waveform: entry.waveform,
+          amplitude: 0.35,
+          interactionRadius: 8,
+          audibleRadius: 220,
+          persistenceThreshold: 4,
+          materialProfile: 'glass',
+          spatialProfile: 'omni',
+          active: true,
+        };
+      });
+      this.worldStore.setState((state) => ({ ...state, resonators }));
+      for (const resonator of resonators) {
+        this.spatialAudio?.addResonator(resonator);
+        this.markers.add(resonator);
+      }
+    }
+    this.trackStore.setState((track) => ({ ...track, bpm: recipe.bpm }));
+    this.events.emit('track:genre', { genre: recipe.zones.north, atMs: 0 });
   }
 
   /** §17: place a resonator carrying the player's current sound in empty space. */

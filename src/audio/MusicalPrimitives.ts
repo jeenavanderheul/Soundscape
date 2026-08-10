@@ -363,11 +363,15 @@ function ambientOnlyGraph(
  * The full §29 pipeline as pure data: tempo → drums → bass → harmony →
  * melody → texture → arrangement, written through the genre grammar.
  */
+/** §30: guarded Strudel source the world's author (or the AI) supplied. */
+export type LayerPatterns = Partial<Record<LayerName, string>>;
+
 export function buildLayerGraph(
   music: MusicState,
   genre?: GenreAffinity,
   structures: readonly StructureVoiceSource[] = [],
   track?: TrackState,
+  patterns: LayerPatterns = {},
 ): MusicalLayerGraph {
   const playerTempo = music.tempoConfidence >= TEMPO_CONFIDENCE_THRESHOLD && music.bpm > 0;
   const trackClock = track && track.bpm > 0;
@@ -447,14 +451,15 @@ export function buildLayerGraph(
       layer: 'bass',
       parameters: {
         style: grammar.bassStyle,
-        // Walking bass borrows the chord the player built; the rest hold the root.
+        // Walking bass borrows the chord the player built; the others move
+        // root → root → minor third → fifth, the classic four-step figure.
         notes:
           grammar.bassStyle === 'walking'
             ? intervals
                 .slice(0, 4)
                 .map((semitones) => midiToNoteName(rootMidi + semitones))
                 .join(' ')
-            : midiToNoteName(rootMidi),
+            : [0, 0, 3, 7].map((semitones) => midiToNoteName(rootMidi + semitones)).join(' '),
         gain: round2(grammar.bassGain * mix.bass),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.bass],
@@ -537,16 +542,32 @@ export function buildLayerGraph(
         ]
       : [];
 
+  // §30: an authored pattern replaces the template for its layer; the ladder
+  // still decides WHEN the layer is audible.
+  const authored = (layer: LayerName, fallback: MusicalPrimitive[]): MusicalPrimitive[] => {
+    const code = patterns[layer];
+    if (typeof code !== 'string' || fallback.length === 0) return fallback;
+    return [
+      {
+        id: `world-${layer}`,
+        kind: 'texture',
+        layer,
+        parameters: { code },
+        allowedTransforms: [],
+      },
+    ];
+  };
+
   return {
     ...graph,
     layers: {
       ...graph.layers,
-      drums: { ...graph.layers.drums, primitives: drums, density },
-      bass: { ...graph.layers.bass, primitives: bass },
-      harmony: { ...graph.layers.harmony, primitives: harmony },
-      melody: { ...graph.layers.melody, primitives: melody },
-      texture: { ...graph.layers.texture, primitives: texture },
-      atmosphere: { ...graph.layers.atmosphere, primitives: atmosphere },
+      drums: { ...graph.layers.drums, primitives: authored('drums', drums), density },
+      bass: { ...graph.layers.bass, primitives: authored('bass', bass) },
+      harmony: { ...graph.layers.harmony, primitives: authored('harmony', harmony) },
+      melody: { ...graph.layers.melody, primitives: authored('melody', melody) },
+      texture: { ...graph.layers.texture, primitives: authored('texture', texture) },
+      atmosphere: { ...graph.layers.atmosphere, primitives: authored('atmosphere', atmosphere) },
     },
   };
 }

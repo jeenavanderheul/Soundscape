@@ -30,12 +30,25 @@ function angleDelta(a: number, b: number): number {
 }
 
 /** Compass headings in radians: 0 = north (−Z), clockwise. */
-const HEADINGS = {
-  techno: 0,
-  jazz: Math.PI / 2,
-  ambient: Math.PI,
-  dnb: -Math.PI / 2,
-} as const;
+const BEARINGS = { north: 0, east: Math.PI / 2, south: Math.PI, west: -Math.PI / 2 } as const;
+
+type Compass = keyof typeof BEARINGS;
+
+/** Which genre lies in each direction; a world recipe may reassign it (§30). */
+let assignment: Record<Compass, Exclude<keyof GenreAffinity, 'experimental'>> = {
+  north: 'techno',
+  east: 'jazz',
+  south: 'ambient',
+  west: 'dnb',
+};
+
+export function setZoneGenres(next: Partial<typeof assignment>): void {
+  assignment = { ...assignment, ...next };
+}
+
+export function zoneGenres(): Readonly<typeof assignment> {
+  return assignment;
+}
 
 /**
  * Genre pull of a world position, 0..1 per genre. Pure and deterministic.
@@ -49,14 +62,12 @@ export function zoneAffinity(position: Vec3Data): GenreAffinity {
   if (influence > 0) {
     // atan2(x, -z): 0 points north, +π/2 east — matches HEADINGS.
     const heading = Math.atan2(position.x, -position.z);
-    for (const [genre, target] of Object.entries(HEADINGS) as [
-      keyof typeof HEADINGS,
-      number,
-    ][]) {
+    for (const [compass, target] of Object.entries(BEARINGS) as [Compass, number][]) {
       // Cosine lobe: full at the compass point, zero at 90° away, so two
       // neighbouring directions blend into a hybrid halfway between them.
       const lobe = Math.max(0, Math.cos(angleDelta(heading, target)));
-      affinity[genre] = influence * lobe;
+      const genre = assignment[compass];
+      affinity[genre] = Math.max(affinity[genre], influence * lobe);
     }
   }
   // Altitude is its own axis: climbing takes the world into mutation (§9.5).

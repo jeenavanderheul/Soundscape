@@ -1092,6 +1092,32 @@ De track is nooit een eindeloze 8-bar loop. Energie-gedrag stuurt de vorm: meer 
 
 ---
 
+## 30. World Prompt (v3 amendment — NORMATIVE, supersedes conflicting §26 entries)
+
+> Approved by the product owner on 2026-08-10. §26's exclusion of "runtime AI/LLM generation" and "arbitrary user-supplied Strudel code" is amended for this feature only, under the constraints below.
+
+### 30.1 What it is
+
+Before entering (and again on **P** during flight) the player may describe a world in one sentence. Claude returns a **world recipe**: resonator layout, which genre lies in each compass direction, fog/forest density, a starting tempo, and **real Strudel patterns per track layer**. The player then flies through that world and discovers the track exactly as in §29 — the AI supplies material, never control.
+
+### 30.2 Generated code passes an allowlist grammar — always
+
+Strudel evaluates JavaScript, so generated source is tokenized and validated before it can reach the engine (`src/ai/PatternGuard.ts`). Only these pass: whitelisted Strudel pattern functions called as functions, numeric literals, and string literals restricted to mini-notation characters. Anything else — an unknown identifier, assignment, arrow function, template literal, `new`, backtick, semicolon, brace — is rejected and that layer is dropped. `StrudelEngine` re-runs the guard at render time, so no path exists from model output to evaluated code without it. §11 and §25.9 remain intact: what reaches Strudel is still whitelisted, it is simply a larger whitelist.
+
+### 30.3 The recipe is validated data, never trusted input
+
+`validateRecipe` clamps every field (bearing, distance, Hz, fog, forest, BPM), rejects unknown enums, caps resonator count, and never throws — malformed output degrades to a safe default (§25.17).
+
+### 30.4 Key handling and availability
+
+The player supplies their own Anthropic API key. It is stored in that browser's localStorage, sent only to api.anthropic.com, and never committed or shared. **A key in client code is visible to anyone with access to that browser — this feature is for local single-player use; a hosted build must move the call server-side before release.** Without a key the game is unchanged: the seeded void, the §29 pipeline, everything plays.
+
+### 30.5 Sound sources
+
+The engine loads the standard Strudel sample bank (tidal drum machines, `strudel.cc/learn/samples`) at unlock. Sample loading is network-backed, so every drum template keeps a built-in synth fallback (`sbd`, noise colours) and the world sounds offline too.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

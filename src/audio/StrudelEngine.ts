@@ -32,7 +32,8 @@
  *   While nothing is playing there is no audible grid, so changes apply
  *   immediately. Timing is independent of render FPS.
  */
-import { getSuperdoughAudioController, initStrudel, type StrudelRepl } from '@strudel/web';
+import { getSuperdoughAudioController, initStrudel, samples, type StrudelRepl } from '@strudel/web';
+import { guardPattern } from '../ai/PatternGuard';
 import {
   diffLayerGraph,
   createEmptyLayerGraph,
@@ -71,6 +72,14 @@ export const MIN_BPM = 30;
 export const MAX_BPM = 300;
 /** Time constant for click-free gain ramps (§21). */
 const GAIN_RAMP_SECONDS = 0.03;
+
+/** Real drum samples replace the synth fallbacks once the bank has loaded. */
+let samplesLoaded = false;
+export function setSamplesLoaded(value: boolean): void {
+  samplesLoaded = value;
+}
+/** Drum machine used for the sampled kit (strudel.cc/learn/samples § banks). */
+const DRUM_BANK = 'RolandTR909';
 
 const NOTE_RE = /^[a-g]#?[0-8]$/;
 const VOICE_SOUNDS = new Set(['sine', 'triangle', 'square', 'sawtooth']);
@@ -146,6 +155,15 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
     clamp(finite(primitive.parameters['gain'] ?? 1, `${primitive.id}.gain`), 0, 1) * layerGain
   ).toFixed(3);
   const p = primitive.parameters;
+  // §30: authored/AI source is rendered ONLY if it passes the allowlist
+  // grammar — the same boundary every other parameter crosses.
+  if (typeof p['code'] === 'string') {
+    const guarded = guardPattern(p['code']);
+    if (!guarded.ok) {
+      throw new TypeError(`StrudelEngine: rejected pattern for "${primitive.id}": ${guarded.reason}`);
+    }
+    return guarded.code;
+  }
   switch (primitive.kind) {
     case 'pulse':
     case 'kick': {
@@ -154,41 +172,68 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       switch (style) {
         // §9.4 velocity: the kick is chopped into a break.
         case 'break':
-          return `s("sbd ~ ~ [~ sbd]").gain(${gain})`;
+          return samplesLoaded
+            ? `stack(s("bd ~ ~ [~ bd]").bank("${DRUM_BANK}").shape(.2).gain(${gain}), s("<rim rim [rim rim] rim>").bank("RolandTR808").fast(2).gain(${(Number(gain) * 0.3).toFixed(3)}).pan("<.2 .8 .4 .65>"))`
+            : `s("sbd ~ ~ [~ sbd]").gain(${gain})`;
         // §9.2 space: a distant heartbeat, one hit per bar.
         case 'sparse':
-          return `s("sbd ~ ~ ~").gain(${gain})`;
+          return samplesLoaded
+            ? `s("bd ~ ~ ~").bank("${DRUM_BANK}").gain(${gain})`
+            : `s("sbd ~ ~ ~").gain(${gain})`;
         // §9.3 conversation: pushed off the grid.
         case 'swing':
-          return `s("sbd ~ [~ sbd] ~").gain(${gain})`;
+          return samplesLoaded
+            ? `s("bd ~ [~ bd] ~").bank("${DRUM_BANK}").gain(${gain})`
+            : `s("sbd ~ [~ sbd] ~").gain(${gain})`;
         // §9.5 mutation: grouping that refuses to settle.
         case 'irregular':
-          return `s("[sbd ~ ~] [sbd ~] [~ sbd]").gain(${gain})`;
+          return samplesLoaded
+            ? `s("[bd ~ ~] [bd ~] [~ bd]").bank("${DRUM_BANK}").gain(${gain})`
+            : `s("[sbd ~ ~] [sbd ~] [~ sbd]").gain(${gain})`;
         default:
-          return `s("sbd*${steps}").gain(${gain})`;
+          // Per-step velocity keeps a straight kick from sounding mechanical.
+          return samplesLoaded
+            ? `s("bd*${steps}").bank("${DRUM_BANK}").gain("${gain} ${(Number(gain) * 0.94).toFixed(2)} ${gain} ${(Number(gain) * 0.96).toFixed(2)}").shape(.2)`
+            : `s("sbd*${steps}").gain(${gain})`;
       }
     }
     case 'snare': {
       const style = styleOf(p['style'], SNARE_STYLES, 'backbeat');
       if (style === 'ghost') {
-        return `s("[~ white ~ white]").decay(.06).sustain(0).bpf(1500).degradeBy(.4).gain(${gain})`;
+        return samplesLoaded
+          ? `s("[~ cp ~ cp]").bank("${DRUM_BANK}").degradeBy(.4).gain(${gain})`
+          : `s("[~ white ~ white]").decay(.06).sustain(0).bpf(1500).degradeBy(.4).gain(${gain})`;
       }
       if (style === 'break') {
-        return `s("[~ white] [white ~ white ~]").decay(.07).sustain(0).bpf(1900).gain(${gain})`;
+        return samplesLoaded
+          ? `s("~ sd ~ [sd ~]").bank("RolandTR808").room(.08).gain(${gain})`
+          : `s("[~ white] [white ~ white ~]").decay(.07).sustain(0).bpf(1900).gain(${gain})`;
       }
-      return `s("[~ white ~ white]").decay(.09).sustain(0).bpf(1800).gain(${gain})`;
+      return samplesLoaded
+        ? `s("[~ cp]*2").bank("${DRUM_BANK}").room(.12).gain(${gain})`
+        : `s("[~ white ~ white]").decay(.09).sustain(0).bpf(1800).gain(${gain})`;
     }
     case 'hat': {
       const style = styleOf(p['style'], HAT_STYLES, 'offbeat');
       switch (style) {
         case 'sixteenth':
-          return `s("white*8").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
+          return samplesLoaded
+            ? `stack(s("hh*16").bank("${DRUM_BANK}").hpf(6500).gain("${(Number(gain) * 0.5).toFixed(2)} ${gain} ${(Number(gain) * 0.4).toFixed(2)} ${(Number(gain) * 1.1).toFixed(2)}"), s("~ oh ~ oh").bank("${DRUM_BANK}").hpf(5000).gain(${(Number(gain) * 0.8).toFixed(3)}))`
+            : `s("white*8").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
         case 'swing':
-          return `s("[white ~ white]*2").decay(.035).sustain(0).hpf(6500).gain(${gain})`;
+          return samplesLoaded
+            ? `s("[hh ~ hh]*2").bank("${DRUM_BANK}").gain(${gain})`
+            : `s("[white ~ white]*2").decay(.035).sustain(0).hpf(6500).gain(${gain})`;
         case 'sparse':
-          return `s("~ ~ white ~").decay(.05).sustain(0).hpf(5000).gain(${gain})`;
+          return samplesLoaded
+            ? `s("~ ~ oh ~").bank("${DRUM_BANK}").gain(${gain})`
+            : `s("~ ~ white ~").decay(.05).sustain(0).hpf(5000).gain(${gain})`;
         default:
-          return `s("[~ white]*2").decay(.035).sustain(0).hpf(6000).gain(${gain})`;
+          // Offbeat open hat, with ghost sixteenths underneath (the classic
+          // four-to-the-floor lift).
+          return samplesLoaded
+            ? `stack(s("[~ oh]*4").bank("${DRUM_BANK}").gain(${gain}), s("[~ hh]*8").bank("${DRUM_BANK}").gain(${(Number(gain) * 0.4).toFixed(3)}))`
+            : `s("[~ white]*2").decay(.035).sustain(0).hpf(6000).gain(${gain})`;
       }
     }
     case 'sub': {
@@ -205,15 +250,20 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const root = notes[0]!;
       switch (style) {
         case 'sub':
-          return `note("${root}").s("sine").slow(2).gain(${gain})`;
+          // Heavy sub: resonant and moving, not a held sine.
+          return `note("<${root} ${root} ~ ${notes[2] ?? root}>").s("sawtooth").lpf("<180 240 150 320>").lpq(10).gain(${gain})`;
         case 'walking': {
           const line = [0, 1, 2, 3].map((i) => notes[i % notes.length]!).join(' ');
           return `note("${line}").s("triangle").decay(.3).sustain(.2).gain(${gain})`;
         }
         case 'rolling':
           return `note("${root} ~ ${root} ${root} ~ ${root} ${root} ~").s("sawtooth").decay(.12).sustain(0).lpf(900).gain(${gain})`;
-        default:
-          return `note("${root} ~ ${root} ~").s("sawtooth").decay(.18).sustain(0).lpf(700).gain(${gain})`;
+        default: {
+          // Moving root figure through a resonant low-pass — the funk in the
+          // reference track comes from lpq, not from more notes.
+          const line = [0, 1, 2, 3].map((i) => notes[i % notes.length]!).join(' ');
+          return `note("<${line}>").s("sawtooth").lpf(420).lpq(8).gain(${gain})`;
+        }
       }
     }
     case 'chord': {
@@ -223,7 +273,8 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'sine';
       if (typeof p['notes'] === 'string') {
         const stacked = noteList(p['notes'], primitive.id, ',');
-        return `note("[${stacked}]").s("${s}").slow(${slow}).gain(${gain})`;
+        // Stabs, not pads: the filter sweep is what makes them speak.
+        return `note("[${stacked}]").s("sawtooth").slow(${slow}).lpf("<900 1600 1100 2200>").room(.18).gain(${gain})`;
       }
       const note = p['note'];
       if (typeof note !== 'string' || !NOTE_RE.test(note)) {
@@ -238,7 +289,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const slow = Math.round(clamp(finite(p['slow'] ?? 2, `${primitive.id}.slow`), 1, 8));
       const sound = p['sound'];
       const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'triangle';
-      return `note("${notes}").s("${s}").slow(${slow}).decay(.25).sustain(.1).gain(${gain})`;
+      return `note("${notes}").s("${s}").slow(${slow}).lpf("<700 900 1300 2000>").delay(.18).decay(.25).sustain(.1).gain(${gain})`;
     }
     case 'break': {
       const intensity = Math.round(
@@ -323,6 +374,20 @@ export class StrudelEngine implements StrudelEnginePort {
     } catch (cause) {
       throw new Error('StrudelEngine: failed to initialize @strudel/web', { cause });
     }
+    // Load the standard drum/instrument sample bank (strudel.cc/learn/samples).
+    // Sample maps are fetched lazily over the network, so this can fail
+    // offline — the templates fall back to built-in synth voices and the
+    // world still sounds. Never blocks the unlock.
+    void Promise.resolve()
+      .then(() => samples('github:tidalcycles/dirt-samples'))
+      .then(() => {
+        this.samplesReady = true;
+        setSamplesLoaded(true);
+      })
+      .catch(() => {
+        this.samplesReady = false;
+        setSamplesLoaded(false);
+      });
     // Reroute superdough's hard-wired destination connection through our
     // gain so the game keeps master-volume and headroom control (§12, §21).
     const destinationGain = getSuperdoughAudioController().output.destinationGain;
@@ -508,6 +573,10 @@ export class StrudelEngine implements StrudelEnginePort {
     }
   }
 
+  /** True once the sample bank finished loading; templates upgrade to real
+   * drums when it does (§30). */
+  private samplesReady = false;
+
   /** The pattern source the world last wrote — shown read-only in the UI
    * overlay (§11: never an editable REPL). */
   get code(): string {
@@ -517,8 +586,13 @@ export class StrudelEngine implements StrudelEnginePort {
   private lastCode = '';
 
   /** Diagnostic status (dev debug handle): playing state, bpm and evaluation count. */
-  get status(): { playing: boolean; bpm: number; evaluations: number } {
-    return { playing: this.playing, bpm: this.appliedGraph.bpm, evaluations: this.evaluations };
+  get status(): { playing: boolean; bpm: number; evaluations: number; samples: boolean } {
+    return {
+      playing: this.playing,
+      bpm: this.appliedGraph.bpm,
+      evaluations: this.evaluations,
+      samples: this.samplesReady,
+    };
   }
 
   private evaluations = 0;

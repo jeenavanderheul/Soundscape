@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@strudel/web', () => ({
   initStrudel: vi.fn(),
   getSuperdoughAudioController: vi.fn(),
+  samples: vi.fn(async () => undefined),
 }));
 import { buildLayerGraph, structureVoices } from '../../src/audio/MusicalPrimitives';
 import { buildPatternCode } from '../../src/audio/StrudelEngine';

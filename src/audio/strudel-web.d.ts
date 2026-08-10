@@ -36,4 +36,7 @@ declare module '@strudel/web' {
   }
 
   export function getSuperdoughAudioController(): SuperdoughAudioController;
+
+  /** Load a sample map (strudel.cc/learn/samples). Network-backed. */
+  export function samples(source: string): Promise<void>;
 }

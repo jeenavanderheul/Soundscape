@@ -5,6 +5,7 @@ import {
   msUntilNextCycleBoundary,
   StrudelEngine,
   STRUDEL_HEADROOM,
+  setSamplesLoaded,
 } from '../../src/audio/StrudelEngine';
 import {
   buildLayerGraph,
@@ -14,6 +15,10 @@ import {
 } from '../../src/audio/MusicalPrimitives';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { asContext, FakeAudioContext, FakeGainNode } from './audioFakes';
+
+// Sample loading is module-level state; each test starts from the offline
+// synth palette and opts in explicitly.
+beforeEach(() => setSamplesLoaded(false));
 
 const strudel = vi.hoisted(() => {
   const repl = {
@@ -43,6 +48,7 @@ const strudel = vi.hoisted(() => {
 vi.mock('@strudel/web', () => ({
   initStrudel: strudel.initStrudel,
   getSuperdoughAudioController: () => ({ output: { destinationGain: strudel.destinationGain } }),
+  samples: vi.fn(async () => undefined),
 }));
 
 /** Code string passed to the nth repl.evaluate call ('' if absent). */
@@ -95,6 +101,7 @@ describe('boundary math', () => {
 
 describe('buildPatternCode', () => {
   it('renders pulse and sub templates', () => {
+    setSamplesLoaded(false); // pure template path: offline synth palette
     const code = buildPatternCode(confidentGraph());
     expect(code).toContain('s("sbd*4")');
     expect(code).toContain('note("a2").s("sine")');
@@ -128,6 +135,7 @@ describe('buildPatternCode', () => {
   });
 
   it('clamps numeric params before interpolation', () => {
+    setSamplesLoaded(false); // pure template path: offline synth palette
     const graph = confidentGraph();
     const loud: MusicalLayerGraph = {
       ...graph,
@@ -191,7 +199,7 @@ describe('StrudelEngine', () => {
     await vi.runAllTimersAsync();
     expect(strudel.repl.evaluate).toHaveBeenCalledTimes(1);
     const code = evaluatedCode(0);
-    expect(code).toContain('s("sbd*4")');
+    expect(code).toContain('s("bd*4").bank("RolandTR909")'); // sample bank loaded
     expect(strudel.repl.setCps).toHaveBeenCalledWith(bpmToCps(120));
   });
 

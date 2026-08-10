@@ -18,3 +18,5 @@
 [   54995ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
 [   63651ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
 [   72473ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5199/@vite/client:998
+[  969613ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=2f6a24d3:10
+[  969643ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5199/:0
