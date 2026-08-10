@@ -96,8 +96,8 @@ describe('boundary math', () => {
 describe('buildPatternCode', () => {
   it('renders pulse and sub templates', () => {
     const code = buildPatternCode(confidentGraph());
-    expect(code).toContain('s("bd*4")');
-    expect(code).toContain('note("a1").s("sine")');
+    expect(code).toContain('s("sbd*4")');
+    expect(code).toContain('note("a2").s("sine")');
     expect(code.startsWith('stack(')).toBe(true);
   });
 
@@ -143,7 +143,7 @@ describe('buildPatternCode', () => {
       },
     };
     const code = buildPatternCode(loud);
-    expect(code).toContain('s("bd*8")');
+    expect(code).toContain('s("sbd*8")');
     expect(code).toContain('.gain(1.000)');
   });
 });
@@ -191,7 +191,7 @@ describe('StrudelEngine', () => {
     await vi.runAllTimersAsync();
     expect(strudel.repl.evaluate).toHaveBeenCalledTimes(1);
     const code = evaluatedCode(0);
-    expect(code).toContain('s("bd*4")');
+    expect(code).toContain('s("sbd*4")');
     expect(strudel.repl.setCps).toHaveBeenCalledWith(bpmToCps(120));
   });
 
@@ -267,10 +267,10 @@ describe('StrudelEngine', () => {
     engine.schedule({ kind: 'accent', gain: 0.6 }, 'bar');
     await vi.advanceTimersByTimeAsync(2_100);
     const overlay = evaluatedCode(1);
-    expect(overlay).toContain('cp');
+    expect(overlay).toContain('bpf(2200)');
     await vi.advanceTimersByTimeAsync(2_100);
     const reverted = evaluatedCode(2);
-    expect(reverted).not.toContain('cp');
+    expect(reverted).not.toContain('bpf(2200)');
     expect(strudel.repl.evaluate).toHaveBeenCalledTimes(3);
   });
 

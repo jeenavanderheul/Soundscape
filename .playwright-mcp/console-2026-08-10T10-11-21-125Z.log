@@ -67,3 +67,4 @@
 [   39512ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
 [   40942ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
 [   47238ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5199/@vite/client:998
+[  423933ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10

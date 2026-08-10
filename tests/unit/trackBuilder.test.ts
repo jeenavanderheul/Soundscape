@@ -121,6 +121,6 @@ describe('graph from TrackState (§29.3 ghost → kick → clap)', () => {
     const pulse = graph.layers.drums.primitives.find((p) => p.id === 'pulse')!;
     expect(pulse.parameters['gain']).toBeGreaterThanOrEqual(0.8);
     const code = buildPatternCode(graph);
-    expect(code).toContain('[~ cp ~ cp]');
+    expect(code).toContain('[~ white ~ white]');
   });
 });

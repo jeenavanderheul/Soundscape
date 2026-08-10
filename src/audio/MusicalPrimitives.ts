@@ -126,11 +126,12 @@ export function midiToNoteName(midi: number): string {
   return `${NOTE_NAMES[((rounded % 12) + 12) % 12]}${octave}`;
 }
 
-/** Octave-reduce a frequency to a low sub root note (C1–B1). */
+/** Octave-reduce a frequency to a low sub root note (C2–B2 — §21: the low
+ * register must stay perceptible on ordinary speakers, not only subwoofers). */
 export function subNoteFromHz(hz: number): string {
-  if (!Number.isFinite(hz) || hz <= 0) return 'a1';
+  if (!Number.isFinite(hz) || hz <= 0) return 'a2';
   const pitchClass = ((Math.round(hzToMidi(hz)) % 12) + 12) % 12;
-  return midiToNoteName(24 + pitchClass);
+  return midiToNoteName(36 + pitchClass);
 }
 
 /**

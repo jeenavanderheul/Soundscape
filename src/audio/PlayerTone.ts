@@ -3,7 +3,9 @@ import type { FrequencyState, Waveform } from '../player/FrequencyState';
 const MIN_HZ = 20;
 const MAX_HZ = 12000;
 /** Headroom so the player tone plus resonators never clip the master (spec §21). */
-const MAX_GAIN = 0.4;
+/** §29 mix balance: the player's tone is a voice IN the track, not the lead —
+ * it must never mask the drums and layers the player is building. */
+const MAX_GAIN = 0.16;
 const FREQ_SMOOTHING_S = 0.05;
 const GAIN_SMOOTHING_S = 0.08;
 const RELEASE_S = 0.5;

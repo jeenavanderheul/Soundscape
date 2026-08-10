@@ -37,15 +37,15 @@ describe('pitch helpers', () => {
   });
 
   it('octave-reduces pitch center to a low sub note', () => {
-    expect(subNoteFromHz(440)).toBe('a1');
-    expect(subNoteFromHz(220)).toBe('a1');
-    expect(subNoteFromHz(261.63)).toBe('c1');
+    expect(subNoteFromHz(440)).toBe('a2');
+    expect(subNoteFromHz(220)).toBe('a2');
+    expect(subNoteFromHz(261.63)).toBe('c2');
   });
 
-  it('falls back to a1 for invalid input', () => {
-    expect(subNoteFromHz(Number.NaN)).toBe('a1');
-    expect(subNoteFromHz(0)).toBe('a1');
-    expect(subNoteFromHz(-5)).toBe('a1');
+  it('falls back to a2 for invalid input', () => {
+    expect(subNoteFromHz(Number.NaN)).toBe('a2');
+    expect(subNoteFromHz(0)).toBe('a2');
+    expect(subNoteFromHz(-5)).toBe('a2');
   });
 });
 
@@ -73,7 +73,7 @@ describe('buildLayerGraph', () => {
     expect(pulse.kind).toBe('pulse');
     const sub = graph.layers.bass.primitives[0]!;
     expect(sub.kind).toBe('sub');
-    expect(sub.parameters['note']).toBe('a1');
+    expect(sub.parameters['note']).toBe('a2');
   });
 
   it('maps rhythmDensity to pulse steps, clamped', () => {

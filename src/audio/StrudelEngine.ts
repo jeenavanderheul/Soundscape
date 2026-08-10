@@ -64,8 +64,9 @@ export interface StrudelEnginePort {
 }
 
 export const BEATS_PER_BAR = 4;
-/** Strudel layer headroom under the master chain so max layering cannot clip (§21). */
-export const STRUDEL_HEADROOM = 0.7;
+/** Strudel layer headroom under the master chain so max layering cannot clip (§21).
+ * §29: the TRACK is the star of the mix — headroom sits high, the player tone low. */
+export const STRUDEL_HEADROOM = 0.9;
 export const MIN_BPM = 30;
 export const MAX_BPM = 300;
 /** Time constant for click-free gain ramps (§21). */
@@ -117,18 +118,20 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const steps = Math.round(
         clamp(finite(primitive.parameters['steps'] ?? 4, `${primitive.id}.steps`), 1, 8),
       );
-      return `s("bd*${steps}").gain(${gain})`;
+      return `s("sbd*${steps}").gain(${gain})`;
     }
     case 'snare': {
       // Clap on the backbeat (§29.3): beats 2 and 4.
-      return `s("[~ cp ~ cp]").gain(${gain})`;
+      return `s("[~ white ~ white]").decay(.09).sustain(0).bpf(1800).gain(${gain})`;
     }
     case 'hat': {
       // Techno hats (§9.1): off-beat or 16th closed hats depending on density.
       const steps = Math.round(
         clamp(finite(primitive.parameters['steps'] ?? 2, `${primitive.id}.steps`), 1, 4),
       );
-      return steps <= 2 ? `s("[~ hh]*${steps * 2}").gain(${gain})` : `s("hh*${steps * 2}").gain(${gain})`;
+      return steps <= 2
+        ? `s("[~ white]*${steps * 2}").decay(.035).sustain(0).hpf(6000).gain(${gain})`
+        : `s("white*${steps * 2}").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
     }
     case 'sub': {
       const note = primitive.parameters['note'];
@@ -155,8 +158,8 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         clamp(finite(primitive.parameters['intensity'] ?? 1, `${primitive.id}.intensity`), 1, 2),
       );
       return intensity === 2
-        ? `s("[bd bd] [~ sn] [bd ~] [sn hh]").fast(2).gain(${gain})`
-        : `s("bd [~ sn] [bd bd] sn").fast(2).gain(${gain})`;
+        ? `s("[sbd sbd] [~ white] [sbd ~] [white white]").decay(.06).sustain(0).fast(2).gain(${gain})`
+        : `s("sbd [~ white] [sbd sbd] white").decay(.07).sustain(0).fast(2).gain(${gain})`;
     }
     case 'response': {
       // Jazz answer (§9.3): a constrained phrase up from the root — no free code.
@@ -186,7 +189,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
 function renderAction(action: MusicalAction): string {
   const gain = clamp(finite(action.gain, 'action.gain'), 0, 1).toFixed(3);
   // Both M4 action kinds share one off-beat clap accent template.
-  return `s("[~ cp]").gain(${gain})`;
+  return `s("[~ white]").decay(.08).sustain(0).bpf(2200).gain(${gain})`;
 }
 
 /** Deterministically map a layer graph (plus one-shot actions) to pattern code. */
