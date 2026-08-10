@@ -362,7 +362,15 @@ export class Game {
     // lock toggles. The overlay owns its DOM; the Game owns pause semantics.
     this.pauseOverlay = new PauseOverlay({
       onResume: () => this.resume(),
-      onResetWorld: () => this.resetWorld(),
+      onSaveTrack: () => {
+        this.saveManager.save(this.snapshotWorld());
+        return 'Track saved. It will be here when you come back.';
+      },
+      onExportTrack: () => {
+        this.exportOverlay.show(this.exportedTrack());
+        return 'Strudel code shown — E closes it.';
+      },
+      onNewJourney: () => this.resetWorld(),
     });
     this.detachPointerLockPause = this.pointerLockBus.on('pointerlock:released', () => {
       if (this.unlocked && !this.paused) this.pause();
@@ -472,15 +480,7 @@ export class Game {
     if (snapshot.codeToggled) this.codeOverlay.toggle();
     this.flightMs += deltaMs;
     // §32: hand the finished track back as source.
-    if (snapshot.trackExported) {
-      this.exportOverlay.toggle(
-        exportTrack({
-          graph: this.lastLayerGraph ?? createEmptyLayerGraph(),
-          genre: this.trackStore.getState().genre,
-          flownSeconds: this.flightMs / 1000,
-        }),
-      );
-    }
+    if (snapshot.trackExported) this.exportOverlay.toggle(this.exportedTrack());
     const deliberateRelease =
       snapshot.windReleased && !snapshot.resonancePulse && this.windHeldMs >= 400;
     this.windHeldMs = snapshot.buttons.windHold ? this.windHeldMs + deltaMs : 0;
@@ -725,6 +725,15 @@ export class Game {
     if (this.paused) this.resume();
     else this.pause();
   };
+
+  /** §32: the flight so far as Strudel source — from E and from the pause menu. */
+  private exportedTrack(): string {
+    return exportTrack({
+      graph: this.lastLayerGraph ?? createEmptyLayerGraph(),
+      genre: this.trackStore.getState().genre,
+      flownSeconds: this.flightMs / 1000,
+    });
+  }
 
   /** Spec §5 Esc pause: freeze the loop, quiet the audio, flush the save, show the overlay. */
   private pause(): void {

@@ -1288,3 +1288,20 @@
 [  788504ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
 [  811376ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [  811413ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  862746ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  862765ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  871871ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  871888ms] [ERROR] FREQUENCY: failed to start TypeError: this.button is not a function
+    at new PauseOverlay (http://localhost:5216/src/ui/PauseOverlay.ts?t=1786387777786:18:28)
+    at new Game (http://localhost:5216/src/app/Game.ts?t=1786387777786:280:23)
+    at http://localhost:5216/src/main.ts?t=1786387777786:11:2 @ http://localhost:5216/@vite/client:528
+[  876370ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  876389ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  888107ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  888235ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  893056ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  893075ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  898362ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  898379ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  905541ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  905559ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
