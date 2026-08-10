@@ -6,18 +6,17 @@ export type KeyAction =
   | 'moveBackward'
   | 'moveLeft'
   | 'moveRight'
-  | 'accelerate'
+  | 'shiftGear'
   | 'resonancePulse'
   | 'toggleCode'
   | 'exportTrack'
   | 'pause';
 
 /**
- * Left button is the gearbox: every click shifts up one, and past the top gear
- * it wraps back to first (user decision). Right button is the wind (§5
- * dynamics) and doubles as a short booster while it is held.
+ * The left button is the wind (§5 dynamics): holding it builds amplitude and
+ * boosts the orb, releasing it is the timed pulse. Shift is the gearbox.
  */
-export type MouseButtonAction = 'gearUp' | 'windHold';
+export type MouseButtonAction = 'windHold';
 export type WheelAction = 'frequencyFocus';
 export type MouseMoveAction = 'look';
 
@@ -36,16 +35,15 @@ export const DEFAULT_BINDINGS: DesktopBindings = {
     KeyS: 'moveBackward',
     KeyA: 'moveLeft',
     KeyD: 'moveRight',
-    ShiftLeft: 'accelerate',
-    ShiftRight: 'accelerate',
+    ShiftLeft: 'shiftGear',
+    ShiftRight: 'shiftGear',
     Space: 'resonancePulse',
     KeyC: 'toggleCode',
     KeyE: 'exportTrack',
     Escape: 'pause',
   },
   mouseButtons: {
-    0: 'gearUp',
-    2: 'windHold',
+    0: 'windHold',
   },
   wheel: 'frequencyFocus',
   mouseMove: 'look',

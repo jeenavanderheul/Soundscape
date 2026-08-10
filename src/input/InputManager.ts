@@ -7,7 +7,7 @@ export interface InputSnapshot {
   /** moveX: -1 left … +1 right; moveZ: -1 backward … +1 forward. */
   axes: { moveX: number; moveZ: number };
   buttons: { accelerate: boolean; windHold: boolean };
-  /** Left click since the last snapshot → shift up a gear (wraps at the top). */
+  /** Shift was pressed since the last snapshot → up one gear (wraps at the top). */
   gearUp: boolean;
   /** LMB was released since the last snapshot → timed pulse excitation. */
   windReleased: boolean;
@@ -65,7 +65,6 @@ export class InputManager {
     this.pointerTarget.addEventListener('mouseup', this.onMouseUp);
     this.pointerTarget.addEventListener('mousemove', this.onMouseMove);
     this.pointerTarget.addEventListener('wheel', this.onWheel);
-    this.pointerTarget.addEventListener('contextmenu', this.onContextMenu);
   }
 
   detach(): void {
@@ -77,7 +76,6 @@ export class InputManager {
     this.pointerTarget.removeEventListener('mouseup', this.onMouseUp);
     this.pointerTarget.removeEventListener('mousemove', this.onMouseMove);
     this.pointerTarget.removeEventListener('wheel', this.onWheel);
-    this.pointerTarget.removeEventListener('contextmenu', this.onContextMenu);
     this.heldKeys.clear();
     this.windHold = false;
     this.resetFrameState();
@@ -91,7 +89,9 @@ export class InputManager {
         moveZ: this.axisValue('moveForward') - this.axisValue('moveBackward'),
       },
       buttons: {
-        accelerate: this.isActionHeld('accelerate'),
+        // The wind IS the booster: pushing the world harder pushes the orb
+        // harder (§3.2 dynamics = force).
+        accelerate: this.windHold,
         windHold: this.windHold,
       },
       gearUp: this.gearUp,
@@ -135,7 +135,9 @@ export class InputManager {
     const action = this.bindings.keys[code];
     if (!action || repeat) return;
     this.heldKeys.add(code);
-    if (action === 'resonancePulse') {
+    if (action === 'shiftGear') {
+      this.gearUp = true;
+    } else if (action === 'resonancePulse') {
       this.resonancePulse = true;
       this.bus?.emit('input:resonance-pulse', null);
     } else if (action === 'toggleCode') {
@@ -153,20 +155,15 @@ export class InputManager {
   };
 
   private readonly onMouseDown = (event: Event): void => {
-    const action = this.bindings.mouseButtons[(event as MouseEvent).button];
-    if (action === 'windHold') this.windHold = true;
-    else if (action === 'gearUp') this.gearUp = true;
+    if (this.bindings.mouseButtons[(event as MouseEvent).button] === 'windHold') {
+      this.windHold = true;
+    }
   };
 
   private readonly onMouseUp = (event: Event): void => {
     if (this.bindings.mouseButtons[(event as MouseEvent).button] !== 'windHold') return;
     if (this.windHold) this.windReleased = true;
     this.windHold = false;
-  };
-
-  /** The wind lives on the right button, so the browser menu must not open. */
-  private readonly onContextMenu = (event: Event): void => {
-    event.preventDefault();
   };
 
   private readonly onMouseMove = (event: Event): void => {

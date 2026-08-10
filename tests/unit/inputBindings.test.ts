@@ -7,12 +7,11 @@ describe('DEFAULT_BINDINGS', () => {
     expect(DEFAULT_BINDINGS.keys['KeyS']).toBe('moveBackward');
     expect(DEFAULT_BINDINGS.keys['KeyA']).toBe('moveLeft');
     expect(DEFAULT_BINDINGS.keys['KeyD']).toBe('moveRight');
-    expect(DEFAULT_BINDINGS.keys['ShiftLeft']).toBe('accelerate');
+    expect(DEFAULT_BINDINGS.keys['ShiftLeft']).toBe('shiftGear');
     expect(DEFAULT_BINDINGS.keys['Space']).toBe('resonancePulse');
     expect(DEFAULT_BINDINGS.keys['Escape']).toBe('pause');
-    // Left is the gearbox, right is the wind (user decision).
-    expect(DEFAULT_BINDINGS.mouseButtons[0]).toBe('gearUp');
-    expect(DEFAULT_BINDINGS.mouseButtons[2]).toBe('windHold');
+    // Left is the wind (and the boost), Shift is the gearbox (user decision).
+    expect(DEFAULT_BINDINGS.mouseButtons[0]).toBe('windHold');
     expect(DEFAULT_BINDINGS.wheel).toBe('frequencyFocus');
     expect(DEFAULT_BINDINGS.mouseMove).toBe('look');
   });
@@ -23,7 +22,7 @@ describe('DEFAULT_BINDINGS', () => {
       'moveBackward',
       'moveLeft',
       'moveRight',
-      'accelerate',
+      'shiftGear',
       'resonancePulse',
       'toggleCode',
       'exportTrack',

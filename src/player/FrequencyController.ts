@@ -210,9 +210,8 @@ export class FrequencyController {
     const gearSpeed = GEAR_SPEEDS[this.gearIndex]!;
     const accelMagnitude =
       Math.max(FLIGHT_CONFIG.acceleration, gearSpeed * FLIGHT_CONFIG.drag * 1.25) *
-      // Holding the wind is also a short booster: pushing the world harder
-      // pushes the orb harder (§3.2 dynamics = force).
-      (input.buttons.accelerate || input.buttons.windHold ? FLIGHT_CONFIG.boostMultiplier : 1);
+      // Holding the wind is also a short booster (§3.2 dynamics = force).
+      (input.buttons.accelerate ? FLIGHT_CONFIG.boostMultiplier : 1);
     const geared = { ...FLIGHT_CONFIG, maxSpeed: gearSpeed };
     this.velocityVec = stepVelocity(this.velocityVec, accelDirection, accelMagnitude, deltaMs, geared);
     const speed = Math.hypot(this.velocityVec.x, this.velocityVec.y, this.velocityVec.z);

@@ -35,20 +35,20 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('tracks accelerate as a held button', () => {
-    const { keyboard, manager } = setup();
-    keyboard.dispatchEvent(key('keydown', 'ShiftLeft'));
+  it('holding the wind is also the boost (user decision)', () => {
+    const { pointer, manager } = setup();
+    pointer.dispatchEvent(mouse('mousedown', 0, 0));
     expect(manager.snapshot().buttons.accelerate).toBe(true);
-    keyboard.dispatchEvent(key('keyup', 'ShiftLeft'));
+    pointer.dispatchEvent(mouse('mouseup', 0, 400));
     expect(manager.snapshot().buttons.accelerate).toBe(false);
     manager.detach();
   });
 
-  it('reports wind hold while the right button is down and a release pulse exactly once', () => {
+  it('reports wind hold while LMB is down and a release pulse exactly once', () => {
     const { pointer, manager } = setup();
-    pointer.dispatchEvent(mouse('mousedown', 2, 0));
+    pointer.dispatchEvent(mouse('mousedown', 0, 0));
     expect(manager.snapshot().buttons.windHold).toBe(true);
-    pointer.dispatchEvent(mouse('mouseup', 2, 800));
+    pointer.dispatchEvent(mouse('mouseup', 0, 800));
     const released = manager.snapshot();
     expect(released.buttons.windHold).toBe(false);
     expect(released.windReleased).toBe(true);
@@ -93,24 +93,25 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('left clicks shift, right holds the wind (user decision)', () => {
-    const { pointer, manager } = setup();
+  it('shift changes gear, once per press, and never as a wind release', () => {
+    const { keyboard, pointer, manager } = setup();
 
-    // Every left click is one gear, and it is never heard as a wind release.
-    pointer.dispatchEvent(mouse('mousedown', 0, 1000));
-    const clicked = manager.snapshot();
-    expect(clicked.gearUp).toBe(true);
-    expect(clicked.windReleased).toBe(false);
-    expect(clicked.buttons.windHold).toBe(false);
+    keyboard.dispatchEvent(key('keydown', 'ShiftLeft'));
+    const shifted = manager.snapshot();
+    expect(shifted.gearUp).toBe(true);
+    expect(shifted.windReleased).toBe(false);
+    // Held down, it does not keep shifting: one press is one gear.
+    keyboard.dispatchEvent(key('keydown', 'ShiftLeft', true));
     expect(manager.snapshot().gearUp).toBe(false);
+    keyboard.dispatchEvent(key('keyup', 'ShiftLeft'));
 
-    // The right button is the wind, and holding it also boosts.
-    pointer.dispatchEvent(mouse('mousedown', 2, 2000));
-    const holding = manager.snapshot();
-    expect(holding.buttons.windHold).toBe(true);
-    expect(holding.gearUp).toBe(false);
-    pointer.dispatchEvent(mouse('mouseup', 2, 2600));
-    expect(manager.snapshot().windReleased).toBe(true);
+    // The wind is on the left button and is untouched by shifting.
+    pointer.dispatchEvent(mouse('mousedown', 0, 2000));
+    expect(manager.snapshot().buttons.windHold).toBe(true);
+    keyboard.dispatchEvent(key('keydown', 'ShiftRight'));
+    const both = manager.snapshot();
+    expect(both.gearUp).toBe(true);
+    expect(both.buttons.windHold).toBe(true);
     manager.detach();
   });
 
