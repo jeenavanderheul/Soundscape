@@ -57,7 +57,7 @@ describe('§29.6 the orb becomes the track', () => {
     const glowAtStart = orb.material.uniforms.uGlow!.value as number;
     orb.setGrowth(1);
     fly(orb, 20);
-    expect(orb.mesh.scale.x).toBeGreaterThan(2);
+    expect(orb.mesh.scale.x).toBeGreaterThan(4);
     expect(orb.material.uniforms.uGrowth!.value).toBeGreaterThan(0.9);
     expect(orb.material.uniforms.uGlow!.value).toBeGreaterThan(glowAtStart);
     orb.dispose();
@@ -75,7 +75,7 @@ describe('§29.6 the orb becomes the track', () => {
     const orb = new PlayerOrb();
     orb.setGrowth(1);
     fly(orb, 30);
-    expect(orb.mesh.scale.x).toBeGreaterThan(2);
+    expect(orb.mesh.scale.x).toBeGreaterThan(4);
     // §42: standing still feeds it zero — the orb returns to the first form.
     orb.setGrowth(0);
     fly(orb, 20);
@@ -89,7 +89,8 @@ describe('§29.6 the orb becomes the track', () => {
     orb.setGrowth(1);
     fly(orb, 30);
     const ORB_COLLISION_RADIUS = 1.6;
-    expect(0.55 * orb.mesh.scale.x).toBeLessThan(ORB_COLLISION_RADIUS);
+    const BASE_RADIUS = 0.26;
+    expect(BASE_RADIUS * orb.mesh.scale.x).toBeLessThan(ORB_COLLISION_RADIUS);
     orb.dispose();
   });
 });

@@ -147,6 +147,12 @@ export class FrequencyController {
   private obstacles: (() => readonly { x: number; z: number; radius: number; height: number }[]) | null =
     null;
   private grounded = false;
+  /** §29.6: the orb grows with the track, so what it clears grows with it. */
+  private orbRadius: number = FLIGHT_CONFIG.orbRadius;
+
+  setOrbRadius(radius: number): void {
+    this.orbRadius = Math.max(0.2, radius);
+  }
 
   /** Turn rate in radians/s: positive is banking left (§33 turn throws). */
   get yawRate(): number {
@@ -194,7 +200,7 @@ export class FrequencyController {
     // forward while looking straight down out-pushes any repulsion.
     const here = this.store.getState().position;
     const gap =
-      here.y - ((this.groundAt?.(here.x, here.z) ?? FLIGHT_CONFIG.minY) + FLIGHT_CONFIG.orbRadius);
+      here.y - ((this.groundAt?.(here.x, here.z) ?? FLIGHT_CONFIG.minY) + this.orbRadius);
     const speedNow = Math.hypot(this.velocityVec.x, this.velocityVec.y, this.velocityVec.z);
     const fieldNow = FLIGHT_CONFIG.repelClearance + speedNow * 0.08;
     if (gap < fieldNow && accelDirection.y < 0) {
@@ -233,7 +239,7 @@ export class FrequencyController {
       // §35 HARD RULE: the landscape is solid. Touching it lifts the orb back
       // out and absorbs most of the downward speed — a bump, never a wall and
       // never a fall through the floor.
-      const floor = (this.groundAt?.(x, z) ?? FLIGHT_CONFIG.minY) + FLIGHT_CONFIG.orbRadius;
+      const floor = (this.groundAt?.(x, z) ?? FLIGHT_CONFIG.minY) + this.orbRadius;
       // The force field: the closer to the ground, the harder it lifts, and it
       // eats downward speed so a dive is caught instead of stopped dead.
       const clearance = y - floor;
@@ -270,7 +276,7 @@ export class FrequencyController {
         const dx = px - solid.x;
         const dz = pz - solid.z;
         const distance = Math.hypot(dx, dz);
-        const clear = solid.radius + FLIGHT_CONFIG.orbRadius;
+        const clear = solid.radius + this.orbRadius;
         if (distance >= clear || distance < 1e-6) continue;
         px = solid.x + (dx / distance) * clear;
         pz = solid.z + (dz / distance) * clear;

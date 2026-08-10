@@ -119,7 +119,11 @@ void main() {
   vGlow = clamp(glow + lantern + abs(h) * 0.12 + vRidge * 0.03, 0.0, 1.6);
   // Excitation colour on top of the region's own colour: what the player
   // makes is always readable against where the player is (§33).
-  vZone = zone + uZoneColor * (0.25 + vRidge * 0.05) * fromSpawn;
+  // §33/§45: the region's colour, arriving within a short flight of spawn.
+  // Tying it to the RELIEF fade (140 units) meant the land stayed colourless
+  // exactly where the player starts, which is why every region looked alike.
+  float colourIn = clamp((length(world) - 8.0) / 45.0, 0.0, 1.0);
+  vZone = zone + uZoneColor * (0.55 + vRidge * 0.08) * colourIn;
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
   // Manual depth fade: the field dissolves into the void (§13).
   vGlow *= clamp(1.0 - (-mv.z - 40.0) / 180.0, 0.0, 1.0);

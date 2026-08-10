@@ -676,6 +676,8 @@ export class Game {
     this.orb.setGrowth(growth);
     this.particles.setGrowth(growth);
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
+    // §35: what the orb clears grows with the orb — a small orb hugs the land.
+    this.controller.setOrbRadius(this.orb.radius + 0.35);
     // §33: streaks rushing past the orb are what makes speed legible.
     this.streaks.update(
       state.position,

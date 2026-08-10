@@ -40,11 +40,11 @@ export class Renderer {
     // The world stays near-black (§13): the region only TINTS the darkness.
     // Anything brighter turns the screen into a colour wash and the terrain
     // loses its contrast.
-    this.fog.color.setRGB(color.r * 0.07, color.g * 0.07, color.b * 0.09);
+    this.fog.color.setRGB(color.r * 0.17, color.g * 0.17, color.b * 0.2);
     (this.scene.background as Color).setRGB(
-      0.004 + color.r * 0.018,
-      0.004 + color.g * 0.018,
-      0.008 + color.b * 0.024,
+      0.004 + color.r * 0.05,
+      0.004 + color.g * 0.05,
+      0.008 + color.b * 0.06,
     );
     this.webgl.setClearColor(this.scene.background as Color);
   }

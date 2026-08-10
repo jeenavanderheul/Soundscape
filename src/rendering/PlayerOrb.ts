@@ -59,6 +59,9 @@ void main() {
 }
 `;
 
+/** Radius of the untouched orb; a finished track is BASE_RADIUS × 5.4 across. */
+export const ORB_BASE_RADIUS = 0.26;
+
 export class PlayerOrb {
   readonly mesh: Mesh;
   /** Public so tests can read the uniforms the world is driving. */
@@ -84,7 +87,13 @@ export class PlayerOrb {
         uGrowth: { value: 0 },
       },
     });
-    this.mesh = new Mesh(new IcosahedronGeometry(0.55, 5), this.material);
+    // A single tone is barely anything; a finished track is a body (§29.6).
+    this.mesh = new Mesh(new IcosahedronGeometry(ORB_BASE_RADIUS, 5), this.material);
+  }
+
+  /** What it currently measures, so the collision can hug it as it grows (§35). */
+  get radius(): number {
+    return ORB_BASE_RADIUS * this.mesh.scale.x;
   }
 
   /** BeatSync hook (§12): beats kick a visible throb through the orb. */
@@ -120,7 +129,7 @@ export class PlayerOrb {
     // Growth crawls (a layer is a milestone, not a flicker) — 2s time constant.
     this.growth += (this.targetGrowth - this.growth) * (1 - Math.exp(-0.5 * dt));
     // Size and restlessness are the growth the player can see from outside.
-    const scale = 1 + this.growth * 1.6;
+    const scale = 1 + this.growth * 4.4;
     this.mesh.scale.setScalar(scale);
     this.mesh.rotation.y = elapsedSeconds * (0.2 + this.growth * 1.1);
     this.mesh.rotation.x = Math.sin(elapsedSeconds * 0.5) * this.growth * 0.4;

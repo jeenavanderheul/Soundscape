@@ -232,7 +232,7 @@ export function growthsInCell(
   ecology: Ecology,
   track: Readonly<TrackState> | undefined,
 ): Growth[] {
-  const count = Math.round(ecology.density * 3);
+  const count = Math.round(ecology.density * 7);
   const growths: Growth[] = [];
   for (let i = 0; i < count; i++) {
     const role = roleFor(ecology, cellRandom(seed, cx, cz, i * 7 + 1));
