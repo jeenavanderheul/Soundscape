@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { setZoneGenres } from '../../src/genres/GenreZones';
-import {
+import { placeName,
   compassPoint,
   GENRE_LOOKS,
   headingLabel,
@@ -57,25 +57,43 @@ describe('§33 zone palette — every direction is a place you can see', () => {
 });
 
 describe('§33 compass', () => {
-  it('reads the eight points from a heading', () => {
+  it('reads the ten points from a heading (§57)', () => {
+    const step = (Math.PI * 2) / 10;
     expect(compassPoint(0)).toBe('N');
-    expect(compassPoint(Math.PI / 2)).toBe('E');
+    expect(compassPoint(step)).toBe('NNE');
+    expect(compassPoint(step * 2)).toBe('ENE');
     expect(compassPoint(Math.PI)).toBe('S');
-    expect(compassPoint(-Math.PI / 2)).toBe('W');
-    expect(compassPoint(Math.PI / 4)).toBe('NE');
+    expect(compassPoint(-step)).toBe('NNW');
   });
 
   it('names the region the player is flying into', () => {
-    setZoneGenres({ north: 'techno', east: 'jazz', south: 'ambient', west: 'dnb' });
+    const step = (Math.PI * 2) / 10;
+    setZoneGenres({
+      north: 'techno',
+      eastNorthEast: 'jazz',
+      south: 'ambient',
+      westSouthWest: 'dnb',
+      northNorthWest: 'trap',
+    });
     expect(headingLabel(0)).toBe('N · techno');
-    expect(headingLabel(Math.PI / 2)).toBe('E · jazz');
+    expect(headingLabel(step * 2)).toBe('ENE · jazz');
     expect(headingLabel(Math.PI)).toBe('S · ambient');
-    expect(headingLabel(-Math.PI / 2)).toBe('W · dnb');
+    expect(headingLabel(-step * 3)).toBe('WSW · dnb');
+    expect(headingLabel(-step)).toBe('NNW · trap');
   });
 
   it('follows a world that reassigned its directions (§30)', () => {
     setZoneGenres({ north: 'dnb' });
     expect(headingLabel(0)).toBe('N · dnb');
     setZoneGenres({ north: 'techno' });
+  });
+});
+
+describe('§57 a place is its music', () => {
+  it('names every region after its grammar; only the middle is neutral', () => {
+    expect(placeName('techno')).toBe('techno');
+    expect(placeName('experimental')).toBe('experimental');
+    expect(placeName('dub')).toBe('dub');
+    expect(placeName(null)).toBe('the void');
   });
 });

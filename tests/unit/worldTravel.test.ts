@@ -34,26 +34,33 @@ function regionFlying(position: { x: number; z: number }, direction: { x: number
   return dominantZone(zoneAffinity({ ...position, y: 6 }, headingOf(direction)), 0.4);
 }
 
+/** §57: ten points, 36° apart, one per world. */
+const STEP = (Math.PI * 2) / 10;
+const dirAt = (index: number) => ({ x: Math.sin(STEP * index), z: -Math.cos(STEP * index) });
 const COMPASS = {
-  N: { x: 0, z: -1 },
-  NE: { x: Math.SQRT1_2, z: -Math.SQRT1_2 },
-  E: { x: 1, z: 0 },
-  SE: { x: Math.SQRT1_2, z: Math.SQRT1_2 },
-  S: { x: 0, z: 1 },
-  SW: { x: -Math.SQRT1_2, z: Math.SQRT1_2 },
-  W: { x: -1, z: 0 },
-  NW: { x: -Math.SQRT1_2, z: -Math.SQRT1_2 },
+  N: dirAt(0),
+  NNE: dirAt(1),
+  ENE: dirAt(2),
+  ESE: dirAt(3),
+  SSE: dirAt(4),
+  S: dirAt(5),
+  SSW: dirAt(6),
+  WSW: dirAt(7),
+  WNW: dirAt(8),
+  NNW: dirAt(9),
 } as const;
 
 const EXPECTED = {
   N: 'techno',
-  NE: 'garage',
-  E: 'jazz',
-  SE: 'house',
+  NNE: 'garage',
+  ENE: 'jazz',
+  ESE: 'house',
+  SSE: 'experimental',
   S: 'ambient',
-  SW: 'classical',
-  W: 'dnb',
-  NW: 'trap',
+  SSW: 'classical',
+  WSW: 'dnb',
+  WNW: 'dub',
+  NNW: 'trap',
 } as const;
 
 describe('the journey: neutral start → a direction → that world', () => {
@@ -73,14 +80,14 @@ describe('the journey: neutral start → a direction → that world', () => {
   it('turning from one world towards another arrives in the new one', () => {
     const deepInTechno = { x: 0, z: -120 };
     expect(regionFlying(deepInTechno, COMPASS.N)).toBe('techno');
-    expect(regionFlying(deepInTechno, COMPASS.NW)).toBe('trap');
-    expect(regionFlying(deepInTechno, COMPASS.NE)).toBe('garage');
+    expect(regionFlying(deepInTechno, COMPASS.NNW)).toBe('trap');
+    expect(regionFlying(deepInTechno, COMPASS.NNE)).toBe('garage');
   });
 
   it('§56 what the HUD says you are flying into is what you are in', () => {
     // Deep in Classical, heading east: `flying: E · jazz` must mean jazz.
     const inClassical = { x: -200, z: 200 };
-    expect(regionFlying(inClassical, COMPASS.E)).toBe('jazz');
+    expect(regionFlying(inClassical, COMPASS.ENE)).toBe('jazz');
     expect(regionFlying(inClassical, COMPASS.N)).toBe('techno');
   });
 });

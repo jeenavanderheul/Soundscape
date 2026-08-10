@@ -46,7 +46,7 @@ describe('validateRecipe (§30: unknown model output becomes trusted data)', () 
   it('clamps every field and drops unsafe patterns', () => {
     const { recipe, rejected } = validateRecipe({
       name: 'x'.repeat(200),
-      zones: { north: 'ambient', east: 'nonsense', south: 'dnb', west: 'techno' },
+      zones: { north: 'ambient', eastNorthEast: 'nonsense', south: 'dnb', westSouthWest: 'techno' },
       resonators: [
         { angleDeg: 450, distance: 99999, hz: 999999, waveform: 'bogus' },
         ...Array.from({ length: 20 }, () => ({ angleDeg: 0, distance: 80, hz: 220, waveform: 'sine' })),
@@ -57,7 +57,7 @@ describe('validateRecipe (§30: unknown model output becomes trusted data)', () 
       patterns: { drums: 's("bd*4")', bass: 'window.alert(1)' },
     });
     expect(recipe.name.length).toBeLessThanOrEqual(RECIPE_LIMITS.maxNameLength);
-    expect(recipe.zones.east).toBe('jazz'); // unknown genre falls back
+    expect(recipe.zones.eastNorthEast).toBe('jazz'); // unknown genre falls back
     expect(recipe.resonators).toHaveLength(RECIPE_LIMITS.maxResonators);
     expect(recipe.resonators[0]!.angleDeg).toBe(90); // 450° wraps
     expect(recipe.resonators[0]!.distance).toBe(RECIPE_LIMITS.maxDistance);

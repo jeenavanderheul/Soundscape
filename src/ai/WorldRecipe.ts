@@ -10,10 +10,8 @@ import { guardPatternMap } from './PatternGuard';
  */
 
 export type RecipeWaveform = 'sine' | 'triangle' | 'square' | 'saw' | 'noise';
-/** Compass zones cover the four ground genres; experimental is the altitude
- * axis (§29.5), so it is not assignable to a direction. */
-/** The compass carries the ground genres; the vertical axis is not assignable (§34). */
-export type RecipeGenre = Exclude<keyof GenreAffinity, 'experimental' | 'dub'>;
+/** §57: all ten worlds sit on the compass, so any of them can be placed. */
+export type RecipeGenre = keyof GenreAffinity;
 
 export interface RecipeResonator {
   /** Compass bearing in degrees; 0 = north, 90 = east. */
@@ -28,7 +26,8 @@ export interface WorldRecipe {
   name: string;
   /** Which genre lies in each compass direction (§29.5 spatial grammar). */
   zones: Record<
-    'north' | 'northEast' | 'east' | 'southEast' | 'south' | 'southWest' | 'west' | 'northWest',
+    | 'north' | 'northNorthEast' | 'eastNorthEast' | 'eastSouthEast' | 'southSouthEast'
+    | 'south' | 'southSouthWest' | 'westSouthWest' | 'westNorthWest' | 'northNorthWest',
     RecipeGenre
   >;
   resonators: RecipeResonator[];
@@ -77,23 +76,27 @@ export const RECIPE_SCHEMA = {
       additionalProperties: false,
       required: [
         'north',
-        'northEast',
-        'east',
-        'southEast',
+        'northNorthEast',
+        'southSouthEast',
+        'westNorthWest',
+        'eastNorthEast',
+        'eastSouthEast',
         'south',
-        'southWest',
-        'west',
-        'northWest',
+        'southSouthWest',
+        'westSouthWest',
+        'northNorthWest',
       ],
       properties: {
         north: { type: 'string', enum: GENRES },
-        northEast: { type: 'string', enum: GENRES },
-        east: { type: 'string', enum: GENRES },
-        southEast: { type: 'string', enum: GENRES },
+        southSouthEast: { type: 'string', enum: GENRES },
+        westNorthWest: { type: 'string', enum: GENRES },
+        northNorthEast: { type: 'string', enum: GENRES },
+        eastNorthEast: { type: 'string', enum: GENRES },
+        eastSouthEast: { type: 'string', enum: GENRES },
         south: { type: 'string', enum: GENRES },
-        southWest: { type: 'string', enum: GENRES },
-        west: { type: 'string', enum: GENRES },
-        northWest: { type: 'string', enum: GENRES },
+        southSouthWest: { type: 'string', enum: GENRES },
+        westSouthWest: { type: 'string', enum: GENRES },
+        northNorthWest: { type: 'string', enum: GENRES },
       },
     },
     resonators: {
@@ -190,13 +193,15 @@ export function validateRecipe(raw: unknown): RecipeValidation {
       name: name === '' ? 'unnamed world' : name,
       zones: {
         north: oneOf(zonesRaw.north, GENRES, 'techno'),
-        northEast: oneOf(zonesRaw.northEast, GENRES, 'garage'),
-        east: oneOf(zonesRaw.east, GENRES, 'jazz'),
-        southEast: oneOf(zonesRaw.southEast, GENRES, 'house'),
+        southSouthEast: oneOf(zonesRaw.southSouthEast, GENRES, 'experimental'),
+        westNorthWest: oneOf(zonesRaw.westNorthWest, GENRES, 'dub'),
+        northNorthEast: oneOf(zonesRaw.northNorthEast, GENRES, 'garage'),
+        eastNorthEast: oneOf(zonesRaw.eastNorthEast, GENRES, 'jazz'),
+        eastSouthEast: oneOf(zonesRaw.eastSouthEast, GENRES, 'house'),
         south: oneOf(zonesRaw.south, GENRES, 'ambient'),
-        southWest: oneOf(zonesRaw.southWest, GENRES, 'classical'),
-        west: oneOf(zonesRaw.west, GENRES, 'dnb'),
-        northWest: oneOf(zonesRaw.northWest, GENRES, 'trap'),
+        southSouthWest: oneOf(zonesRaw.southSouthWest, GENRES, 'classical'),
+        westSouthWest: oneOf(zonesRaw.westSouthWest, GENRES, 'dnb'),
+        northNorthWest: oneOf(zonesRaw.northNorthWest, GENRES, 'trap'),
       },
       // A world with no resonators would be silent; fall back to the seeded set.
       resonators,

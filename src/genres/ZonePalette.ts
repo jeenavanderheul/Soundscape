@@ -99,12 +99,13 @@ export function lookFor(affinity: GenreAffinity): ZoneLook {
   };
 }
 
-const POINTS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
+/** §57: ten points, 36° apart — one per world. */
+const POINTS = ['N', 'NNE', 'ENE', 'ESE', 'SSE', 'S', 'SSW', 'WSW', 'WNW', 'NNW'] as const;
 
 /** Heading in radians (0 = north, clockwise) → compass point. */
 export function compassPoint(heading: number): (typeof POINTS)[number] {
   const turns = heading / (Math.PI * 2);
-  const index = Math.round((turns - Math.floor(turns)) * 8) % 8;
+  const index = Math.round((turns - Math.floor(turns)) * POINTS.length) % POINTS.length;
   return POINTS[index]!;
 }
 
@@ -114,27 +115,24 @@ export function headingLabel(heading: number): string {
   const zones = zoneGenres();
   const byPoint = {
     N: zones.north,
-    NE: zones.northEast,
-    E: zones.east,
-    SE: zones.southEast,
+    NNE: zones.northNorthEast,
+    ENE: zones.eastNorthEast,
+    ESE: zones.eastSouthEast,
+    SSE: zones.southSouthEast,
     S: zones.south,
-    SW: zones.southWest,
-    W: zones.west,
-    NW: zones.northWest,
+    SSW: zones.southSouthWest,
+    WSW: zones.westSouthWest,
+    WNW: zones.westNorthWest,
+    NNW: zones.northNorthWest,
   } as const;
   return `${point} · ${byPoint[point]}`;
 }
 
 /**
- * What a region is CALLED, as a place. The eight compass regions carry their
- * grammar's name because there you are literally in that music. The two
- * altitude bands do not: "experimental" and "dub" are grammars, and using them
- * as a location as well made the world read as if the same thing existed
- * twice. Up there you are in the HEIGHTS; down on the floor you are on the
- * DECK — and the music those places make is still Experimental and Dub.
+ * What a region is CALLED. §57 put all ten worlds on the compass, so every
+ * region IS its music and carries its grammar's name. Only the neutral middle
+ * has a name of its own.
  */
 export function placeName(region: keyof GenreAffinity | null): string {
-  if (region === 'experimental') return 'the heights';
-  if (region === 'dub') return 'the deep';
   return region ?? 'the void';
 }

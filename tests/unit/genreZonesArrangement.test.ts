@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { placeName } from '../../src/genres/ZonePalette';
 import { ArrangementEngine, sectionMix } from '../../src/music/ArrangementEngine';
 import { dominantZone, zoneAffinity } from '../../src/genres/GenreZones';
 import { HarmonyEngine, ratioToSemitones } from '../../src/music/HarmonyEngine';
@@ -8,46 +7,44 @@ import type { ResonanceEvent } from '../../src/resonance/ResonanceEvent';
 
 describe('GenreZones — every direction is a genre (§29.5)', () => {
   it('keeps the void around spawn genre-less', () => {
-    // Altitude is its own axis (§34), so the compass void is measured at
-    // cruising height — down on the floor the echo chamber is supposed to pull.
     const near = zoneAffinity({ x: 5, y: 10, z: -5 });
     expect(Math.max(...Object.values(near))).toBeLessThan(0.05);
   });
 
-  it('maps each of the eight points to its own grammar (§34)', () => {
-    expect(dominantZone(zoneAffinity({ x: 0, y: 0, z: -200 }))).toBe('techno');
-    expect(dominantZone(zoneAffinity({ x: 200, y: 0, z: 0 }))).toBe('jazz');
-    expect(dominantZone(zoneAffinity({ x: 0, y: 0, z: 200 }))).toBe('ambient');
-    expect(dominantZone(zoneAffinity({ x: -200, y: 0, z: 0 }))).toBe('dnb');
-    expect(dominantZone(zoneAffinity({ x: 140, y: 0, z: -140 }))).toBe('garage');
-    expect(dominantZone(zoneAffinity({ x: 140, y: 0, z: 140 }))).toBe('house');
-    expect(dominantZone(zoneAffinity({ x: -140, y: 0, z: 140 }))).toBe('classical');
-    expect(dominantZone(zoneAffinity({ x: -140, y: 0, z: -140 }))).toBe('trap');
+  it('§57 maps each of the TEN points to its own grammar', () => {
+    const step = (Math.PI * 2) / 10;
+    const out = { x: 0, y: 10, z: -200 }; // far enough out for full influence
+    const at = (index: number) => dominantZone(zoneAffinity(out, step * index));
+    expect(at(0)).toBe('techno');
+    expect(at(1)).toBe('garage');
+    expect(at(2)).toBe('jazz');
+    expect(at(3)).toBe('house');
+    expect(at(4)).toBe('experimental');
+    expect(at(5)).toBe('ambient');
+    expect(at(6)).toBe('classical');
+    expect(at(7)).toBe('dnb');
+    expect(at(8)).toBe('dub');
+    expect(at(9)).toBe('trap');
   });
 
   it('blends neighbouring directions into a hybrid, and ignores the far side', () => {
-    const northEast = zoneAffinity({ x: 140, y: 0, z: -140 });
-    // The point itself leads, but both neighbours still sound underneath it.
-    expect(northEast.garage).toBeGreaterThan(0.9);
-    expect(northEast.techno).toBeGreaterThan(0.2);
-    expect(northEast.jazz).toBeGreaterThan(0.2);
-    // The opposite side of the world has no say here.
-    expect(northEast.ambient).toBe(0);
-    expect(northEast.classical).toBe(0);
+    const step = (Math.PI * 2) / 10;
+    const between = zoneAffinity({ x: 0, y: 10, z: -200 }, step * 0.5);
+    // Half way between two worlds you hear both of them.
+    expect(between.techno).toBeGreaterThan(0.4);
+    expect(between.garage).toBeGreaterThan(0.4);
+    // The far side of the compass has no say here.
+    expect(between.ambient).toBe(0);
+    expect(between.classical).toBe(0);
   });
 
-  it('turns skimming the floor into dub — the echo chamber (§34)', () => {
-    // Cruising height is clean; hugging the ground fills with echo.
-    expect(zoneAffinity({ x: 0, y: 10, z: 0 }).dub).toBe(0);
-    expect(zoneAffinity({ x: 0, y: -3, z: 0 }).dub).toBe(1);
-    // Cruising just above the floor is still clean: dub needs a real dive.
-    expect(zoneAffinity({ x: 0, y: 0, z: 0 }).dub).toBe(0);
-    expect(zoneAffinity({ x: 0, y: -2, z: 0 }).dub).toBeGreaterThan(0.4);
-  });
-
-  it('turns altitude into experimental', () => {
-    expect(zoneAffinity({ x: 0, y: 0, z: 0 }).experimental).toBe(0);
-    expect(zoneAffinity({ x: 0, y: 70, z: 0 }).experimental).toBe(1);
+  it('§57 altitude is expression, never a place', () => {
+    // Climbing builds the track and lifts the pitch — it must not move you to
+    // another world, or you could never climb for a build where you are.
+    const high = zoneAffinity({ x: 0, y: 68, z: -200 });
+    const low = zoneAffinity({ x: 0, y: -3, z: -200 });
+    expect(dominantZone(high)).toBe('techno');
+    expect(dominantZone(low)).toBe('techno');
   });
 });
 
@@ -178,50 +175,16 @@ describe('§47 only the flight builds and drops', () => {
   });
 });
 
-describe('§34 the altitude regions are places you go, not side effects', () => {
-  const inHouse = { x: 110, y: 0, z: 110 }; // south-east, well inside the region
-
-  it('an ordinary cruise over another region stays in that region', () => {
-    for (const y of [10, 25, 35, 45]) {
-      expect(dominantZone(zoneAffinity({ ...inHouse, y }))).toBe('house');
-    }
-  });
-
-  it('but climbing to the top of the world really does take you to Experimental', () => {
-    expect(dominantZone(zoneAffinity({ ...inHouse, y: 68 }))).toBe('experimental');
-  });
-
-  it('and skimming the floor takes you to Dub', () => {
-    expect(dominantZone(zoneAffinity({ ...inHouse, y: -3 }))).toBe('dub');
-  });
-});
-
-describe('a place has a place name, a grammar has a grammar name', () => {
-  it('never calls a location by a genre that is also an altitude band', () => {
-    // The eight compass regions ARE their music; the two altitude bands are not.
-    expect(placeName('techno')).toBe('techno');
-    expect(placeName('house')).toBe('house');
-    expect(placeName('experimental')).toBe('the heights');
-    expect(placeName('dub')).toBe('the deep');
-    expect(placeName(null)).toBe('the void');
-  });
-});
-
 describe('§53 turning towards a world takes you there', () => {
-  /** Where the player counts as being: a little ahead while moving. */
-  const ahead = (p: { x: number; z: number }, dir: { x: number; z: number }, reach = 110) =>
-    ({ x: p.x + dir.x * reach, y: 0, z: p.z + dir.z * reach });
+  const step = (Math.PI * 2) / 10;
 
   it('flying north-west out of the techno region arrives in trap', () => {
-    const outNorth = { x: 0, z: -90 }; // deep in techno
-    expect(dominantZone(zoneAffinity({ ...outNorth, y: 0 }))).toBe('techno');
-    // Turn north-west and keep flying: within one look-ahead you are in trap.
-    const nw = { x: -Math.SQRT1_2, z: -Math.SQRT1_2 };
-    expect(dominantZone(zoneAffinity(ahead(outNorth, nw)))).toBe('trap');
+    const outNorth = { x: 0, y: 10, z: -90 };
+    expect(dominantZone(zoneAffinity(outNorth, 0))).toBe('techno');
+    expect(dominantZone(zoneAffinity(outNorth, -step))).toBe('trap');
   });
 
-  it('and standing still still reads exactly where the orb is', () => {
-    const inHouse = { x: 110, y: 0, z: 110 };
-    expect(dominantZone(zoneAffinity(inHouse))).toBe('house');
+  it('and standing still still reads the way the orb is pointing', () => {
+    expect(dominantZone(zoneAffinity({ x: 110, y: 0, z: 110 }, step * 3))).toBe('house');
   });
 });
