@@ -43,6 +43,11 @@ const HINTS: HintDef[] = [
     when: (ctx) => ctx.elapsedMs > 14_000,
   },
   {
+    id: 'code',
+    text: 'press C — see the code your flight is writing',
+    when: (ctx) => ctx.elapsedMs > 26_000,
+  },
+  {
     id: 'beat',
     text: 'tap SPACE to a beat — the world will follow',
     when: (ctx) => ctx.elapsedMs > 35_000 && ctx.music.bpm === 0,

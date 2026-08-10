@@ -19,6 +19,8 @@ import type { Vec3Data } from '../player/FrequencyState';
 
 const TRAIL_POINTS = 160;
 const MAX_BRIDGES = 16;
+/** Bridges connect neighbours, never opposite ends of the world (§13 restraint). */
+const MAX_BRIDGE_LENGTH = 90;
 
 /** The luminous path the player's pitch journey draws through the world. */
 export class MelodyTrail {
@@ -130,6 +132,7 @@ export class HarmonyBridges {
     for (let i = 0; i < sorted.length - 1 && segment < MAX_BRIDGES; i++) {
       const a = sorted[i]!;
       const b = sorted[i + 1]!;
+      if (distance(a, b) > MAX_BRIDGE_LENGTH) continue;
       const o = segment * 6;
       this.positions[o] = a.x;
       this.positions[o + 1] = a.y;

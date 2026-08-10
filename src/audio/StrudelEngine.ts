@@ -508,6 +508,14 @@ export class StrudelEngine implements StrudelEnginePort {
     }
   }
 
+  /** The pattern source the world last wrote — shown read-only in the UI
+   * overlay (§11: never an editable REPL). */
+  get code(): string {
+    return this.lastCode;
+  }
+
+  private lastCode = '';
+
   /** Diagnostic status (dev debug handle): playing state, bpm and evaluation count. */
   get status(): { playing: boolean; bpm: number; evaluations: number } {
     return { playing: this.playing, bpm: this.appliedGraph.bpm, evaluations: this.evaluations };
@@ -517,6 +525,7 @@ export class StrudelEngine implements StrudelEnginePort {
 
   private evaluate(repl: StrudelRepl, code: string): void {
     this.playing = true;
+    this.lastCode = code;
     this.evaluations += 1;
     this.startBeatTicker();
     void repl.evaluate(code, true).catch((error: unknown) => {

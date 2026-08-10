@@ -46,6 +46,7 @@ import { WaveTerrain } from '../rendering/WaveTerrain';
 import { ResonanceEngine } from '../resonance/ResonanceEngine';
 import type { ResonanceEvents } from '../resonance/ResonanceEngine';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
+import { CodeOverlay } from '../ui/CodeOverlay';
 import { Hints } from '../ui/Hints';
 import { LayerCue } from '../ui/LayerCue';
 import { HUD } from '../ui/HUD';
@@ -142,6 +143,7 @@ export class Game {
   private readonly melodyTrail = new MelodyTrail();
   private readonly harmonyBridges = new HarmonyBridges();
   private readonly hints = new Hints();
+  private readonly codeOverlay = new CodeOverlay();
   private readonly layerCue = new LayerCue(this.events);
   private readonly beatSync: BeatSync;
   private readonly detachBeatSync: () => void;
@@ -377,6 +379,7 @@ export class Game {
     this.renderer.scene.remove(this.harmonyBridges.lines);
     this.harmonyBridges.dispose();
     this.hints.dispose();
+    this.codeOverlay.dispose();
     this.layerCue.dispose();
     this.renderer.scene.remove(this.orb.mesh);
     this.orb.dispose();
@@ -391,6 +394,8 @@ export class Game {
     const snapshot = this.input.snapshot();
     this.controller.update(snapshot, deltaMs);
     // §3.3: timed excitations (LMB release, Space) are the rhythm onsets.
+    // §11: reveal the pattern the world wrote — read-only, never a REPL.
+    if (snapshot.codeToggled) this.codeOverlay.toggle();
     const deliberateRelease =
       snapshot.windReleased && !snapshot.resonancePulse && this.windHeldMs >= 400;
     this.windHeldMs = snapshot.buttons.windHold ? this.windHeldMs + deltaMs : 0;
@@ -465,6 +470,7 @@ export class Game {
       this.renderer.setAtmosphere(genre?.affinity.ambient ?? 0);
       // §9.5 world tendency: mutation destabilizes existing form.
       this.structures.setMutation(genre?.affinity.experimental ?? 0);
+      this.codeOverlay.update(this.strudelEngine.code);
       // Context hints: whispered at the teachable moment, once each.
       this.hints.update({
         elapsedMs,

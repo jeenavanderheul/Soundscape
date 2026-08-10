@@ -15,6 +15,8 @@ export interface InputSnapshot {
   resonancePulse: boolean;
   /** Esc was pressed since the last snapshot. */
   pausePressed: boolean;
+  /** C was pressed since the last snapshot → toggle the pattern overlay. */
+  codeToggled: boolean;
   /** Accumulated wheel deltaY since the last snapshot. */
   wheelDelta: number;
   /** Accumulated pointer movement since the last snapshot. */
@@ -40,6 +42,7 @@ export class InputManager {
   private lastForwardDownMs: number | null = null;
   private resonancePulse = false;
   private pausePressed = false;
+  private codeToggled = false;
   private wheelDelta = 0;
   private mouseDeltaX = 0;
   private mouseDeltaY = 0;
@@ -92,6 +95,7 @@ export class InputManager {
       windReleased: this.windReleased,
       resonancePulse: this.resonancePulse,
       pausePressed: this.pausePressed,
+      codeToggled: this.codeToggled,
       wheelDelta: this.wheelDelta,
       mouseDelta: { x: this.mouseDeltaX, y: this.mouseDeltaY },
     };
@@ -103,6 +107,7 @@ export class InputManager {
     this.windReleased = false;
     this.resonancePulse = false;
     this.pausePressed = false;
+    this.codeToggled = false;
     this.wheelDelta = 0;
     this.mouseDeltaX = 0;
     this.mouseDeltaY = 0;
@@ -137,6 +142,8 @@ export class InputManager {
     if (action === 'resonancePulse') {
       this.resonancePulse = true;
       this.bus?.emit('input:resonance-pulse', null);
+    } else if (action === 'toggleCode') {
+      this.codeToggled = true;
     } else if (action === 'pause') {
       this.pausePressed = true;
       this.bus?.emit('input:pause', null);
