@@ -79,6 +79,12 @@ import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
+/** How far behind the orb the chase camera sits, and how high above it. */
+const CAMERA_DISTANCE = 6;
+const CAMERA_HEIGHT = 1.8;
+/** How fast the camera swings in behind a turn (1/s); low is a lazy chase. */
+const CAMERA_FOLLOW_RATE = 3.5;
+
 /** The camera never goes below this above the landscape (§35). */
 const CAMERA_GROUND_CLEARANCE = 1.4;
 
@@ -196,6 +202,8 @@ export class Game {
         const { validation } = await requestWorld(description, apiKey);
         saveApiKey(apiKey);
         this.applyRecipe(validation.recipe);
+        this.promptOverlay.hide();
+        this.pointerLock.request();
         if (validation.rejected.length > 0) {
           // Honest about what was refused rather than silently dropping it.
           console.warn('FREQUENCY: rejected generated patterns', validation.rejected);
@@ -203,6 +211,8 @@ export class Game {
       },
       onSkip: () => {
         this.promptOverlay.hide();
+        // The overlay is a mouse surface: pointer lock waits until it is gone.
+        this.pointerLock.request();
       },
     },
     loadApiKey(),
@@ -253,6 +263,8 @@ export class Game {
   private readonly startupLoadInfo: LoadInfo;
   /** §42 gate: starts closed, so a flight begins in silence. */
   private motionLevel = 0;
+  /** Smoothed chase direction: the camera follows, it is never aimed. */
+  private readonly camDir = { x: 0, y: 0, z: -1 };
   /** §33 turn throws: one gesture per turn, never a stream. */
   private turnArmed = true;
   private lastThrowMs = -Infinity;
@@ -676,15 +688,28 @@ export class Game {
       bpm: this.trackStore.getState().bpm,
       track: this.trackBuilder.trackNumber,
     });
-    // Third-person: the camera trails the orb along the flight direction.
+    // Chase camera (user decision): it sits behind the orb and follows it. The
+    // player never aims the camera — they fly, and the camera comes along, so
+    // it reads as flying BEHIND the orb rather than looking around from it.
     const camera = this.renderer.camera.instance;
-    const { position, direction } = state;
-    const camX = position.x - direction.x * 5;
-    const camZ = position.z - direction.z * 5;
+    const { position, direction, velocity } = state;
+    // Follow where the orb is actually going; at a standstill keep the last
+    // heading so the camera never spins on the spot.
+    const heading = velocity > 0.6 ? state.direction : direction;
+    const follow = 1 - Math.exp(-CAMERA_FOLLOW_RATE * dtSeconds);
+    this.camDir.x += (heading.x - this.camDir.x) * follow;
+    this.camDir.y += (heading.y * 0.6 - this.camDir.y) * follow; // flatter than the flight
+    this.camDir.z += (heading.z - this.camDir.z) * follow;
+    const length = Math.hypot(this.camDir.x, this.camDir.y, this.camDir.z) || 1;
+    const dirX = this.camDir.x / length;
+    const dirY = this.camDir.y / length;
+    const dirZ = this.camDir.z / length;
+    const camX = position.x - dirX * CAMERA_DISTANCE;
+    const camZ = position.z - dirZ * CAMERA_DISTANCE;
     // The camera stays above the landscape too. Letting it dip under the grid
     // is what made the orb look like it was inside the terrain (§35).
     const camY = Math.max(
-      position.y - direction.y * 5 + 1.6,
+      position.y - dirY * CAMERA_DISTANCE + CAMERA_HEIGHT,
       this.terrain.groundHeightAt(camX, camZ) + CAMERA_GROUND_CLEARANCE,
     );
     camera.position.set(camX, camY, camZ);
@@ -758,6 +783,7 @@ export class Game {
 
   /** Re-acquire mouse look on canvas click after Esc released the lock (spec §5). */
   private readonly onContainerClick = (): void => {
+    if (this.promptOverlay.isVisible || this.paused) return; // the mouse belongs to the overlay
     if (this.unlocked && !this.pointerLock.locked) this.pointerLock.request();
   };
 
@@ -765,8 +791,13 @@ export class Game {
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (this.unlocked && (event.key === 'p' || event.key === 'P')) {
       // §30: describe a new world mid-flight.
-      if (this.promptOverlay.isVisible) this.promptOverlay.hide();
-      else this.promptOverlay.show();
+      if (this.promptOverlay.isVisible) {
+        this.promptOverlay.hide();
+        this.pointerLock.request();
+      } else {
+        this.promptOverlay.show();
+        this.pointerLock.exit(); // give the mouse back to the overlay
+      }
       return;
     }
     if (event.key !== 'Escape' || !this.unlocked) return;
@@ -869,10 +900,10 @@ export class Game {
       console.error('FREQUENCY: Strudel engine failed to start', error);
     }
     this.hud.show();
+    // The start screen is clicked, not tabbed: while it is up the cursor stays
+    // free, and pointer lock is taken when the player leaves it.
     this.promptOverlay.show();
     this.input.attach();
-    // The unlock click is a user gesture, so pointer lock may be requested here.
-    this.pointerLock.request();
     this.loop.start();
     this.events.emit('audio:unlocked', null);
     this.events.emit('game:started', null);
