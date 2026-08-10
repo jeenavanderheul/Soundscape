@@ -32,11 +32,12 @@ export function createResonator(data: ResonatorData): ResonatorData {
  * The single M1 resonator: a gentle sine ~330 Hz roughly 40 units from spawn,
  * audible faintly from the origin so it pulls the player by curiosity (spec §20 M1 gate).
  */
-export function createFirstResonator(): ResonatorData {
+/** §32: the pitch travels with the world's key; 330 Hz is the original. */
+export function createFirstResonator(baseHz = 330): ResonatorData {
   return createResonator({
     id: 'resonator-first',
     position: { x: 28, y: 4, z: -28 }, // ~39.8 units from spawn
-    baseHz: 330,
+    baseHz,
     waveform: 'sine',
     amplitude: 0.5,
     interactionRadius: 6,

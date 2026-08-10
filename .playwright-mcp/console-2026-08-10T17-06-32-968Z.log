@@ -1,0 +1,2 @@
+[      97ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5203/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[     115ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5203/:0

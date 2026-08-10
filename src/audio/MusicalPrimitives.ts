@@ -461,24 +461,26 @@ export function buildLayerGraph(
   const rootMidi = track?.rootMidi ?? 45;
 
   // --- Drums (§29.2 fase 2) ---
-  const drums: MusicalPrimitive[] = [
-    {
+  // §32: a flight BEGINS WITH A TONE, never with a beat. Until the kick is
+  // earned the drum layer is empty — no ghost pulse, no timekeeping. The
+  // player has to discover the beat, not be handed it.
+  const drums: MusicalPrimitive[] = [];
+  if (kickUnlocked) {
+    drums.push({
       id: 'pulse',
       kind: 'pulse',
       layer: 'drums',
       parameters: {
-        // Before the kick is earned the pulse is a GHOST: audible timekeeping,
-        // deliberately thin, so the unlock lands as a reward (§29.3).
-        style: kickUnlocked ? grammar.kickStyle : 'four',
+        style: grammar.kickStyle,
         // Techno locks four-on-the-floor; everywhere else the player's own
         // density writes the pulse (§9.1 vs §3.3).
         steps: resolvedGenre === 'techno' ? 4 : 1 + Math.round(density * 3),
         drive: grammar.drive,
-        gain: round2(kickUnlocked ? grammar.kickGain * mix.drums : 0.2),
+        gain: round2(grammar.kickGain * mix.drums),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
-    },
-  ];
+    });
+  }
   if (track?.drums.hats.unlocked) {
     drums.push({
       id: 'track-hat',

@@ -120,10 +120,10 @@ describe('tempo follows flight speed (§29, user decision)', () => {
 describe('graph from TrackState (§29.3 ghost → kick → clap)', () => {
   const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, rhythmDensity: 1 };
 
-  it('keeps the pulse a ghost before the kick unlocks', () => {
+  // §32: a flight begins with a tone. Not a quiet beat — no beat at all.
+  it('has no drums whatsoever before the kick is earned', () => {
     const graph = buildLayerGraph(music, undefined, [], createInitialTrackState());
-    const pulse = graph.layers.drums.primitives.find((p) => p.id === 'pulse')!;
-    expect(pulse.parameters['gain']).toBeLessThanOrEqual(0.25);
+    expect(graph.layers.drums.primitives).toHaveLength(0);
   });
 
   it('earned layers STAY in the track through stillness (§29, user decision)', () => {

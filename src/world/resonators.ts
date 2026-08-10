@@ -13,6 +13,16 @@ function jitter(rng: Rng): number {
 }
 
 /**
+ * §32: every world is in its own key. The seed picks a root, and the three
+ * resonators are that root across three registers — so two flights never
+ * start from the same harmonic material, while one seed stays reproducible.
+ */
+export function seededRoot(rng: Rng): number {
+  const semitones = Math.floor(rng.next() * 12);
+  return 110 * Math.pow(2, semitones / 12);
+}
+
+/**
  * The three initial resonators (spec §7): clearly different frequency, timbre and location.
  *
  * Spawn audibility tuning (spec §20 M2 gate — spatial curiosity):
@@ -24,13 +34,16 @@ function jitter(rng: Rng): number {
  * The first resonator stays ≈3x louder than the others until the player moves.
  */
 export function createInitialResonators(rng: Rng): ResonatorData[] {
-  const first = createFirstResonator(); // ~330 Hz sine at (28, 4, -28), spec M1
+  // The key of this world. Registers keep their roles (mass low, detail high);
+  // only the pitch class travels, so the audibility tuning below still holds.
+  const key = seededRoot(rng);
+  const first = createFirstResonator(key * 3); // the first voice, a fifth above the low root
 
   // Low register (§3.1 mass): opposite direction from the first resonator, wide field.
   const deep = createResonator({
     id: 'resonator-deep',
     position: { x: -60 + jitter(rng), y: -4, z: 66 + jitter(rng) },
-    baseHz: 110,
+    baseHz: key,
     waveform: 'triangle',
     amplitude: 0.35,
     interactionRadius: 12, // large slow wave — interaction begins further out
@@ -45,7 +58,7 @@ export function createInitialResonators(rng: Rng): ResonatorData[] {
   const high = createResonator({
     id: 'resonator-high',
     position: { x: 14 + jitter(rng), y: 52, z: 42 + jitter(rng) },
-    baseHz: 880,
+    baseHz: key * 8,
     waveform: 'square',
     amplitude: 0.28,
     interactionRadius: 5,
@@ -61,7 +74,7 @@ export function createInitialResonators(rng: Rng): ResonatorData[] {
   const pulse = createResonator({
     id: 'resonator-pulse',
     position: { x: -34 + jitter(rng), y: 0, z: -46 + jitter(rng) },
-    baseHz: 165,
+    baseHz: key * 1.5,
     waveform: 'saw',
     amplitude: 0.3,
     interactionRadius: 8,
@@ -74,7 +87,7 @@ export function createInitialResonators(rng: Rng): ResonatorData[] {
   const root = createResonator({
     id: 'resonator-root',
     position: { x: 84 + jitter(rng), y: -2, z: 52 + jitter(rng) },
-    baseHz: 55,
+    baseHz: key / 2,
     waveform: 'sine',
     amplitude: 0.4,
     interactionRadius: 14,
@@ -87,7 +100,7 @@ export function createInitialResonators(rng: Rng): ResonatorData[] {
   const mid = createResonator({
     id: 'resonator-mid',
     position: { x: -78 + jitter(rng), y: 8, z: 18 + jitter(rng) },
-    baseHz: 587,
+    baseHz: key * 4 * 1.5,
     waveform: 'triangle',
     amplitude: 0.26,
     interactionRadius: 6,
@@ -100,7 +113,7 @@ export function createInitialResonators(rng: Rng): ResonatorData[] {
   const air = createResonator({
     id: 'resonator-air',
     position: { x: 48 + jitter(rng), y: 34, z: -84 + jitter(rng) },
-    baseHz: 1760,
+    baseHz: key * 16,
     waveform: 'sine',
     amplitude: 0.22,
     interactionRadius: 5,

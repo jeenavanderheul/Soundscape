@@ -74,10 +74,14 @@ describe('createFirstResonator (M1 single resonator)', () => {
 describe('WorldState (seeded resonators, spec §7)', () => {
   const SEED = 'worldstate-test-seed';
 
-  it('initial world contains the seeded resonators, first one unchanged', () => {
+  it('initial world contains the seeded resonators, led by the first', () => {
     const world = createInitialWorldState(SEED);
     expect(world.resonators).toHaveLength(7);
-    expect(world.resonators[0]).toEqual(createFirstResonator());
+    // Same voice and place as always; only the pitch follows the world's key (§32).
+    const { baseHz, ...shape } = world.resonators[0]!;
+    const { baseHz: _original, ...expected } = createFirstResonator();
+    expect(shape).toEqual(expected);
+    expect(baseHz).toBeGreaterThan(0);
   });
 
   it('resonators differ clearly in frequency and timbre', () => {

@@ -777,7 +777,10 @@ export class Game {
       structures: save.structures,
     }));
     this.progressionStore.setState(() => ({ ...save.progression }));
-    this.trackStore.setState(() => ({ ...save.trackState }));
+    // §32: the WORLD is restored, the TRACK is not. A track is what a flight
+    // builds; handing back a finished one would mean every session starts on
+    // a full arrangement instead of a single tone.
+    this.trackStore.setState(() => createInitialTrackState());
     // Resume spawn counters so post-load spawns never reuse a saved structure's id.
     this.formEmergence.rehydrate(save.structures);
     for (const structure of save.structures) this.events.emit('structure:spawned', structure);

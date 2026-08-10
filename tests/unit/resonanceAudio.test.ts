@@ -106,13 +106,26 @@ describe('createInitialResonators', () => {
     }
   });
 
-  it('keeps the existing first resonator and spans low/mid/high register', () => {
+  it('leads with the first resonator and spans low/mid/high register', () => {
     const resonators = createInitialResonators(rng());
     expect(resonators[0]!.id).toBe('resonator-first');
-    expect(resonators[0]!.baseHz).toBe(330);
     const sorted = [...resonators].sort((a, b) => a.baseHz - b.baseHz);
     expect(sorted[0]!.baseHz).toBeLessThan(160); // low mass register (§3.1)
     expect(sorted[sorted.length - 1]!.baseHz).toBeGreaterThan(600); // detail register
+  });
+
+  // §32: every world is in its own key, so two flights never start from the
+  // same harmonic material.
+  it('puts each seed in its own key, in tune with itself', () => {
+    const a = createInitialResonators(createRng('world-a'));
+    const b = createInitialResonators(createRng('world-b'));
+    expect(a[0]!.baseHz).not.toBe(b[0]!.baseHz);
+    // Within one world every voice is a whole-number ratio of the key.
+    const key = a.find((r) => r.id === 'resonator-deep')!.baseHz;
+    for (const resonator of a) {
+      const ratio = resonator.baseHz / key;
+      expect(Math.abs(ratio - Math.round(ratio * 2) / 2)).toBeLessThan(1e-9);
+    }
   });
 
   it('gives the low resonator a larger interactionRadius and elevates the high one', () => {

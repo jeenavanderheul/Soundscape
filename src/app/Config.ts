@@ -1,6 +1,28 @@
 // Central typed configuration (spec §13 visual direction, §22 performance).
-/** Deterministic seed for all procedural world content (spec §16). */
-export const WORLD_SEED = 'frequency-m1';
+import { PRIMARY_KEY } from '../persistence/SaveManager';
+
+/**
+ * Seed for all procedural world content (spec §16). Everything downstream is
+ * deterministic in this seed; the seed itself is drawn once per world.
+ *
+ * §32: a world keeps its seed as long as it is saved, so returning to it is
+ * the same place — but a NEW world gets a new one. That is what makes two
+ * flights start from a different key, a different layout, a different forest.
+ */
+export const WORLD_SEED = resolveWorldSeed();
+
+function resolveWorldSeed(): string {
+  try {
+    const saved = window.localStorage.getItem(PRIMARY_KEY);
+    if (saved !== null) {
+      const seed = (JSON.parse(saved) as { seed?: unknown }).seed;
+      if (typeof seed === 'string' && seed !== '') return seed;
+    }
+  } catch {
+    // No storage, or a save we cannot read: this simply becomes a new world.
+  }
+  return `frequency-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 /**
  * Lower-frequency logical loop interval (spec §15): resonance evaluation runs
