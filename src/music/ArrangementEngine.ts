@@ -92,9 +92,7 @@ export class ArrangementEngine {
       case 'intro':
         this.enter('groove', nowMs);
         break;
-      // §47: HEIGHT is what builds and drops. Energy only decides whether the
-      // track is breathing (floating) or running — it can never hand the player
-      // a build or a drop they did not fly for.
+      // §58: energy and time carry the form. Height is pitch and tempo only.
       case 'groove':
         if (this.highEnergyMs >= config.buildMs) this.enter('build', nowMs);
         else if (energy <= config.lowEnergy) this.enter('break', nowMs);
