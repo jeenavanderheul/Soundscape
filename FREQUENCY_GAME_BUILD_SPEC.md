@@ -1405,6 +1405,12 @@ Earned layers are **never lost** — they simply stop sounding until the player 
 
 ---
 
+## 44. The terrain is a wireframe surface, not a waveform plane (v13 amendment)
+
+Scan lines run across; a sparser set of depth lines runs away from the camera. Horizontal lines alone read as 2.5D — the perpendicular set is what lets the eye see the shape of a hill. Drawn every fourth column so it stays a grid and never becomes graph paper.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

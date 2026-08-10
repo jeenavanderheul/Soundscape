@@ -26,6 +26,8 @@ export const TERRAIN_CONFIG = {
   rows: 96,
   columns: 192,
   planeY: -6,
+  /** §44: draw one depth line every N columns — sparser than the scan lines. */
+  depthLineEvery: 4,
   maxSources: 12,
   /** Idle ripple so the void is never a black screen (faint reference). */
   idleAmplitude: 0.18,
@@ -276,8 +278,14 @@ export class WaveTerrain {
   }
 }
 
+/**
+ * §44: scan lines ACROSS and lines RUNNING AWAY. A field of horizontal lines
+ * alone reads as a 2.5D waveform plane; the perpendicular set turns it into a
+ * wireframe surface you can see the depth of. They are drawn sparser than the
+ * scan lines so the poster look survives — a grid, not graph paper.
+ */
 function buildScanLineGrid(): BufferGeometry {
-  const { size, rows, columns } = TERRAIN_CONFIG;
+  const { size, rows, columns, depthLineEvery } = TERRAIN_CONFIG;
   const positions: number[] = [];
   for (let r = 0; r < rows; r++) {
     const z = (r / (rows - 1) - 0.5) * size;
@@ -285,6 +293,15 @@ function buildScanLineGrid(): BufferGeometry {
       const x0 = (c / columns - 0.5) * size;
       const x1 = ((c + 1) / columns - 0.5) * size;
       positions.push(x0, 0, z, x1, 0, z);
+    }
+  }
+  // The depth set: same lattice, segments joining row to row.
+  for (let c = 0; c < columns; c += depthLineEvery) {
+    const x = (c / columns - 0.5) * size;
+    for (let r = 0; r < rows - 1; r++) {
+      const z0 = (r / (rows - 1) - 0.5) * size;
+      const z1 = ((r + 1) / (rows - 1) - 0.5) * size;
+      positions.push(x, 0, z0, x, 0, z1);
     }
   }
   const geometry = new BufferGeometry();

@@ -641,14 +641,17 @@ export class StrudelEngine implements StrudelEnginePort {
       // are extra palette that must not be able to hold the drums back.
       .then(async () => {
         try {
-          const probe = await fetch(LOCAL_SAMPLE_MAP, { method: 'HEAD' });
-          if (probe.ok) {
+          // A dev server answers unknown paths with index.html, so "200" is
+          // not proof: the body has to actually be a sample map.
+          const probe = await fetch(LOCAL_SAMPLE_MAP);
+          const map: unknown = probe.ok ? await probe.json() : null;
+          if (map !== null && typeof map === 'object' && '_base' in map) {
             await samples(LOCAL_SAMPLE_MAP);
             this.localSamples = true;
             return;
           }
         } catch {
-          // No local library: use the network maps below.
+          // Not vendored yet: fall back to the network maps below.
         }
         await samples(DRUM_MACHINES_URL);
       })
