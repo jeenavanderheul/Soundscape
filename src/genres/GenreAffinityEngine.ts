@@ -24,7 +24,9 @@ export interface GenreAffinityEngineConfig {
 
 export const GENRE_AFFINITY_CONFIG: GenreAffinityEngineConfig = {
   intervalMs: 100,
-  smoothingRate: 1.2,
+  // Fast enough that crossing a border is audible while you are still
+  // crossing it, slow enough that it never flickers (§34).
+  smoothingRate: 2.2,
   dominantThreshold: 0.4,
   historyLimit: 64,
 };
@@ -104,9 +106,12 @@ export class GenreAffinityEngine {
     const raw = { ...behaviour };
     if (zone) {
       for (const key of Object.keys(raw) as (keyof GenreAffinity)[]) {
+        // WHERE you are outweighs what you play (§34): the player must hear
+        // a different region within seconds of turning, and behaviour alone
+        // would otherwise keep the same grammar everywhere.
         raw[key] = Math.min(
           1,
-          (BEHAVIOURAL.has(key) ? behaviour[key] * 0.5 + zone[key] * 0.5 : zone[key]) * audible,
+          (BEHAVIOURAL.has(key) ? behaviour[key] * 0.3 + zone[key] * 0.7 : zone[key]) * audible,
         );
       }
     }

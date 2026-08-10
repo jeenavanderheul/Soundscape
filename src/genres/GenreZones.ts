@@ -12,9 +12,13 @@ import type { Vec3Data } from '../player/FrequencyState';
 
 export const ZONE_CONFIG = {
   /** Around spawn nothing pulls: the void is genre-less. */
-  neutralRadius: 30,
-  /** Distance at which a compass zone reaches full influence. */
-  fullInfluenceDistance: 150,
+  neutralRadius: 20,
+  /**
+   * Distance at which a compass zone reaches full influence. Kept short on
+   * purpose: turning and flying must change the music within seconds, or a
+   * direction does not read as a choice (§34).
+   */
+  fullInfluenceDistance: 70,
   /** Altitude where Experimental starts pulling. */
   experimentalFloor: 25,
   /** Altitude of full Experimental influence. */
@@ -24,7 +28,7 @@ export const ZONE_CONFIG = {
    * Flight altitude is clamped to [-3, 70] (FLIGHT_CONFIG), so a region
    * "under the world" would be unreachable; the echo chamber is the floor.
    */
-  dubCeiling: 1,
+  dubCeiling: -1,
   dubFloor: -3,
 } as const;
 

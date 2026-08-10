@@ -39,7 +39,9 @@ describe('GenreZones — every direction is a genre (§29.5)', () => {
     // Cruising height is clean; hugging the ground fills with echo.
     expect(zoneAffinity({ x: 0, y: 10, z: 0 }).dub).toBe(0);
     expect(zoneAffinity({ x: 0, y: -3, z: 0 }).dub).toBe(1);
-    expect(zoneAffinity({ x: 0, y: -1, z: 0 }).dub).toBeGreaterThan(0.4);
+    // Cruising just above the floor is still clean: dub needs a real dive.
+    expect(zoneAffinity({ x: 0, y: 0, z: 0 }).dub).toBe(0);
+    expect(zoneAffinity({ x: 0, y: -2, z: 0 }).dub).toBeGreaterThan(0.4);
   });
 
   it('turns altitude into experimental', () => {
