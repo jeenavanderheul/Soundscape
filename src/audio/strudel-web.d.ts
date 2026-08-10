@@ -9,8 +9,22 @@
  * Re-verify this file when bumping the pinned version.
  */
 declare module '@strudel/web' {
+  /** One scheduled sound, as @strudel/core's `queryArc` returns it (a Hap). */
+  export interface StrudelHap {
+    /** Cycle span; `whole` is absent for fragments, which never trigger sound. */
+    whole?: { begin: number; end: number } | undefined;
+    part: { begin: number; end: number };
+    /** Thecontrols: `s`, `note`, `gain`, `orbit`, … */
+    value: Record<string, unknown>;
+  }
+
+  export interface StrudelPattern {
+    queryArc(begin: number, end: number): StrudelHap[];
+  }
+
   export interface StrudelRepl {
-    scheduler: { now(): number };
+    /** `pattern` is the live stack; querying it is how the visuals learn the notes. */
+    scheduler: { now(): number; pattern?: StrudelPattern | undefined; cps?: number };
     evaluate(code: string, autostart?: boolean, shouldHush?: boolean): Promise<unknown>;
     start(): void;
     stop(): void;

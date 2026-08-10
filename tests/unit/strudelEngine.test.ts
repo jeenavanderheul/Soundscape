@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   bpmToCps,
   buildPatternCode,
+  classifyForTest,
   msUntilNextCycleBoundary,
   StrudelEngine,
   STRUDEL_HEADROOM,
@@ -347,5 +348,28 @@ describe('StrudelEngine', () => {
     await vi.runAllTimersAsync();
     expect(strudel.repl.stop).toHaveBeenCalled();
     expect(strudel.repl.evaluate).not.toHaveBeenCalled();
+  });
+});
+
+describe('§63 the visuals read the notes that are about to sound', () => {
+  it('classifies a pattern into what the world should draw', () => {
+    // The classifier is what keeps a flash honest: a two-step kick flashes on
+    // the two-step, not on every beat.
+    const notes = classifyForTest([
+      { s: 'bd' }, { s: 'sbd' }, { s: 'hh:2' }, { s: 'oh' },
+      { s: 'cp' }, { s: 'rim' }, { s: 'white' }, { note: 33 }, { note: 60 }, { note: 84 },
+      { s: 'unknownthing' }, {},
+    ]);
+    expect(notes).toEqual([
+      'kick', 'kick', 'hat', 'hat',
+      'snare', 'snare', 'texture', 'bass', 'chord', 'melody',
+      null, null,
+    ]);
+  });
+
+  it('says nothing at all when the runtime cannot answer', () => {
+    // Better a world that draws nothing than one that draws a lie (§16).
+    const engine = new StrudelEngine();
+    expect(engine.upcomingNotes(1)).toEqual([]);
   });
 });

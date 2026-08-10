@@ -5,7 +5,7 @@ import { performanceFrom } from '../music/Performance';
 import { PlayerTone } from '../audio/PlayerTone';
 import { ResonanceAudio } from '../audio/ResonanceAudio';
 import { SpatialAudio } from '../audio/SpatialAudio';
-import { StrudelEngine } from '../audio/StrudelEngine';
+import { StrudelEngine, type NoteKind } from '../audio/StrudelEngine';
 import { Clock } from '../core/Clock';
 import { createEventBus, EventBus } from '../core/EventBus';
 import { createStore, Store } from '../core/stores';
@@ -308,6 +308,13 @@ export class Game {
   private readonly camDir = { x: 0, y: 0, z: -1 };
   /** The grammar the last applied graph was written in (§60). */
   private lastGraphGenre: TrackGenre = null;
+  /**
+   * §63 ONE musical timeline: notes Strudel is about to play, each with the
+   * wall-clock moment it sounds. The render loop fires their visuals then — so
+   * a kick shockwave IS a kick, and a two-step flashes where the two-step is.
+   */
+  private noteQueue: Array<{ kind: NoteKind; atMs: number; velocity: number }> = [];
+  private hatSparkleUntil = 0;
   /** §60: the section word waits for the bar where the music turns. */
   private pendingSection: TrackState['form'] | null = null;
   /** §33 turn throws: one gesture per turn, never a stream. */
@@ -429,14 +436,9 @@ export class Game {
           this.strudelEngine.schedule({ kind: 'throw', gain: 0.55 * this.motionLevel, style: gesture }, 'beat');
         }
       }
-      const track = this.trackStore.getState();
-      if (track.drums.kick.unlocked) {
-        const p = this.frequencyStore.getState().position;
-        this.terrain.excite('kick-beat', p, 55, 0.3);
-      }
-      if (track.drums.snare.unlocked && this.beatIndex % 2 === 0) {
-        this.terrain.clapFlash();
-      }
+      // §63: the layer visuals no longer fire off the beat index — they come
+      // from the notes Strudel is about to play, queued below.
+      this.queueUpcomingNotes();
     });
     // §18: hydrate before the autosave subscription exists, so restoring a
     // save never immediately rewrites the snapshot it was loaded from.
@@ -647,7 +649,9 @@ export class Game {
       const track = this.trackStore.getState();
       this.throwOnTurn(elapsedMs, track.genre);
       // §29.6: every layer has a visual system.
-      this.particles.setSparkle(track.drums.hats.unlocked);
+      // §63: the sparkle is a HAT, not a flag — it lights on the note and dies
+      // with it, so particles never shimmer through a bar that has no hats.
+      this.particles.setSparkle(performance.now() < this.hatSparkleUntil);
       this.terrain.setBass(track.bass.unlocked ? 1 : 0);
       this.melodyTrail.setLevel(track.melody.unlocked ? 1 : 0);
       this.harmonyBridges.setLevel(track.harmony.unlocked ? 1 : 0);
@@ -730,6 +734,8 @@ export class Game {
       [...world.resonators.map((r) => r.position), ...world.structures.map((s) => s.position)],
       state.position,
     );
+    // §63: every visual event is a real note, fired at the moment it sounds.
+    this.fireDueNotes(performance.now(), state.position);
     // §29.6: the orb and the cloud around it ARE the track so far — and §42:
     // stand still and do nothing and it sinks back to its first form while the
     // music goes out. Nothing is lost: the layers stay earned, so moving again
@@ -940,6 +946,54 @@ export class Game {
   private flightHeading(state: Readonly<FrequencyState>): number {
     const dir = state.velocity > 0.6 ? this.camDir : state.direction;
     return Math.atan2(dir.x, -dir.z);
+  }
+
+  /** §63: read the next beat's worth of notes off the live pattern. */
+  private queueUpcomingNotes(): void {
+    const now = performance.now();
+    // Drop anything stale, then take the next window. Beats arrive every
+    // 60/bpm seconds, so one second of look-ahead always covers the gap.
+    this.noteQueue = this.noteQueue.filter((note) => note.atMs > now);
+    for (const note of this.strudelEngine.upcomingNotes(1)) {
+      const atMs = now + note.inSeconds * 1000;
+      // Only what is genuinely ahead, and never the same note twice.
+      if (atMs <= now + 4) continue;
+      if (this.noteQueue.some((q) => q.kind === note.kind && Math.abs(q.atMs - atMs) < 12)) continue;
+      this.noteQueue.push({ kind: note.kind, atMs, velocity: note.velocity });
+    }
+  }
+
+  /** §63: fire each note's visual at the moment it sounds. */
+  private fireDueNotes(nowMs: number, position: Readonly<FrequencyState>['position']): void {
+    if (this.noteQueue.length === 0) return;
+    const due = this.noteQueue.filter((note) => note.atMs <= nowMs);
+    if (due.length === 0) return;
+    this.noteQueue = this.noteQueue.filter((note) => note.atMs > nowMs);
+    for (const note of due) {
+      switch (note.kind) {
+        // §17: kick = a low shockwave through the ground under the player.
+        case 'kick':
+          this.terrain.excite('note-kick', position, 55, 0.22 + note.velocity * 0.22);
+          break;
+        // Snare and clap = a sharp flash across the field.
+        case 'snare':
+          this.terrain.clapFlash();
+          break;
+        // Hats = high, fine sparkle in the particles.
+        case 'hat':
+          this.hatSparkleUntil = nowMs + 130;
+          break;
+        case 'perc':
+          this.terrain.excite('note-perc', position, 900, 0.1 + note.velocity * 0.1);
+          break;
+        // Bass = a wide, slow deformation.
+        case 'bass':
+          this.terrain.excite('note-bass', position, 80, 0.18 + note.velocity * 0.2);
+          break;
+        default:
+          break;
+      }
+    }
   }
 
   /** §32: the flight so far as Strudel source — from E and from the pause menu. */

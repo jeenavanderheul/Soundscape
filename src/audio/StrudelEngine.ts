@@ -67,6 +67,48 @@ export interface StrudelEnginePort {
   dispose(): void;
 }
 
+/**
+ * §63: ONE musical timeline. The visuals used to fire off the beat index —
+ * a kick shockwave on every beat if the kick was earned — which is a lie the
+ * moment the grammar is a two-step or a half-time trap kick. These are the
+ * notes Strudel is ACTUALLY about to play, read straight off the live pattern,
+ * so what flashes is what sounds.
+ */
+export type NoteKind = 'kick' | 'snare' | 'hat' | 'perc' | 'bass' | 'chord' | 'melody' | 'texture';
+
+export interface MusicalNote {
+  kind: NoteKind;
+  /** Cycle position it begins at (1 cycle = 1 bar). */
+  cycle: number;
+  /** Seconds from now until it sounds. */
+  inSeconds: number;
+  velocity: number;
+}
+
+/** Sound names → what the world should do about them (§17 visual language). */
+function noteKindOf(value: Record<string, unknown>): NoteKind | null {
+  const sound = typeof value['s'] === 'string' ? (value['s'] as string) : '';
+  const bare = sound.replace(/:.*$/, '');
+  if (bare.startsWith('bd') || bare === 'sbd') return 'kick';
+  if (bare === 'sd' || bare === 'cp' || bare === 'rim') return 'snare';
+  if (bare.startsWith('hh') || bare === 'oh' || bare === 'sh') return 'hat';
+  if (bare === 'white' || bare === 'pink' || bare === 'brown') return 'texture';
+  if (bare === 'perc' || bare === 'cb' || bare === 'tb') return 'perc';
+  if (value['note'] !== undefined) {
+    // Pitched: the register tells bass from chord from lead.
+    const note = value['note'];
+    const midi = typeof note === 'number' ? note : Number.NaN;
+    if (Number.isFinite(midi)) return midi < 48 ? 'bass' : midi < 72 ? 'chord' : 'melody';
+    return 'chord';
+  }
+  return null;
+}
+
+/** Test seam for §63's classifier; the engine itself uses `noteKindOf`. */
+export function classifyForTest(values: Array<Record<string, unknown>>): Array<NoteKind | null> {
+  return values.map(noteKindOf);
+}
+
 export const BEATS_PER_BAR = 4;
 /** Strudel layer headroom under the master chain so max layering cannot clip (§21).
  * §29: the TRACK is the star of the mix — headroom sits high, the player tone low. */
@@ -909,6 +951,41 @@ export class StrudelEngine implements StrudelEnginePort {
     this.pendingActions = [];
     this.revertPending = false;
     this.repl?.stop();
+  }
+
+  /**
+   * §63: the notes about to sound, in the next `windowSeconds`. Returns an
+   * empty list whenever the runtime cannot answer — the visuals then simply
+   * have nothing to draw, which is better than drawing something false.
+   */
+  upcomingNotes(windowSeconds: number): MusicalNote[] {
+    const pattern = this.repl?.scheduler.pattern;
+    if (!pattern || !this.playing) return [];
+    const cps = this.appliedGraph.bpm > 0 ? bpmToCps(this.appliedGraph.bpm) : 0;
+    if (cps <= 0) return [];
+    const from = this.repl!.scheduler.now();
+    const to = from + windowSeconds * cps;
+    let haps: Array<{ whole?: { begin: number } | undefined; value: Record<string, unknown> }>;
+    try {
+      haps = pattern.queryArc(from, to);
+    } catch {
+      return [];
+    }
+    const notes: MusicalNote[] = [];
+    for (const hap of haps) {
+      // No `whole` means a fragment: superdough never sounds it, so nor do we.
+      if (hap.whole === undefined) continue;
+      const kind = noteKindOf(hap.value);
+      if (kind === null) continue;
+      const gain = typeof hap.value['gain'] === 'number' ? (hap.value['gain'] as number) : 1;
+      notes.push({
+        kind,
+        cycle: hap.whole.begin,
+        inSeconds: Math.max(0, (hap.whole.begin - from) / cps),
+        velocity: clamp(gain, 0, 1),
+      });
+    }
+    return notes;
   }
 
   setLayerGraph(graph: MusicalLayerGraph, boundary: 'beat' | 'bar' = 'bar'): void {
