@@ -17,6 +17,7 @@ const VERTEX = /* glsl */ `
 uniform float uTime;
 uniform float uDeform;
 uniform float uHzNorm;
+uniform float uGrowth;
 varying float vFresnel;
 varying float vRipple;
 
@@ -28,6 +29,11 @@ void main() {
     sin(position.y * bands * 3.1 + uTime * 3.0) *
     sin(position.x * bands * 2.3 - uTime * 2.2) *
     sin(position.z * bands * 2.7 + uTime * 2.6);
+  // Every earned layer folds a faster harmonic into the wave: a full track is
+  // visibly a more complicated waveform than a single tone (§29.6).
+  ripple += uGrowth * 0.6 *
+    sin(position.y * bands * 7.3 - uTime * 5.1) *
+    sin(position.x * bands * 6.1 + uTime * 4.3);
   vec3 displaced = position + normal * ripple * uDeform;
   vRipple = ripple;
   vec4 mv = modelViewMatrix * vec4(displaced, 1.0);
@@ -55,10 +61,14 @@ void main() {
 
 export class PlayerOrb {
   readonly mesh: Mesh;
-  private readonly material: ShaderMaterial;
+  /** Public so tests can read the uniforms the world is driving. */
+  readonly material: ShaderMaterial;
   private pulse = 0;
   private glow = 0.6;
   private deform = 0.05;
+  /** Smoothed §29.6 track growth: 0 = one tone, 1 = a finished track. */
+  private growth = 0;
+  private targetGrowth = 0;
 
   constructor() {
     this.material = new ShaderMaterial({
@@ -71,6 +81,7 @@ export class PlayerOrb {
         uDeform: { value: 0.05 },
         uHzNorm: { value: 0.5 },
         uGlow: { value: 0.6 },
+        uGrowth: { value: 0 },
       },
     });
     this.mesh = new Mesh(new IcosahedronGeometry(0.55, 5), this.material);
@@ -81,16 +92,39 @@ export class PlayerOrb {
     this.pulse = value;
   }
 
+  /**
+   * §29.6: the orb IS the track. It starts small and minimal on a single tone
+   * and every earned layer makes it bigger, brighter, more complex and more
+   * restless — the finished track is a visibly different body.
+   */
+  setGrowth(value: number): void {
+    this.targetGrowth = Math.min(1, Math.max(0, value));
+  }
+
   update(state: Readonly<FrequencyState>, rms: number, dt: number, elapsedSeconds: number): void {
     this.mesh.position.set(state.position.x, state.position.y, state.position.z);
     const hzn = Math.min(1, Math.max(0, Math.log(Math.max(state.hz, 30) / 30) / Math.log(8000 / 30)));
     // Every stimulus deepens the morph: own wind, the audio field, the beat.
     // Capped: at full wind the orb breathes hard but stays a recognizable orb.
-    const targetDeform = Math.min(0.26, 0.05 + state.amplitude * 0.12 + rms * 0.18 + this.pulse * 0.08);
-    const targetGlow = Math.min(1.5, 0.55 + state.amplitude * 0.45 + rms * 0.6 + this.pulse * 0.3);
+    const targetDeform = Math.min(
+      0.26 + this.growth * 0.14,
+      0.05 + state.amplitude * 0.12 + rms * 0.18 + this.pulse * 0.08 + this.growth * 0.1,
+    );
+    const targetGlow = Math.min(
+      1.5 + this.growth * 0.5,
+      0.55 + state.amplitude * 0.45 + rms * 0.6 + this.pulse * 0.3 + this.growth * 0.45,
+    );
     const blend = 1 - Math.exp(-8 * dt);
     this.deform += (targetDeform - this.deform) * blend;
     this.glow += (targetGlow - this.glow) * blend;
+    // Growth crawls (a layer is a milestone, not a flicker) — 2s time constant.
+    this.growth += (this.targetGrowth - this.growth) * (1 - Math.exp(-0.5 * dt));
+    // Size and restlessness are the growth the player can see from outside.
+    const scale = 1 + this.growth * 1.6;
+    this.mesh.scale.setScalar(scale);
+    this.mesh.rotation.y = elapsedSeconds * (0.2 + this.growth * 1.1);
+    this.mesh.rotation.x = Math.sin(elapsedSeconds * 0.5) * this.growth * 0.4;
+    this.material.uniforms.uGrowth!.value = this.growth;
     this.material.uniforms.uTime!.value = elapsedSeconds;
     this.material.uniforms.uDeform!.value = this.deform;
     this.material.uniforms.uGlow!.value = this.glow;

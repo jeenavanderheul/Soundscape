@@ -129,13 +129,23 @@ export class ParticleSystem {
     // §29.6: hats live in the particles — a fast shimmer once unlocked.
     this.sparklePhase += dt * 26;
     const sparkle = this.sparkle ? 1 + Math.sin(this.sparklePhase) * 0.3 : 1;
-    this.material.uniforms.uSize!.value = hzToPointSize(snapshot.hz) * sparkle;
+    this.material.uniforms.uSize!.value =
+      hzToPointSize(snapshot.hz) * sparkle * (1 + this.growth * 0.4);
     this.material.uniforms.uBrightness!.value =
-      amplitudeToBrightness(snapshot.amplitude) * (1 + this.pulse) * (this.sparkle ? 1.25 : 1);
+      amplitudeToBrightness(snapshot.amplitude) *
+      (1 + this.pulse) *
+      (this.sparkle ? 1.25 : 1) *
+      (1 + this.growth * 0.6);
   }
 
   private sparkle = false;
   private sparklePhase = 0;
+  private growth = 0;
+
+  /** §29.6: a fuller track thickens the cloud the player flies through. */
+  setGrowth(value: number): void {
+    this.growth = Math.min(1, Math.max(0, value));
+  }
 
   /** "Those particles are my hats" (§29.6). */
   setSparkle(on: boolean): void {

@@ -78,6 +78,24 @@ export function createInitialTrackState(): TrackState {
 
 export type TrackLayerName = 'kick' | 'hats' | 'snare' | 'bass' | 'harmony' | 'melody' | 'texture';
 
+/**
+ * How much track there is, 0 (a single tone) to 1 (all seven layers grown deep).
+ * The orb reads this and becomes the track it is building (§29.6).
+ */
+export function trackGrowth(track: Readonly<TrackState>): number {
+  const layers = [
+    track.drums.kick,
+    track.drums.snare,
+    track.drums.hats,
+    track.bass,
+    track.harmony,
+    track.melody,
+    track.texture,
+  ];
+  const total = layers.reduce((sum, layer) => sum + Math.min(LEVEL_DEEP, Math.max(0, layer.level)), 0);
+  return total / (layers.length * LEVEL_DEEP);
+}
+
 export type TrackEvents = {
   /** Emitted once when a layer unlocks (§29.3): audible + visual + one word. */
   'track:layer': { layer: TrackLayerName; atMs: number };

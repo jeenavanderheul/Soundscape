@@ -26,7 +26,7 @@ import type { GenreAffinity } from '../music/MusicState';
 import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
 import { RhythmDetector } from '../music/RhythmDetector';
 import { TrackBuilder } from '../music/TrackBuilder';
-import { createInitialTrackState, TrackEvents, TrackState } from '../music/TrackState';
+import { createInitialTrackState, trackGrowth, TrackEvents, TrackState } from '../music/TrackState';
 import type { TrackGenre } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
@@ -624,6 +624,10 @@ export class Game {
       [...world.resonators.map((r) => r.position), ...world.structures.map((s) => s.position)],
       state.position,
     );
+    // §29.6: the orb and the cloud around it ARE the track so far.
+    const growth = trackGrowth(this.trackStore.getState());
+    this.orb.setGrowth(growth);
+    this.particles.setGrowth(growth);
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
     // §33: streaks rushing past the orb are what makes speed legible.
     this.streaks.update(
