@@ -417,3 +417,35 @@ describe('§62 speed is energy, and every world spends it its own way', () => {
     expect(genreGrammar('jazz').energyStyle).toBe('improv');
   });
 });
+
+describe('§66 UK garage sounds like UK garage', () => {
+  it('is built from displacement, not from a four-to-the-floor', () => {
+    const g = genreGrammar('garage');
+    expect(g.kickStyle).toBe('twostep');   // bd ~ ~ bd ~ ~ ~ bd
+    expect(g.hatStyle).toBe('shuffle');    // ~ hh ~ [hh hh] ~ hh ~ hh
+    expect(g.snareStyle).toBe('clap');     // ~ ~ cp ~ ~ ~ cp ~
+    expect(g.bassStyle).toBe('skip');      // all holes and offbeats
+    expect(g.chordStyle).toBe('skip');     // stabs OFF the grid
+    expect(g.textureStyle).toBe('shaker');
+    expect(g.bpmCentre).toBe(134);
+  });
+
+  it('plays its chords and hook on the preset’s own voices, not on samples', () => {
+    const g = genreGrammar('garage');
+    expect(g.bassVoice).toBe('sine');
+    expect(g.chordVoice).toBe('triangle');
+    expect(g.leadVoice).toBe('sine');
+  });
+
+  it('its chord lands off the beat and stops', () => {
+    const track = createInitialTrackState();
+    track.bpm = 134;
+    track.harmony = { unlocked: true, level: 1 };
+    track.harmonyIntervals = [0, 3, 7];
+    const music = { ...createInitialMusicState(), bpm: 134, tempoConfidence: 0.6 };
+    const code = buildPatternCode(buildLayerGraph(music, affinityOf('garage'), [], track));
+    const chord = code.split('\n').find((line) => line.includes('struct('))!;
+    expect(chord).toContain('~ x ~ ~ ~ x ~ ~');
+    expect(chord).toContain('"triangle"');
+  });
+});

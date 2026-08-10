@@ -245,7 +245,7 @@ const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body', 'rim', 'clap'] as co
 const BASS_STYLES = [
   'repetitive', 'sub', 'walking', 'rolling', 'skip', 'slide', 'dubwise', 'arco',
 ] as const;
-const CHORD_STYLES = ['stab', 'pad', 'jazz', 'piano', 'organ', 'skank'] as const;
+const CHORD_STYLES = ['stab', 'pad', 'jazz', 'piano', 'organ', 'skank', 'skip'] as const;
 const MELODY_STYLES = [
   'motif', 'stab', 'long', 'improv', 'hook', 'fragment', 'bell', 'vocal', 'melodica',
 ] as const;
@@ -482,7 +482,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         }
         // §34 garage: short syncopated sub stabs, all holes and accents.
         case 'skip':
-          return `note("<${root} ~ [~ ${notes[1] ?? root}] ~ ${notes[2] ?? root} ~ ~ [${root} ~]>").s("sine").decay(.16).sustain(0).gain(${gain})`;
+          // §66 reference preset: `f2 ~ ~ ab2 ~ c3 ~ eb2` — eight steps, all
+          // holes and offbeats. That syncopation IS two-step; a rolling
+          // sub-figure reads as house however you filter it.
+          return `note("${notes[0] ?? root} ~ ~ ${notes[1] ?? root} ~ ${notes[2] ?? root} ~ ${notes[3] ?? notes[1] ?? root}").s("sine").decay(.22).sustain(.05).gain(${gain})`;
         // §34 trap: the 808 that slides between its notes.
         case 'slide':
           // §34 trap: the 808 IS the low end, so it has to be heard on a
@@ -531,6 +534,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         if (style === 'organ') {
           return `note("[${stacked}]").s("organ_full").slow(${slow}).room(.35).gain(${gain})`;
         }
+        // §66 garage: the chord lands OFF the beat and stops immediately —
+        // that displacement is what makes two-step sound like two-step.
+        if (style === 'skip') {
+          return `note("[${stacked}]").s("triangle").struct("~ x ~ ~ ~ x ~ ~").slow(${slow}).decay(.28).sustain(.05).room(.2).gain(${gain})`;
+        }
         // §34 dub: the off-beat skank, drowned in delay.
         if (style === 'skank') {
           return `note("[${stacked}]").s("triangle").struct("~ x ~ x").decay(.14).sustain(0).delay(.5).delayfeedback(.6).room(.5).gain(${gain})`;
@@ -561,7 +569,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return `note("${notes}").s("glockenspiel").slow(${slow}).room(.45).gain(${gain})`;
         // §34 garage: the chopped vocal-like hook.
         case 'vocal':
-          return `note("${notes}").s("triangle").slow(${slow}).chop(4).decay(.2).sustain(.05).delay(.25).room(.3).gain(${gain})`;
+          // §66: the garage hook sits high and clean, one note every other
+          // step, with just enough delay to smear it into the shuffle.
+          return `note("${notes}").s("sine").slow(${slow}).decay(.35).sustain(.1).delay(.2).room(.25).gain(${gain})`;
         // §34 dub: the melodica line, always one echo behind.
         case 'melodica':
           return `note("${notes}").s("harmonica").slow(${slow}).delay(.6).delayfeedback(.65).room(.5).gain(${gain})`;

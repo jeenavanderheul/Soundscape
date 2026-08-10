@@ -255,7 +255,10 @@ export type BassStyle =
   /** §34 classical: the left hand. */
   | 'arco';
 /** §31: harmony behaves differently per grammar — a stab is not a pad. */
-export type ChordStyle = 'stab' | 'pad' | 'jazz' | 'piano' | 'organ' | 'skank';
+export type ChordStyle =
+  /** §66 garage: short stabs pushed OFF the grid — the signature of two-step. */
+  | 'skip'
+  | 'stab' | 'pad' | 'jazz' | 'piano' | 'organ' | 'skank';
 export type MelodyStyle =
   | 'motif'
   | 'stab'
@@ -525,13 +528,13 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureGain: 0.15,
     // §49 the sound of this world: sine bass, organ_full chords, vibraphone lead.
     bassVoice: 'sine',
-    chordVoice: 'organ_full',
-    leadVoice: 'vibraphone',
+    chordVoice: 'triangle',
+    leadVoice: 'sine',
     kickStyle: 'twostep',
     hatStyle: 'shuffle',
     snareStyle: 'clap',
     bassStyle: 'skip',
-    chordStyle: 'stab',
+    chordStyle: 'skip',
     melodyStyle: 'vocal',
     textureStyle: 'shaker',
     hatCycle: 4,
