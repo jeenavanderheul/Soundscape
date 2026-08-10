@@ -91,6 +91,36 @@ describe('InputManager', () => {
     manager.detach();
   });
 
+  it('double-tapping forward starts a dash and holding keeps it (§29 tempo)', () => {
+    const { keyboard, manager } = setup();
+    const at = (type: 'keydown' | 'keyup', ms: number): Event => {
+      const event = Object.assign(new Event(type), { code: 'KeyW', repeat: false });
+      Object.defineProperty(event, 'timeStamp', { value: ms }); // read-only getter
+      return event;
+    };
+
+    // One tap alone is just forward.
+    keyboard.dispatchEvent(at('keydown', 0));
+    expect(manager.snapshot().buttons.accelerate).toBe(false);
+    keyboard.dispatchEvent(at('keyup', 80));
+
+    // A second tap inside the window dashes, and it lasts while held.
+    keyboard.dispatchEvent(at('keydown', 200));
+    expect(manager.snapshot().buttons.accelerate).toBe(true);
+    expect(manager.snapshot().buttons.accelerate).toBe(true);
+
+    // Releasing forward ends the dash.
+    keyboard.dispatchEvent(at('keyup', 900));
+    expect(manager.snapshot().buttons.accelerate).toBe(false);
+
+    // A slow second tap is not a dash.
+    keyboard.dispatchEvent(at('keydown', 5000));
+    keyboard.dispatchEvent(at('keyup', 5100));
+    keyboard.dispatchEvent(at('keydown', 6000));
+    expect(manager.snapshot().buttons.accelerate).toBe(false);
+    manager.detach();
+  });
+
   it('detaches cleanly: no further input reaches snapshots and held state clears', () => {
     const { keyboard, pointer, manager } = setup();
     keyboard.dispatchEvent(key('keydown', 'KeyW'));

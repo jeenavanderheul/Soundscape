@@ -38,6 +38,11 @@ const HINTS: HintDef[] = [
     when: (ctx, mem) => ctx.elapsedMs > 22_000 && !mem.everTuned,
   },
   {
+    id: 'dash',
+    text: 'double-tap W to dash — speed is the tempo',
+    when: (ctx) => ctx.elapsedMs > 14_000,
+  },
+  {
     id: 'beat',
     text: 'tap SPACE to a beat — the world will follow',
     when: (ctx) => ctx.elapsedMs > 35_000 && ctx.music.bpm === 0,

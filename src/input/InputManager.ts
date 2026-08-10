@@ -2,6 +2,9 @@ import { EventBus } from '../core/EventBus';
 import { DEFAULT_BINDINGS, DesktopBindings, KeyAction } from './bindings';
 
 /** Per-frame typed input snapshot (spec §6: systems consume snapshots, not DOM events). */
+/** Double-tapping forward within this window starts a dash (§5, §29 tempo). */
+export const DOUBLE_TAP_MS = 320;
+
 export interface InputSnapshot {
   /** moveX: -1 left … +1 right; moveZ: -1 backward … +1 forward. */
   axes: { moveX: number; moveZ: number };
@@ -33,6 +36,8 @@ export class InputManager {
   private readonly heldKeys = new Set<string>();
   private windHold = false;
   private windReleased = false;
+  private dashing = false;
+  private lastForwardDownMs: number | null = null;
   private resonancePulse = false;
   private pausePressed = false;
   private wheelDelta = 0;
@@ -68,6 +73,8 @@ export class InputManager {
     this.pointerTarget.removeEventListener('wheel', this.onWheel);
     this.heldKeys.clear();
     this.windHold = false;
+    this.dashing = false;
+    this.lastForwardDownMs = null;
     this.resetFrameState();
   }
 
@@ -79,7 +86,7 @@ export class InputManager {
         moveZ: this.axisValue('moveForward') - this.axisValue('moveBackward'),
       },
       buttons: {
-        accelerate: this.isActionHeld('accelerate'),
+        accelerate: this.isActionHeld('accelerate') || this.dashing,
         windHold: this.windHold,
       },
       windReleased: this.windReleased,
@@ -117,6 +124,16 @@ export class InputManager {
     const action = this.bindings.keys[code];
     if (!action || repeat) return;
     this.heldKeys.add(code);
+    if (action === 'moveForward') {
+      // Double-tap forward = dash: the same boost Shift gives, without
+      // holding a modifier. Flight speed is the tempo (§29), so this is
+      // literally the player pushing the track faster.
+      const now = (event as KeyboardEvent).timeStamp;
+      if (this.lastForwardDownMs !== null && now - this.lastForwardDownMs <= DOUBLE_TAP_MS) {
+        this.dashing = true;
+      }
+      this.lastForwardDownMs = now;
+    }
     if (action === 'resonancePulse') {
       this.resonancePulse = true;
       this.bus?.emit('input:resonance-pulse', null);
@@ -127,7 +144,10 @@ export class InputManager {
   };
 
   private readonly onKeyUp = (event: Event): void => {
-    this.heldKeys.delete((event as KeyboardEvent).code);
+    const { code } = event as KeyboardEvent;
+    // The dash lasts as long as forward stays held after the double tap.
+    if (this.bindings.keys[code] === 'moveForward') this.dashing = false;
+    this.heldKeys.delete(code);
   };
 
   private readonly onMouseDown = (event: Event): void => {
