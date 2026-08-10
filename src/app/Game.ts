@@ -84,8 +84,15 @@ const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
  * the orb is a small body at a single tone and grows to five times that, so
  * the camera has to start on top of it or the world reads as empty.
  */
-const CAMERA_DISTANCE = 3.2;
-const CAMERA_HEIGHT = 1.15;
+/**
+ * The camera sits BEHIND the orb and keeps it in view — never on top of it.
+ * Both scale with the orb, because it grows to five times its starting size
+ * with the track: a fixed distance would end up inside a finished one.
+ */
+const CAMERA_DISTANCE = 3.4;
+const CAMERA_DISTANCE_PER_RADIUS = 2.2;
+const CAMERA_HEIGHT = 0.9;
+const CAMERA_HEIGHT_PER_RADIUS = 0.7;
 /**
  * The camera aims just past the orb rather than far down the path: a long aim
  * flattens the world into a horizon and you lose the overview. The orb flies
@@ -744,12 +751,15 @@ export class Game {
     const dirX = this.camDir.x / length;
     const dirY = this.camDir.y / length;
     const dirZ = this.camDir.z / length;
-    const camX = position.x - dirX * CAMERA_DISTANCE;
-    const camZ = position.z - dirZ * CAMERA_DISTANCE;
+    // Back off as the orb grows, so it stays a body you are following.
+    const back = CAMERA_DISTANCE + this.orb.radius * CAMERA_DISTANCE_PER_RADIUS;
+    const lift = CAMERA_HEIGHT + this.orb.radius * CAMERA_HEIGHT_PER_RADIUS;
+    const camX = position.x - dirX * back;
+    const camZ = position.z - dirZ * back;
     // The camera stays above the landscape too. Letting it dip under the grid
     // is what made the orb look like it was inside the terrain (§35).
     const camY = Math.max(
-      position.y - dirY * CAMERA_DISTANCE + CAMERA_HEIGHT,
+      position.y - dirY * back + lift,
       this.terrain.groundHeightAt(camX, camZ) + CAMERA_GROUND_CLEARANCE,
     );
     camera.position.set(camX, camY, camZ);
@@ -758,7 +768,7 @@ export class Game {
     // ahead of it — rather than dead centre with its own back filling the view.
     camera.lookAt(
       position.x + direction.x * CAMERA_LOOK_AHEAD,
-      position.y + direction.y * CAMERA_LOOK_AHEAD + CAMERA_LOOK_LIFT,
+      position.y + direction.y * CAMERA_LOOK_AHEAD + CAMERA_LOOK_LIFT + this.orb.radius * 0.3,
       position.z + direction.z * CAMERA_LOOK_AHEAD,
     );
     this.renderer.render();
