@@ -1,3 +1,4 @@
+import { guideLines, trueAltitudeBand } from '../../src/ui/Guide';
 import { describe, expect, it } from 'vitest';
 
 import { setZoneGenres } from '../../src/genres/GenreZones';
@@ -137,5 +138,41 @@ describe('§59 ten worlds you can tell apart at a glance', () => {
       if (world !== 'classical') expect(`${world}:${spread > 0.3}`).toBe(`${world}:true`);
       expect(Math.max(r, g, b)).toBeGreaterThan(0.79);
     }
+  });
+});
+
+describe('§67 the guide tells you where and how high, and nothing else', () => {
+  it('names the band where the track plays at its own pitch and tempo', () => {
+    const band = trueAltitudeBand();
+    expect(band.low).toBeGreaterThan(10);
+    expect(band.high).toBeLessThan(30);
+    // Inside it, the advice is to stay put.
+    const inside = guideLines({
+      altitude: (band.low + band.high) / 2,
+      genre: 'techno',
+      heading: 'N · techno',
+      energy: 0.8,
+    });
+    expect(inside[0]).toContain('hold this height');
+    expect(inside[1]).toContain('stay on N');
+    expect(inside[2]).toContain('pushing');
+  });
+
+  it('says climb when you are running slow and deep, and drop when high', () => {
+    const base = { genre: 'techno' as const, heading: 'N · techno', energy: 0.2 };
+    expect(guideLines({ ...base, altitude: 2 })[0]).toContain('climb');
+    expect(guideLines({ ...base, altitude: 60 })[0]).toContain('drop');
+    expect(guideLines({ ...base, altitude: 2 })[2]).toContain('hold LMB');
+  });
+
+  it('sends you home when you are heading out of your own world', () => {
+    const away = guideLines({ altitude: 18, genre: 'dub', heading: 'N · techno', energy: 0.9 });
+    expect(away[1]).toContain('turn to WNW');
+    expect(away[1]).toContain('leaving ends this track');
+  });
+
+  it('and asks for a direction while nothing is playing yet', () => {
+    const empty = guideLines({ altitude: 18, genre: null, heading: 'N · techno', energy: 0.5 });
+    expect(empty[1]).toContain('pick a direction');
   });
 });

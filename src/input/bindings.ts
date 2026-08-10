@@ -10,6 +10,7 @@ export type KeyAction =
   | 'resonancePulse'
   | 'toggleCode'
   | 'exportTrack'
+  | 'toggleGuide'
   | 'pause';
 
 /**
@@ -40,6 +41,7 @@ export const DEFAULT_BINDINGS: DesktopBindings = {
     Space: 'resonancePulse',
     KeyC: 'toggleCode',
     KeyE: 'exportTrack',
+    KeyG: 'toggleGuide',
     Escape: 'pause',
   },
   mouseButtons: {

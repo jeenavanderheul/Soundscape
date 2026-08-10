@@ -55,7 +55,7 @@ export interface Performance {
 }
 
 /** Height at which the world is fully "air" rather than "ground". */
-const AIR_ALTITUDE = 45;
+export const AIR_ALTITUDE = 45;
 
 /**
  * How far the track is shifted at each height band. Steps of the key, never
@@ -66,7 +66,7 @@ const AIR_ALTITUDE = 45;
  * The bottom stops at a fourth down on purpose: a full octave would take the
  * sub under 30 Hz, which §21 says must stay perceptible on ordinary speakers.
  */
-const PITCH_STEPS: readonly number[] = [-5, -3, -2, 0, 2, 3, 7, 12];
+export const PITCH_STEPS: readonly number[] = [-5, -3, -2, 0, 2, 3, 7, 12];
 
 export function performanceFrom(music: MusicState, flight: FlightPose): Performance {
   const air = clamp01(flight.altitude / AIR_ALTITUDE);

@@ -17,6 +17,8 @@ export interface InputSnapshot {
   codeToggled: boolean;
   /** §32: the player asked for the finished track as source. */
   trackExported: boolean;
+  /** §67: G shows or hides the guide. */
+  guideToggled: boolean;
   /** Accumulated wheel deltaY since the last snapshot. */
   wheelDelta: number;
   /** Accumulated pointer movement since the last snapshot. */
@@ -42,6 +44,7 @@ export class InputManager {
   private pausePressed = false;
   private codeToggled = false;
   private trackExported = false;
+  private guideToggled = false;
   private wheelDelta = 0;
   private mouseDeltaX = 0;
   private mouseDeltaY = 0;
@@ -96,6 +99,7 @@ export class InputManager {
       pausePressed: this.pausePressed,
       codeToggled: this.codeToggled,
       trackExported: this.trackExported,
+      guideToggled: this.guideToggled,
       wheelDelta: this.wheelDelta,
       mouseDelta: { x: this.mouseDeltaX, y: this.mouseDeltaY },
     };
@@ -109,6 +113,7 @@ export class InputManager {
     this.pausePressed = false;
     this.codeToggled = false;
     this.trackExported = false;
+    this.guideToggled = false;
     this.wheelDelta = 0;
     this.mouseDeltaX = 0;
     this.mouseDeltaY = 0;
@@ -137,6 +142,8 @@ export class InputManager {
       this.codeToggled = true;
     } else if (action === 'exportTrack') {
       this.trackExported = true;
+    } else if (action === 'toggleGuide') {
+      this.guideToggled = true;
     } else if (action === 'pause') {
       this.pausePressed = true;
       this.bus?.emit('input:pause', null);

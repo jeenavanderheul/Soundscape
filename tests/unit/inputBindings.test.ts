@@ -26,6 +26,7 @@ describe('DEFAULT_BINDINGS', () => {
       'resonancePulse',
       'toggleCode',
       'exportTrack',
+      'toggleGuide',
       'pause',
     ];
     for (const action of Object.values(DEFAULT_BINDINGS.keys)) {

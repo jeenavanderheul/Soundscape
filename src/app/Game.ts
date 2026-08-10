@@ -67,6 +67,7 @@ import { PromptOverlay } from '../ui/PromptOverlay';
 import { loadApiKey, requestWorld, saveApiKey } from '../ai/WorldPromptClient';
 import type { LayerPatterns } from '../audio/MusicalPrimitives';
 import type { WorldRecipe } from '../ai/WorldRecipe';
+import { Guide } from '../ui/Guide';
 import { Hints } from '../ui/Hints';
 import { LayerCue } from '../ui/LayerCue';
 import { HUD } from '../ui/HUD';
@@ -233,6 +234,8 @@ export class Game {
   private zoneLook = { ...NEUTRAL_LOOK, color: { ...NEUTRAL_LOOK.color } };
   private readonly harmonyBridges = new HarmonyBridges();
   private readonly hints = new Hints();
+  /** §67: the optional read-out that says where and how high to fly. */
+  private readonly guide = new Guide();
   private readonly codeOverlay = new CodeOverlay();
   private readonly exportOverlay = new ExportOverlay();
   /** Flight time so far, for the export header (§32). */
@@ -557,6 +560,7 @@ export class Game {
     this.hints.dispose();
     this.codeOverlay.dispose();
     this.exportOverlay.dispose();
+    this.guide.dispose();
     this.streaks.dispose();
     this.promptOverlay.dispose();
     this.layerCue.dispose();
@@ -576,6 +580,7 @@ export class Game {
     // §3.3: timed excitations (LMB release, Space) are the rhythm onsets.
     // §11: reveal the pattern the world wrote — read-only, never a REPL.
     if (snapshot.codeToggled) this.codeOverlay.toggle();
+    if (snapshot.guideToggled) this.guide.toggle();
     this.flightMs += deltaMs;
     // §32: hand the finished track back as source.
     if (snapshot.trackExported) this.exportOverlay.toggle(this.exportedTrack());
@@ -769,6 +774,12 @@ export class Game {
       },
       dtSeconds,
     );
+    this.guide.update({
+      altitude: state.position.y - this.terrain.groundHeightAt(state.position.x, state.position.z),
+      genre: this.trackStore.getState().genre,
+      heading: headingLabel(this.flightHeading(state)),
+      energy: Math.min(1, state.energy * 0.6 + state.amplitude * 0.4),
+    });
     this.hud.update(state, {
       heading: headingLabel(this.flightHeading(state)),
       biome: placeName(this.placeGenre),
@@ -1063,6 +1074,7 @@ export class Game {
       console.error('FREQUENCY: Strudel engine failed to start', error);
     }
     this.hud.show();
+    this.guide.show();
     // The start screen is clicked, not tabbed: while it is up the cursor stays
     // free, and pointer lock is taken when the player leaves it.
     this.promptOverlay.show();
