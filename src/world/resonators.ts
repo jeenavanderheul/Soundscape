@@ -56,5 +56,60 @@ export function createInitialResonators(rng: Rng): ResonatorData[] {
     active: true,
   });
 
-  return [first, deep, high];
+  // Track-feel expansion (user decision): four more registers within reach,
+  // so the world offers enough voices to compose with (§17, §20 M2 spirit).
+  const pulse = createResonator({
+    id: 'resonator-pulse',
+    position: { x: -34 + jitter(rng), y: 0, z: -46 + jitter(rng) },
+    baseHz: 165,
+    waveform: 'saw',
+    amplitude: 0.3,
+    interactionRadius: 8,
+    audibleRadius: 200,
+    persistenceThreshold: 4,
+    materialProfile: 'metallic',
+    spatialProfile: 'omni',
+    active: true,
+  });
+  const root = createResonator({
+    id: 'resonator-root',
+    position: { x: 84 + jitter(rng), y: -2, z: 52 + jitter(rng) },
+    baseHz: 55,
+    waveform: 'sine',
+    amplitude: 0.4,
+    interactionRadius: 14,
+    audibleRadius: 260,
+    persistenceThreshold: 5,
+    materialProfile: 'glass',
+    spatialProfile: 'omni',
+    active: true,
+  });
+  const mid = createResonator({
+    id: 'resonator-mid',
+    position: { x: -78 + jitter(rng), y: 8, z: 18 + jitter(rng) },
+    baseHz: 587,
+    waveform: 'triangle',
+    amplitude: 0.26,
+    interactionRadius: 6,
+    audibleRadius: 160,
+    persistenceThreshold: 3.5,
+    materialProfile: 'faceted',
+    spatialProfile: 'omni',
+    active: true,
+  });
+  const air = createResonator({
+    id: 'resonator-air',
+    position: { x: 48 + jitter(rng), y: 34, z: -84 + jitter(rng) },
+    baseHz: 1760,
+    waveform: 'sine',
+    amplitude: 0.22,
+    interactionRadius: 5,
+    audibleRadius: 140,
+    persistenceThreshold: 3,
+    materialProfile: 'glass',
+    spatialProfile: 'omni',
+    active: true,
+  });
+
+  return [first, deep, high, pulse, root, mid, air];
 }

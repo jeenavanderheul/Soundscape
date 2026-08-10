@@ -71,12 +71,12 @@ describe('createFirstResonator (M1 single resonator)', () => {
   });
 });
 
-describe('WorldState (M2: three seeded resonators, spec §7)', () => {
+describe('WorldState (seeded resonators, spec §7)', () => {
   const SEED = 'worldstate-test-seed';
 
-  it('initial world contains the three M2 resonators, first one unchanged', () => {
+  it('initial world contains the seeded resonators, first one unchanged', () => {
     const world = createInitialWorldState(SEED);
-    expect(world.resonators).toHaveLength(3);
+    expect(world.resonators).toHaveLength(7);
     expect(world.resonators[0]).toEqual(createFirstResonator());
   });
 
@@ -84,8 +84,8 @@ describe('WorldState (M2: three seeded resonators, spec §7)', () => {
     const world = createInitialWorldState(SEED);
     const hzValues = world.resonators.map((r) => r.baseHz);
     const waveforms = world.resonators.map((r) => r.waveform);
-    expect(new Set(hzValues).size).toBe(3);
-    expect(new Set(waveforms).size).toBe(3);
+    expect(new Set(hzValues).size).toBe(7);
+    expect(new Set(waveforms).size).toBeGreaterThanOrEqual(4);
   });
 
   it('is deterministic per seed and varies across seeds', () => {

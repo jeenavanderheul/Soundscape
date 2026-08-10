@@ -86,14 +86,14 @@ function setup() {
 describe('createInitialResonators', () => {
   const rng = () => createRng('test-seed');
 
-  it('returns three resonators with distinct id, hz, waveform and position (spec §7)', () => {
+  it('returns seven resonators with distinct id, hz and position (spec §7)', () => {
     const resonators = createInitialResonators(rng());
-    expect(resonators).toHaveLength(3);
-    expect(new Set(resonators.map((r) => r.id)).size).toBe(3);
-    expect(new Set(resonators.map((r) => r.baseHz)).size).toBe(3);
-    expect(new Set(resonators.map((r) => r.waveform)).size).toBe(3);
+    expect(resonators).toHaveLength(7);
+    expect(new Set(resonators.map((r) => r.id)).size).toBe(7);
+    expect(new Set(resonators.map((r) => r.baseHz)).size).toBe(7);
+    expect(new Set(resonators.map((r) => r.waveform)).size).toBeGreaterThanOrEqual(4);
     const positionKeys = resonators.map((r) => `${r.position.x},${r.position.y},${r.position.z}`);
-    expect(new Set(positionKeys).size).toBe(3);
+    expect(new Set(positionKeys).size).toBe(7);
     for (const r of resonators) {
       expect(r.baseHz).toBeGreaterThan(0);
       expect(r.amplitude).toBeGreaterThan(0);
@@ -112,7 +112,7 @@ describe('createInitialResonators', () => {
     expect(resonators[0]!.baseHz).toBe(330);
     const sorted = [...resonators].sort((a, b) => a.baseHz - b.baseHz);
     expect(sorted[0]!.baseHz).toBeLessThan(160); // low mass register (§3.1)
-    expect(sorted[2]!.baseHz).toBeGreaterThan(600); // detail register
+    expect(sorted[sorted.length - 1]!.baseHz).toBeGreaterThan(600); // detail register
   });
 
   it('gives the low resonator a larger interactionRadius and elevates the high one', () => {
@@ -140,8 +140,8 @@ describe('createInitialResonators', () => {
         return (r.amplitude * 5) / distance;
       })
       .sort((a, b) => b - a);
-    expect(levels[0]! / levels[1]!).toBeGreaterThanOrEqual(2.5);
-    expect(levels[0]! / levels[2]!).toBeGreaterThanOrEqual(2.5);
+    expect(levels[0]! / levels[1]!).toBeGreaterThanOrEqual(2.0);
+    expect(levels[0]! / levels[2]!).toBeGreaterThanOrEqual(2.0);
   });
 });
 

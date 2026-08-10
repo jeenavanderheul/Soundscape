@@ -58,7 +58,17 @@ export const ALLOWED_TRANSFORMS: Record<PrimitiveKind, readonly string[]> = {
 };
 
 /** Tempo confidence required before Strudel contributes any layer (spec §3.4). */
-export const TEMPO_CONFIDENCE_THRESHOLD = 0.6;
+export const TEMPO_CONFIDENCE_THRESHOLD = 0.35;
+/** Wind/beweging boven dit niveau wekt de wereld-hartslag (§4, §5: vliegen = muziek). */
+export const HEARTBEAT_DYNAMICS_THRESHOLD = 0.12;
+/** Genre-lagen verschijnen vanaf deze affiniteit (§9). */
+export const GENRE_LAYER_THRESHOLD = 0.35;
+export const GENRE_LAYER_STRONG = 0.6;
+
+/** Coarsely quantized so the graph stays diff-stable while dynamics drift (§11). */
+export function heartbeatBpm(dynamics: number): number {
+  return 96 + Math.round(Math.min(1, Math.max(0, dynamics)) * 2) * 16;
+}
 
 export type MusicParameter = 'bpm' | 'gain';
 
@@ -174,15 +184,17 @@ export function buildLayerGraph(
   genre?: GenreAffinity,
   structures: readonly StructureVoiceSource[] = [],
 ): MusicalLayerGraph {
-  if (music.tempoConfidence < TEMPO_CONFIDENCE_THRESHOLD || music.bpm <= 0) {
+  const playerTempo = music.tempoConfidence >= TEMPO_CONFIDENCE_THRESHOLD && music.bpm > 0;
+  const heartbeat = music.dynamics >= HEARTBEAT_DYNAMICS_THRESHOLD;
+  if (!playerTempo && !heartbeat) {
     // §9.2: Ambient needs no pulse — sustained behavior alone can carry a
     // drone in the tempo-less void (at a slow default clock).
     const ambientOnly = clamp01(genre?.ambient ?? 0);
     const voices = structureVoices(structures);
     // Built form keeps sounding even without a pulse (§17): the world hums.
-    if (ambientOnly < 0.5 && voices.length === 0) return createEmptyLayerGraph();
+    if (ambientOnly < GENRE_LAYER_THRESHOLD && voices.length === 0) return createEmptyLayerGraph();
     const droneGraph = createEmptyLayerGraph(60);
-    if (ambientOnly < 0.5) {
+    if (ambientOnly < GENRE_LAYER_THRESHOLD) {
       return {
         ...droneGraph,
         layers: { ...droneGraph.layers, harmony: { ...droneGraph.layers.harmony, primitives: voices } },
@@ -202,7 +214,7 @@ export function buildLayerGraph(
               layer: 'atmosphere',
               parameters: {
                 note: subNoteFromHz(music.pitchCenter),
-                gain: ambientOnly >= 0.75 ? 0.3 : 0.2,
+                gain: ambientOnly >= GENRE_LAYER_STRONG ? 0.3 : 0.2,
               },
               allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
             },
@@ -211,7 +223,12 @@ export function buildLayerGraph(
       },
     };
   }
-  const graph = createEmptyLayerGraph(music.bpm);
+  // §4/§5: the WORLD HEARTBEAT — flying with wind alone wakes a soft pulse at
+  // a movement-derived tempo. The player's own rhythm, once confident,
+  // ALWAYS takes over and the world quantizes to it (§3.4).
+  const bpm = playerTempo ? music.bpm : heartbeatBpm(music.dynamics);
+  const pulseGain = playerTempo ? 0.8 : 0.45;
+  const graph = createEmptyLayerGraph(bpm);
   const density = clamp01(music.rhythmDensity);
   const techno = clamp01(genre?.techno ?? 0);
   const pulse: MusicalPrimitive = {
@@ -220,8 +237,8 @@ export function buildLayerGraph(
     layer: 'drums',
     // §9.1: under Techno attraction the pulse organizes toward four-on-the-floor.
     parameters: {
-      steps: techno >= 0.5 ? 4 : 1 + Math.round(density * 3),
-      gain: 0.8,
+      steps: techno >= GENRE_LAYER_THRESHOLD ? 4 : 1 + Math.round(density * 3),
+      gain: pulseGain,
     },
     allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
   };
@@ -230,24 +247,24 @@ export function buildLayerGraph(
   const dnb = clamp01(genre?.dnb ?? 0);
   const experimental = clamp01(genre?.experimental ?? 0);
   const drumPrimitives: MusicalPrimitive[] = [pulse];
-  if (dnb >= 0.5) {
+  if (dnb >= GENRE_LAYER_THRESHOLD) {
     // §9.4: velocity mutates the break — double-time chopped drums.
     drumPrimitives.push({
       id: 'dnb-break',
       kind: 'break',
       layer: 'drums',
-      parameters: { intensity: dnb >= 0.75 ? 2 : 1, gain: 0.5 },
+      parameters: { intensity: dnb >= GENRE_LAYER_STRONG ? 2 : 1, gain: 0.5 },
       allowedTransforms: [...ALLOWED_TRANSFORMS.break],
     });
   }
-  if (techno >= 0.5) {
+  if (techno >= GENRE_LAYER_THRESHOLD) {
     drumPrimitives.push({
       id: 'techno-hat',
       kind: 'hat',
       layer: 'drums',
       // Quantized bands, not a continuous value: keeps the graph diff-stable
       // while affinity drifts (§11 — no recompilation churn).
-      parameters: { steps: techno >= 0.75 ? 4 : 2, gain: 0.35 },
+      parameters: { steps: techno >= GENRE_LAYER_STRONG ? 4 : 2, gain: 0.35 },
       allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
     });
   }
@@ -261,13 +278,13 @@ export function buildLayerGraph(
   // §9.2 Ambient tendency: a slow drone at the pitch-center root joins the
   // atmosphere layer. Quantized on/off keeps the graph diff-stable (§11).
   const atmospherePrimitives: MusicalPrimitive[] =
-    ambient >= 0.5
+    ambient >= GENRE_LAYER_THRESHOLD
       ? [
           {
             id: 'ambient-drone',
             kind: 'drone',
             layer: 'atmosphere',
-            parameters: { note: subNoteFromHz(music.pitchCenter), gain: ambient >= 0.75 ? 0.3 : 0.2 },
+            parameters: { note: subNoteFromHz(music.pitchCenter), gain: ambient >= GENRE_LAYER_STRONG ? 0.3 : 0.2 },
             allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
           },
         ]
@@ -275,7 +292,7 @@ export function buildLayerGraph(
   // §9.3: the world answers — a short procedurally constrained response
   // phrase rooted on the pitch center (call-and-response, no LLM).
   const melodyPrimitives: MusicalPrimitive[] =
-    jazz >= 0.5
+    jazz >= GENRE_LAYER_THRESHOLD
       ? [
           {
             id: 'jazz-response',
@@ -288,13 +305,13 @@ export function buildLayerGraph(
       : [];
   // §9.5: mutation adds unstable noise texture.
   const texturePrimitives: MusicalPrimitive[] =
-    experimental >= 0.5
+    experimental >= GENRE_LAYER_THRESHOLD
       ? [
           {
             id: 'experimental-texture',
             kind: 'texture',
             layer: 'texture',
-            parameters: { gain: experimental >= 0.75 ? 0.25 : 0.15 },
+            parameters: { gain: experimental >= GENRE_LAYER_STRONG ? 0.25 : 0.15 },
             allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
           },
         ]

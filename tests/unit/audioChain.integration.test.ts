@@ -48,9 +48,9 @@ describe('audio chain integration (Game.unlock wiring)', () => {
     }
   });
 
-  it('spawns exactly three resonator sources in M2 (spec §7)', async () => {
+  it('spawns one resonator source per seeded resonator (spec §7)', async () => {
     const { ctx } = await buildWiredEngine();
-    expect(ctx.createdPanners).toHaveLength(3);
+    expect(ctx.createdPanners).toHaveLength(7);
   });
 
   it('master chain ends at the context destination via the compressor', async () => {

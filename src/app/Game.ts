@@ -33,6 +33,7 @@ import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestSystem } from '../rendering/ForestSystem';
+import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
 import { ParticleSystem } from '../rendering/ParticleSystem';
 import { PlayerOrb } from '../rendering/PlayerOrb';
 import { Renderer } from '../rendering/Renderer';
@@ -41,6 +42,7 @@ import { WaveTerrain } from '../rendering/WaveTerrain';
 import { ResonanceEngine } from '../resonance/ResonanceEngine';
 import type { ResonanceEvents } from '../resonance/ResonanceEngine';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
+import { Hints } from '../ui/Hints';
 import { HUD } from '../ui/HUD';
 import { attachIntroHint } from '../ui/Intro';
 import { PauseOverlay } from '../ui/PauseOverlay';
@@ -80,6 +82,7 @@ interface FrequencyDebug {
   getStrudelInfo(): { playing: boolean; bpm: number; evaluations: number };
   getGenreSnapshot(): unknown;
   getProgression(): unknown;
+  getAnalysis(): unknown;
   saveNow(): { ok: boolean };
   loadInfo(): LoadInfo;
   resetWorld(): void;
@@ -128,6 +131,8 @@ export class Game {
   private readonly orb = new PlayerOrb();
   private readonly hud = new HUD();
   private readonly forest = new ForestSystem(WORLD_SEED, this.worldStore.getState().resonators);
+  private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
+  private readonly hints = new Hints();
   private readonly beatSync: BeatSync;
   private readonly detachBeatSync: () => void;
   // §11/§20 M4: Strudel shares our AudioContext; its beat boundaries feed the bus.
@@ -228,6 +233,7 @@ export class Game {
     this.renderer.scene.add(this.terrain.lines);
     this.renderer.scene.add(this.orb.mesh);
     this.renderer.scene.add(this.forest.mesh);
+    this.renderer.scene.add(this.markers.mesh);
     this.beatSync = new BeatSync([
       this.particles,
       this.interference,
@@ -235,6 +241,7 @@ export class Game {
       this.terrain,
       this.orb,
       this.forest,
+      this.markers,
     ]);
     this.detachBeatSync = this.beatSync.subscribe(this.events);
     // §20 M4 synchronized world behavior: the Strudel clock's beat boundaries
@@ -277,6 +284,7 @@ export class Game {
         getInterferenceActiveCount: () => this.interference.activeCount,
         getMusicState: () => this.musicStore.getState(),
         getStrudelInfo: () => this.strudelEngine.status,
+        getAnalysis: () => (this.audioAnalyser ? { ...this.audioAnalyser.snapshot } : null),
         getGenreSnapshot: () => this.genreEngine.current,
         getProgression: () => ({
           ...this.progressionStore.getState(),
@@ -328,6 +336,9 @@ export class Game {
     this.terrain.dispose();
     this.renderer.scene.remove(this.forest.mesh);
     this.forest.dispose();
+    this.renderer.scene.remove(this.markers.mesh);
+    this.markers.dispose();
+    this.hints.dispose();
     this.renderer.scene.remove(this.orb.mesh);
     this.orb.dispose();
     this.hud.dispose();
@@ -380,6 +391,13 @@ export class Game {
       this.renderer.setAtmosphere(genre?.affinity.ambient ?? 0);
       // §9.5 world tendency: mutation destabilizes existing form.
       this.structures.setMutation(genre?.affinity.experimental ?? 0);
+      // Context hints: whispered at the teachable moment, once each.
+      this.hints.update({
+        elapsedMs,
+        state,
+        music: this.musicStore.getState(),
+        resonators: this.worldStore.getState().resonators,
+      });
       this.updateStrudelGraph();
       if (this.audioAnalyser) {
         const stepSeconds = LOGIC_STEP_MS / 1000;
@@ -407,6 +425,7 @@ export class Game {
     }
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.update(elapsedMs / 1000);
+    this.markers.update(elapsedMs / 1000);
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
     this.hud.update(state);
     // Third-person: the camera trails the orb along the flight direction.
@@ -549,6 +568,7 @@ export class Game {
     };
     this.worldStore.setState((s) => ({ ...s, resonators: [...s.resonators, resonator] }));
     this.spatialAudio?.addResonator(resonator);
+    this.markers.add(resonator);
     this.progressionStore.setState((s) => recordPlayerResonator(s));
   }
 

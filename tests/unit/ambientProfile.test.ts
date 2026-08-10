@@ -58,15 +58,16 @@ describe('scoreAmbient (§9.2)', () => {
 
 describe('buildLayerGraph ambient drone (§9.2, §11)', () => {
   it('adds a tempo-less drone at high ambient affinity', () => {
-    const graph = buildLayerGraph(ambientState(), affinity(0.8));
+    // dynamics below the heartbeat threshold: this is the truly still path
+    const graph = buildLayerGraph({ ...ambientState(), dynamics: 0.1 }, affinity(0.8));
     const atmosphere = graph.layers.atmosphere.primitives;
     expect(atmosphere).toHaveLength(1);
     expect(atmosphere[0]!.kind).toBe('drone');
     expect(graph.bpm).toBe(60);
   });
 
-  it('stays silent without ambient affinity and without tempo', () => {
-    const graph = buildLayerGraph(ambientState(), affinity(0.2));
+  it('stays silent without ambient affinity, tempo or movement', () => {
+    const graph = buildLayerGraph({ ...ambientState(), dynamics: 0.1 }, affinity(0.2));
     expect(Object.values(graph.layers).every((layer) => layer.primitives.length === 0)).toBe(true);
   });
 
