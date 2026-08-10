@@ -22,7 +22,8 @@ export class Camera {
    */
   setSpeedFactor(factor: number): void {
     const clamped = Math.min(1, Math.max(0, factor));
-    const fov = CAMERA_CONFIG.fov + clamped * 14;
+    // Top gear has to feel like a motorway: the lens opens up much further.
+    const fov = CAMERA_CONFIG.fov + clamped * 30;
     if (Math.abs(this.instance.fov - fov) < 0.05) return;
     this.instance.fov = fov;
     this.instance.updateProjectionMatrix();

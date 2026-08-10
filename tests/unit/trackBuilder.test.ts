@@ -119,27 +119,45 @@ describe('tempo follows flight speed (§29, user decision)', () => {
   it('maps speed into stable bands', () => {
     // Twelve bands, one per gear (user decision).
     expect(speedToBpm(0)).toBe(45);
-    expect(speedToBpm(3.5)).toBe(60);
-    expect(speedToBpm(8)).toBe(108);
-    expect(speedToBpm(11.5)).toBe(128);
-    expect(speedToBpm(15)).toBe(142);
-    expect(speedToBpm(18)).toBe(158);
-    expect(speedToBpm(22)).toBe(172);
-    expect(speedToBpm(26)).toBe(190);
+    expect(speedToBpm(6)).toBe(60);
+    expect(speedToBpm(13)).toBe(108);
+    expect(speedToBpm(20)).toBe(128);
+    expect(speedToBpm(32)).toBe(142);
+    expect(speedToBpm(41)).toBe(158);
+    expect(speedToBpm(52)).toBe(172);
+    expect(speedToBpm(66)).toBe(190);
     // Inside a band the tempo does not wobble.
-    expect(speedToBpm(11.1)).toBe(speedToBpm(12.4));
+    expect(speedToBpm(20.1)).toBe(speedToBpm(23.4));
   });
 
   it('writes the flight tempo into the track, and the player rhythm overrides it', () => {
     const { store, builder } = setup();
     const noRhythm = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
-    builder.tick(0, noRhythm, { velocity: 26, hz: 220, energy: 0.8 });
-    builder.tick(100, noRhythm, { velocity: 26, hz: 220, energy: 0.8 });
+    builder.tick(0, noRhythm, { velocity: 66, hz: 220, energy: 0.8 });
+    builder.tick(100, noRhythm, { velocity: 66, hz: 220, energy: 0.8 });
     // §39: full speed in the neutral void tops out at the void's own range.
     expect(store.getState().bpm).toBe(140);
     const tapped = { ...createInitialMusicState(), bpm: 124, tempoConfidence: 0.9, dynamics: 0.5 };
-    builder.tick(200, tapped, { velocity: 26, hz: 220, energy: 0.8 });
+    for (let t = 200; t <= 4000; t += 100) {
+      builder.tick(t, tapped, { velocity: 66, hz: 220, energy: 0.8 });
+    }
     expect(store.getState().bpm).toBe(124);
+  });
+
+  // A gear change must accelerate the track, not cut to another tempo.
+  it('slides to a new tempo instead of jumping (user decision)', () => {
+    const { store, builder } = setup();
+    const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
+    // Settle at a low gear…
+    for (let t = 0; t <= 6000; t += 100) builder.tick(t, music, { velocity: 6, hz: 220, energy: 0.4 });
+    const slow = store.getState().bpm;
+    // …then shift up hard: one second later it is on the way, not there yet.
+    for (let t = 6100; t <= 7000; t += 100) builder.tick(t, music, { velocity: 66, hz: 220, energy: 0.9 });
+    const afterOneSecond = store.getState().bpm;
+    expect(afterOneSecond).toBeGreaterThan(slow);
+    expect(afterOneSecond).toBeLessThan(slow + 20);
+    for (let t = 7100; t <= 20_000; t += 100) builder.tick(t, music, { velocity: 66, hz: 220, energy: 0.9 });
+    expect(store.getState().bpm).toBe(140);
   });
 });
 

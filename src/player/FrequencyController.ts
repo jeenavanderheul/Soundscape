@@ -25,8 +25,8 @@ export const FLIGHT_CONFIG = {
   boostMultiplier: 2.5,
   /** exponential drag coefficient, 1/s */
   drag: 1.6,
-  /** units/s */
-  maxSpeed: 26,
+  /** units/s — top gear. Twelfth gear has to FEEL like a motorway (user). */
+  maxSpeed: 66,
   /**
    * Hard bottom of the world, kept BELOW the deepest terrain so the landscape
    * itself is what stops the orb (§35) — not an invisible plane.
@@ -140,8 +140,11 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
  *   6  118 bpm  deep        12  190 bpm  extreme
  */
 export const GEAR_SPEEDS: readonly number[] = [
-  2, 3.5, 5, 6.5, 8, 9.5, 11.5, 13, 15, 18, 22, 26,
+  4, 6, 8, 10.5, 13, 16, 20, 25, 32, 41, 52, 66,
 ];
+
+/** Gear the journey starts in — the cruise speed the game had before gears. */
+const START_GEAR_INDEX = 4;
 
 /** What each gear feels like, shown in the HUD so the gear is never a number alone. */
 export const GEAR_LABELS: readonly string[] = [
@@ -164,8 +167,8 @@ export const MAX_GEAR = GEAR_SPEEDS.length;
 export class FrequencyController {
   private yaw = 0;
   private pitch = 0;
-  /** Starts in second: moving, with room to shift both ways. */
-  private gearIndex = 1;
+  /** Starts at the old cruise speed, with room to shift both ways. */
+  private gearIndex = START_GEAR_INDEX;
   /** §35: samples the solid landscape; unset means the old flat floor. */
   private groundAt: ((x: number, z: number) => number) | null = null;
   /** §36: the largest formations are solid too — they push the orb aside. */
@@ -197,7 +200,7 @@ export class FrequencyController {
   resetOrientation(): void {
     this.yaw = 0;
     this.pitch = 0;
-    this.gearIndex = 1;
+    this.gearIndex = START_GEAR_INDEX;
   }
   private velocityVec: Vec3Data = { x: 0, y: 0, z: 0 };
   private yawRateValue = 0;
@@ -228,8 +231,10 @@ export class FrequencyController {
     const here = this.store.getState().position;
     const gap =
       here.y - ((this.groundAt?.(here.x, here.z) ?? FLIGHT_CONFIG.minY) + FLIGHT_CONFIG.orbRadius);
-    if (gap < FLIGHT_CONFIG.repelClearance && accelDirection.y < 0) {
-      accelDirection.y *= Math.max(0, gap) / FLIGHT_CONFIG.repelClearance;
+    const speedNow = Math.hypot(this.velocityVec.x, this.velocityVec.y, this.velocityVec.z);
+    const fieldNow = FLIGHT_CONFIG.repelClearance + speedNow * 0.08;
+    if (gap < fieldNow && accelDirection.y < 0) {
+      accelDirection.y *= Math.max(0, gap) / fieldNow;
     }
     // The gear is the ceiling: W pushes you up to the top speed of the gear you
     // are in, and shifting is what lets the track go faster. Drag alone would
@@ -257,8 +262,11 @@ export class FrequencyController {
       // The force field: the closer to the ground, the harder it lifts, and it
       // eats downward speed so a dive is caught instead of stopped dead.
       const clearance = y - floor;
-      if (clearance < FLIGHT_CONFIG.repelClearance) {
-        const room = Math.max(0, clearance) / FLIGHT_CONFIG.repelClearance;
+      // At motorway speed the orb covers a unit per frame, so the field has to
+      // reach further out the faster you go.
+      const fieldDepth = FLIGHT_CONFIG.repelClearance + speed * 0.08;
+      if (clearance < fieldDepth) {
+        const room = Math.max(0, clearance) / fieldDepth;
         // How fast you are still allowed to fall shrinks with the room left,
         // so the remaining gap can only ever be a fraction of itself: the orb
         // is caught by the field and never reaches the surface at all.

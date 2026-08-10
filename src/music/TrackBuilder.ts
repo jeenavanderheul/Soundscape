@@ -67,6 +67,12 @@ export interface TrackBuilderConfig {
   groundMs: number;
   /** Time in open air that earns the hats, and (×2) the texture. */
   airMs: number;
+  /**
+   * How fast the track's clock may follow the flight, in BPM per second. A gear
+   * change must speed the WHOLE genre up rather than cutting to another tempo
+   * (user decision) — so the tempo slides, it never jumps.
+   */
+  bpmSlewPerSecond: number;
 }
 
 export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
@@ -87,6 +93,7 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   airAltitude: 30,
   groundMs: 3500,
   airMs: 3500,
+  bpmSlewPerSecond: 9,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -108,6 +115,11 @@ export interface FlightState {
   altitude?: number;
   /** Vertical speed in units/s: climbing builds the track, diving drops it. */
   climb?: number;
+}
+
+/** Move at most `limit` in either direction. */
+function clampMagnitude(value: number, limit: number): number {
+  return Math.min(limit, Math.max(-limit, value));
 }
 
 function prune(times: number[], nowMs: number, windowMs: number): void {
@@ -287,11 +299,20 @@ export class TrackBuilder {
     const playerTempo = music.tempoConfidence >= 0.35 && music.bpm > 0;
     // §39: the region decides the tempo range; the flight decides where in it.
     const speedBpm = moving ? speedToBpm(flight.velocity, genreGrammar(this.dominant(affinity))) : 0;
-    const nextBpm = playerTempo
+    const targetBpm = playerTempo
       ? Math.round(music.bpm)
       : speedBpm > 0
         ? speedBpm
         : track.bpm; // an earned track keeps its clock through stillness
+    // The clock slides toward the flight instead of snapping to it: shifting up
+    // makes the whole track accelerate, it does not swap it for a faster one.
+    const nextBpm =
+      track.bpm <= 0
+        ? targetBpm
+        : Math.round(
+            track.bpm +
+              clampMagnitude(targetBpm - track.bpm, (config.bpmSlewPerSecond * delta) / 1000),
+          );
     const tempoExists = nextBpm > 0;
 
     // --- Fase 4/5 content: what the player's resonances and flight built.

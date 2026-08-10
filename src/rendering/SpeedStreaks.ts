@@ -19,13 +19,13 @@ import type { Vec3Data } from '../player/FrequencyState';
  */
 
 export const STREAK_CONFIG = {
-  count: 220,
+  count: 420,
   /** Particles live in a box this big around the player. */
   radius: 70,
   /** Speed at which streaks reach full length and brightness. */
-  fullSpeed: 18,
+  fullSpeed: 42,
   /** Longest a streak can be drawn, in world units. */
-  maxLength: 9,
+  maxLength: 22,
 } as const;
 
 const VERTEX = /* glsl */ `

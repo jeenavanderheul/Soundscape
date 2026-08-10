@@ -95,17 +95,17 @@ export function heartbeatBpm(dynamics: number): number {
  */
 export const TEMPO_BANDS: ReadonlyArray<{ minSpeed: number; bpm: number }> = [
   { minSpeed: 0, bpm: 45 },     // 40–70   drone
-  { minSpeed: 3, bpm: 60 },     // 40–70   slow ambient
-  { minSpeed: 4.5, bpm: 78 },   // 70–100  downtempo
-  { minSpeed: 6, bpm: 92 },     // 70–100  hiphop tempo
-  { minSpeed: 7.5, bpm: 108 },  // 100–120 groove
-  { minSpeed: 9, bpm: 118 },    // 100–120 the way into house
-  { minSpeed: 11, bpm: 128 },   // 120–135 house
-  { minSpeed: 12.5, bpm: 134 }, // 120–135 techno
-  { minSpeed: 14, bpm: 142 },   // 135–150 club
-  { minSpeed: 17, bpm: 158 },   // 150–165 breaks / experimental
-  { minSpeed: 21, bpm: 172 },   // 165–180 drum & bass
-  { minSpeed: 25, bpm: 190 },   // 180–200 extreme
+  { minSpeed: 5, bpm: 60 },     // 40–70   slow ambient
+  { minSpeed: 7, bpm: 78 },     // 70–100  downtempo
+  { minSpeed: 9.5, bpm: 92 },   // 70–100  hiphop tempo
+  { minSpeed: 12, bpm: 108 },   // 100–120 groove
+  { minSpeed: 15, bpm: 118 },   // 100–120 the way into house
+  { minSpeed: 19, bpm: 128 },   // 120–135 house
+  { minSpeed: 24, bpm: 134 },   // 120–135 techno
+  { minSpeed: 31, bpm: 142 },   // 135–150 club
+  { minSpeed: 40, bpm: 158 },   // 150–165 breaks / experimental
+  { minSpeed: 51, bpm: 172 },   // 165–180 drum & bass
+  { minSpeed: 65, bpm: 190 },   // 180–200 extreme
 ];
 
 export function speedToBpm(velocity: number, grammar?: GenreGrammar): number {
