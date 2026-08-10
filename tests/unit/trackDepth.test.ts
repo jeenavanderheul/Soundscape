@@ -113,6 +113,23 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
     expect(buildPatternCode(graphOf('jazz'))).not.toContain('shape(');
   });
 
+  // §37: a genre is not only a pattern — it is the box the pattern came out of.
+  it('plays every grammar on its own drum machine', () => {
+    const banks = new Map<string, string>();
+    for (const genre of ['techno', 'ambient', 'jazz', 'dnb', 'garage', 'house', 'trap', 'dub'] as const) {
+      const code = buildPatternCode(graphOf(genre));
+      const match = code.match(/bank\("([A-Za-z0-9]+)"\)/);
+      expect(match, genre).not.toBeNull();
+      banks.set(genre, match![1]!);
+    }
+    expect(banks.get('techno')).toBe('RolandTR909');
+    expect(banks.get('house')).toBe('RolandTR707');
+    expect(banks.get('trap')).toBe('RolandTR808');
+    expect(banks.get('dnb')).toBe('EmuSP12');
+    // At least six distinct machines across the eight regions.
+    expect(new Set(banks.values()).size).toBeGreaterThanOrEqual(6);
+  });
+
   it('writes the techno lead as a dark stab, not a tune', () => {
     expect(buildPatternCode(graphOf('techno'))).toContain('lpf("<500 900 650 1300>")');
   });

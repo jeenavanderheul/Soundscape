@@ -78,8 +78,19 @@ let samplesLoaded = false;
 export function setSamplesLoaded(value: boolean): void {
   samplesLoaded = value;
 }
-/** Drum machine used for the sampled kit (strudel.cc/learn/samples § banks). */
-const DRUM_BANK = 'RolandTR909';
+/**
+ * §37: the drum machines with a complete kit in the loaded map. A grammar
+ * names its own machine; anything unknown falls back to the 909 rather than
+ * silently producing no sound.
+ */
+const DRUM_BANKS = new Set([
+  'AkaiMPC60', 'AkaiXR10', 'AlesisHR16', 'AlesisSR16', 'BossDR550', 'EmuDrumulator',
+  'EmuSP12', 'KorgDDM110', 'KorgM1', 'KorgT3', 'LinnDrum', 'LinnLM1', 'LinnLM2',
+  'OberheimDMX', 'RolandCompuRhythm1000', 'RolandCompuRhythm8000', 'RolandD70',
+  'RolandMC303', 'RolandMT32', 'RolandR8', 'RolandTR505', 'RolandTR626', 'RolandTR707',
+  'RolandTR808', 'RolandTR909', 'SakataDPM48', 'SequentialCircuitsDrumtracks', 'YamahaRY30',
+]);
+const DEFAULT_BANK = 'RolandTR909';
 /**
  * The sample maps strudel.cc itself loads. @strudel/web ships none of them,
  * which is why `.bank("RolandTR909")` resolved to nothing and oh/rim did not
@@ -201,6 +212,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
   const p = primitive.parameters;
   // §32: saturation. Techno and DnB are driven; Ambient and Jazz stay clean.
   const drive = clamp(finite(p['drive'] ?? 0, `${primitive.id}.drive`), 0, 0.6);
+  const bankOf = (value: unknown): string =>
+    typeof value === 'string' && DRUM_BANKS.has(value) ? value : DEFAULT_BANK;
+  const DRUM_BANK = bankOf(p['bank']);
+  const PERC_BANK = bankOf(p['percBank'] ?? p['bank']);
   const shaped = drive > 0 ? `.shape(${drive.toFixed(2)})` : '';
   // §30: authored/AI source is rendered ONLY if it passes the allowlist
   // grammar — the same boundary every other parameter crosses.
@@ -220,7 +235,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §9.4 velocity: the kick is chopped into a break.
         case 'break':
           return samplesLoaded
-            ? `stack(s("bd ~ ~ [~ bd]").bank("${DRUM_BANK}").shape(.2).gain(${gain}), s("<rim rim [rim rim] rim>").bank("RolandTR808").fast(2).gain(${(Number(gain) * 0.3).toFixed(3)}).pan("<.2 .8 .4 .65>"))`
+            ? `stack(s("bd ~ ~ [~ bd]").bank("${DRUM_BANK}").shape(.2).gain(${gain}), s("<rim rim [rim rim] rim>").bank("${PERC_BANK}").fast(2).gain(${(Number(gain) * 0.3).toFixed(3)}).pan("<.2 .8 .4 .65>"))`
             : `s("sbd ~ ~ [~ sbd]").gain(${gain})`;
         // §9.2 space: a distant heartbeat, one hit per bar.
         case 'sparse':
@@ -241,7 +256,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §34 trap: half-time, and the 808 is allowed to ring.
         case 'halftime':
           return samplesLoaded
-            ? `s("bd ~ ~ ~ ~ ~ [~ bd] ~").bank("RolandTR808").lpf(120)${shaped}.gain(${gain})`
+            ? `s("bd ~ ~ ~ ~ ~ [~ bd] ~").bank("${PERC_BANK}").lpf(120)${shaped}.gain(${gain})`
             : `s("sbd ~ ~ ~ ~ ~ [~ sbd] ~").gain(${gain})`;
         // §34 dub: one kick, then room for the echo to answer.
         case 'echo':
@@ -275,7 +290,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       // §34 trap/dub: a rim on the third beat instead of a backbeat.
       if (style === 'rim') {
         return samplesLoaded
-          ? `s("~ ~ rim ~").bank("RolandTR808").room(.25).gain(${gain})`
+          ? `s("~ ~ rim ~").bank("${PERC_BANK}").room(.25).gain(${gain})`
           : `s("~ ~ white ~").decay(.05).sustain(0).bpf(2400).room(.25).gain(${gain})`;
       }
       // §34 garage/house: the clap IS the backbeat, wide and bright.
@@ -287,12 +302,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       // §32: the second snare — an 808 body a hair behind the clap.
       if (style === 'body') {
         return samplesLoaded
-          ? `s("~ sd ~ sd").bank("RolandTR808").late(.01).gain(${gain})`
+          ? `s("~ sd ~ sd").bank("${PERC_BANK}").late(.01).gain(${gain})`
           : `s("~ white ~ white").decay(.12).sustain(0).bpf(1200).late(.01).gain(${gain})`;
       }
       if (style === 'break') {
         return samplesLoaded
-          ? `s("~ sd ~ [sd ~]").bank("RolandTR808").room(.08).gain(${gain})`
+          ? `s("~ sd ~ [sd ~]").bank("${PERC_BANK}").room(.08).gain(${gain})`
           : `s("[~ white] [white ~ white ~]").decay(.07).sustain(0).bpf(1900).gain(${gain})`;
       }
       return samplesLoaded
@@ -324,7 +339,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §34 trap: rolls that subdivide the bar under your feet.
         case 'roll':
           return samplesLoaded
-            ? `s("hh*8 [hh*16] hh*8 [hh*32]").bank("RolandTR808").gain("${gain} ${(Number(gain) * 0.6).toFixed(3)}")`
+            ? `s("hh*8 [hh*16] hh*8 [hh*32]").bank("${PERC_BANK}").gain("${gain} ${(Number(gain) * 0.6).toFixed(3)}")`
             : `s("white*8 [white*16] white*8 [white*32]").decay(.02).sustain(0).hpf(8000).gain(${gain})`;
         case 'sixteenth':
           return samplesLoaded
@@ -357,8 +372,8 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       // off the grid (5, 7) it stays even, because the cycle length is the
       // point (§31 polymeter).
       return cycle > 4
-        ? `s("rim*${cycle}").bank("RolandTR808").pan("<.25 .7 .45 .8>").gain(${gain})`
-        : `s("<rim [~ rim] rim [rim ~]>").bank("RolandTR808").fast(${cycle / 2}).pan("<.25 .75 .4 .65>").gain("${gain} ${(Number(gain) * 1.5).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)} ${(Number(gain) * 1.3).toFixed(3)}")`;
+        ? `s("rim*${cycle}").bank("${PERC_BANK}").pan("<.25 .7 .45 .8>").gain(${gain})`
+        : `s("<rim [~ rim] rim [rim ~]>").bank("${PERC_BANK}").fast(${cycle / 2}).pan("<.25 .75 .4 .65>").gain("${gain} ${(Number(gain) * 1.5).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)} ${(Number(gain) * 1.3).toFixed(3)}")`;
     }
     case 'sub': {
       // §32: the sub moves with the bass rather than sitting on one note —

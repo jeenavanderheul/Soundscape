@@ -1335,6 +1335,27 @@ Orb trail length, foreground streaks, vegetation parallax (near trunks move far 
 
 ---
 
+## 37. Every grammar has its own drum machine (v10 amendment — NORMATIVE)
+
+A genre is not only a pattern. It is the box that pattern came out of. Playing every region on a TR909 makes ten regions sound like one track with different notes, which contradicts §31.
+
+| Region | Machine | Second machine |
+|---|---|---|
+| Techno | RolandTR909 | RolandTR808 |
+| House | RolandTR707 | LinnDrum |
+| UK Garage | AkaiMPC60 | RolandTR909 |
+| Trap | RolandTR808 | RolandTR808 |
+| Drum & Bass | EmuSP12 | AkaiMPC60 |
+| Jazz | AlesisHR16 | RolandR8 |
+| Ambient | KorgDDM110 | LinnLM1 |
+| Dub | RolandCompuRhythm1000 | RolandCompuRhythm8000 |
+| Experimental | SakataDPM48 | OberheimDMX |
+| Classical | AlesisHR16 | AlesisHR16 |
+
+The machine name travels on the primitive, is validated against the kits that actually exist in the loaded map, and falls back to the 909 when unknown — a machine that is not loaded must never turn into silence. Verify a kit before naming it: `RolandTR77` looks plausible and is not there.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

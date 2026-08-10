@@ -238,6 +238,13 @@ export interface GenreGrammar {
   percCycle: number;
   /** §32 saturation on kick, bass and stabs. 0 keeps a layer clean and dynamic. */
   drive: number;
+  /**
+   * §37: the drum machine this grammar is played on. A genre is not only a
+   * pattern — it is the box that pattern came out of, so every region has its
+   * own kit. `percBank` is the second machine, for bodies and rim work.
+   */
+  drumBank: string;
+  percBank: string;
   kickGain: number;
   hatGain: number;
   snareGain: number;
@@ -260,6 +267,8 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
   hatCycle: 4,
   percCycle: 4,
   drive: 0.25,
+  drumBank: 'RolandTR909',
+  percBank: 'RolandTR808',
   kickGain: 0.95,
   hatGain: 0.35,
   snareGain: 0.82,
@@ -282,6 +291,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     hatCycle: 4,
     // Ghost percussion against the break — the near-misses in the flight.
     percCycle: 3,
+    drumBank: 'EmuSP12',
+    percBank: 'AkaiMPC60',
     drive: 0.35,
     kickGain: 0.95,
     hatGain: 0.32,
@@ -301,6 +312,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureStyle: 'air',
     hatCycle: 4,
     percCycle: 0,
+    drumBank: 'KorgDDM110',
+    percBank: 'LinnLM1',
     drive: 0,
     kickGain: 0.3,
     hatGain: 0.12,
@@ -320,6 +333,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureStyle: 'metallic',
     hatCycle: 4,
     percCycle: 3,
+    drumBank: 'AlesisHR16',
+    percBank: 'RolandR8',
     drive: 0,
     kickGain: 0.6,
     hatGain: 0.3,
@@ -341,6 +356,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     // so the region never settles into a bar you can count (§31 mutation).
     hatCycle: 7,
     percCycle: 5,
+    drumBank: 'SakataDPM48',
+    percBank: 'OberheimDMX',
     drive: 0.3,
     kickGain: 0.7,
     hatGain: 0.25,
@@ -361,6 +378,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureStyle: 'shaker',
     hatCycle: 4,
     percCycle: 4,
+    drumBank: 'AkaiMPC60',
+    percBank: 'RolandTR909',
     drive: 0.12,
     kickGain: 0.9,
     hatGain: 0.34,
@@ -381,6 +400,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureStyle: 'shaker',
     hatCycle: 4,
     percCycle: 4,
+    drumBank: 'RolandTR707',
+    percBank: 'LinnDrum',
     drive: 0,
     kickGain: 0.88,
     hatGain: 0.3,
@@ -401,6 +422,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureStyle: 'noise',
     hatCycle: 4,
     percCycle: 0,
+    drumBank: 'RolandTR808',
+    percBank: 'RolandTR808',
     drive: 0.2,
     kickGain: 0.95,
     hatGain: 0.26,
@@ -421,6 +444,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureStyle: 'tape',
     hatCycle: 4,
     percCycle: 4,
+    drumBank: 'RolandCompuRhythm1000',
+    percBank: 'RolandCompuRhythm8000',
     drive: 0,
     kickGain: 0.85,
     hatGain: 0.2,
@@ -441,6 +466,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureStyle: 'tape',
     hatCycle: 4,
     percCycle: 0,
+    drumBank: 'AlesisHR16',
+    percBank: 'AlesisHR16',
     drive: 0,
     kickGain: 0.55,
     hatGain: 0.1,
@@ -619,6 +646,8 @@ export function buildLayerGraph(
         // density writes the pulse (§9.1 vs §3.3).
         steps: resolvedGenre === 'techno' ? 4 : 1 + Math.round(density * 3),
         drive: grammar.drive,
+        bank: grammar.drumBank,
+        percBank: grammar.percBank,
         gain: round2(grammar.kickGain * mix.drums),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
@@ -632,6 +661,7 @@ export function buildLayerGraph(
       parameters: {
         style: grammar.hatStyle,
         cycle: grammar.hatCycle,
+        bank: grammar.drumBank,
         gain: round2(grammar.hatGain * mix.drums),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
@@ -645,6 +675,7 @@ export function buildLayerGraph(
         parameters: {
           style: 'dirt',
           cycle: grammar.hatCycle,
+          bank: grammar.drumBank,
           gain: round2(grammar.hatGain * 0.35 * mix.drums),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
@@ -661,6 +692,7 @@ export function buildLayerGraph(
       layer: 'drums',
       parameters: {
         cycle: grammar.percCycle,
+        bank: grammar.percBank,
         gain: round2(grammar.hatGain * 0.7 * mix.drums),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.perc],
@@ -671,7 +703,12 @@ export function buildLayerGraph(
       id: 'track-snare',
       kind: 'snare',
       layer: 'drums',
-      parameters: { style: grammar.snareStyle, gain: round2(grammar.snareGain * mix.drums) },
+      parameters: {
+        style: grammar.snareStyle,
+        bank: grammar.drumBank,
+        percBank: grammar.percBank,
+        gain: round2(grammar.snareGain * mix.drums),
+      },
       allowedTransforms: [...ALLOWED_TRANSFORMS.snare],
     });
     // §32: the body under the clap — a second machine, a hair late, which is
@@ -681,7 +718,12 @@ export function buildLayerGraph(
         id: 'track-snare-body',
         kind: 'snare',
         layer: 'drums',
-        parameters: { style: 'body', gain: round2(grammar.snareGain * 0.5 * mix.drums) },
+        parameters: {
+          style: 'body',
+          bank: grammar.percBank,
+          percBank: grammar.percBank,
+          gain: round2(grammar.snareGain * 0.5 * mix.drums),
+        },
         allowedTransforms: [...ALLOWED_TRANSFORMS.snare],
       });
     }
@@ -847,6 +889,7 @@ export function buildLayerGraph(
       layer: 'texture',
       parameters: {
         style: grammar.textureStyle,
+        bank: grammar.drumBank,
         gain: round2(grammar.textureGain * mix.texture),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
@@ -859,6 +902,7 @@ export function buildLayerGraph(
         layer: 'texture',
         parameters: {
           style: grammar.textureStyle === 'air' ? 'metallic' : 'air',
+          bank: grammar.drumBank,
           gain: round2(grammar.textureGain * 0.5 * mix.texture),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
