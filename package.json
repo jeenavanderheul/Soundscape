@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "sounds:audit": "node scripts/fetch-sound-inventory.mjs && vitest run tests/unit/soundInventory.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

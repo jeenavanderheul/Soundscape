@@ -1356,6 +1356,38 @@ The machine name travels on the primitive, is validated against the kits that ac
 
 ---
 
+## 38. The sound library is audited, not assumed (v11 amendment — NORMATIVE)
+
+A sound name that does not exist produces **silence, not an error**. Nothing else in the game can catch that, so it must be caught before it ships.
+
+- `npm run sounds:audit` downloads the sample maps the engine loads and regenerates `src/audio/soundInventory.generated.ts` — the ground truth of what can be played.
+- A test walks every grammar × every layer × samples-loaded and samples-offline, extracts every sound and bank the engine can utter, and asserts each one exists.
+- The drum-machine allowlist is itself checked for a complete kit, and every machine a grammar names must be in that allowlist — otherwise the engine's safe fallback to the 909 would hide the mistake instead of revealing it.
+- The audit must be verified by mutation: introduce a plausible-but-absent machine and confirm the suite fails. A green check that cannot go red is not a check.
+
+## 39. Tempo belongs to the region (v11 amendment)
+
+Flight speed is still the clock (§29), but the speed bands are stretched into each grammar's own range, so pushing hard in Ambient reaches the top of Ambient and never the top of Drum & Bass.
+
+| Region | BPM |
+|---|---|
+| Ambient | 60–90 |
+| Classical | 60–110 |
+| Dub | 70–110 |
+| House | 118–128 |
+| UK Garage | 128–138 |
+| Trap | 130–150 |
+| Jazz | 80–160 |
+| Experimental | 70–170 |
+| Drum & Bass | 160–180 |
+| The void | 90–140 |
+
+## 40. The score is always on screen
+
+The live pattern code is visible from the first second of flight, not hidden behind a key. `C` hides it. A player must be able to see what their flight is writing.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

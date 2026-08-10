@@ -83,7 +83,7 @@ export function setSamplesLoaded(value: boolean): void {
  * names its own machine; anything unknown falls back to the 909 rather than
  * silently producing no sound.
  */
-const DRUM_BANKS = new Set([
+export const DRUM_BANKS = new Set([
   'AkaiMPC60', 'AkaiXR10', 'AlesisHR16', 'AlesisSR16', 'BossDR550', 'EmuDrumulator',
   'EmuSP12', 'KorgDDM110', 'KorgM1', 'KorgT3', 'LinnDrum', 'LinnLM1', 'LinnLM2',
   'OberheimDMX', 'RolandCompuRhythm1000', 'RolandCompuRhythm8000', 'RolandD70',

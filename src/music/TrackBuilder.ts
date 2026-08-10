@@ -1,4 +1,4 @@
-import { hzToMidi, speedToBpm } from '../audio/MusicalPrimitives';
+import { genreGrammar, hzToMidi, speedToBpm } from '../audio/MusicalPrimitives';
 import type { GenreAffinity } from './MusicState';
 import type { EventBus } from '../core/EventBus';
 import type { Store } from '../core/stores';
@@ -176,7 +176,8 @@ export class TrackBuilder {
     // --- Fase 1: TEMPO. Flight speed sets the clock; the player's own
     // rhythm always wins once it is confident (§3.4, §29.2).
     const playerTempo = music.tempoConfidence >= 0.35 && music.bpm > 0;
-    const speedBpm = moving ? speedToBpm(flight.velocity) : 0;
+    // §39: the region decides the tempo range; the flight decides where in it.
+    const speedBpm = moving ? speedToBpm(flight.velocity, genreGrammar(this.dominant(affinity))) : 0;
     const nextBpm = playerTempo
       ? Math.round(music.bpm)
       : speedBpm > 0

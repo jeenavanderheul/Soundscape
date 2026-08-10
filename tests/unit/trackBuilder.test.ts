@@ -110,7 +110,8 @@ describe('tempo follows flight speed (§29, user decision)', () => {
     const noRhythm = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
     builder.tick(0, noRhythm, { velocity: 22, hz: 220, energy: 0.8 });
     builder.tick(100, noRhythm, { velocity: 22, hz: 220, energy: 0.8 });
-    expect(store.getState().bpm).toBe(170);
+    // §39: full speed in the neutral void tops out at the void's own range.
+    expect(store.getState().bpm).toBe(140);
     const tapped = { ...createInitialMusicState(), bpm: 124, tempoConfidence: 0.9, dynamics: 0.5 };
     builder.tick(200, tapped, { velocity: 22, hz: 220, energy: 0.8 });
     expect(store.getState().bpm).toBe(124);

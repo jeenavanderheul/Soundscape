@@ -43,7 +43,9 @@ export function tokenize(code: string): CodeToken[] {
 
 export class CodeOverlay {
   private readonly root: HTMLPreElement;
-  private visible = false;
+  // §11/§38: the score is ON by default — a player should always be able to
+  // see what their flight is writing. C hides it.
+  private visible = true;
   private lastCode = '';
 
   constructor(container: HTMLElement = document.body) {
@@ -69,7 +71,7 @@ export class CodeOverlay {
       paddingLeft: '10px',
       zIndex: '10',
     });
-    this.root.hidden = true;
+    this.root.hidden = !this.visible;
     container.appendChild(this.root);
   }
 

@@ -91,13 +91,19 @@ export const TEMPO_BANDS: ReadonlyArray<{ minSpeed: number; bpm: number }> = [
   { minSpeed: 20, bpm: 170 },
 ];
 
-export function speedToBpm(velocity: number): number {
+export function speedToBpm(velocity: number, grammar?: GenreGrammar): number {
   const speed = Number.isFinite(velocity) ? Math.max(0, velocity) : 0;
   let bpm = TEMPO_BANDS[0]!.bpm;
   for (const band of TEMPO_BANDS) {
     if (speed >= band.minSpeed) bpm = band.bpm;
   }
-  return bpm;
+  if (!grammar) return bpm;
+  // §39: the same five speed bands, but stretched into this region's range —
+  // pushing hard in Ambient reaches the top of Ambient, not the top of DnB.
+  const low = TEMPO_BANDS[0]!.bpm;
+  const high = TEMPO_BANDS[TEMPO_BANDS.length - 1]!.bpm;
+  const position = (bpm - low) / (high - low);
+  return Math.round(grammar.bpmMin + position * (grammar.bpmMax - grammar.bpmMin));
 }
 
 export type MusicParameter = 'bpm' | 'gain';
@@ -245,6 +251,13 @@ export interface GenreGrammar {
    */
   drumBank: string;
   percBank: string;
+  /**
+   * §39: the tempo range of this grammar. Flight speed still chooses WHERE in
+   * the range you sit — but a region has its own natural pace, so ambient can
+   * never race and drum & bass can never crawl.
+   */
+  bpmMin: number;
+  bpmMax: number;
   kickGain: number;
   hatGain: number;
   snareGain: number;
@@ -269,6 +282,8 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
   drive: 0.25,
   drumBank: 'RolandTR909',
   percBank: 'RolandTR808',
+  bpmMin: 90,
+  bpmMax: 140,
   kickGain: 0.95,
   hatGain: 0.35,
   snareGain: 0.82,
@@ -293,6 +308,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 3,
     drumBank: 'EmuSP12',
     percBank: 'AkaiMPC60',
+    bpmMin: 160,
+    bpmMax: 180,
     drive: 0.35,
     kickGain: 0.95,
     hatGain: 0.32,
@@ -314,6 +331,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 0,
     drumBank: 'KorgDDM110',
     percBank: 'LinnLM1',
+    bpmMin: 60,
+    bpmMax: 90,
     drive: 0,
     kickGain: 0.3,
     hatGain: 0.12,
@@ -335,6 +354,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 3,
     drumBank: 'AlesisHR16',
     percBank: 'RolandR8',
+    bpmMin: 80,
+    bpmMax: 160,
     drive: 0,
     kickGain: 0.6,
     hatGain: 0.3,
@@ -358,6 +379,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 5,
     drumBank: 'SakataDPM48',
     percBank: 'OberheimDMX',
+    bpmMin: 70,
+    bpmMax: 170,
     drive: 0.3,
     kickGain: 0.7,
     hatGain: 0.25,
@@ -380,6 +403,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 4,
     drumBank: 'AkaiMPC60',
     percBank: 'RolandTR909',
+    bpmMin: 128,
+    bpmMax: 138,
     drive: 0.12,
     kickGain: 0.9,
     hatGain: 0.34,
@@ -402,6 +427,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 4,
     drumBank: 'RolandTR707',
     percBank: 'LinnDrum',
+    bpmMin: 118,
+    bpmMax: 128,
     drive: 0,
     kickGain: 0.88,
     hatGain: 0.3,
@@ -424,6 +451,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 0,
     drumBank: 'RolandTR808',
     percBank: 'RolandTR808',
+    bpmMin: 130,
+    bpmMax: 150,
     drive: 0.2,
     kickGain: 0.95,
     hatGain: 0.26,
@@ -446,6 +475,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 4,
     drumBank: 'RolandCompuRhythm1000',
     percBank: 'RolandCompuRhythm8000',
+    bpmMin: 70,
+    bpmMax: 110,
     drive: 0,
     kickGain: 0.85,
     hatGain: 0.2,
@@ -468,6 +499,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     percCycle: 0,
     drumBank: 'AlesisHR16',
     percBank: 'AlesisHR16',
+    bpmMin: 60,
+    bpmMax: 110,
     drive: 0,
     kickGain: 0.55,
     hatGain: 0.1,
@@ -478,6 +511,13 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureGain: 0.18,
   },
 };
+
+/** §38: every machine any grammar asks for, for the sound-library audit. */
+export const GRAMMAR_BANKS: readonly string[] = [
+  ...new Set(
+    Object.values(GRAMMARS).flatMap((g) => [g.drumBank, g.percBank]),
+  ),
+];
 
 export function genreGrammar(genre: TrackGenre): GenreGrammar {
   return genre === null ? NEUTRAL_GRAMMAR : GRAMMARS[genre];
