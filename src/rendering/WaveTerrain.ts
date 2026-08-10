@@ -55,8 +55,23 @@ uniform vec2 uOrigin; // the field follows the player; sources stay in world spa
 uniform vec2 uPlayer; // world position of the orb: the lantern lives here
 uniform vec4 uSources[${TERRAIN_CONFIG.maxSources}]; // x, z, strength, hzNorm
 uniform int uSourceCount;
+uniform vec3 uZoneColor;   // §33: the colour of the region being flown through
+uniform float uRelief;     // §33: how mountainous this direction is
 varying float vGlow;
 varying vec3 vZone;
+varying float vRidge;
+
+// Cheap value noise — enough for a horizon that differs per direction.
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+float noise(vec2 p) {
+  vec2 i = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
+             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
 
 vec3 zoneColor(float hzn) {
   // poster palette: low = red mass, high = green detail, mid = purple harmonics
@@ -74,6 +89,15 @@ void main() {
     sin(world.x * 0.045 + uTime * 0.35) * sin(world.y * 0.06 + uTime * 0.22);
   // §29.6: the bassline IS the moving ridge landscape.
   h += uBass * 2.2 * sin(world.x * 0.028 + uTime * 0.55) * cos(world.y * 0.021 - uTime * 0.4);
+  // §33: REGION RELIEF. Two octaves of noise, scaled by how mountainous this
+  // direction is, and fading in with distance from spawn — so the void stays
+  // flat and every compass direction grows its own horizon.
+  float fromSpawn = clamp((length(world) - 30.0) / 120.0, 0.0, 1.0);
+  float ridge = noise(world * 0.012) * 0.75 + noise(world * 0.034) * 0.25;
+  ridge = pow(ridge, 1.6);
+  float relief = ridge * uRelief * fromSpawn * 26.0;
+  h += relief;
+  vRidge = relief;
   float glow = uBass * 0.25;
   vec3 zone = vec3(0.0);
   for (int i = 0; i < ${TERRAIN_CONFIG.maxSources}; i++) {
@@ -96,8 +120,10 @@ void main() {
   // the player is ALWAYS a visible reference (game-style spot, no lighting rig).
   float dPlayer = distance(world, uPlayer);
   float lantern = exp(-(dPlayer * dPlayer) / (26.0 * 26.0)) * 0.85;
-  vGlow = clamp(glow + lantern + abs(h) * 0.12, 0.0, 1.6);
-  vZone = zone;
+  vGlow = clamp(glow + lantern + abs(h) * 0.12 + vRidge * 0.03, 0.0, 1.6);
+  // Excitation colour on top of the region's own colour: what the player
+  // makes is always readable against where the player is (§33).
+  vZone = zone + uZoneColor * (0.25 + vRidge * 0.05) * fromSpawn;
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
   // Manual depth fade: the field dissolves into the void (§13).
   vGlow *= clamp(1.0 - (-mv.z - 40.0) / 180.0, 0.0, 1.0);
@@ -108,9 +134,11 @@ void main() {
 const FRAGMENT = /* glsl */ `
 varying float vGlow;
 varying vec3 vZone;
+varying float vRidge;
 void main() {
   vec3 base = vec3(0.62, 0.72, 0.74); // cold monochrome scan line
-  vec3 color = base * (0.10 + vGlow * 0.9) + vZone * 0.55;
+  // Ridge tops catch the light: the relief reads as landscape, not as noise.
+  vec3 color = base * (0.10 + vGlow * 0.9) + vZone * 0.55 + vec3(vRidge * 0.012);
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -139,6 +167,8 @@ export class WaveTerrain {
         uPlayer: { value: [0, 0] },
         uSources: { value: packSources([], this.sourceArray) },
         uSourceCount: { value: 0 },
+        uZoneColor: { value: [0.16, 0.2, 0.24] },
+        uRelief: { value: 0.12 },
       },
     });
     this.lines = new LineSegments(geometry, this.material);
@@ -149,6 +179,15 @@ export class WaveTerrain {
   /** BeatSync hook: world pulse ripples through the field (§12). */
   setPulse(value: number): void {
     this.pulse = value;
+  }
+
+  /** §33: the region the player is in decides the colour and the horizon. */
+  setZone(color: { r: number; g: number; b: number }, relief: number): void {
+    const uniform = this.material.uniforms['uZoneColor']!.value as number[];
+    uniform[0] = color.r;
+    uniform[1] = color.g;
+    uniform[2] = color.b;
+    this.material.uniforms['uRelief']!.value = relief;
   }
 
   /** §29.6: bassline level — the terrain grows moving ridges. */

@@ -1202,6 +1202,40 @@ Pressing **E** hands the track back as source: a numbered, commented Strudel blo
 
 ---
 
+## 33. Every direction is a place you can see (v6 amendment — NORMATIVE)
+
+### 33.1 The rule
+
+A player must be able to tell, at a glance and from inside the world, **which way they are going and that it is somewhere else**. Identical horizons in every direction make a 3D world read as a treadmill.
+
+### 33.2 Colour is the region
+
+Each compass genre owns a colour, a relief and a haze (`src/genres/ZonePalette.ts`), blended with the same affinities that blend the music (§31) — so the look and the grammar always agree about where the player is:
+
+| Region | Colour | Landscape |
+|---|---|---|
+| Techno | machine red | high, hard ridges |
+| Ambient | deep blue | almost flat, thick air |
+| Jazz | warm amber | rolling, mid |
+| Drum & Bass | acid green | jagged |
+| Experimental | violet | the sky above everything |
+
+The colour reaches the fog, the sky, the terrain, the forest and the speed streaks. The world stays near-black: a region TINTS the darkness, never washes it. The neutral void has no colour of its own — colour is something a direction earns.
+
+### 33.3 Relief makes the horizon
+
+Terrain height gains a two-octave noise ridge scaled by the region's relief and fading in with distance from spawn. The void stays flat; each direction grows its own skyline. A player who turns 90° sees a different horizon.
+
+### 33.4 Speed must be visible
+
+Streaks of light stream past the orb, stretched along the direction of travel, their length and brightness scaled by velocity (`src/rendering/SpeedStreaks.ts`). Standing still they vanish. This is what makes speed — and therefore tempo, since flight speed is the clock (§29) — legible over open ground.
+
+### 33.5 The heading is on screen
+
+The HUD names the compass point and the region it leads to (`N · techno`). Direction is never just "away".
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

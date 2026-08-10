@@ -31,9 +31,14 @@ export class HUD {
     this.root.hidden = false;
   }
 
-  /** Logic-loop rate is plenty; skips DOM writes when nothing changed. */
-  update(state: Readonly<FrequencyState>): void {
-    const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}`;
+  /**
+   * Logic-loop rate is plenty; skips DOM writes when nothing changed.
+   * §33: the heading line tells the player which region they are flying into,
+   * so a direction is never just "away".
+   */
+  update(state: Readonly<FrequencyState>, heading?: string): void {
+    const compass = heading === undefined ? '' : `\nhead: ${heading}`;
+    const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${compass}`;
     if (text === this.lastText) return;
     this.lastText = text;
     this.root.textContent = text;

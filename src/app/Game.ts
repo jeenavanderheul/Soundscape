@@ -13,8 +13,10 @@ import { buildLayerGraph, createEmptyLayerGraph, diffLayerGraph } from '../audio
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
 import { setZoneGenres, zoneAffinity } from '../genres/GenreZones';
+import { headingLabel, lookFor, NEUTRAL_LOOK } from '../genres/ZonePalette';
 import type { GenreEvents } from '../genres/GenreAffinityEngine';
 import { createInitialMusicState, MusicState } from '../music/MusicState';
+import type { GenreAffinity } from '../music/MusicState';
 import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
 import { RhythmDetector } from '../music/RhythmDetector';
 import { TrackBuilder } from '../music/TrackBuilder';
@@ -40,6 +42,7 @@ import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
 import { ParticleSystem } from '../rendering/ParticleSystem';
 import { PlayerOrb } from '../rendering/PlayerOrb';
 import { Renderer } from '../rendering/Renderer';
+import { SpeedStreaks } from '../rendering/SpeedStreaks';
 import { StructureRenderer } from '../rendering/StructureRenderer';
 import { HarmonyBridges, MelodyTrail } from '../rendering/TrackVisuals';
 import { WaveTerrain } from '../rendering/WaveTerrain';
@@ -148,6 +151,9 @@ export class Game {
   private readonly forest = new ForestSystem(WORLD_SEED, this.worldStore.getState().resonators);
   private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
   private readonly melodyTrail = new MelodyTrail();
+  private readonly streaks = new SpeedStreaks(WORLD_SEED);
+  /** §33: the look of the region being flown through, eased so it never snaps. */
+  private zoneLook = { ...NEUTRAL_LOOK, color: { ...NEUTRAL_LOOK.color } };
   private readonly harmonyBridges = new HarmonyBridges();
   private readonly hints = new Hints();
   private readonly codeOverlay = new CodeOverlay();
@@ -287,6 +293,7 @@ export class Game {
     this.renderer.scene.add(this.markers.mesh);
     this.renderer.scene.add(this.melodyTrail.line);
     this.renderer.scene.add(this.harmonyBridges.lines);
+    this.renderer.scene.add(this.streaks.lines);
     this.beatSync = new BeatSync([
       this.particles,
       this.interference,
@@ -414,6 +421,7 @@ export class Game {
     this.hints.dispose();
     this.codeOverlay.dispose();
     this.exportOverlay.dispose();
+    this.streaks.dispose();
     this.promptOverlay.dispose();
     this.layerCue.dispose();
     this.renderer.scene.remove(this.orb.mesh);
@@ -514,6 +522,10 @@ export class Game {
       this.structures.setOrganization(genre?.affinity.techno ?? 0);
       // §9.2 world tendency: sustained space thickens the fog.
       this.renderer.setAtmosphere(genre?.affinity.ambient ?? 0);
+      // §33: EVERY DIRECTION IS A PLACE. Colour, horizon and haze come from
+      // the same affinities as the music, eased so crossing a border is a
+      // journey rather than a switch.
+      this.applyZoneLook(zone, dtSeconds);
       // §9.5 world tendency: mutation destabilizes existing form.
       this.structures.setMutation(genre?.affinity.experimental ?? 0);
       this.codeOverlay.update(this.strudelEngine.code);
@@ -560,7 +572,17 @@ export class Game {
       state.position,
     );
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
-    this.hud.update(state);
+    // §33: streaks rushing past the orb are what makes speed legible.
+    this.streaks.update(
+      state.position,
+      {
+        x: state.direction.x * state.velocity,
+        y: state.direction.y * state.velocity,
+        z: state.direction.z * state.velocity,
+      },
+      dtSeconds,
+    );
+    this.hud.update(state, headingLabel(Math.atan2(state.direction.x, -state.direction.z)));
     // Third-person: the camera trails the orb along the flight direction.
     const camera = this.renderer.camera.instance;
     const { position, direction } = state;
@@ -754,6 +776,26 @@ export class Game {
   }
 
   /** MVP item 13: clear persistent forms and the local save; the void returns. */
+  /**
+   * §33: ease toward the look of the region under the player. The music
+   * blends between grammars; so does the world it happens in.
+   */
+  private applyZoneLook(zone: GenreAffinity, dtSeconds: number): void {
+    const target = lookFor(zone);
+    // ~1.5 s to cross a border: fast enough to feel caused, slow enough to
+    // read as travelling rather than as a switch being flipped.
+    const k = Math.min(1, dtSeconds * 0.7);
+    const look = this.zoneLook;
+    look.color.r += (target.color.r - look.color.r) * k;
+    look.color.g += (target.color.g - look.color.g) * k;
+    look.color.b += (target.color.b - look.color.b) * k;
+    look.relief += (target.relief - look.relief) * k;
+    this.renderer.setZoneColor(look.color);
+    this.terrain.setZone(look.color, look.relief);
+    this.streaks.setColor(look.color);
+    this.forest.setTint(look.color);
+  }
+
   resetWorld(): void {
     const removed = this.worldStore.getState().structures;
     this.worldStore.setState((state) => ({ ...state, structures: [] }));

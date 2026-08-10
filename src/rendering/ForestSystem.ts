@@ -121,6 +121,16 @@ export class ForestSystem {
     this.updateMatrices(0);
   }
 
+  /** §33: the forest takes the colour of the region it stands in. */
+  setTint(color: { r: number; g: number; b: number }): void {
+    // Lifted toward white so trunks stay visible against a coloured horizon.
+    (this.mesh.material as MeshBasicMaterial).color.setRGB(
+      0.35 + color.r * 0.65,
+      0.35 + color.g * 0.65,
+      0.35 + color.b * 0.65,
+    );
+  }
+
   /** BeatSync hook (§12): the whole forest breathes on the beat. */
   setPulse(value: number): void {
     this.pulse = value;

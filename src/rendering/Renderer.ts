@@ -32,6 +32,23 @@ export class Renderer {
    * ambient attractor only thickens it toward its ceiling (§9.2). */
   private readonly fog = new FogExp2(RENDER_CONFIG.clearColor, RENDER_CONFIG.baseFogDensity);
 
+  /**
+   * §33: the air itself carries the region's colour, so the horizon changes
+   * as the player turns — the strongest signal that a direction is a place.
+   */
+  setZoneColor(color: { r: number; g: number; b: number }): void {
+    // The world stays near-black (§13): the region only TINTS the darkness.
+    // Anything brighter turns the screen into a colour wash and the terrain
+    // loses its contrast.
+    this.fog.color.setRGB(color.r * 0.07, color.g * 0.07, color.b * 0.09);
+    (this.scene.background as Color).setRGB(
+      0.004 + color.r * 0.018,
+      0.004 + color.g * 0.018,
+      0.008 + color.b * 0.024,
+    );
+    this.webgl.setClearColor(this.scene.background as Color);
+  }
+
   setAtmosphere(amount: number): void {
     const clamped = Math.min(1, Math.max(0, amount));
     this.fog.density =
