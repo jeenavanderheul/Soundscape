@@ -2,21 +2,13 @@ import { EventBus } from '../core/EventBus';
 import { DEFAULT_BINDINGS, DesktopBindings, KeyAction } from './bindings';
 
 /** Per-frame typed input snapshot (spec §6: systems consume snapshots, not DOM events). */
-/**
- * A left-button press shorter than this is a gear shift; anything longer is
- * wind. The two are never wanted at the same moment, so one button carries
- * both (§5).
- */
-export const GEAR_CLICK_MS = 200;
 
 export interface InputSnapshot {
   /** moveX: -1 left … +1 right; moveZ: -1 backward … +1 forward. */
   axes: { moveX: number; moveZ: number };
   buttons: { accelerate: boolean; windHold: boolean };
-  /** Short left click since the last snapshot → shift up a gear. */
+  /** Left click since the last snapshot → shift up a gear (wraps at the top). */
   gearUp: boolean;
-  /** Right click since the last snapshot → shift down a gear. */
-  gearDown: boolean;
   /** LMB was released since the last snapshot → timed pulse excitation. */
   windReleased: boolean;
   /** Space was pressed since the last snapshot. */
@@ -48,9 +40,7 @@ export class InputManager {
   private readonly heldKeys = new Set<string>();
   private windHold = false;
   private windReleased = false;
-  private windDownMs = 0;
   private gearUp = false;
-  private gearDown = false;
   private resonancePulse = false;
   private pausePressed = false;
   private codeToggled = false;
@@ -105,7 +95,6 @@ export class InputManager {
         windHold: this.windHold,
       },
       gearUp: this.gearUp,
-      gearDown: this.gearDown,
       windReleased: this.windReleased,
       resonancePulse: this.resonancePulse,
       pausePressed: this.pausePressed,
@@ -120,7 +109,6 @@ export class InputManager {
 
   private resetFrameState(): void {
     this.gearUp = false;
-    this.gearDown = false;
     this.windReleased = false;
     this.resonancePulse = false;
     this.pausePressed = false;
@@ -166,25 +154,17 @@ export class InputManager {
 
   private readonly onMouseDown = (event: Event): void => {
     const action = this.bindings.mouseButtons[(event as MouseEvent).button];
-    if (action === 'windHold') {
-      this.windHold = true;
-      this.windDownMs = (event as MouseEvent).timeStamp;
-    } else if (action === 'gearDown') {
-      this.gearDown = true;
-    }
+    if (action === 'windHold') this.windHold = true;
+    else if (action === 'gearUp') this.gearUp = true;
   };
 
   private readonly onMouseUp = (event: Event): void => {
     if (this.bindings.mouseButtons[(event as MouseEvent).button] !== 'windHold') return;
-    if (!this.windHold) return;
-    // A flick of the button is a gear shift; a real hold is wind, and only a
-    // hold releases the pulse that the rhythm listens for (§3.3).
-    if ((event as MouseEvent).timeStamp - this.windDownMs <= GEAR_CLICK_MS) this.gearUp = true;
-    else this.windReleased = true;
+    if (this.windHold) this.windReleased = true;
     this.windHold = false;
   };
 
-  /** Right-click shifts down, so the browser menu must not open on it. */
+  /** The wind lives on the right button, so the browser menu must not open. */
   private readonly onContextMenu = (event: Event): void => {
     event.preventDefault();
   };

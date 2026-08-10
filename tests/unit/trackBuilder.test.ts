@@ -117,24 +117,28 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
 
 describe('tempo follows flight speed (§29, user decision)', () => {
   it('maps speed into stable bands', () => {
-    expect(speedToBpm(0)).toBe(90);
-    expect(speedToBpm(5)).toBe(110);
+    // Eight bands, one per gear (user decision).
+    expect(speedToBpm(0)).toBe(60);
+    expect(speedToBpm(5)).toBe(85);
+    expect(speedToBpm(8)).toBe(110);
     expect(speedToBpm(12)).toBe(128);
-    expect(speedToBpm(17)).toBe(145);
-    expect(speedToBpm(23)).toBe(170);
+    expect(speedToBpm(15)).toBe(142);
+    expect(speedToBpm(19)).toBe(158);
+    expect(speedToBpm(22)).toBe(172);
+    expect(speedToBpm(26)).toBe(190);
     // Inside a band the tempo does not wobble.
-    expect(speedToBpm(9.5)).toBe(speedToBpm(14.9));
+    expect(speedToBpm(10.5)).toBe(speedToBpm(13.4));
   });
 
   it('writes the flight tempo into the track, and the player rhythm overrides it', () => {
     const { store, builder } = setup();
     const noRhythm = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
-    builder.tick(0, noRhythm, { velocity: 22, hz: 220, energy: 0.8 });
-    builder.tick(100, noRhythm, { velocity: 22, hz: 220, energy: 0.8 });
+    builder.tick(0, noRhythm, { velocity: 26, hz: 220, energy: 0.8 });
+    builder.tick(100, noRhythm, { velocity: 26, hz: 220, energy: 0.8 });
     // §39: full speed in the neutral void tops out at the void's own range.
     expect(store.getState().bpm).toBe(140);
     const tapped = { ...createInitialMusicState(), bpm: 124, tempoConfidence: 0.9, dynamics: 0.5 };
-    builder.tick(200, tapped, { velocity: 22, hz: 220, energy: 0.8 });
+    builder.tick(200, tapped, { velocity: 26, hz: 220, energy: 0.8 });
     expect(store.getState().bpm).toBe(124);
   });
 });

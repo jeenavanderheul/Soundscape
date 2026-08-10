@@ -5,9 +5,10 @@ export interface HudPlace {
   heading: string;
   biome: string;
   region: string;
-  /** Current gear 1..5 and the tempo it is driving (user decision). */
+  /** Current gear, what it feels like, and the tempo it drives (user decision). */
   gear: number;
   maxGear: number;
+  gearLabel: string;
   bpm: number;
 }
 
@@ -51,9 +52,9 @@ export class HUD {
     const where =
       place === undefined
         ? ''
-        : `\n\ngear: ${gearBar(place.gear, place.maxGear)} ${place.gear}/${place.maxGear}` +
-          `${place.bpm > 0 ? ` · ${Math.round(place.bpm)} bpm` : ''}` +
-          `\nhead: ${place.heading}\nbiome: ${place.biome}\nregion: ${place.region}`;
+        : `\n\nGEAR ${place.gear}/${place.maxGear}  ${gearBar(place.gear, place.maxGear)}` +
+          `\n      ${place.gearLabel}${place.bpm > 0 ? ` · ${Math.round(place.bpm)} bpm` : ''}` +
+          `\n\nhead: ${place.heading}\nbiome: ${place.biome}\nregion: ${place.region}`;
     const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
     if (text === this.lastText) return;
     this.lastText = text;
@@ -65,7 +66,7 @@ export class HUD {
   }
 }
 
-/** Five notches, filled up to the current gear — readable at a glance. */
+/** One notch per gear, filled up to the current one — readable at a glance. */
 function gearBar(gear: number, maxGear: number): string {
   let bar = '';
   for (let i = 1; i <= maxGear; i++) bar += i <= gear ? '\u2588' : '\u2591';

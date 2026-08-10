@@ -39,7 +39,7 @@ const HINTS: HintDef[] = [
   },
   {
     id: 'gear',
-    text: 'click to shift up, right-click down — the gear is the tempo',
+    text: 'left click shifts gear 1-8 and wraps · hold right for wind and boost',
     when: (ctx) => ctx.elapsedMs > 14_000,
   },
   {

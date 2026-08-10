@@ -21,7 +21,6 @@ function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
     axes: { moveX: 0, moveZ: 0 },
     buttons: { accelerate: false, windHold: false },
     gearUp: false,
-    gearDown: false,
     windReleased: false,
     resonancePulse: false,
     pausePressed: false,
@@ -169,7 +168,7 @@ describe('FrequencyController', () => {
     const store = createStore(createInitialFrequencyState());
     const controller = new FrequencyController(store);
     // Top gear: the gearbox is the speed ceiling, so energy is measured there.
-    for (let i = 0; i < 4; i++) controller.update(snapshot({ gearUp: true }), 16);
+    while (controller.gear !== MAX_GEAR) controller.update(snapshot({ gearUp: true }), 16);
     for (let i = 0; i < 300; i++) {
       controller.update(
         snapshot({
@@ -204,10 +203,8 @@ describe('the gearbox is the speed (user decision: five gears)', () => {
   function topSpeedIn(gear: number): number {
     const store = createStore(createInitialFrequencyState());
     const controller = new FrequencyController(store);
-    // Shift from second into the wanted gear, then hold forward.
-    for (let i = 2; i < gear; i++) controller.update(snapshot({ gearUp: true }), 16);
-    for (let i = gear; i < 2; i++) controller.update(snapshot({ gearDown: true }), 16);
-    expect(controller.gear).toBe(gear);
+    // One button: click up, wrapping around, until the wanted gear comes up.
+    while (controller.gear !== gear) controller.update(snapshot({ gearUp: true }), 16);
     for (let i = 0; i < 400; i++) {
       controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 } }), 16);
     }
@@ -215,24 +212,23 @@ describe('the gearbox is the speed (user decision: five gears)', () => {
   }
 
   it('every gear has its own top speed, and they only go up', () => {
-    const speeds = [1, 2, 3, 4, 5].map(topSpeedIn);
+    const speeds = [1, 2, 3, 4, 5, 6, 7, 8].map(topSpeedIn);
     for (let i = 1; i < speeds.length; i++) {
       expect(speeds[i]!).toBeGreaterThan(speeds[i - 1]!);
     }
-    expect(speeds[4]!).toBeLessThanOrEqual(GEAR_SPEEDS[MAX_GEAR - 1]! + 0.01);
+    expect(speeds[MAX_GEAR - 1]!).toBeLessThanOrEqual(GEAR_SPEEDS[MAX_GEAR - 1]! + 0.01);
   });
 
-  it('cannot shift past either end', () => {
+  it('wraps from top gear back to first (user decision: one button)', () => {
     const store = createStore(createInitialFrequencyState());
     const controller = new FrequencyController(store);
-    for (let i = 0; i < 10; i++) controller.update(snapshot({ gearUp: true }), 16);
-    expect(controller.gear).toBe(MAX_GEAR);
-    for (let i = 0; i < 10; i++) controller.update(snapshot({ gearDown: true }), 16);
+    while (controller.gear !== MAX_GEAR) controller.update(snapshot({ gearUp: true }), 16);
+    controller.update(snapshot({ gearUp: true }), 16);
     expect(controller.gear).toBe(1);
   });
 
   it('each gear lands in its own tempo band — the gear IS the tempo (§29)', () => {
-    const bpms = [1, 2, 3, 4, 5].map((gear) => speedToBpm(topSpeedIn(gear)));
-    expect(bpms).toEqual([90, 110, 128, 145, 170]);
+    const bpms = [1, 2, 3, 4, 5, 6, 7, 8].map((gear) => speedToBpm(topSpeedIn(gear)));
+    expect(bpms).toEqual([60, 85, 110, 128, 142, 158, 172, 190]);
   });
 });

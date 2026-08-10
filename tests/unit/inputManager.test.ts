@@ -44,11 +44,11 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('reports wind hold while LMB is down and a release pulse exactly once', () => {
+  it('reports wind hold while the right button is down and a release pulse exactly once', () => {
     const { pointer, manager } = setup();
-    pointer.dispatchEvent(mouse('mousedown', 0, 0));
+    pointer.dispatchEvent(mouse('mousedown', 2, 0));
     expect(manager.snapshot().buttons.windHold).toBe(true);
-    pointer.dispatchEvent(mouse('mouseup', 0, 800));
+    pointer.dispatchEvent(mouse('mouseup', 2, 800));
     const released = manager.snapshot();
     expect(released.buttons.windHold).toBe(false);
     expect(released.windReleased).toBe(true);
@@ -93,28 +93,24 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('a flick of the left button shifts up, a hold is wind (user decision)', () => {
+  it('left clicks shift, right holds the wind (user decision)', () => {
     const { pointer, manager } = setup();
 
-    // Short click: a gear, and NOT a wind release — the rhythm must not hear it.
+    // Every left click is one gear, and it is never heard as a wind release.
     pointer.dispatchEvent(mouse('mousedown', 0, 1000));
-    pointer.dispatchEvent(mouse('mouseup', 0, 1120));
     const clicked = manager.snapshot();
     expect(clicked.gearUp).toBe(true);
     expect(clicked.windReleased).toBe(false);
+    expect(clicked.buttons.windHold).toBe(false);
     expect(manager.snapshot().gearUp).toBe(false);
 
-    // Real hold: wind, and its release is the pulse.
-    pointer.dispatchEvent(mouse('mousedown', 0, 2000));
-    pointer.dispatchEvent(mouse('mouseup', 0, 2600));
-    const held = manager.snapshot();
-    expect(held.gearUp).toBe(false);
-    expect(held.windReleased).toBe(true);
-
-    // Right button shifts down, once.
-    pointer.dispatchEvent(mouse('mousedown', 2, 3000));
-    expect(manager.snapshot().gearDown).toBe(true);
-    expect(manager.snapshot().gearDown).toBe(false);
+    // The right button is the wind, and holding it also boosts.
+    pointer.dispatchEvent(mouse('mousedown', 2, 2000));
+    const holding = manager.snapshot();
+    expect(holding.buttons.windHold).toBe(true);
+    expect(holding.gearUp).toBe(false);
+    pointer.dispatchEvent(mouse('mouseup', 2, 2600));
+    expect(manager.snapshot().windReleased).toBe(true);
     manager.detach();
   });
 

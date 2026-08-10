@@ -91,11 +91,14 @@ export function heartbeatBpm(dynamics: number): number {
  * genuinely accelerates — tap W and the whole world speeds up.
  */
 export const TEMPO_BANDS: ReadonlyArray<{ minSpeed: number; bpm: number }> = [
-  { minSpeed: 0, bpm: 90 },
-  { minSpeed: 4, bpm: 110 },
-  { minSpeed: 9, bpm: 128 },
-  { minSpeed: 15, bpm: 145 },
-  { minSpeed: 20, bpm: 170 },
+  { minSpeed: 0, bpm: 60 },     // drone, slow ambient
+  { minSpeed: 4, bpm: 85 },     // ambient, downtempo
+  { minSpeed: 7, bpm: 110 },    // groove, the way into house
+  { minSpeed: 10, bpm: 128 },   // house / techno
+  { minSpeed: 13.5, bpm: 142 }, // faster techno / club
+  { minSpeed: 17, bpm: 158 },   // experimental / breaks
+  { minSpeed: 20.5, bpm: 172 }, // drum & bass
+  { minSpeed: 24, bpm: 190 },   // extreme
 ];
 
 export function speedToBpm(velocity: number, grammar?: GenreGrammar): number {
@@ -105,7 +108,7 @@ export function speedToBpm(velocity: number, grammar?: GenreGrammar): number {
     if (speed >= band.minSpeed) bpm = band.bpm;
   }
   if (!grammar) return bpm;
-  // §39: the same five speed bands, but stretched into this region's range —
+  // §39: the same eight speed bands, but stretched into this region's range —
   // pushing hard in Ambient reaches the top of Ambient, not the top of DnB.
   const low = TEMPO_BANDS[0]!.bpm;
   const high = TEMPO_BANDS[TEMPO_BANDS.length - 1]!.bpm;

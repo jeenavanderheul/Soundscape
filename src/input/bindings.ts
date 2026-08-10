@@ -13,18 +13,18 @@ export type KeyAction =
   | 'pause';
 
 /**
- * Left button does two things that are never wanted at once: a short click
- * shifts up a gear, holding it builds wind (§5 dynamics). Right button shifts
- * down.
+ * Left button is the gearbox: every click shifts up one, and past the top gear
+ * it wraps back to first (user decision). Right button is the wind (§5
+ * dynamics) and doubles as a short booster while it is held.
  */
-export type MouseButtonAction = 'windHold' | 'gearDown';
+export type MouseButtonAction = 'gearUp' | 'windHold';
 export type WheelAction = 'frequencyFocus';
 export type MouseMoveAction = 'look';
 
 export interface DesktopBindings {
   /** KeyboardEvent.code → action. */
   keys: Readonly<Record<string, KeyAction>>;
-  /** MouseEvent.button → action. Hold builds wind/amplitude; release is the pulse. */
+  /** MouseEvent.button → action. Holding wind builds amplitude; release is the pulse. */
   mouseButtons: Readonly<Record<number, MouseButtonAction>>;
   wheel: WheelAction;
   mouseMove: MouseMoveAction;
@@ -44,8 +44,8 @@ export const DEFAULT_BINDINGS: DesktopBindings = {
     Escape: 'pause',
   },
   mouseButtons: {
-    0: 'windHold',
-    2: 'gearDown',
+    0: 'gearUp',
+    2: 'windHold',
   },
   wheel: 'frequencyFocus',
   mouseMove: 'look',

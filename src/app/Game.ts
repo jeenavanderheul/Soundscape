@@ -664,6 +664,7 @@ export class Game {
       region: ecologyFor(this.placeGenre).name,
       gear: this.controller.gear,
       maxGear: MAX_GEAR,
+      gearLabel: this.controller.gearLabel,
       bpm: this.trackStore.getState().bpm,
     });
     // Third-person: the camera trails the orb along the flight direction.

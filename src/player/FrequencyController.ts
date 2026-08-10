@@ -26,7 +26,7 @@ export const FLIGHT_CONFIG = {
   /** exponential drag coefficient, 1/s */
   drag: 1.6,
   /** units/s */
-  maxSpeed: 24,
+  maxSpeed: 26,
   /**
    * Hard bottom of the world, kept BELOW the deepest terrain so the landscape
    * itself is what stops the orb (§35) — not an invisible plane.
@@ -116,12 +116,30 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
  * attack/release amplitude and velocity → energy. All updates immutable.
  */
 /**
- * Five gears (user decision). Flight speed is the clock (§29), so a gear IS a
+ * Eight gears (user decision). Flight speed is the clock (§29), so a gear IS a
  * tempo: each top speed sits inside one of the TEMPO_BANDS, and the region
  * stretches those bands into its own range (§39). Shifting up is the player
  * deciding the track should move faster — deliberate, not a twitch.
+ *
+ *   1  60 bpm   drone        5  142 bpm  club
+ *   2  85 bpm   downtempo    6  158 bpm  breaks
+ *   3  110 bpm  groove       7  172 bpm  drum & bass
+ *   4  128 bpm  house        8  190 bpm  extreme
  */
-export const GEAR_SPEEDS: readonly number[] = [3.5, 7, 13, 18, 24];
+export const GEAR_SPEEDS: readonly number[] = [2.5, 5, 8, 11.5, 15, 18.5, 22, 26];
+
+/** What each gear feels like, shown in the HUD so the gear is never a number alone. */
+export const GEAR_LABELS: readonly string[] = [
+  'drone',
+  'downtempo',
+  'groove',
+  'house',
+  'club',
+  'breaks',
+  'dnb',
+  'extreme',
+];
+
 export const MAX_GEAR = GEAR_SPEEDS.length;
 
 export class FrequencyController {
@@ -146,9 +164,14 @@ export class FrequencyController {
     return this.velocityVec.y;
   }
 
-  /** 1..5, shown in the HUD. */
+  /** 1..8, shown in the HUD. */
   get gear(): number {
     return this.gearIndex + 1;
+  }
+
+  /** The feel of the current gear ('house', 'dnb', …). */
+  get gearLabel(): string {
+    return GEAR_LABELS[this.gearIndex]!;
   }
 
   /** Reset world (§17): look level again, matching the fresh spawn state. */
@@ -175,8 +198,9 @@ export class FrequencyController {
     );
     const direction = directionFromLook(this.yaw, this.pitch);
 
-    if (input.gearUp) this.gearIndex = Math.min(MAX_GEAR - 1, this.gearIndex + 1);
-    if (input.gearDown) this.gearIndex = Math.max(0, this.gearIndex - 1);
+    // Every click shifts up one; past top gear it wraps back to first, so the
+    // whole gearbox is reachable with one button (user decision).
+    if (input.gearUp) this.gearIndex = (this.gearIndex + 1) % MAX_GEAR;
 
     const accelDirection = this.accelDirection(direction, input.axes);
     // The gear is the ceiling: W pushes you up to the top speed of the gear you
@@ -186,7 +210,9 @@ export class FrequencyController {
     const gearSpeed = GEAR_SPEEDS[this.gearIndex]!;
     const accelMagnitude =
       Math.max(FLIGHT_CONFIG.acceleration, gearSpeed * FLIGHT_CONFIG.drag * 1.25) *
-      (input.buttons.accelerate ? FLIGHT_CONFIG.boostMultiplier : 1);
+      // Holding the wind is also a short booster: pushing the world harder
+      // pushes the orb harder (§3.2 dynamics = force).
+      (input.buttons.accelerate || input.buttons.windHold ? FLIGHT_CONFIG.boostMultiplier : 1);
     const geared = { ...FLIGHT_CONFIG, maxSpeed: gearSpeed };
     this.velocityVec = stepVelocity(this.velocityVec, accelDirection, accelMagnitude, deltaMs, geared);
     const speed = Math.hypot(this.velocityVec.x, this.velocityVec.y, this.velocityVec.z);
