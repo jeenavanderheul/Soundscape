@@ -59,6 +59,7 @@ describe('SpatialAudio', () => {
 
   it('fades resonator gain in via setTargetAtTime instead of jumping', () => {
     const { spatial, ctx } = makeSpatial();
+    spatial.setMotion(1); // §42 gate open, so the drone fades to its own amplitude
     spatial.addResonator(testResonator({ amplitude: 0.5 }));
     const gain = ctx.createdGains[0]!.gain;
     expect(gain.value).toBe(0);

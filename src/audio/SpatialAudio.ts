@@ -1,5 +1,6 @@
 import type { Vec3Data } from '../player/FrequencyState';
 import type { ResonatorData } from '../world/Resonator';
+import { resonatorLevel } from './MotionGate';
 import { oscillatorType } from './PlayerTone';
 
 /**
@@ -17,6 +18,8 @@ interface SpatialSource {
   oscillator: OscillatorNode;
   gain: GainNode;
   panner: PannerNode;
+  /** The resonator's own amplitude, before the §42 motion gate scales it. */
+  amplitude: number;
 }
 
 /**
@@ -27,10 +30,24 @@ export class SpatialAudio {
   private readonly context: AudioContext;
   private readonly output: AudioNode;
   private readonly sources = new Map<string, SpatialSource>();
+  private motion = 0;
 
   constructor(context: AudioContext, output: AudioNode) {
     this.context = context;
     this.output = output;
+  }
+
+  /**
+   * §42: standing still ducks the drones, but never to nothing — §P1 keeps
+   * sound as the waypoint, so you can still stop and listen for direction.
+   */
+  setMotion(motion: number): void {
+    this.motion = motion;
+    const level = resonatorLevel(motion);
+    const now = this.context.currentTime;
+    for (const source of this.sources.values()) {
+      source.gain.gain.setTargetAtTime(source.amplitude * level, now, FADE_SMOOTHING_S);
+    }
   }
 
   /** Call once per frame with the camera pose. Uses smoothed modern AudioParams. */
@@ -77,8 +94,12 @@ export class SpatialAudio {
     gain.connect(panner);
     panner.connect(this.output);
     oscillator.start();
-    gain.gain.setTargetAtTime(data.amplitude, this.context.currentTime, FADE_SMOOTHING_S);
-    this.sources.set(data.id, { oscillator, gain, panner });
+    gain.gain.setTargetAtTime(
+      data.amplitude * resonatorLevel(this.motion),
+      this.context.currentTime,
+      FADE_SMOOTHING_S,
+    );
+    this.sources.set(data.id, { oscillator, gain, panner, amplitude: data.amplitude });
   }
 
   removeResonator(id: string): void {

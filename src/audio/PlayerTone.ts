@@ -52,13 +52,17 @@ export class PlayerTone {
     this.gainNode = gainNode;
   }
 
-  update(state: FrequencyState, _dtSeconds: number): void {
+  /**
+   * `motion` is the §42 gate: at rest the tone goes with the track, so a flight
+   * starts silent and stopping lets everything decay together.
+   */
+  update(state: FrequencyState, _dtSeconds: number, motion = 1): void {
     if (this.oscillator === null || this.gainNode === null) return;
     const now = this.context.currentTime;
     const type = oscillatorType(state.waveform);
     if (this.oscillator.type !== type) this.oscillator.type = type;
     this.oscillator.frequency.setTargetAtTime(clampHz(state.hz), now, FREQ_SMOOTHING_S);
-    const gain = clamp01(state.amplitude) * MAX_GAIN;
+    const gain = clamp01(state.amplitude) * clamp01(motion) * MAX_GAIN;
     this.gainNode.gain.setTargetAtTime(gain, now, GAIN_SMOOTHING_S);
   }
 

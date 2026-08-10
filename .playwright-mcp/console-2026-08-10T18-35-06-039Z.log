@@ -8,3 +8,1263 @@
 [   20893ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [   21214ms] [LOG] %c[sampler] load sound "RolandTR909_bd:0:0".. background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [   21220ms] [LOG] %c[sampler] load sound "RolandTR909_bd:0:0"... done! loaded 80.3 KiB in 5ms background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  512689ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  512717ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  516829ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  516848ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  523478ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  523498ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  528271ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  528288ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  531907ms] ReferenceError: resonatorLevel is not defined
+    at SpatialAudio.addResonator (http://localhost:5216/src/audio/SpatialAudio.ts?t=1786387434104:77:34)
+    at Game.unlock (http://localhost:5216/src/app/Game.ts?t=1786387434104:673:44)
+[  532219ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  532240ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  533051ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  533051ms] [LOG] %c[cyclist] start background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  537633ms] [LOG] %c[superdough] AudioWorklets loaded background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  537633ms] [LOG] %c[superdough] ready background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  540906ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  540922ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  541805ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541814ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541861ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541861ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541861ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541869ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541888ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541908ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541929ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541948ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541969ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  541988ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542008ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542029ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542049ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542070ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542091ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542110ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542129ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542149ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542169ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542189ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542209ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542229ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542249ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542269ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542289ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542309ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542330ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542349ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542370ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542389ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542409ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542430ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542449ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542469ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542489ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542509ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542530ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542549ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542570ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542589ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542609ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542629ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542649ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542670ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542690ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542710ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542730ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542749ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542771ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542790ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542809ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542829ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542849ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542870ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542890ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542909ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542930ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542949ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542970ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  542989ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543008ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543029ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543049ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543070ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543090ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543109ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543129ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543150ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543169ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543189ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543209ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543229ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543249ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543270ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543289ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543309ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543329ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543349ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543370ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543389ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543409ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543430ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543452ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543471ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543490ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543510ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543529ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543549ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543570ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543590ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543610ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543630ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543649ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543670ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543689ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543709ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543730ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543749ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543770ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543790ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543810ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543830ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543849ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543870ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543890ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543910ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543930ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543949ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543970ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  543990ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544009ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544029ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544049ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544070ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544090ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544109ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544130ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544151ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544170ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544191ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544211ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544232ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544249ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544270ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544291ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544312ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544331ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544351ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544370ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544390ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544410ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544430ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544449ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544469ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544489ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544509ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544530ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544549ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544570ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544590ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544610ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544630ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544649ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544670ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544690ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544710ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544730ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544750ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544770ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544790ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544809ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544830ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544850ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544870ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544890ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544910ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544932ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544950ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544970ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  544990ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545010ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545030ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545050ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545071ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545090ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545110ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545130ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545151ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545171ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545190ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545210ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545230ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545249ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545270ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545290ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545309ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545330ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545349ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545370ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545390ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545409ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545413ms] [LOG] %c[superdough] AudioWorklets loaded background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  545413ms] [LOG] %c[superdough] ready background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  545429ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545449ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545470ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545489ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545510ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545529ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545549ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545570ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545571ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  545571ms] [LOG] %c[cyclist] start background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  545589ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545609ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545631ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545650ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545672ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545690ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545710ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545730ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545749ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545770ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545790ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545809ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545830ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545850ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545870ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545890ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545910ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545931ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545950ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545971ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  545990ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546010ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546032ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546050ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387446732:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546173ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  546191ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  546232ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546282ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546282ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546282ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546290ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546310ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546330ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546350ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546370ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546390ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546410ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546430ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546450ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546471ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546489ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546511ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546530ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546551ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546570ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546590ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546611ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546630ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546650ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546670ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546690ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546711ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546731ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546749ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546770ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546790ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546810ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546830ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546850ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546871ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546890ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546911ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546930ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546952ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546971ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  546990ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547011ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547031ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547049ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547070ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547090ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547110ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547130ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547151ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547170ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547191ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547211ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547230ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547251ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547271ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547290ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547311ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547331ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547351ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547370ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547391ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547411ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547430ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547450ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547471ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547490ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547511ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547531ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547551ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547570ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547590ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547611ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547631ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547653ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547672ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547690ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547711ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547732ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547751ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547772ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547791ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547811ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547831ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547850ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547871ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547891ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547911ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547932ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547951ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547971ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  547991ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548012ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548031ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548053ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548071ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548090ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548111ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548131ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548152ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548171ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548190ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548213ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548232ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548251ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548273ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548290ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548311ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548331ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548351ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548371ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548390ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548411ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548431ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548451ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548471ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548491ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548511ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548531ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548552ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548570ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548591ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548611ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548613ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  548613ms] [LOG] %c[cyclist] start background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  548631ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548651ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548671ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548690ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548711ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548731ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548751ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548771ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548791ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548810ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548830ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548851ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548871ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548890ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548911ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548931ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548951ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548970ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  548990ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549011ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549031ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549051ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549071ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549091ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549112ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549131ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549151ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549171ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549192ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549211ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549231ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549251ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549271ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549291ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549311ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549331ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549352ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549371ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549391ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549412ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549432ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549451ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549471ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549491ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549511ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549532ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549551ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549571ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549591ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549612ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549631ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549651ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549672ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549691ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549712ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549731ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549751ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549772ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549791ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549811ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549831ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549851ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549871ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549891ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549912ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549918ms] [LOG] %c[superdough] AudioWorklets loaded background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  549918ms] [LOG] %c[superdough] ready background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  549930ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549951ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549971ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  549992ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  550012ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  550032ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  550051ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  550071ms] ReferenceError: nextMotionLevel is not defined
+    at GameLoop.tick [as onTick] (http://localhost:5216/src/app/Game.ts?t=1786387452074:490:3)
+    at frame (http://localhost:5216/src/app/GameLoop.ts:34:8)
+[  550175ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  550192ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0
+[  556261ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5216/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  556279ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5216/:0

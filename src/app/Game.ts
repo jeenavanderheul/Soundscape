@@ -1,5 +1,6 @@
 import { attachAudioAnalyser, AudioAnalyser } from '../audio/AudioAnalyser';
 import { AudioEngine } from '../audio/AudioEngine';
+import { nextMotionLevel } from '../audio/MotionGate';
 import { PlayerTone } from '../audio/PlayerTone';
 import { ResonanceAudio } from '../audio/ResonanceAudio';
 import { SpatialAudio } from '../audio/SpatialAudio';
@@ -233,6 +234,8 @@ export class Game {
   private readonly pauseOverlay: PauseOverlay;
   private readonly detachPointerLockPause: () => void;
   private readonly startupLoadInfo: LoadInfo;
+  /** §42 gate: starts closed, so a flight begins in silence. */
+  private motionLevel = 0;
   private playerTone: PlayerTone | null = null;
   private spatialAudio: SpatialAudio | null = null;
   private resonanceAudio: ResonanceAudio | null = null;
@@ -591,7 +594,10 @@ export class Game {
     ) {
       this.saveManager.save(this.snapshotWorld());
     }
-    this.playerTone?.update(state, dtSeconds);
+    // §42: one gate, read by the track, the tone and the drones alike.
+    this.motionLevel = nextMotionLevel(this.motionLevel, state.velocity, dtSeconds);
+    this.playerTone?.update(state, dtSeconds, this.motionLevel);
+    this.spatialAudio?.setMotion(this.motionLevel);
     this.spatialAudio?.setListenerPose(state.position, state.direction, WORLD_UP);
     this.particles.update(state, dtSeconds);
     this.interference.update(dtSeconds);
@@ -659,9 +665,9 @@ export class Game {
       this.worldStore.getState().structures,
       this.trackStore.getState(),
       this.worldPatterns,
-      // §42: no movement, no music. A gentle ramp so starting to fly fades
-      // the world in rather than switching it on.
-      Math.min(1, Math.max(0, (this.frequencyStore.getState().velocity - 0.4) / 3)),
+      // §42: no movement, no music. The gate ramps up quickly and decays over
+      // ~1.5s, so stopping fades the world out rather than switching it off.
+      this.motionLevel,
     );
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     this.lastLayerGraph = next;
