@@ -79,12 +79,18 @@ import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
-/** How far ahead of the orb the world is sampled while it is moving. */
-const REGION_LOOKAHEAD = 110;
+/**
+ * §53: how far ahead of the orb the world is sampled while it is moving. Kept
+ * LONG on purpose: a direction is a place (§33), so the world you are in is
+ * the world you are heading into. Sampling close to the orb made the bearing
+ * from spawn dominate, which is why flying north-west out of Techno kept
+ * reading as Techno — geographically true, and useless.
+ */
+const REGION_LOOKAHEAD = 400;
 
 /** The point whose region the player counts as being in (§53). */
 function lookAhead(state: Readonly<FrequencyState>): { x: number; y: number; z: number } {
-  const reach = Math.min(1, state.velocity / 12) * REGION_LOOKAHEAD;
+  const reach = Math.min(1, state.velocity / 8) * REGION_LOOKAHEAD;
   return {
     x: state.position.x + state.direction.x * reach,
     y: state.position.y,
