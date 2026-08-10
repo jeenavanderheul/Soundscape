@@ -6,7 +6,14 @@ vi.mock('@strudel/web', () => ({
   samples: vi.fn(async () => undefined),
 }));
 
-import { buildLayerGraph, genreGrammar, regionBpm } from '../../src/audio/MusicalPrimitives';
+import {
+  buildLayerGraph,
+  energyAddsVoices,
+  energyHatCycle,
+  energyLooseness,
+  genreGrammar,
+  regionBpm,
+} from '../../src/audio/MusicalPrimitives';
 import { buildPatternCode, setSamplesLoaded } from '../../src/audio/StrudelEngine';
 import { sectionMix } from '../../src/music/ArrangementEngine';
 import { createEventBus } from '../../src/core/EventBus';
@@ -356,5 +363,57 @@ describe('§61 a section means something different in every world', () => {
     expect(genreGrammar('dub').sectionStyle).toBe('echo');
     expect(genreGrammar('jazz').sectionStyle).toBe('dynamic');
     expect(genreGrammar('experimental').sectionStyle).toBe('mutant');
+  });
+});
+
+describe('§62 speed is energy, and every world spends it its own way', () => {
+  const at = (genre: Exclude<TrackGenre, null>, energy: number) =>
+    energyHatCycle(genreGrammar(genre), energy);
+
+  it('trap and garage divide the bar further; techno keeps its grid', () => {
+    // Subdivision grammars change gear — that IS what they do with energy.
+    expect(at('trap', 0.9)).toBeGreaterThan(at('trap', 0.2));
+    expect(at('garage', 0.9)).toBeGreaterThan(at('garage', 0.2));
+    // §19: a techno hat suddenly running at 32nds would stop being techno.
+    expect(at('techno', 0.95)).toBe(at('techno', 0.05));
+    expect(at('house', 0.95)).toBe(at('house', 0.05));
+  });
+
+  it('the grammars that spend energy on voices are not the ones that subdivide', () => {
+    expect(energyAddsVoices(genreGrammar('techno'), 0.9)).toBe(true);
+    expect(energyAddsVoices(genreGrammar('dub'), 0.9)).toBe(true);
+    expect(energyAddsVoices(genreGrammar('techno'), 0.2)).toBe(false);
+    expect(energyAddsVoices(genreGrammar('trap'), 0.9)).toBe(false);
+  });
+
+  it('only experimental lets go of the grid when pushed', () => {
+    expect(energyLooseness(genreGrammar('experimental'), 1)).toBeGreaterThan(0.2);
+    expect(energyLooseness(genreGrammar('techno'), 1)).toBe(0);
+    expect(energyLooseness(genreGrammar('ambient'), 1)).toBe(0);
+  });
+
+  it('ambient answers energy with air, not with drums', () => {
+    const track = createInitialTrackState();
+    track.bpm = 70;
+    track.texture = { unlocked: true, level: 1 };
+    const music = { ...createInitialMusicState(), bpm: 70, tempoConfidence: 0.6 };
+    const air = (energy: number) => {
+      const graph = buildLayerGraph(music, affinityOf('ambient'), [], track, {}, 1, energy);
+      return graph.layers.texture.primitives[0]?.parameters['gain'] as number;
+    };
+    expect(air(0.9)).toBeGreaterThan(air(0.1));
+    // …and still no kick: ambient never buys drums with speed.
+    const loud = buildLayerGraph(music, affinityOf('ambient'), [], track, {}, 1, 1);
+    expect(loud.layers.drums.primitives).toHaveLength(0);
+  });
+
+  it('every grammar declares how it spends energy', () => {
+    const worlds = [
+      'techno', 'garage', 'jazz', 'house', 'ambient',
+      'classical', 'dnb', 'trap', 'dub', 'experimental',
+    ] as const;
+    for (const world of worlds) expect(genreGrammar(world).energyStyle).toBeTruthy();
+    expect(genreGrammar('dnb').energyStyle).toBe('breaks');
+    expect(genreGrammar('jazz').energyStyle).toBe('improv');
   });
 });

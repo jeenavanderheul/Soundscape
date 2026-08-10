@@ -831,6 +831,8 @@ export class Game {
       // §42: no movement, no music. The gate ramps up quickly and decays over
       // ~1.5s, so stopping fades the world out rather than switching it off.
       this.motionLevel,
+      // §62: movement energy — what each grammar spends its own way.
+      Math.min(1, flight.energy * 0.6 + flight.amplitude * 0.4),
     );
     next.performance = performance;
     // §58: height runs the track like a tape — the clock goes with the pitch.

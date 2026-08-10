@@ -115,6 +115,16 @@ export type MusicParameter = 'bpm' | 'gain';
  */
 export type ThrowStyle = 'echo' | 'riser' | 'sweep' | 'bell' | 'impact';
 
+/** §62: how a grammar turns movement energy into music. */
+export type EnergyStyle =
+  | 'layers'      // techno, house: more voices, more fills
+  | 'subdivision' // trap, garage: the hats divide the bar further
+  | 'breaks'      // dnb: the break gets busier, ghosts appear
+  | 'texture'     // ambient, classical: more air, more harmonic layers
+  | 'improv'      // jazz: more interplay, busier ride
+  | 'echo'        // dub: more skank and more delay
+  | 'mutation';   // experimental: more probability, more irregularity
+
 /** One-shot musical event routed through the port (spec §11 schedule()). */
 export interface MusicalAction {
   kind: 'accent' | 'response' | 'throw';
@@ -295,6 +305,14 @@ export interface GenreGrammar {
   /** §61: how this grammar means intro/build/drop/break. */
   sectionStyle: SectionStyle;
   /**
+   * §62: what MOVEMENT ENERGY does here. Speed is never tempo (§46) — it is
+   * musical energy, and every grammar spends that energy its own way. Techno
+   * spends it on layers, Trap on subdivisions, DnB on break complexity,
+   * Ambient on texture, Jazz on interplay, Dub on echo, Experimental on
+   * mutation.
+   */
+  energyStyle: EnergyStyle;
+  /**
    * §39: the tempo range of this grammar. Flight speed still chooses WHERE in
    * the range you sit — but a region has its own natural pace, so ambient can
    * never race and drum & bass can never crawl.
@@ -339,6 +357,7 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
   chordVoice: 'square',
   leadVoice: 'square',
   sectionStyle: 'driven',
+  energyStyle: 'layers',
   bpmMin: 90,
   bpmMax: 140,
   bpmCentre: 132,
@@ -357,6 +376,7 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
 const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   techno: { ...NEUTRAL_GRAMMAR },
   dnb: {
+    energyStyle: 'breaks',
     sectionStyle: 'driven',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 174,
@@ -390,6 +410,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodySlow: 1,
   },
   ambient: {
+    energyStyle: 'texture',
     sectionStyle: 'swell',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 70,
@@ -422,6 +443,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodySlow: 4,
   },
   jazz: {
+    energyStyle: 'improv',
     sectionStyle: 'dynamic',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 110,
@@ -454,6 +476,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodySlow: 1,
   },
   experimental: {
+    energyStyle: 'mutation',
     sectionStyle: 'mutant',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 118,
@@ -489,6 +512,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 UK GARAGE — displacement: the grid slides off its own centre.
   garage: {
+    energyStyle: 'subdivision',
     sectionStyle: 'driven',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 134,
@@ -522,6 +546,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 HOUSE — warmth: the machine plays, the hands answer.
   house: {
+    energyStyle: 'layers',
     sectionStyle: 'driven',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 124,
@@ -555,6 +580,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 TRAP — weight: half-time, and the low end slides.
   trap: {
+    energyStyle: 'subdivision',
     sectionStyle: 'driven',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 140,
@@ -588,6 +614,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 DUB — echo: what was played comes back, changed.
   dub: {
+    energyStyle: 'echo',
     sectionStyle: 'echo',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 72,
@@ -621,6 +648,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 CLASSICAL — orchestration: no drum machine anywhere in this region.
   classical: {
+    energyStyle: 'texture',
     sectionStyle: 'swell',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 82,
@@ -769,6 +797,52 @@ function ambientOnlyGraph(
 /** §30: guarded Strudel source the world's author (or the AI) supplied. */
 export type LayerPatterns = Partial<Record<LayerName, string>>;
 
+/**
+ * §62: how far the hats divide the bar at this energy. Only the subdivision
+ * grammars actually change gear — a techno hat that suddenly ran at 32nds
+ * would stop being techno (§19: the groove must survive).
+ */
+export function energyHatCycle(grammar: GenreGrammar, energy: number): number {
+  const e = clamp01(energy);
+  switch (grammar.energyStyle) {
+    case 'subdivision':
+      // 8ths → 16ths → 32nds: this IS what trap and garage do with energy.
+      return grammar.hatCycle * (e > 0.75 ? 4 : e > 0.45 ? 2 : 1);
+    case 'breaks':
+      return grammar.hatCycle * (e > 0.7 ? 2 : 1);
+    case 'layers':
+      // Techno and House keep their grid; the energy goes into voices.
+      return grammar.hatCycle;
+    default:
+      return grammar.hatCycle;
+  }
+}
+
+/** §62: grammars that spend energy on MORE VOICES rather than finer ones. */
+export function energyAddsVoices(grammar: GenreGrammar, energy: number): boolean {
+  const e = clamp01(energy);
+  switch (grammar.energyStyle) {
+    case 'layers':
+      return e > 0.55;
+    case 'echo':
+      return e > 0.5;
+    case 'improv':
+      return e > 0.6;
+    case 'breaks':
+      return e > 0.65;
+    default:
+      return false;
+  }
+}
+
+/**
+ * §62: how much the world lets go of the grid at this energy. Experimental
+ * mutates harder the faster you fly; everything else stays where it is.
+ */
+export function energyLooseness(grammar: GenreGrammar, energy: number): number {
+  return grammar.energyStyle === 'mutation' ? clamp01(energy) * 0.35 : 0;
+}
+
 export function buildLayerGraph(
   music: MusicState,
   genre?: GenreAffinity,
@@ -781,6 +855,11 @@ export function buildLayerGraph(
    * until the player moves again.
    */
   motion = 1,
+  /**
+   * §62 MOVEMENT ENERGY, 0..1 — how hard the player is flying. Never tempo
+   * (§46): each grammar spends it its own way, below.
+   */
+  energy = 0.5,
 ): MusicalLayerGraph {
   const playerTempo = music.tempoConfidence >= TEMPO_CONFIDENCE_THRESHOLD && music.bpm > 0;
   const trackClock = track && track.bpm > 0;
@@ -808,6 +887,10 @@ export function buildLayerGraph(
   const resolvedGenre = track?.genre ?? dominantGenre(genre);
   const grammar = genreGrammar(resolvedGenre);
   const mix = sectionMix(track?.form ?? 'none', grammar.sectionStyle);
+  // §62: energy where this grammar spends it — texture grammars open up, the
+  // rest keep their air where it is.
+  const airBoost = grammar.energyStyle === 'texture' ? 0.6 + clamp01(energy) * 0.8 : 1;
+  const loose = energyLooseness(grammar, energy);
   const graph = createEmptyLayerGraph(bpm);
   const density = clamp01(music.rhythmDensity);
   const kickUnlocked = track ? track.drums.kick.unlocked : true;
@@ -848,9 +931,9 @@ export function buildLayerGraph(
       layer: 'drums',
       parameters: {
         style: grammar.hatStyle,
-        cycle: grammar.hatCycle,
+        cycle: energyHatCycle(grammar, energy),
         bank: grammar.drumBank,
-        gain: round2(grammar.hatGain * mix.drums),
+        gain: round2(grammar.hatGain * mix.drums * (0.75 + energy * 0.35)),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
     });
@@ -873,7 +956,7 @@ export function buildLayerGraph(
   // A percussion voice on its own cycle length: broken groove in Techno,
   // ghost hits in DnB, true polymeter in Experimental (§31). It is the
   // kick's second voice, so it arrives once the pulse has been lived with.
-  if (grammar.percCycle > 0 && deep('kick')) {
+  if (grammar.percCycle > 0 && (deep('kick') || energyAddsVoices(grammar, energy))) {
     drums.push({
       id: 'track-perc',
       kind: 'perc',
@@ -881,7 +964,7 @@ export function buildLayerGraph(
       parameters: {
         cycle: grammar.percCycle,
         bank: grammar.percBank,
-        gain: round2(grammar.hatGain * 0.7 * mix.drums),
+        gain: round2(grammar.hatGain * 0.7 * mix.drums * (0.6 + energy * 0.6)),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.perc],
     });
@@ -1082,7 +1165,7 @@ export function buildLayerGraph(
       parameters: {
         style: grammar.textureStyle,
         bank: grammar.drumBank,
-        gain: round2(grammar.textureGain * mix.texture),
+        gain: round2(grammar.textureGain * mix.texture * airBoost),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
     });
@@ -1095,7 +1178,7 @@ export function buildLayerGraph(
         parameters: {
           style: grammar.textureStyle === 'air' ? 'metallic' : 'air',
           bank: grammar.drumBank,
-          gain: round2(grammar.textureGain * 0.5 * mix.texture),
+          gain: round2(grammar.textureGain * 0.5 * mix.texture * airBoost),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
       });
@@ -1141,7 +1224,13 @@ export function buildLayerGraph(
     ...graph,
     layers: {
       ...graph.layers,
-      drums: { ...graph.layers.drums, primitives: authored('drums', drums), density, gain: level },
+      drums: {
+        ...graph.layers.drums,
+        primitives: authored('drums', drums),
+        // §62 mutation: the faster you fly, the less the grid holds.
+        density: Math.max(0, density - loose),
+        gain: level,
+      },
       bass: { ...graph.layers.bass, primitives: authored('bass', bass), gain: level },
       harmony: { ...graph.layers.harmony, primitives: authored('harmony', harmony), gain: level },
       melody: { ...graph.layers.melody, primitives: authored('melody', melody), gain: level },
