@@ -57,7 +57,13 @@ export class GenreAffinityEngine {
     return this.snapshot;
   }
 
-  update(nowMs: number, music: Readonly<MusicState>): void {
+  /**
+   * `zone` is the spatial pull of the region the player is in (§29.5, user
+   * decision: every direction is a genre). Behaviour and place carry equal
+   * weight — flying north leans Techno, and playing Techno-like there makes
+   * it unmistakable. Both are gated by whether any music exists at all.
+   */
+  update(nowMs: number, music: Readonly<MusicState>, zone?: GenreAffinity): void {
     if (this.lastEvalMs !== null && nowMs - this.lastEvalMs < this.config.intervalMs) return;
     const deltaSec =
       this.lastEvalMs === null ? this.config.intervalMs / 1000 : (nowMs - this.lastEvalMs) / 1000;
@@ -69,11 +75,19 @@ export class GenreAffinityEngine {
       jazz: scoreJazz(music),
       dnb: scoreDnb(music),
     };
-    const raw: GenreAffinity = {
+    const behaviour: GenreAffinity = {
       ...base,
       // §9.5: experimental feeds on conflict between the other attractors.
       experimental: scoreExperimental(music, base),
     };
+    // Silence has no genre: the world only colours music that is playing.
+    const audible = Math.min(1, Math.max(music.dynamics * 2, music.bpm > 0 ? 1 : 0));
+    const raw = { ...behaviour };
+    if (zone) {
+      for (const key of Object.keys(raw) as (keyof GenreAffinity)[]) {
+        raw[key] = Math.min(1, (behaviour[key] * 0.5 + zone[key] * 0.5) * audible);
+      }
+    }
     const blend = 1 - Math.exp(-this.config.smoothingRate * deltaSec);
     for (const key of Object.keys(this.affinity) as (keyof GenreAffinity)[]) {
       this.affinity[key] += (raw[key] - this.affinity[key]) * blend;

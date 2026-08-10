@@ -1,0 +1,133 @@
+import type { TrackState } from './TrackState';
+
+/**
+ * §29.7 ArrangementEngine: the track is never an endless 8-bar loop.
+ * Movement becomes arrangement — rising energy builds, floating breaks it
+ * down, pulsing hard again drops. Sections mute and unmute layers, so the
+ * player hears WHERE they are in the song (§3.11 form).
+ */
+
+export type Section = TrackState['form'];
+
+export interface ArrangementConfig {
+  /** Minimum time in a section before it may change (musical patience). */
+  minSectionMs: number;
+  /** Energy above this reads as "pushing". */
+  highEnergy: number;
+  /** Energy below this reads as "floating". */
+  lowEnergy: number;
+  /** Time at high energy before the track drops. */
+  buildMs: number;
+  /** How long a drop holds before it settles back into the groove. */
+  dropMs: number;
+}
+
+export const ARRANGEMENT_CONFIG: ArrangementConfig = {
+  minSectionMs: 8000,
+  highEnergy: 0.55,
+  lowEnergy: 0.2,
+  buildMs: 12_000,
+  dropMs: 20_000,
+};
+
+/** Per-section layer gain multipliers (0 = muted for this section). */
+export interface SectionMix {
+  drums: number;
+  bass: number;
+  harmony: number;
+  melody: number;
+  texture: number;
+  atmosphere: number;
+}
+
+const MIXES: Record<Section, SectionMix> = {
+  none: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 1 },
+  intro: { drums: 0.6, bass: 0.5, harmony: 0.6, melody: 0, texture: 0.4, atmosphere: 1 },
+  groove: { drums: 1, bass: 1, harmony: 0.8, melody: 0.7, texture: 0.6, atmosphere: 0.8 },
+  build: { drums: 1, bass: 1, harmony: 1, melody: 0.9, texture: 1, atmosphere: 0.6 },
+  drop: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 0.5 },
+  // The kick steps aside; what the player built harmonically carries the room.
+  break: { drums: 0.15, bass: 0.4, harmony: 1, melody: 0.8, texture: 0.8, atmosphere: 1 },
+  return: { drums: 1, bass: 1, harmony: 0.9, melody: 0.8, texture: 0.7, atmosphere: 0.7 },
+  mutation: { drums: 0.8, bass: 0.9, harmony: 0.8, melody: 1, texture: 1, atmosphere: 0.9 },
+};
+
+export function sectionMix(section: Section): SectionMix {
+  return MIXES[section];
+}
+
+export class ArrangementEngine {
+  private section: Section = 'none';
+  private sectionSinceMs = 0;
+  private highEnergyMs = 0;
+
+  constructor(private readonly config: ArrangementConfig = ARRANGEMENT_CONFIG) {}
+
+  get current(): Section {
+    return this.section;
+  }
+
+  /**
+   * `energy` blends how hard the player pushes (0..1); `layers` is how much
+   * of the track exists. Deterministic given its inputs.
+   */
+  tick(nowMs: number, deltaMs: number, energy: number, layers: number): Section {
+    const { config } = this;
+    if (layers === 0) {
+      this.section = 'none';
+      this.sectionSinceMs = nowMs;
+      return this.section;
+    }
+    if (this.section === 'none') {
+      this.enter('intro', nowMs);
+      return this.section;
+    }
+    this.highEnergyMs = energy >= config.highEnergy ? this.highEnergyMs + deltaMs : 0;
+    const inSectionMs = nowMs - this.sectionSinceMs;
+    if (inSectionMs < config.minSectionMs) return this.section;
+
+    switch (this.section) {
+      case 'intro':
+        if (layers >= 2) this.enter('groove', nowMs);
+        break;
+      case 'groove':
+        if (this.highEnergyMs >= config.buildMs) this.enter('build', nowMs);
+        else if (energy <= config.lowEnergy) this.enter('break', nowMs);
+        break;
+      case 'build':
+        if (energy >= config.highEnergy) this.enter('drop', nowMs);
+        else this.enter('groove', nowMs);
+        break;
+      case 'drop':
+        if (energy <= config.lowEnergy) this.enter('break', nowMs);
+        else if (inSectionMs >= config.dropMs) this.enter('return', nowMs);
+        break;
+      case 'break':
+        if (energy >= config.highEnergy) this.enter('drop', nowMs);
+        break;
+      case 'return':
+        if (energy <= config.lowEnergy) this.enter('break', nowMs);
+        else if (this.highEnergyMs >= config.buildMs) this.enter('mutation', nowMs);
+        break;
+      case 'mutation':
+        if (energy <= config.lowEnergy) this.enter('break', nowMs);
+        else if (inSectionMs >= config.dropMs) this.enter('groove', nowMs);
+        break;
+      default:
+        break;
+    }
+    return this.section;
+  }
+
+  reset(): void {
+    this.section = 'none';
+    this.sectionSinceMs = 0;
+    this.highEnergyMs = 0;
+  }
+
+  private enter(section: Section, nowMs: number): void {
+    this.section = section;
+    this.sectionSinceMs = nowMs;
+    this.highEnergyMs = 0;
+  }
+}

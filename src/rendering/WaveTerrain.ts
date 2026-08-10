@@ -50,6 +50,7 @@ interface TerrainSource {
 const VERTEX = /* glsl */ `
 uniform float uTime;
 uniform float uPulse;
+uniform float uBass;
 uniform vec2 uOrigin; // the field follows the player; sources stay in world space
 uniform vec2 uPlayer; // world position of the orb: the lantern lives here
 uniform vec4 uSources[${TERRAIN_CONFIG.maxSources}]; // x, z, strength, hzNorm
@@ -71,7 +72,9 @@ void main() {
   // Idle reference ripple: barely-there breathing of the void.
   float h = ${TERRAIN_CONFIG.idleAmplitude.toFixed(2)} *
     sin(world.x * 0.045 + uTime * 0.35) * sin(world.y * 0.06 + uTime * 0.22);
-  float glow = 0.0;
+  // §29.6: the bassline IS the moving ridge landscape.
+  h += uBass * 2.2 * sin(world.x * 0.028 + uTime * 0.55) * cos(world.y * 0.021 - uTime * 0.4);
+  float glow = uBass * 0.25;
   vec3 zone = vec3(0.0);
   for (int i = 0; i < ${TERRAIN_CONFIG.maxSources}; i++) {
     if (i >= uSourceCount) break;
@@ -131,6 +134,7 @@ export class WaveTerrain {
       uniforms: {
         uTime: { value: 0 },
         uPulse: { value: 0 },
+        uBass: { value: 0 },
         uOrigin: { value: [0, 0] },
         uPlayer: { value: [0, 0] },
         uSources: { value: packSources([], this.sourceArray) },
@@ -146,6 +150,13 @@ export class WaveTerrain {
   setPulse(value: number): void {
     this.pulse = value;
   }
+
+  /** §29.6: bassline level — the terrain grows moving ridges. */
+  setBass(level: number): void {
+    this.bassLevel = Math.min(1, Math.max(0, level));
+  }
+
+  private bassLevel = 0;
 
   /** §29.6 clap flash: a sharp extra field-pulse that decays fast. */
   private flash = 0;
@@ -205,6 +216,7 @@ export class WaveTerrain {
     this.flash = Math.max(0, this.flash - dt * 5);
     this.material.uniforms.uTime!.value = elapsedSeconds;
     this.material.uniforms.uPulse!.value = Math.min(1.5, this.pulse + this.flash);
+    this.material.uniforms.uBass!.value = this.bassLevel;
     this.material.uniforms.uSources!.value = packSources(this.sources, this.sourceArray);
     this.material.uniforms.uSourceCount!.value = this.sources.length;
   }

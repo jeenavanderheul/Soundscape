@@ -216,9 +216,28 @@ function validateTrackState(raw: unknown): TrackState {
   };
   const drums =
     typeof r.drums === 'object' && r.drums !== null ? (r.drums as Record<string, unknown>) : {};
+  const numbers = (value: unknown, min: number, max: number): number[] =>
+    Array.isArray(value)
+      ? value
+          .filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+          .map((v) => Math.min(max, Math.max(min, Math.round(v))))
+          .slice(0, 8)
+      : [];
+  const GENRES = ['techno', 'ambient', 'jazz', 'dnb', 'experimental'];
+  const FORMS = ['none', 'intro', 'groove', 'build', 'drop', 'break', 'return', 'mutation'];
   return {
     ...base,
     bpm: typeof r.bpm === 'number' && Number.isFinite(r.bpm) ? Math.min(300, Math.max(0, r.bpm)) : 0,
+    rootMidi:
+      typeof r.rootMidi === 'number' && Number.isFinite(r.rootMidi)
+        ? Math.min(107, Math.max(12, Math.round(r.rootMidi)))
+        : base.rootMidi,
+    harmonyIntervals: numbers(r.harmonyIntervals, 0, 24).length
+      ? numbers(r.harmonyIntervals, 0, 24)
+      : base.harmonyIntervals,
+    melodyNotes: numbers(r.melodyNotes, 12, 107),
+    genre: typeof r.genre === 'string' && GENRES.includes(r.genre) ? (r.genre as TrackState['genre']) : null,
+    form: typeof r.form === 'string' && FORMS.includes(r.form) ? (r.form as TrackState['form']) : 'none',
     drums: {
       kick: pattern(drums.kick),
       snare: pattern(drums.snare),

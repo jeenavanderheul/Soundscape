@@ -12,6 +12,7 @@ import { PointerLock, PointerLockEvents } from '../input/PointerLock';
 import { buildLayerGraph, diffLayerGraph } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
+import { zoneAffinity } from '../genres/GenreZones';
 import type { GenreEvents } from '../genres/GenreAffinityEngine';
 import { createInitialMusicState, MusicState } from '../music/MusicState';
 import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
@@ -40,6 +41,7 @@ import { ParticleSystem } from '../rendering/ParticleSystem';
 import { PlayerOrb } from '../rendering/PlayerOrb';
 import { Renderer } from '../rendering/Renderer';
 import { StructureRenderer } from '../rendering/StructureRenderer';
+import { HarmonyBridges, MelodyTrail } from '../rendering/TrackVisuals';
 import { WaveTerrain } from '../rendering/WaveTerrain';
 import { ResonanceEngine } from '../resonance/ResonanceEngine';
 import type { ResonanceEvents } from '../resonance/ResonanceEngine';
@@ -137,6 +139,8 @@ export class Game {
   private readonly hud = new HUD();
   private readonly forest = new ForestSystem(WORLD_SEED, this.worldStore.getState().resonators);
   private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
+  private readonly melodyTrail = new MelodyTrail();
+  private readonly harmonyBridges = new HarmonyBridges();
   private readonly hints = new Hints();
   private readonly layerCue = new LayerCue(this.events);
   private readonly beatSync: BeatSync;
@@ -250,6 +254,8 @@ export class Game {
     this.renderer.scene.add(this.orb.mesh);
     this.renderer.scene.add(this.forest.mesh);
     this.renderer.scene.add(this.markers.mesh);
+    this.renderer.scene.add(this.melodyTrail.line);
+    this.renderer.scene.add(this.harmonyBridges.lines);
     this.beatSync = new BeatSync([
       this.particles,
       this.interference,
@@ -366,6 +372,10 @@ export class Game {
     this.forest.dispose();
     this.renderer.scene.remove(this.markers.mesh);
     this.markers.dispose();
+    this.renderer.scene.remove(this.melodyTrail.line);
+    this.melodyTrail.dispose();
+    this.renderer.scene.remove(this.harmonyBridges.lines);
+    this.harmonyBridges.dispose();
     this.hints.dispose();
     this.layerCue.dispose();
     this.renderer.scene.remove(this.orb.mesh);
@@ -426,13 +436,29 @@ export class Game {
         this.audioAnalyser?.snapshot.lowBand ?? 0,
         eventDissonance,
       );
-      // §9: genre affinity from the same MusicState the patterns come from.
-      this.genreEngine.update(elapsedMs, this.musicStore.getState());
-      // §29: the Track Builder interprets intent into layers.
-      this.trackBuilder.tick(elapsedMs, this.musicStore.getState());
-      // §29.6: hats live in the particles.
-      this.particles.setSparkle(this.trackStore.getState().drums.hats.unlocked);
+      // §29.5: WHERE you are is a genre too — every direction of the world
+      // leans toward one attractor; behaviour and place carry equal weight.
+      const zone = zoneAffinity(state.position);
+      this.genreEngine.update(elapsedMs, this.musicStore.getState(), zone);
       const genre = this.genreEngine.current;
+      // §29: the Track Builder interprets intent into layers. Flight speed is
+      // the tempo; energy drives the arrangement (§29.7).
+      this.trackBuilder.tick(
+        elapsedMs,
+        this.musicStore.getState(),
+        {
+          velocity: state.velocity,
+          hz: state.hz,
+          energy: Math.min(1, state.energy * 0.6 + state.amplitude * 0.4),
+        },
+        genre?.affinity,
+      );
+      const track = this.trackStore.getState();
+      // §29.6: every layer has a visual system.
+      this.particles.setSparkle(track.drums.hats.unlocked);
+      this.terrain.setBass(track.bass.unlocked ? 1 : 0);
+      this.melodyTrail.setLevel(track.melody.unlocked ? 1 : 0);
+      this.harmonyBridges.setLevel(track.harmony.unlocked ? 1 : 0);
       // §9.1 world tendency: repetition organizes structures onto the grid.
       this.structures.setOrganization(genre?.affinity.techno ?? 0);
       // §9.2 world tendency: sustained space thickens the fog.
@@ -474,6 +500,13 @@ export class Game {
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.update(elapsedMs / 1000);
     this.markers.update(elapsedMs / 1000);
+    this.melodyTrail.update(state.position, dtSeconds);
+    // Bridges connect the sounding things: resonators plus born structures.
+    const world = this.worldStore.getState();
+    this.harmonyBridges.update(
+      [...world.resonators.map((r) => r.position), ...world.structures.map((s) => s.position)],
+      state.position,
+    );
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
     this.hud.update(state);
     // Third-person: the camera trails the orb along the flight direction.
@@ -629,6 +662,7 @@ export class Game {
     this.frequencyStore.setState(() => createInitialFrequencyState());
     this.trackStore.setState(() => createInitialTrackState());
     this.trackBuilder.reset();
+    this.melodyTrail.reset();
     this.controller.resetOrientation();
     for (const structure of removed) this.events.emit('structure:removed', structure);
     // Runs last: also cancels the autosave the store change just scheduled.

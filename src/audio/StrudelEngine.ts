@@ -106,83 +106,169 @@ export function msUntilNextCycleBoundary(
   return phase === 0 ? 0 : (periodCycles - phase) * barSec * 1000;
 }
 
-/** Whitelisted template library: primitive kind -> pattern expression. */
+/** Note-list helpers: every token must be a real note name (no user data). */
+function noteList(value: unknown, id: string, separator: string): string {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new TypeError(`StrudelEngine: primitive "${id}" needs note names`);
+  }
+  const tokens = value.split(separator).map((t) => t.trim()).filter(Boolean);
+  if (tokens.length === 0 || tokens.length > 8) {
+    throw new TypeError(`StrudelEngine: primitive "${id}" has an invalid note list`);
+  }
+  for (const token of tokens) {
+    if (!NOTE_RE.test(token)) {
+      throw new TypeError(`StrudelEngine: invalid note "${token}" in primitive "${id}"`);
+    }
+  }
+  return tokens.join(separator === ',' ? ',' : ' ');
+}
+
+function styleOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
+  return typeof value === 'string' && (allowed as readonly string[]).includes(value)
+    ? (value as T)
+    : fallback;
+}
+
+const KICK_STYLES = ['four', 'break', 'sparse', 'swing', 'irregular'] as const;
+const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse'] as const;
+const SNARE_STYLES = ['backbeat', 'ghost', 'break'] as const;
+const BASS_STYLES = ['repetitive', 'sub', 'walking', 'rolling'] as const;
+
+/**
+ * Whitelisted template library (spec §11, §29.5): primitive kind + genre
+ * style -> pattern expression. Built only from Strudel's BUILT-IN synth
+ * sounds (sbd, white noise, sine/triangle/sawtooth) so the track is audible
+ * without loading any sample bank over the network.
+ */
 function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): string {
   const layerGain = clamp(finite(layer.gain, `${primitive.id}.layer.gain`), 0, 1);
   const gain = (
     clamp(finite(primitive.parameters['gain'] ?? 1, `${primitive.id}.gain`), 0, 1) * layerGain
   ).toFixed(3);
+  const p = primitive.parameters;
   switch (primitive.kind) {
     case 'pulse':
     case 'kick': {
-      const steps = Math.round(
-        clamp(finite(primitive.parameters['steps'] ?? 4, `${primitive.id}.steps`), 1, 8),
-      );
-      return `s("sbd*${steps}").gain(${gain})`;
+      const style = styleOf(p['style'], KICK_STYLES, 'four');
+      const steps = Math.round(clamp(finite(p['steps'] ?? 4, `${primitive.id}.steps`), 1, 8));
+      switch (style) {
+        // §9.4 velocity: the kick is chopped into a break.
+        case 'break':
+          return `s("sbd ~ ~ [~ sbd]").gain(${gain})`;
+        // §9.2 space: a distant heartbeat, one hit per bar.
+        case 'sparse':
+          return `s("sbd ~ ~ ~").gain(${gain})`;
+        // §9.3 conversation: pushed off the grid.
+        case 'swing':
+          return `s("sbd ~ [~ sbd] ~").gain(${gain})`;
+        // §9.5 mutation: grouping that refuses to settle.
+        case 'irregular':
+          return `s("[sbd ~ ~] [sbd ~] [~ sbd]").gain(${gain})`;
+        default:
+          return `s("sbd*${steps}").gain(${gain})`;
+      }
     }
     case 'snare': {
-      // Clap on the backbeat (§29.3): beats 2 and 4.
+      const style = styleOf(p['style'], SNARE_STYLES, 'backbeat');
+      if (style === 'ghost') {
+        return `s("[~ white ~ white]").decay(.06).sustain(0).bpf(1500).degradeBy(.4).gain(${gain})`;
+      }
+      if (style === 'break') {
+        return `s("[~ white] [white ~ white ~]").decay(.07).sustain(0).bpf(1900).gain(${gain})`;
+      }
       return `s("[~ white ~ white]").decay(.09).sustain(0).bpf(1800).gain(${gain})`;
     }
     case 'hat': {
-      // Techno hats (§9.1): off-beat or 16th closed hats depending on density.
-      const steps = Math.round(
-        clamp(finite(primitive.parameters['steps'] ?? 2, `${primitive.id}.steps`), 1, 4),
-      );
-      return steps <= 2
-        ? `s("[~ white]*${steps * 2}").decay(.035).sustain(0).hpf(6000).gain(${gain})`
-        : `s("white*${steps * 2}").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
+      const style = styleOf(p['style'], HAT_STYLES, 'offbeat');
+      switch (style) {
+        case 'sixteenth':
+          return `s("white*8").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
+        case 'swing':
+          return `s("[white ~ white]*2").decay(.035).sustain(0).hpf(6500).gain(${gain})`;
+        case 'sparse':
+          return `s("~ ~ white ~").decay(.05).sustain(0).hpf(5000).gain(${gain})`;
+        default:
+          return `s("[~ white]*2").decay(.035).sustain(0).hpf(6000).gain(${gain})`;
+      }
     }
     case 'sub': {
-      const note = primitive.parameters['note'];
+      const note = p['note'];
       if (typeof note !== 'string' || !NOTE_RE.test(note)) {
         throw new TypeError(`StrudelEngine: invalid note for primitive "${primitive.id}"`);
       }
       return `note("${note}").s("sine").gain(${gain})`;
     }
+    case 'bass': {
+      // §29.2 fase 3: the bassline the player's low register earned.
+      const style = styleOf(p['style'], BASS_STYLES, 'repetitive');
+      const notes = noteList(p['notes'], primitive.id, ' ').split(' ');
+      const root = notes[0]!;
+      switch (style) {
+        case 'sub':
+          return `note("${root}").s("sine").slow(2).gain(${gain})`;
+        case 'walking': {
+          const line = [0, 1, 2, 3].map((i) => notes[i % notes.length]!).join(' ');
+          return `note("${line}").s("triangle").decay(.3).sustain(.2).gain(${gain})`;
+        }
+        case 'rolling':
+          return `note("${root} ~ ${root} ${root} ~ ${root} ${root} ~").s("sawtooth").decay(.12).sustain(0).lpf(900).gain(${gain})`;
+        default:
+          return `note("${root} ~ ${root} ~").s("sawtooth").decay(.18).sustain(0).lpf(700).gain(${gain})`;
+      }
+    }
     case 'chord': {
-      // Structure voice (§17): one sustained note per built form, offset into
-      // its own bar slot so multiple voices interlock as a progression.
-      const note = primitive.parameters['note'];
+      // Either a stacked chord (§29.2 fase 4) or one structure voice (§17).
+      const slow = Math.round(clamp(finite(p['slow'] ?? 2, `${primitive.id}.slow`), 1, 8));
+      const sound = p['sound'];
+      const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'sine';
+      if (typeof p['notes'] === 'string') {
+        const stacked = noteList(p['notes'], primitive.id, ',');
+        return `note("[${stacked}]").s("${s}").slow(${slow}).gain(${gain})`;
+      }
+      const note = p['note'];
       if (typeof note !== 'string' || !NOTE_RE.test(note)) {
         throw new TypeError(`StrudelEngine: invalid note for primitive "${primitive.id}"`);
       }
-      const sound = primitive.parameters['sound'];
-      const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'sine';
-      const slot = Math.round(clamp(finite(primitive.parameters['slot'] ?? 0, `${primitive.id}.slot`), 0, 7));
+      const slot = Math.round(clamp(finite(p['slot'] ?? 0, `${primitive.id}.slot`), 0, 7));
       return `note("${note}").s("${s}").slow(2).late(${(slot * 0.25).toFixed(2)}).gain(${gain})`;
     }
+    case 'melody': {
+      // §29.2 fase 5: the phrase traced through pitch space.
+      const notes = noteList(p['notes'], primitive.id, ' ');
+      const slow = Math.round(clamp(finite(p['slow'] ?? 2, `${primitive.id}.slow`), 1, 8));
+      const sound = p['sound'];
+      const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'triangle';
+      return `note("${notes}").s("${s}").slow(${slow}).decay(.25).sustain(.1).gain(${gain})`;
+    }
     case 'break': {
-      // DnB break (§9.4): chopped double-time drums; intensity 1 or 2.
       const intensity = Math.round(
-        clamp(finite(primitive.parameters['intensity'] ?? 1, `${primitive.id}.intensity`), 1, 2),
+        clamp(finite(p['intensity'] ?? 1, `${primitive.id}.intensity`), 1, 2),
       );
       return intensity === 2
         ? `s("[sbd sbd] [~ white] [sbd ~] [white white]").decay(.06).sustain(0).fast(2).gain(${gain})`
         : `s("sbd [~ white] [sbd sbd] white").decay(.07).sustain(0).fast(2).gain(${gain})`;
     }
     case 'response': {
-      // Jazz answer (§9.3): a constrained phrase up from the root — no free code.
-      const root = primitive.parameters['root'];
+      const root = p['root'];
       if (typeof root !== 'string' || !NOTE_RE.test(root)) {
         throw new TypeError(`StrudelEngine: invalid root for primitive "${primitive.id}"`);
       }
       return `note("${root}").add(note("0 3 7 10")).s("triangle").slow(2).gain(${gain})`;
     }
     case 'texture': {
-      // Experimental mutation (§9.5): unstable filtered noise wash.
       return `s("white").slow(4).lpf(1200).gain(${gain})`;
     }
     case 'drone': {
-      // Ambient drone (§9.2): one sustained root note stretched over 4 bars.
-      const note = primitive.parameters['note'];
+      const note = p['note'];
       if (typeof note !== 'string' || !NOTE_RE.test(note)) {
         throw new TypeError(`StrudelEngine: invalid note for primitive "${primitive.id}"`);
       }
       return `note("${note}").s("sine").slow(4).gain(${gain})`;
     }
     default:
-      throw new Error(`StrudelEngine: primitive kind "${primitive.kind}" is not in the template library`);
+      throw new Error(
+        `StrudelEngine: primitive kind "${primitive.kind}" is not in the template library`,
+      );
   }
 }
 

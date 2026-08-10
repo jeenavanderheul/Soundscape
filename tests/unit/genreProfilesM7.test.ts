@@ -106,16 +106,22 @@ describe('buildLayerGraph M7 layers', () => {
     pitchCenter: 220,
   };
 
-  it('adds a break under DnB, a response under Jazz, texture under Experimental', () => {
-    const graph = buildLayerGraph(pulsed, affinity({ dnb: 0.6, jazz: 0.6, experimental: 0.6 }));
-    expect(graph.layers.drums.primitives.some((p) => p.kind === 'break')).toBe(true);
-    expect(graph.layers.melody.primitives.some((p) => p.kind === 'response')).toBe(true);
-    expect(graph.layers.texture.primitives.some((p) => p.kind === 'texture')).toBe(true);
+  it('rewrites the SAME kick per genre grammar (§29.5)', () => {
+    const style = (a: Parameters<typeof buildLayerGraph>[1]) =>
+      buildLayerGraph(pulsed, a).layers.drums.primitives.find((p) => p.id === 'pulse')!
+        .parameters['style'];
+    expect(style(affinity({ dnb: 0.8 }))).toBe('break');
+    expect(style(affinity({ jazz: 0.8 }))).toBe('swing');
+    expect(style(affinity({ ambient: 0.8 }))).toBe('sparse');
+    expect(style(affinity({ experimental: 0.8 }))).toBe('irregular');
+    expect(style(affinity({ techno: 0.8 }))).toBe('four');
   });
 
-  it('keeps those layers silent below the attractor threshold', () => {
+  it('stays neutral below the attractor threshold', () => {
     const graph = buildLayerGraph(pulsed, affinity({ dnb: 0.3, jazz: 0.3, experimental: 0.3 }));
-    expect(graph.layers.drums.primitives.some((p) => p.kind === 'break')).toBe(false);
+    expect(graph.layers.drums.primitives.find((p) => p.id === 'pulse')!.parameters['style']).toBe(
+      'four',
+    );
     expect(graph.layers.melody.primitives).toHaveLength(0);
     expect(graph.layers.texture.primitives).toHaveLength(0);
   });

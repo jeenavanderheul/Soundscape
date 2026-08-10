@@ -1,12 +1,18 @@
 /**
- * Typed musical primitives and the layer graph (spec §11).
+ * Typed musical primitives and the layer graph (spec §11, §29).
  *
  * Everything here is pure, serializable data: no Strudel imports, no audio
  * nodes. `StrudelEngine.ts` turns this graph into whitelisted pattern
  * templates. Primitives are declarative — never executable user data.
+ *
+ * §29.5: the genre grammar lives here. Affinities do not switch a genre "on";
+ * they hand the Track Builder rules for HOW the player's layers are written.
+ * The same earned kick becomes four-on-the-floor in Techno, a break in DnB
+ * and a distant heartbeat in Ambient.
  */
+import { sectionMix } from '../music/ArrangementEngine';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
-import type { TrackState } from '../music/TrackState';
+import type { TrackGenre, TrackState } from '../music/TrackState';
 
 export type PrimitiveKind =
   | 'pulse' | 'kick' | 'snare' | 'hat' | 'break'
@@ -58,17 +64,39 @@ export const ALLOWED_TRANSFORMS: Record<PrimitiveKind, readonly string[]> = {
   atmosphere: ['gain', 'slow'],
 };
 
-/** Tempo confidence required before Strudel contributes any layer (spec §3.4). */
+/** Tempo confidence at which the player's own rhythm takes over (§3.4). */
 export const TEMPO_CONFIDENCE_THRESHOLD = 0.35;
-/** Wind/beweging boven dit niveau wekt de wereld-hartslag (§4, §5: vliegen = muziek). */
+/** Wind/movement above this wakes the world heartbeat (§4, §5). */
 export const HEARTBEAT_DYNAMICS_THRESHOLD = 0.12;
-/** Genre-lagen verschijnen vanaf deze affiniteit (§9). */
+/** Genre layers appear from this affinity (§9). */
 export const GENRE_LAYER_THRESHOLD = 0.35;
 export const GENRE_LAYER_STRONG = 0.6;
 
 /** Coarsely quantized so the graph stays diff-stable while dynamics drift (§11). */
 export function heartbeatBpm(dynamics: number): number {
   return 96 + Math.round(Math.min(1, Math.max(0, dynamics)) * 2) * 16;
+}
+
+/**
+ * §29 (user decision): FLIGHT SPEED IS THE TEMPO. Speed falls into bands so
+ * the groove stays stable while flying, and shifts musically when the player
+ * genuinely accelerates — tap W and the whole world speeds up.
+ */
+export const TEMPO_BANDS: ReadonlyArray<{ minSpeed: number; bpm: number }> = [
+  { minSpeed: 0, bpm: 90 },
+  { minSpeed: 4, bpm: 110 },
+  { minSpeed: 9, bpm: 128 },
+  { minSpeed: 15, bpm: 145 },
+  { minSpeed: 20, bpm: 170 },
+];
+
+export function speedToBpm(velocity: number): number {
+  const speed = Number.isFinite(velocity) ? Math.max(0, velocity) : 0;
+  let bpm = TEMPO_BANDS[0]!.bpm;
+  for (const band of TEMPO_BANDS) {
+    if (speed >= band.minSpeed) bpm = band.bpm;
+  }
+  return bpm;
 }
 
 export type MusicParameter = 'bpm' | 'gain';
@@ -113,6 +141,7 @@ export function createEmptyLayerGraph(bpm = 0): MusicalLayerGraph {
 }
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
+const round2 = (v: number): number => Math.round(clamp01(v) * 100) / 100;
 
 export function hzToMidi(hz: number): number {
   return 69 + 12 * Math.log2(hz / 440);
@@ -121,7 +150,7 @@ export function hzToMidi(hz: number): number {
 const NOTE_NAMES = ['c', 'c#', 'd', 'd#', 'e', 'f', 'f#', 'g', 'g#', 'a', 'a#', 'b'] as const;
 
 export function midiToNoteName(midi: number): string {
-  const rounded = Math.round(midi);
+  const rounded = Math.min(107, Math.max(12, Math.round(midi)));
   const octave = Math.floor(rounded / 12) - 1;
   return `${NOTE_NAMES[((rounded % 12) + 12) % 12]}${octave}`;
 }
@@ -134,12 +163,129 @@ export function subNoteFromHz(hz: number): string {
   return midiToNoteName(36 + pitchClass);
 }
 
-/**
- * Pure MusicState → layer graph mapping for M4.
- * Below the tempo confidence threshold Strudel stays silent — the player
- * tone still sounds. Above it: a pulse at the detected BPM whose density
- * follows rhythmDensity, plus a soft sub on the octave-reduced pitch root.
- */
+// ---------------------------------------------------------------------------
+// §29.5 Genre grammar
+// ---------------------------------------------------------------------------
+
+export type DrumStyle = 'four' | 'break' | 'sparse' | 'swing' | 'irregular';
+export type HatStyle = 'offbeat' | 'sixteenth' | 'swing' | 'sparse';
+export type SnareStyle = 'backbeat' | 'ghost' | 'break';
+export type BassStyle = 'repetitive' | 'sub' | 'walking' | 'rolling';
+
+export interface GenreGrammar {
+  kickStyle: DrumStyle;
+  hatStyle: HatStyle;
+  snareStyle: SnareStyle;
+  bassStyle: BassStyle;
+  kickGain: number;
+  hatGain: number;
+  snareGain: number;
+  bassGain: number;
+  /** Bars a chord is held (higher = more spacious). */
+  harmonySlow: number;
+  /** Bars the melodic phrase spans. */
+  melodySlow: number;
+  textureGain: number;
+}
+
+const NEUTRAL_GRAMMAR: GenreGrammar = {
+  kickStyle: 'four',
+  hatStyle: 'offbeat',
+  snareStyle: 'backbeat',
+  bassStyle: 'repetitive',
+  kickGain: 0.85,
+  hatGain: 0.35,
+  snareGain: 0.5,
+  bassGain: 0.5,
+  harmonySlow: 4,
+  melodySlow: 2,
+  textureGain: 0.15,
+};
+
+const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
+  techno: { ...NEUTRAL_GRAMMAR },
+  dnb: {
+    kickStyle: 'break',
+    hatStyle: 'sixteenth',
+    snareStyle: 'break',
+    bassStyle: 'sub',
+    kickGain: 0.85,
+    hatGain: 0.3,
+    snareGain: 0.55,
+    bassGain: 0.7,
+    harmonySlow: 4,
+    melodySlow: 1,
+    textureGain: 0.12,
+  },
+  ambient: {
+    kickStyle: 'sparse',
+    hatStyle: 'sparse',
+    snareStyle: 'ghost',
+    bassStyle: 'sub',
+    kickGain: 0.3,
+    hatGain: 0.12,
+    snareGain: 0.12,
+    bassGain: 0.4,
+    harmonySlow: 8,
+    melodySlow: 4,
+    textureGain: 0.25,
+  },
+  jazz: {
+    kickStyle: 'swing',
+    hatStyle: 'swing',
+    snareStyle: 'ghost',
+    bassStyle: 'walking',
+    kickGain: 0.6,
+    hatGain: 0.3,
+    snareGain: 0.3,
+    bassGain: 0.5,
+    harmonySlow: 2,
+    melodySlow: 1,
+    textureGain: 0.12,
+  },
+  experimental: {
+    kickStyle: 'irregular',
+    hatStyle: 'sparse',
+    snareStyle: 'ghost',
+    bassStyle: 'rolling',
+    kickGain: 0.6,
+    hatGain: 0.25,
+    snareGain: 0.3,
+    bassGain: 0.55,
+    harmonySlow: 3,
+    melodySlow: 2,
+    textureGain: 0.3,
+  },
+};
+
+export function genreGrammar(genre: TrackGenre): GenreGrammar {
+  return genre === null ? NEUTRAL_GRAMMAR : GRAMMARS[genre];
+}
+
+/** Strongest genre in an affinity map, or null while nothing dominates. */
+export function dominantGenre(
+  affinity: GenreAffinity | undefined,
+  threshold = GENRE_LAYER_THRESHOLD,
+): TrackGenre {
+  if (!affinity) return null;
+  let best: TrackGenre = null;
+  let bestValue = threshold;
+  for (const [genre, value] of Object.entries(affinity) as [
+    Exclude<TrackGenre, null>,
+    number,
+  ][]) {
+    if (value > bestValue) {
+      best = genre;
+      bestValue = value;
+    }
+  }
+  return best;
+}
+
+// ---------------------------------------------------------------------------
+// Structures as voices (§17)
+// ---------------------------------------------------------------------------
+
 /** The serializable slice of a structure the music needs (§17: form = voice). */
 export interface StructureVoiceSource {
   id: string;
@@ -158,9 +304,7 @@ const VOICE_SOUND: Record<string, string> = {
 
 /**
  * §17/§P5: every persistent structure the player built becomes a VOICE in the
- * track — its birth pitch is the note, its timbre the sound. Building the
- * world literally builds the composition. Bounded, deterministic, diff-stable
- * (only changes when the structure set changes).
+ * track — its birth pitch is the note, its timbre the sound.
  */
 export function structureVoices(structures: readonly StructureVoiceSource[]): MusicalPrimitive[] {
   return structures
@@ -173,7 +317,6 @@ export function structureVoices(structures: readonly StructureVoiceSource[]): Mu
       parameters: {
         note: subNoteFromHz(s.hz * 2),
         sound: VOICE_SOUND[s.waveform] ?? 'sine',
-        // Spread voices across the bar so they interlock instead of stacking.
         slot: index,
         gain: 0.28,
       },
@@ -181,6 +324,45 @@ export function structureVoices(structures: readonly StructureVoiceSource[]): Mu
     }));
 }
 
+// ---------------------------------------------------------------------------
+// The graph
+// ---------------------------------------------------------------------------
+
+function ambientOnlyGraph(
+  music: MusicState,
+  ambient: number,
+  voices: MusicalPrimitive[],
+): MusicalLayerGraph {
+  const graph = createEmptyLayerGraph(60);
+  const layers = { ...graph.layers, harmony: { ...graph.layers.harmony, primitives: voices } };
+  if (ambient < GENRE_LAYER_THRESHOLD) return { ...graph, layers };
+  return {
+    ...graph,
+    layers: {
+      ...layers,
+      atmosphere: {
+        ...graph.layers.atmosphere,
+        primitives: [
+          {
+            id: 'ambient-drone',
+            kind: 'drone',
+            layer: 'atmosphere',
+            parameters: {
+              note: subNoteFromHz(music.pitchCenter),
+              gain: ambient >= GENRE_LAYER_STRONG ? 0.3 : 0.2,
+            },
+            allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * The full §29 pipeline as pure data: tempo → drums → bass → harmony →
+ * melody → texture → arrangement, written through the genre grammar.
+ */
 export function buildLayerGraph(
   music: MusicState,
   genre?: GenreAffinity,
@@ -188,170 +370,183 @@ export function buildLayerGraph(
   track?: TrackState,
 ): MusicalLayerGraph {
   const playerTempo = music.tempoConfidence >= TEMPO_CONFIDENCE_THRESHOLD && music.bpm > 0;
+  const trackClock = track && track.bpm > 0;
   const heartbeat = music.dynamics >= HEARTBEAT_DYNAMICS_THRESHOLD;
-  // §29 (user decision): once a layer is EARNED it STAYS in the track — the
-  // unlocked drums carry themselves on the track's own clock, through
-  // stillness, through the whole world. Layering is permanent.
-  const trackCarries = (track?.drums.kick.unlocked ?? false) && (track?.bpm ?? 0) > 0;
-  if (!playerTempo && !heartbeat && !trackCarries) {
-    // §9.2: Ambient needs no pulse — sustained behavior alone can carry a
-    // drone in the tempo-less void (at a slow default clock).
-    const ambientOnly = clamp01(genre?.ambient ?? 0);
-    const voices = structureVoices(structures);
-    // Built form keeps sounding even without a pulse (§17): the world hums.
-    if (ambientOnly < GENRE_LAYER_THRESHOLD && voices.length === 0) return createEmptyLayerGraph();
-    const droneGraph = createEmptyLayerGraph(60);
-    if (ambientOnly < GENRE_LAYER_THRESHOLD) {
-      return {
-        ...droneGraph,
-        layers: { ...droneGraph.layers, harmony: { ...droneGraph.layers.harmony, primitives: voices } },
-      };
+  const voices = structureVoices(structures);
+  const ambientAffinity = clamp01(genre?.ambient ?? 0);
+
+  if (!playerTempo && !trackClock && !heartbeat) {
+    if (ambientAffinity < GENRE_LAYER_THRESHOLD && voices.length === 0) {
+      return createEmptyLayerGraph();
     }
-    return {
-      ...droneGraph,
-      layers: {
-        ...droneGraph.layers,
-        harmony: { ...droneGraph.layers.harmony, primitives: voices },
-        atmosphere: {
-          ...droneGraph.layers.atmosphere,
-          primitives: [
-            {
-              id: 'ambient-drone',
-              kind: 'drone',
-              layer: 'atmosphere',
-              parameters: {
-                note: subNoteFromHz(music.pitchCenter),
-                gain: ambientOnly >= GENRE_LAYER_STRONG ? 0.3 : 0.2,
-              },
-              allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
-            },
-          ],
-        },
-      },
-    };
+    return ambientOnlyGraph(music, ambientAffinity, voices);
   }
-  // §4/§5: the WORLD HEARTBEAT — flying with wind alone wakes a soft pulse at
-  // a movement-derived tempo. The player's own rhythm, once confident,
-  // ALWAYS takes over and the world quantizes to it (§3.4).
-  // Clock priority: the player's own rhythm → the earned track clock → the
-  // movement heartbeat (pre-kick only).
-  const bpm = playerTempo ? music.bpm : trackCarries ? track!.bpm : heartbeatBpm(music.dynamics);
-  // §29.3: before the KICK is unlocked the pulse stays a GHOST — audible
-  // timekeeping, deliberately thin, so the unlocked kick lands as a reward.
-  const kickUnlocked = track ? track.drums.kick.unlocked : true;
-  const pulseGain = kickUnlocked ? (playerTempo ? 0.85 : 0.5) : 0.2;
+
+  // Clock priority: the player's own rhythm → the earned track clock (speed
+  // driven) → the movement heartbeat (§29 fase 1).
+  const bpm = playerTempo
+    ? music.bpm
+    : trackClock
+      ? track!.bpm
+      : heartbeatBpm(music.dynamics);
+
+  // The grammar follows the track's region; without a track state the
+  // behavioural affinity still decides how the drums are written (§29.5).
+  const resolvedGenre = track?.genre ?? dominantGenre(genre);
+  const grammar = genreGrammar(resolvedGenre);
+  const mix = sectionMix(track?.form ?? 'none');
   const graph = createEmptyLayerGraph(bpm);
   const density = clamp01(music.rhythmDensity);
-  const techno = clamp01(genre?.techno ?? 0);
-  const pulse: MusicalPrimitive = {
-    id: 'pulse',
-    kind: 'pulse',
-    layer: 'drums',
-    // §9.1: under Techno attraction the pulse organizes toward four-on-the-floor.
-    parameters: {
-      steps: techno >= GENRE_LAYER_THRESHOLD ? 4 : 1 + Math.round(density * 3),
-      gain: pulseGain,
+  const kickUnlocked = track ? track.drums.kick.unlocked : true;
+  const rootMidi = track?.rootMidi ?? 45;
+
+  // --- Drums (§29.2 fase 2) ---
+  const drums: MusicalPrimitive[] = [
+    {
+      id: 'pulse',
+      kind: 'pulse',
+      layer: 'drums',
+      parameters: {
+        // Before the kick is earned the pulse is a GHOST: audible timekeeping,
+        // deliberately thin, so the unlock lands as a reward (§29.3).
+        style: kickUnlocked ? grammar.kickStyle : 'four',
+        // Techno locks four-on-the-floor; everywhere else the player's own
+        // density writes the pulse (§9.1 vs §3.3).
+        steps: resolvedGenre === 'techno' ? 4 : 1 + Math.round(density * 3),
+        gain: round2(kickUnlocked ? grammar.kickGain * mix.drums : 0.2),
+      },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
     },
-    allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
-  };
-  const ambient = clamp01(genre?.ambient ?? 0);
-  const jazz = clamp01(genre?.jazz ?? 0);
-  const dnb = clamp01(genre?.dnb ?? 0);
-  const experimental = clamp01(genre?.experimental ?? 0);
-  const drumPrimitives: MusicalPrimitive[] = [pulse];
-  // §29.3: CLAP/SNARE layer — strong transients on the backbeat unlocked it.
-  // Ambient grammar softens it (§29.5).
-  if (track?.drums.snare.unlocked) {
-    drumPrimitives.push({
-      id: 'track-snare',
-      kind: 'snare',
-      layer: 'drums',
-      parameters: { gain: ambient >= GENRE_LAYER_STRONG ? 0.2 : 0.5 },
-      allowedTransforms: [...ALLOWED_TRANSFORMS.snare],
-    });
-  }
-  if (dnb >= GENRE_LAYER_THRESHOLD) {
-    // §9.4: velocity mutates the break — double-time chopped drums.
-    drumPrimitives.push({
-      id: 'dnb-break',
-      kind: 'break',
-      layer: 'drums',
-      parameters: { intensity: dnb >= GENRE_LAYER_STRONG ? 2 : 1, gain: 0.5 },
-      allowedTransforms: [...ALLOWED_TRANSFORMS.break],
-    });
-  }
-  // §29.3: HAT layer — unlocked by high-register intent; the techno attractor
-  // is the legacy path when no track state is supplied.
-  const hatsActive = track ? track.drums.hats.unlocked : techno >= GENRE_LAYER_THRESHOLD;
-  if (hatsActive) {
-    drumPrimitives.push({
-      id: 'techno-hat',
+  ];
+  if (track?.drums.hats.unlocked) {
+    drums.push({
+      id: 'track-hat',
       kind: 'hat',
       layer: 'drums',
-      // Quantized bands, not a continuous value: keeps the graph diff-stable
-      // while affinity drifts (§11 — no recompilation churn).
-      parameters: { steps: techno >= GENRE_LAYER_STRONG ? 4 : 2, gain: 0.35 },
+      parameters: { style: grammar.hatStyle, gain: round2(grammar.hatGain * mix.drums) },
       allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
     });
   }
-  const sub: MusicalPrimitive = {
-    id: 'sub',
-    kind: 'sub',
-    layer: 'bass',
-    parameters: { note: subNoteFromHz(music.pitchCenter), gain: 0.45 },
-    allowedTransforms: [...ALLOWED_TRANSFORMS.sub],
-  };
-  // §9.2 Ambient tendency: a slow drone at the pitch-center root joins the
-  // atmosphere layer. Quantized on/off keeps the graph diff-stable (§11).
-  const atmospherePrimitives: MusicalPrimitive[] =
-    ambient >= GENRE_LAYER_THRESHOLD
+  if (track?.drums.snare.unlocked) {
+    drums.push({
+      id: 'track-snare',
+      kind: 'snare',
+      layer: 'drums',
+      parameters: { style: grammar.snareStyle, gain: round2(grammar.snareGain * mix.drums) },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.snare],
+    });
+  }
+
+  // --- Bass (§29.2 fase 3) ---
+  const bass: MusicalPrimitive[] = [];
+  if (track?.bass.unlocked) {
+    const intervals = track.harmonyIntervals.length > 0 ? track.harmonyIntervals : [0];
+    bass.push({
+      id: 'track-bass',
+      kind: 'bass',
+      layer: 'bass',
+      parameters: {
+        style: grammar.bassStyle,
+        // Walking bass borrows the chord the player built; the rest hold the root.
+        notes:
+          grammar.bassStyle === 'walking'
+            ? intervals
+                .slice(0, 4)
+                .map((semitones) => midiToNoteName(rootMidi + semitones))
+                .join(' ')
+            : midiToNoteName(rootMidi),
+        gain: round2(grammar.bassGain * mix.bass),
+      },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.bass],
+    });
+  } else {
+    // Pre-unlock the sub still anchors the heartbeat, quietly (§29 fase 1).
+    bass.push({
+      id: 'sub',
+      kind: 'sub',
+      layer: 'bass',
+      parameters: { note: subNoteFromHz(music.pitchCenter), gain: round2(0.45 * mix.bass) },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.sub],
+    });
+  }
+
+  // --- Harmony (§29.2 fase 4): the chord the player's resonances built ---
+  const harmony: MusicalPrimitive[] = [...voices];
+  if (track?.harmony.unlocked) {
+    harmony.unshift({
+      id: 'track-harmony',
+      kind: 'chord',
+      layer: 'harmony',
+      parameters: {
+        notes: (track.harmonyIntervals.length > 0 ? track.harmonyIntervals : [0])
+          .slice(0, 4)
+          .map((semitones) => midiToNoteName(rootMidi + 12 + semitones))
+          .join(','),
+        sound: 'triangle',
+        slow: grammar.harmonySlow,
+        gain: round2(0.3 * mix.harmony),
+      },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.chord],
+    });
+  }
+
+  // --- Melody (§29.2 fase 5): the phrase traced through pitch space ---
+  const melody: MusicalPrimitive[] = [];
+  if (track?.melody.unlocked && track.melodyNotes.length > 0) {
+    melody.push({
+      id: 'track-melody',
+      kind: 'melody',
+      layer: 'melody',
+      parameters: {
+        notes: track.melodyNotes
+          .slice(0, 8)
+          .map((midi) => midiToNoteName(midi))
+          .join(' '),
+        sound: 'triangle',
+        slow: grammar.melodySlow,
+        gain: round2(0.3 * mix.melody),
+      },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.melody],
+    });
+  }
+
+  // --- Texture (§29.2 fase 10) + atmosphere ---
+  const texture: MusicalPrimitive[] = [];
+  if (track?.texture.unlocked) {
+    texture.push({
+      id: 'track-texture',
+      kind: 'texture',
+      layer: 'texture',
+      parameters: { gain: round2(grammar.textureGain * mix.texture) },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
+    });
+  }
+  const atmosphere: MusicalPrimitive[] =
+    ambientAffinity >= GENRE_LAYER_THRESHOLD
       ? [
           {
             id: 'ambient-drone',
             kind: 'drone',
             layer: 'atmosphere',
-            parameters: { note: subNoteFromHz(music.pitchCenter), gain: ambient >= GENRE_LAYER_STRONG ? 0.3 : 0.2 },
+            parameters: {
+              note: subNoteFromHz(music.pitchCenter),
+              gain: round2((ambientAffinity >= GENRE_LAYER_STRONG ? 0.3 : 0.2) * mix.atmosphere),
+            },
             allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
           },
         ]
       : [];
-  // §9.3: the world answers — a short procedurally constrained response
-  // phrase rooted on the pitch center (call-and-response, no LLM).
-  const melodyPrimitives: MusicalPrimitive[] =
-    jazz >= GENRE_LAYER_THRESHOLD
-      ? [
-          {
-            id: 'jazz-response',
-            kind: 'response',
-            layer: 'melody',
-            parameters: { root: subNoteFromHz(music.pitchCenter * 4), gain: 0.3 },
-            allowedTransforms: [...ALLOWED_TRANSFORMS.response],
-          },
-        ]
-      : [];
-  // §9.5: mutation adds unstable noise texture.
-  const texturePrimitives: MusicalPrimitive[] =
-    experimental >= GENRE_LAYER_THRESHOLD
-      ? [
-          {
-            id: 'experimental-texture',
-            kind: 'texture',
-            layer: 'texture',
-            parameters: { gain: experimental >= GENRE_LAYER_STRONG ? 0.25 : 0.15 },
-            allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
-          },
-        ]
-      : [];
+
   return {
     ...graph,
     layers: {
       ...graph.layers,
-      drums: { ...graph.layers.drums, primitives: drumPrimitives, density },
-      bass: { ...graph.layers.bass, primitives: [sub] },
-      harmony: { ...graph.layers.harmony, primitives: structureVoices(structures) },
-      melody: { ...graph.layers.melody, primitives: melodyPrimitives },
-      texture: { ...graph.layers.texture, primitives: texturePrimitives },
-      atmosphere: { ...graph.layers.atmosphere, primitives: atmospherePrimitives },
+      drums: { ...graph.layers.drums, primitives: drums, density },
+      bass: { ...graph.layers.bass, primitives: bass },
+      harmony: { ...graph.layers.harmony, primitives: harmony },
+      melody: { ...graph.layers.melody, primitives: melody },
+      texture: { ...graph.layers.texture, primitives: texture },
+      atmosphere: { ...graph.layers.atmosphere, primitives: atmosphere },
     },
   };
 }

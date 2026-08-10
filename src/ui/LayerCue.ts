@@ -27,7 +27,20 @@ export class LayerCue {
       zIndex: '11',
     });
     container.appendChild(this.root);
-    this.detach = bus.on('track:layer', ({ layer }) => this.show(layer.toUpperCase()));
+    const offs = [
+      bus.on('track:layer', ({ layer }) => this.show(layer.toUpperCase())),
+      // §29.5/§29.7: entering a region and moving to a new section announce
+      // themselves the same way — one word, then gone.
+      bus.on('track:genre', ({ genre }) => {
+        if (genre) this.show(genre.toUpperCase());
+      }),
+      bus.on('track:section', ({ section }) => {
+        if (section !== 'none') this.show(section.toUpperCase());
+      }),
+    ];
+    this.detach = () => {
+      for (const off of offs) off();
+    };
   }
 
   private show(word: string): void {
