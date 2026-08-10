@@ -69,7 +69,10 @@ export function lookFor(affinity: GenreAffinity): ZoneLook {
   let relief = 0;
   let haze = 0;
   for (const [genre, raw] of Object.entries(affinity) as [keyof GenreAffinity, number][]) {
-    const weight = clamp01(raw);
+    // Cubed: with eight compass points the two neighbours are always present
+    // at about a third. Averaging them in linearly turned every region into
+    // the same muddy blend — the dominant region has to actually dominate.
+    const weight = Math.pow(clamp01(raw), 3);
     if (weight <= 0) continue;
     const look = GENRE_LOOKS[genre];
     total += weight;
@@ -82,7 +85,7 @@ export function lookFor(affinity: GenreAffinity): ZoneLook {
   if (total <= 0) return NEUTRAL_LOOK;
   // Anything the regions do not claim stays void, so the neutral middle of
   // the world never picks up a colour it did not earn.
-  const claimed = Math.min(1, total);
+  const claimed = Math.min(1, total * 1.6);
   const mix = (zone: number, neutral: number): number =>
     (zone / total) * claimed + neutral * (1 - claimed);
   return {

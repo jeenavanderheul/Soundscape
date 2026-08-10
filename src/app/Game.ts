@@ -17,7 +17,7 @@ import {
 } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
-import { setZoneGenres, zoneAffinity } from '../genres/GenreZones';
+import { dominantZone, setZoneGenres, zoneAffinity } from '../genres/GenreZones';
 import { headingLabel, lookFor, NEUTRAL_LOOK } from '../genres/ZonePalette';
 import type { GenreEvents } from '../genres/GenreAffinityEngine';
 import { createInitialMusicState, MusicState } from '../music/MusicState';
@@ -26,6 +26,7 @@ import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
 import { RhythmDetector } from '../music/RhythmDetector';
 import { TrackBuilder } from '../music/TrackBuilder';
 import { createInitialTrackState, TrackEvents, TrackState } from '../music/TrackState';
+import type { TrackGenre } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
 import { FrequencyController } from '../player/FrequencyController';
@@ -165,6 +166,8 @@ export class Game {
   private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
   private readonly melodyTrail = new MelodyTrail();
   private readonly streaks = new SpeedStreaks(WORLD_SEED);
+  /** §45: the region the player is physically in — drives everything visual. */
+  private placeGenre: TrackGenre = null;
   /** §33: the look of the region being flown through, eased so it never snaps. */
   private zoneLook = { ...NEUTRAL_LOOK, color: { ...NEUTRAL_LOOK.color } };
   private readonly harmonyBridges = new HarmonyBridges();
@@ -551,6 +554,10 @@ export class Game {
       // the same affinities as the music, eased so crossing a border is a
       // journey rather than a switch.
       this.applyZoneLook(zone, dtSeconds);
+      // §45: what you SEE follows where you ARE. The track's genre is smoothed
+      // behaviour and can lag or stay null; the land must never lie about the
+      // region you are standing in.
+      this.placeGenre = dominantZone(zone, 0.2);
       // §9.5 world tendency: mutation destabilizes existing form.
       this.structures.setMutation(genre?.affinity.experimental ?? 0);
       this.codeOverlay.update(this.strudelEngine.code);
@@ -597,7 +604,7 @@ export class Game {
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.update(
       state.position,
-      this.trackStore.getState().genre,
+      this.placeGenre,
       this.trackStore.getState(),
       elapsedMs / 1000,
     );
@@ -622,11 +629,10 @@ export class Game {
       },
       dtSeconds,
     );
-    const genre = this.trackStore.getState().genre;
     this.hud.update(state, {
       heading: headingLabel(Math.atan2(state.direction.x, -state.direction.z)),
-      biome: genre ?? 'void',
-      region: ecologyFor(genre).name,
+      biome: this.placeGenre ?? 'void',
+      region: ecologyFor(this.placeGenre).name,
     });
     // Third-person: the camera trails the orb along the flight direction.
     const camera = this.renderer.camera.instance;

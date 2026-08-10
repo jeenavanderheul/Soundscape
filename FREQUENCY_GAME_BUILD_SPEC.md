@@ -1411,6 +1411,14 @@ Scan lines run across; a sparser set of depth lines runs away from the camera. H
 
 ---
 
+## 45. What you see follows where you ARE (v14 amendment — NORMATIVE)
+
+Colour, relief and vegetation are driven by the SPATIAL region under the player, never by the track's smoothed behavioural genre. That genre lags, and can sit at null while the player is plainly standing in a region — the land must never lie about where you are.
+
+Region colours are weighted by the CUBE of their affinity. With eight compass points both neighbours are always present at about a third; averaging them linearly turned every region into the same muddy blend, which is exactly the "every biome looks the same" failure.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

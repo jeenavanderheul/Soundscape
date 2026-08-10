@@ -23,15 +23,23 @@ describe('§33 zone palette — every direction is a place you can see', () => {
     expect(look.relief).toBeCloseTo(GENRE_LOOKS.techno.relief);
   });
 
-  it('blends the space between two regions', () => {
-    const between = lookFor({ ...NONE, techno: 0.5, dnb: 0.5 });
+  it('blends an even mix, but lets the dominant region dominate', () => {
     const red = GENRE_LOOKS.techno.color;
     const green = GENRE_LOOKS.dnb.color;
-    expect(between.color.r).toBeCloseTo((red.r + green.r) / 2);
-    expect(between.color.g).toBeCloseTo((red.g + green.g) / 2);
-    // A hybrid is neither of its parents.
+    // Halfway between two compass points both regions pull hard (cos³ of
+    // 22.5° ≈ 0.79), and there the look really is the midpoint.
+    const between = lookFor({ ...NONE, techno: 0.79, dnb: 0.79 });
+    expect(between.color.r).toBeCloseTo((red.r + green.r) / 2, 1);
     expect(between.color).not.toEqual(red);
-    expect(between.color).not.toEqual(green);
+    // A weak pull leaves the world mostly void, as it should.
+    expect(lookFor({ ...NONE, techno: 0.4 }).color.r).toBeLessThan(red.r / 2);
+
+    // §45: at a compass point both neighbours sit at about a third. Weighted
+    // linearly that turned every region into the same blend, so the leader
+    // has to carry far more than its share.
+    const atPoint = lookFor({ ...NONE, techno: 1, dnb: 0.35, garage: 0.35 });
+    expect(Math.abs(atPoint.color.r - red.r)).toBeLessThan(0.12);
+    expect(Math.abs(atPoint.color.g - red.g)).toBeLessThan(0.12);
   });
 
   it('stays close to the void while the pull is weak', () => {
