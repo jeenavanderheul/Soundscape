@@ -67,6 +67,12 @@ export class StructureRenderer {
   /** Flat array (not a Map) so update(dt) iterates without allocating. */
   private readonly entries: Entry[] = [];
 
+  /** Beat/onset modulation from BeatSync — already depth-capped (§23).
+   * Shared material color multiplies the per-vertex persistence colors. */
+  setPulse(value: number): void {
+    this.material.color.setScalar(1 + value);
+  }
+
   get count(): number {
     return this.entries.length;
   }

@@ -67,6 +67,12 @@ export class ParticleSystem {
   private readonly material: ShaderMaterial;
   private readonly positionAttribute: BufferAttribute;
   private readonly drift: Float32Array;
+  private pulse = 0;
+
+  /** Beat/onset modulation from BeatSync — already depth-capped (§23). */
+  setPulse(value: number): void {
+    this.pulse = value;
+  }
 
   constructor(seed = 'frequency-wind') {
     const { count, radius } = PARTICLE_CONFIG;
@@ -121,7 +127,8 @@ export class ParticleSystem {
     this.positionAttribute.needsUpdate = true;
 
     this.material.uniforms.uSize!.value = hzToPointSize(snapshot.hz);
-    this.material.uniforms.uBrightness!.value = amplitudeToBrightness(snapshot.amplitude);
+    this.material.uniforms.uBrightness!.value =
+      amplitudeToBrightness(snapshot.amplitude) * (1 + this.pulse);
   }
 
   dispose(): void {

@@ -71,6 +71,12 @@ export class InterferenceVisuals {
   private readonly colorAttribute: BufferAttribute;
   private readonly slots: PatternSlot[];
   private readonly seed: string;
+  private pulse = 0;
+
+  /** Beat/onset modulation from BeatSync — already depth-capped (§23). */
+  setPulse(value: number): void {
+    this.pulse = value;
+  }
 
   constructor(seed = 'interference-visuals') {
     this.seed = seed;
@@ -189,7 +195,7 @@ export class InterferenceVisuals {
     const age = slot.ageSeconds;
     // Smooth attack ramp: no sudden full-brightness flash (§23).
     const attack = Math.min(age / cfg.attackSeconds, 1);
-    const level = d.intensity * envelope * attack * attack * (3 - 2 * attack);
+    const level = d.intensity * envelope * attack * attack * (3 - 2 * attack) * (1 + this.pulse);
     const accent = ACCENTS[d.classification];
     const grey = cfg.baseGrey;
     const mix = cfg.accentMix;

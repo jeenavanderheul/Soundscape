@@ -1,17 +1,25 @@
+import { attachAudioAnalyser, AudioAnalyser } from '../audio/AudioAnalyser';
 import { AudioEngine } from '../audio/AudioEngine';
 import { PlayerTone } from '../audio/PlayerTone';
 import { ResonanceAudio } from '../audio/ResonanceAudio';
 import { SpatialAudio } from '../audio/SpatialAudio';
+import { StrudelEngine } from '../audio/StrudelEngine';
 import { Clock } from '../core/Clock';
 import { createEventBus, EventBus } from '../core/EventBus';
 import { createStore, Store } from '../core/stores';
 import { InputManager } from '../input/InputManager';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
-import { createInitialMusicState } from '../music/MusicState';
+import { buildLayerGraph, diffLayerGraph } from '../audio/MusicalPrimitives';
+import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
+import { createInitialMusicState, MusicState } from '../music/MusicState';
+import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
+import { RhythmDetector } from '../music/RhythmDetector';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
 import { FrequencyController } from '../player/FrequencyController';
 import { createInitialFrequencyState, FrequencyState } from '../player/FrequencyState';
+import { BeatSync } from '../rendering/BeatSync';
+import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ParticleSystem } from '../rendering/ParticleSystem';
 import { Renderer } from '../rendering/Renderer';
@@ -30,6 +38,8 @@ import { GameLoop, LogicInterval } from './GameLoop';
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
 export type GameEvents = ResonanceEvents & StructureEvents & {
+  /** Strudel-clock beat boundary (§20 M4); consumed by BeatSync. */
+  'beat': BeatEvent;
   'audio:unlocked': null;
   'game:started': null;
   'game:suspended': null;
@@ -51,6 +61,8 @@ interface FrequencyDebug {
   getLastResonanceEvents(): ResonanceEvent[];
   getStructures(): WorldState['structures'];
   getInterferenceActiveCount(): number;
+  getMusicState(): Readonly<MusicState>;
+  getStrudelInfo(): { playing: boolean; bpm: number; evaluations: number };
   saveNow(): { ok: boolean };
   loadInfo(): LoadInfo;
   resetWorld(): void;
@@ -93,6 +105,19 @@ export class Game {
   private readonly structures: StructureRenderer;
   private readonly detachStructures: () => void;
   private readonly detachResonanceCapture: () => void;
+  // M4 analysis→world sync (§12, §20): one depth-capped pulse across renderers.
+  private readonly beatSync: BeatSync;
+  private readonly detachBeatSync: () => void;
+  // §11/§20 M4: Strudel shares our AudioContext; its beat boundaries feed the bus.
+  private readonly strudelEngine = new StrudelEngine();
+  private readonly detachStrudelBeat: () => void;
+  private audioAnalyser: AudioAnalyser | null = null;
+  // §20 M4 rhythm chain: pulses → RhythmDetector → MusicStore → Strudel graph.
+  private readonly musicStore: Store<MusicState> = createStore(createInitialMusicState());
+  private readonly rhythmDetector = new RhythmDetector();
+  private readonly musicAnalyzer = new MusicStateAnalyzer(this.musicStore, this.rhythmDetector);
+  /** Last graph handed to Strudel; setLayerGraph only on real changes (§11 diffs). */
+  private lastLayerGraph: MusicalLayerGraph | null = null;
   /** Bus events buffered between logic steps; drained into FormEmergence.tick. */
   private readonly pendingResonanceEvents: ResonanceEvent[] = [];
   // §18 / MVP item 13: local save, load and reset of the serializable stores.
@@ -136,6 +161,15 @@ export class Game {
     this.structures = new StructureRenderer();
     this.renderer.scene.add(this.structures.group);
     this.detachStructures = this.structures.subscribe(this.events);
+    // §12 audio→visual bus: beat events + analyser onsets drive the renderers'
+    // setPulse hooks through one shared, strobe-capped envelope (§23).
+    this.beatSync = new BeatSync([this.particles, this.interference, this.structures]);
+    this.detachBeatSync = this.beatSync.subscribe(this.events);
+    // §20 M4 synchronized world behavior: the Strudel clock's beat boundaries
+    // become 'beat' bus events, the strong pulse BeatSync locks visuals to.
+    this.detachStrudelBeat = this.strudelEngine.onBeat((event) => {
+      this.events.emit('beat', { atMs: event.atMs });
+    });
     // §18: hydrate before the autosave subscription exists, so restoring a
     // save never immediately rewrites the snapshot it was loaded from.
     const save = this.saveManager.load();
@@ -169,6 +203,8 @@ export class Game {
         getLastResonanceEvents: () => [...this.resonanceEngine.history],
         getStructures: () => [...this.worldStore.getState().structures],
         getInterferenceActiveCount: () => this.interference.activeCount,
+        getMusicState: () => this.musicStore.getState(),
+        getStrudelInfo: () => this.strudelEngine.status,
         saveNow: () => this.saveManager.save(this.snapshotWorld()),
         loadInfo: () => ({ ...this.startupLoadInfo }),
         resetWorld: () => this.resetWorld(),
@@ -194,6 +230,9 @@ export class Game {
     this.detachInterference();
     this.detachResonanceCapture();
     this.detachStructures();
+    this.detachBeatSync();
+    this.detachStrudelBeat();
+    this.strudelEngine.dispose();
     this.detachAutosave();
     // Flush the latest world before teardown; dispose cancels pending autosaves.
     if (this.unlocked) this.saveManager.save(this.snapshotWorld());
@@ -214,7 +253,12 @@ export class Game {
 
   /** One frame: input snapshot → controller → store → audio + particles + camera (spec §15, §16). */
   private readonly tick = (deltaMs: number, elapsedMs: number): void => {
-    this.controller.update(this.input.snapshot(), deltaMs);
+    const snapshot = this.input.snapshot();
+    this.controller.update(snapshot, deltaMs);
+    // §3.3: timed excitations (LMB release, Space) are the rhythm onsets.
+    if (snapshot.windReleased || snapshot.resonancePulse) {
+      this.rhythmDetector.onOnset(elapsedMs);
+    }
     const state = this.frequencyStore.getState();
     const dtSeconds = deltaMs / 1000;
     // Lower-frequency logical loop (§15): resonance never runs per render frame.
@@ -223,6 +267,14 @@ export class Game {
       this.resonanceEngine.tick(elapsedMs, state, resonators);
       this.formEmergence.tick(elapsedMs, this.pendingResonanceEvents, resonators);
       this.pendingResonanceEvents.length = 0;
+      // §10: analyzers run in this lower-frequency loop, never per render frame.
+      this.musicAnalyzer.update(elapsedMs, state);
+      this.updateStrudelGraph();
+      if (this.audioAnalyser) {
+        const stepSeconds = LOGIC_STEP_MS / 1000;
+        this.audioAnalyser.update(stepSeconds);
+        this.beatSync.update(this.audioAnalyser.snapshot, stepSeconds);
+      }
     }
     // §18: periodic flush every ~15 s while persistent structures exist, so a
     // crash never loses more than one interval of a built world.
@@ -243,6 +295,15 @@ export class Game {
     camera.lookAt(position.x + direction.x, position.y + direction.y, position.z + direction.z);
     this.renderer.render();
   };
+
+  /** §11: rebuild the layer graph from MusicState; hand Strudel only real diffs at bar boundaries. */
+  private updateStrudelGraph(): void {
+    if (!this.unlocked) return;
+    const next = buildLayerGraph(this.musicStore.getState());
+    if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
+    this.lastLayerGraph = next;
+    this.strudelEngine.setLayerGraph(next, 'bar');
+  }
 
   private readonly onUnlockClick = (): void => {
     void this.unlock();
@@ -305,6 +366,17 @@ export class Game {
     // Audible consequence of the same shared event the visuals react to (P5).
     // Subscribes to this.events in its constructor; needs the unlocked context.
     this.resonanceAudio = new ResonanceAudio(this.audioEngine.context, output, this.events);
+    // §12: tap the master output for the audio→visual analysis bus.
+    this.audioAnalyser = attachAudioAnalyser(this.audioEngine);
+    // §11/§16: Strudel adopts our AudioContext and routes through the master
+    // chain; a failure here degrades to no generative layers, never a crash.
+    try {
+      await this.strudelEngine.initialize(this.audioEngine.context);
+      this.strudelEngine.getOutputNode().connect(output);
+      await this.strudelEngine.start();
+    } catch (error) {
+      console.error('FREQUENCY: Strudel engine failed to start', error);
+    }
     this.input.attach();
     // The unlock click is a user gesture, so pointer lock may be requested here.
     this.pointerLock.request();
@@ -341,7 +413,7 @@ export class Game {
     return {
       seed: WORLD_SEED,
       frequencyState: this.frequencyStore.getState(),
-      musicState: createInitialMusicState(), // no live music store until M4
+      musicState: this.musicStore.getState(),
       resonators: [...world.resonators],
       structures: [...world.structures],
       genreHistory: [],
