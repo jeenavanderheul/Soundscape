@@ -29,6 +29,8 @@ export interface TrackState {
   harmonyIntervals: number[];
   /** The remembered phrase (midi notes) traced through pitch space (§3.5). */
   melodyNotes: number[];
+  /** §31 Jazz: the world's answer to that phrase, empty when it is the player's turn. */
+  responseNotes: number[];
   /** Grammar currently rewriting the track (§29.5); null = neutral. */
   genre: TrackGenre;
   /** §29.7 arrangement section. */
@@ -49,6 +51,7 @@ export function createInitialTrackState(): TrackState {
     rootMidi: 45, // A2
     harmonyIntervals: [0],
     melodyNotes: [],
+    responseNotes: [],
     genre: null,
     form: 'none',
   };

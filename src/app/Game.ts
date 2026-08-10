@@ -98,6 +98,7 @@ interface FrequencyDebug {
   saveNow(): { ok: boolean };
   loadInfo(): LoadInfo;
   resetWorld(): void;
+  teleport(x: number, z: number): void;
 }
 
 type DebugWindow = Window & { __FREQUENCY_DEBUG__?: FrequencyDebug };
@@ -352,6 +353,10 @@ export class Game {
         saveNow: () => this.saveManager.save(this.snapshotWorld()),
         loadInfo: () => ({ ...this.startupLoadInfo }),
         resetWorld: () => this.resetWorld(),
+        // Reaching a genre region means flying 150 units; this makes each
+        // region reachable in a test without waiting for the trip.
+        teleport: (x: number, z: number) =>
+          this.frequencyStore.setState((s) => ({ ...s, position: { ...s.position, x, z } })),
       };
     }
     elements.container.addEventListener('click', this.onContainerClick);

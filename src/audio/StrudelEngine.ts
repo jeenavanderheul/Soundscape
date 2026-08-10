@@ -142,6 +142,9 @@ const KICK_STYLES = ['four', 'break', 'sparse', 'swing', 'irregular'] as const;
 const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse'] as const;
 const SNARE_STYLES = ['backbeat', 'ghost', 'break'] as const;
 const BASS_STYLES = ['repetitive', 'sub', 'walking', 'rolling'] as const;
+const CHORD_STYLES = ['stab', 'pad', 'jazz'] as const;
+const MELODY_STYLES = ['motif', 'long', 'improv', 'hook', 'fragment'] as const;
+const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic'] as const;
 
 /**
  * Whitelisted template library (spec §11, §29.5): primitive kind + genre
@@ -215,6 +218,14 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
     }
     case 'hat': {
       const style = styleOf(p['style'], HAT_STYLES, 'offbeat');
+      // A cycle length that is not a power of two runs against the 4/4 grid
+      // and only realigns after many bars: polymeter on one clock (§31).
+      const cycle = Math.round(clamp(finite(p['cycle'] ?? 4, `${primitive.id}.cycle`), 2, 16));
+      if (cycle !== 4) {
+        return samplesLoaded
+          ? `s("hh*${cycle}").bank("${DRUM_BANK}").hpf(8000).gain(${gain})`
+          : `s("white*${cycle}").decay(.03).sustain(0).hpf(8000).gain(${gain})`;
+      }
       switch (style) {
         case 'sixteenth':
           return samplesLoaded
@@ -235,6 +246,14 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
             ? `stack(s("[~ oh]*4").bank("${DRUM_BANK}").gain(${gain}), s("[~ hh]*8").bank("${DRUM_BANK}").gain(${(Number(gain) * 0.4).toFixed(3)}))`
             : `s("[~ white]*2").decay(.035).sustain(0).hpf(6000).gain(${gain})`;
       }
+    }
+    // §31: a percussion voice on its own cycle — ghost hits in DnB, a 5
+    // against the 4 in Experimental.
+    case 'perc': {
+      const cycle = Math.round(clamp(finite(p['cycle'] ?? 3, `${primitive.id}.cycle`), 2, 16));
+      return samplesLoaded
+        ? `s("rim*${cycle}").bank("RolandTR808").pan("<.25 .7 .45 .8>").gain(${gain})`
+        : `s("white*${cycle}").decay(.02).sustain(0).bpf(3200).gain(${gain})`;
     }
     case 'sub': {
       const note = p['note'];
@@ -273,7 +292,16 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'sine';
       if (typeof p['notes'] === 'string') {
         const stacked = noteList(p['notes'], primitive.id, ',');
-        // Stabs, not pads: the filter sweep is what makes them speak.
+        const style = styleOf(p['style'], CHORD_STYLES, 'stab');
+        // Ambient: a wide, slow pad — the chord IS the space (§31).
+        if (style === 'pad') {
+          return `note("[${stacked}]").s("triangle").slow(${slow}).lpf(1300).attack(.8).release(2).room(.9).gain(${gain})`;
+        }
+        // Jazz: a warm comped chord, pushed slightly late like a real hand.
+        if (style === 'jazz') {
+          return `note("[${stacked}]").s("triangle").slow(${slow}).lpf(2200).decay(.5).sustain(.25).late(.02).room(.25).gain(${gain})`;
+        }
+        // Techno/DnB: stabs, not pads — the filter sweep makes them speak.
         return `note("[${stacked}]").s("sawtooth").slow(${slow}).lpf("<900 1600 1100 2200>").room(.18).gain(${gain})`;
       }
       const note = p['note'];
@@ -289,7 +317,23 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const slow = Math.round(clamp(finite(p['slow'] ?? 2, `${primitive.id}.slow`), 1, 8));
       const sound = p['sound'];
       const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'triangle';
-      return `note("${notes}").s("${s}").slow(${slow}).lpf("<700 900 1300 2000>").delay(.18).decay(.25).sustain(.1).gain(${gain})`;
+      const style = styleOf(p['style'], MELODY_STYLES, 'motif');
+      switch (style) {
+        // Ambient: long tones that hang in the room and overlap each other.
+        case 'long':
+          return `note("${notes}").s("sine").slow(${slow * 2}).attack(1).release(3).delay(.35).room(.9).gain(${gain})`;
+        // Jazz: a phrase that never repeats identically — the improvisation.
+        case 'improv':
+          return `note("${notes}").s("triangle").slow(${slow}).sometimesBy(.4, x => x.fast(2)).decay(.4).sustain(.15).room(.3).gain(${gain})`;
+        // DnB: a short, hard hook that cuts through the break.
+        case 'hook':
+          return `note("${notes}").s("square").slow(${slow}).lpf(1400).decay(.12).sustain(0).gain(${gain})`;
+        // Experimental: fragments, half of them missing.
+        case 'fragment':
+          return `note("${notes}").s("square").slow(${slow}).fm("<2 8 4 12>").degradeBy(.35).delay(.2).gain(${gain})`;
+        default:
+          return `note("${notes}").s("${s}").slow(${slow}).lpf("<700 900 1300 2000>").delay(.18).decay(.25).sustain(.1).gain(${gain})`;
+      }
     }
     case 'break': {
       const intensity = Math.round(
@@ -299,22 +343,39 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         ? `s("[sbd sbd] [~ white] [sbd ~] [white white]").decay(.06).sustain(0).fast(2).gain(${gain})`
         : `s("sbd [~ white] [sbd sbd] white").decay(.07).sustain(0).fast(2).gain(${gain})`;
     }
+    // §31: the world answering the player's phrase. A different timbre and a
+    // half-bar delay, so it reads as a second musician rather than an echo.
     case 'response': {
-      const root = p['root'];
-      if (typeof root !== 'string' || !NOTE_RE.test(root)) {
-        throw new TypeError(`StrudelEngine: invalid root for primitive "${primitive.id}"`);
-      }
-      return `note("${root}").add(note("0 3 7 10")).s("triangle").slow(2).gain(${gain})`;
+      const notes = noteList(p['notes'], primitive.id, ' ');
+      return `note("${notes}").s("sine").slow(2).late(.5).decay(.4).sustain(.2).room(.35).delay(.2).gain(${gain})`;
     }
     case 'texture': {
-      return `s("white").slow(4).lpf(1200).gain(${gain})`;
+      const style = styleOf(p['style'], TEXTURE_STYLES, 'hats');
+      switch (style) {
+        // Ambient: air. Barely-there ticks drifting in a large room (§31).
+        case 'air':
+          return samplesLoaded
+            ? `s("hh*8").bank("${DRUM_BANK}").hpf(9000).slow(4).room(.9).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)}")`
+            : `s("white*8").decay(.02).sustain(0).hpf(9000).slow(4).room(.9).gain(${gain})`;
+        // DnB: high-frequency noise riding over the break.
+        case 'noise':
+          return `s("white").slow(2).hpf(7000).decay(.3).sustain(.1).gain(${gain})`;
+        // Jazz/Experimental: metallic, ringing, slightly unstable.
+        case 'metallic':
+          return `note("c6").s("square").fm("<3 7 5>").slow(3).hpf(3000).delay(.3).room(.4).gain(${gain})`;
+        default:
+          // Techno: the top-end shimmer of fast, quiet hats.
+          return samplesLoaded
+            ? `s("hh*16").bank("${DRUM_BANK}").hpf(9000).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${gain}")`
+            : `s("white*16").decay(.02).sustain(0).hpf(9000).gain(${gain})`;
+      }
     }
     case 'drone': {
       const note = p['note'];
       if (typeof note !== 'string' || !NOTE_RE.test(note)) {
         throw new TypeError(`StrudelEngine: invalid note for primitive "${primitive.id}"`);
       }
-      return `note("${note}").s("sine").slow(4).gain(${gain})`;
+      return `note("${note}").s("sine").slow(4).attack(2).release(4).room(.85).gain(${gain})`;
     }
     default:
       throw new Error(

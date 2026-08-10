@@ -4,6 +4,8 @@ import type { EventBus } from '../core/EventBus';
 import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { ArrangementEngine } from './ArrangementEngine';
+import { CallResponse } from './CallResponse';
+import { ladderFor, nextStep } from './GenreLadder';
 import { HarmonyEngine } from './HarmonyEngine';
 import { MelodyTracker } from './MelodyTracker';
 import type { MusicState } from './MusicState';
@@ -34,14 +36,6 @@ export interface TrackBuilderConfig {
   bassHz: number;
   /** Wind-release amplitude that reads as a strong transient (clap intent). */
   clapAmplitude: number;
-  /** Auto-ladder: active roaming time at which each layer arrives. */
-  autoKickMs: number;
-  autoHatsMs: number;
-  autoSnareMs: number;
-  autoBassMs: number;
-  autoHarmonyMs: number;
-  autoMelodyMs: number;
-  autoTextureMs: number;
   /** Time spent in the low register that earns the bass outright. */
   lowRegisterMs: number;
   /** Activity (dynamics) above this counts as roaming energy. */
@@ -59,13 +53,6 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   highHz: 600,
   bassHz: 140,
   clapAmplitude: 0.55,
-  autoKickMs: 3000,
-  autoHatsMs: 7000,
-  autoSnareMs: 11_000,
-  autoBassMs: 16_000,
-  autoHarmonyMs: 23_000,
-  autoMelodyMs: 31_000,
-  autoTextureMs: 40_000,
   lowRegisterMs: 4000,
   activityFloor: 0.12,
   maxTickDeltaMs: 500,
@@ -107,6 +94,7 @@ export class TrackBuilder {
   private activeMs = 0;
   private lowRegisterMs = 0;
   private lastTickMs: number | null = null;
+  readonly conversation = new CallResponse();
   readonly harmony = new HarmonyEngine();
   readonly melody = new MelodyTracker();
   readonly arrangement = new ArrangementEngine();
@@ -125,6 +113,7 @@ export class TrackBuilder {
     this.activeMs = 0;
     this.lowRegisterMs = 0;
     this.lastTickMs = null;
+    this.conversation.reset();
     this.harmony.reset();
     this.melody.reset();
     this.arrangement.reset();
@@ -190,6 +179,12 @@ export class TrackBuilder {
       ? this.melody.phrase(rootMidi).map((n) => foldToRange(n, rootMidi + 24, rootMidi + 36))
       : [];
     const genre = this.dominant(affinity);
+    // §31: in Jazz the world takes its turn — it answers the player's phrase
+    // with a variation instead of looping underneath it.
+    const responseNotes =
+      genre === 'jazz' && track.melody.unlocked
+        ? [...this.conversation.tick(nowMs, melodyNotes)]
+        : [];
 
     // --- Fase 11: ARRANGEMENT. Movement becomes form (§29.7).
     const layerCount = this.countLayers(track);
@@ -201,7 +196,8 @@ export class TrackBuilder {
       section !== track.form ||
       rootMidi !== track.rootMidi ||
       !sameNumbers(intervals, track.harmonyIntervals) ||
-      !sameNumbers(melodyNotes, track.melodyNotes)
+      !sameNumbers(melodyNotes, track.melodyNotes) ||
+      !sameNumbers(responseNotes, track.responseNotes)
     ) {
       this.store.setState((t) => ({
         ...t,
@@ -211,53 +207,42 @@ export class TrackBuilder {
         rootMidi,
         harmonyIntervals: intervals,
         melodyNotes,
+        responseNotes,
       }));
       if (genre !== track.genre) this.bus.emit('track:genre', { genre, atMs: nowMs });
       if (section !== track.form) this.bus.emit('track:section', { section, atMs: nowMs });
     }
 
-    // --- The unlock ladder (§29.2, §29.3): order is the composition order.
-    const current = this.store.getState();
+    // --- The unlock ladder (§29.2, §31): the REGION decides the composition
+    // order. Only the next step of this genre's ladder can be earned, so a
+    // track always emerges layer by layer in its own grammar.
     if (!tempoExists) return;
-    if (
-      !current.drums.kick.unlocked &&
-      (this.lowActions.length >= config.kickActionsNeeded || this.activeMs >= config.autoKickMs)
-    ) {
-      this.unlock('kick', nowMs);
+    const current = this.store.getState();
+    const step = nextStep(current, ladderFor(genre));
+    if (step !== null && (this.intent(step.layer) || this.activeMs >= step.atMs)) {
+      this.unlock(step.layer, nowMs);
     }
-    if (!this.store.getState().drums.kick.unlocked) return; // kick leads the ladder
-    if (
-      !current.drums.hats.unlocked &&
-      (this.highActions.length >= config.hatActionsNeeded || this.activeMs >= config.autoHatsMs)
-    ) {
-      this.unlock('hats', nowMs);
-    }
-    if (
-      !current.drums.snare.unlocked &&
-      (this.strongActions.length >= config.clapActionsNeeded || this.activeMs >= config.autoSnareMs)
-    ) {
-      this.unlock('snare', nowMs);
-    }
-    if (
-      !current.bass.unlocked &&
-      (this.lowRegisterMs >= config.lowRegisterMs || this.activeMs >= config.autoBassMs)
-    ) {
-      this.unlock('bass', nowMs);
-    }
-    if (
-      !current.harmony.unlocked &&
-      (this.harmony.discovered || this.activeMs >= config.autoHarmonyMs)
-    ) {
-      this.unlock('harmony', nowMs);
-    }
-    if (
-      !current.melody.unlocked &&
-      (this.melody.discovered || this.activeMs >= config.autoMelodyMs)
-    ) {
-      this.unlock('melody', nowMs);
-    }
-    if (!current.texture.unlocked && this.activeMs >= config.autoTextureMs) {
-      this.unlock('texture', nowMs);
+  }
+
+  /** Deliberate play that earns a layer ahead of the clock (§29.3). */
+  private intent(layer: TrackLayerName): boolean {
+    const { config } = this;
+    switch (layer) {
+      case 'kick':
+        return this.lowActions.length >= config.kickActionsNeeded;
+      case 'hats':
+        return this.highActions.length >= config.hatActionsNeeded;
+      case 'snare':
+        return this.strongActions.length >= config.clapActionsNeeded;
+      case 'bass':
+        return this.lowRegisterMs >= config.lowRegisterMs;
+      case 'harmony':
+        return this.harmony.discovered;
+      case 'melody':
+        return this.melody.discovered;
+      // Texture is atmosphere: it arrives with time in the world, not with aim.
+      case 'texture':
+        return false;
     }
   }
 

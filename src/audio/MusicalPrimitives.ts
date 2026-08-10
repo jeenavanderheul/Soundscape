@@ -15,7 +15,7 @@ import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { TrackGenre, TrackState } from '../music/TrackState';
 
 export type PrimitiveKind =
-  | 'pulse' | 'kick' | 'snare' | 'hat' | 'break'
+  | 'pulse' | 'kick' | 'snare' | 'hat' | 'perc' | 'break'
   | 'sub' | 'bass' | 'drone' | 'chord' | 'melody'
   | 'noise' | 'texture' | 'accent' | 'response' | 'atmosphere';
 
@@ -51,6 +51,7 @@ export const ALLOWED_TRANSFORMS: Record<PrimitiveKind, readonly string[]> = {
   kick: ['fast', 'slow', 'gain'],
   snare: ['fast', 'slow', 'gain'],
   hat: ['fast', 'slow', 'gain', 'degradeBy'],
+  perc: ['fast', 'slow', 'gain', 'degradeBy'],
   break: ['fast', 'slow', 'gain'],
   sub: ['gain', 'slow'],
   bass: ['gain', 'slow', 'fast'],
@@ -171,12 +172,27 @@ export type DrumStyle = 'four' | 'break' | 'sparse' | 'swing' | 'irregular';
 export type HatStyle = 'offbeat' | 'sixteenth' | 'swing' | 'sparse';
 export type SnareStyle = 'backbeat' | 'ghost' | 'break';
 export type BassStyle = 'repetitive' | 'sub' | 'walking' | 'rolling';
+/** §31: harmony behaves differently per grammar — a stab is not a pad. */
+export type ChordStyle = 'stab' | 'pad' | 'jazz';
+export type MelodyStyle = 'motif' | 'long' | 'improv' | 'hook' | 'fragment';
+export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic';
 
 export interface GenreGrammar {
   kickStyle: DrumStyle;
   hatStyle: HatStyle;
   snareStyle: SnareStyle;
   bassStyle: BassStyle;
+  chordStyle: ChordStyle;
+  melodyStyle: MelodyStyle;
+  textureStyle: TextureStyle;
+  /**
+   * Cycle length of the hats and of the extra percussion. Anything other than
+   * a power of two runs against the 4/4 grid and only realigns after many
+   * bars — that is polymeter, on one clock (§31 experimental).
+   */
+  hatCycle: number;
+  /** 0 = this grammar has no separate percussion voice. */
+  percCycle: number;
   kickGain: number;
   hatGain: number;
   snareGain: number;
@@ -193,6 +209,11 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
   hatStyle: 'offbeat',
   snareStyle: 'backbeat',
   bassStyle: 'repetitive',
+  chordStyle: 'stab',
+  melodyStyle: 'motif',
+  textureStyle: 'hats',
+  hatCycle: 4,
+  percCycle: 0,
   kickGain: 0.85,
   hatGain: 0.35,
   snareGain: 0.5,
@@ -209,6 +230,12 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     hatStyle: 'sixteenth',
     snareStyle: 'break',
     bassStyle: 'sub',
+    chordStyle: 'stab',
+    melodyStyle: 'hook',
+    textureStyle: 'noise',
+    hatCycle: 4,
+    // Ghost percussion against the break — the near-misses in the flight.
+    percCycle: 3,
     kickGain: 0.85,
     hatGain: 0.3,
     snareGain: 0.55,
@@ -222,6 +249,11 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     hatStyle: 'sparse',
     snareStyle: 'ghost',
     bassStyle: 'sub',
+    chordStyle: 'pad',
+    melodyStyle: 'long',
+    textureStyle: 'air',
+    hatCycle: 4,
+    percCycle: 0,
     kickGain: 0.3,
     hatGain: 0.12,
     snareGain: 0.12,
@@ -235,6 +267,11 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     hatStyle: 'swing',
     snareStyle: 'ghost',
     bassStyle: 'walking',
+    chordStyle: 'jazz',
+    melodyStyle: 'improv',
+    textureStyle: 'metallic',
+    hatCycle: 4,
+    percCycle: 0,
     kickGain: 0.6,
     hatGain: 0.3,
     snareGain: 0.3,
@@ -248,6 +285,13 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     hatStyle: 'sparse',
     snareStyle: 'ghost',
     bassStyle: 'rolling',
+    chordStyle: 'stab',
+    melodyStyle: 'fragment',
+    textureStyle: 'metallic',
+    // 7 against 5 against 4: the three voices only realign every 140 beats,
+    // so the region never settles into a bar you can count (§31 mutation).
+    hatCycle: 7,
+    percCycle: 5,
     kickGain: 0.6,
     hatGain: 0.25,
     snareGain: 0.3,
@@ -427,9 +471,27 @@ export function buildLayerGraph(
       id: 'track-hat',
       kind: 'hat',
       layer: 'drums',
-      parameters: { style: grammar.hatStyle, gain: round2(grammar.hatGain * mix.drums) },
+      parameters: {
+        style: grammar.hatStyle,
+        cycle: grammar.hatCycle,
+        gain: round2(grammar.hatGain * mix.drums),
+      },
       allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
     });
+    // A percussion voice on its own cycle length: ghost hits in DnB, true
+    // polymeter in Experimental (§31).
+    if (grammar.percCycle > 0) {
+      drums.push({
+        id: 'track-perc',
+        kind: 'perc',
+        layer: 'drums',
+        parameters: {
+          cycle: grammar.percCycle,
+          gain: round2(grammar.hatGain * 0.7 * mix.drums),
+        },
+        allowedTransforms: [...ALLOWED_TRANSFORMS.perc],
+      });
+    }
   }
   if (track?.drums.snare.unlocked) {
     drums.push({
@@ -488,6 +550,7 @@ export function buildLayerGraph(
           .map((semitones) => midiToNoteName(rootMidi + 12 + semitones))
           .join(','),
         sound: 'triangle',
+        style: grammar.chordStyle,
         slow: grammar.harmonySlow,
         gain: round2(0.3 * mix.harmony),
       },
@@ -508,10 +571,28 @@ export function buildLayerGraph(
           .map((midi) => midiToNoteName(midi))
           .join(' '),
         sound: 'triangle',
+        style: grammar.melodyStyle,
         slow: grammar.melodySlow,
         gain: round2(0.3 * mix.melody),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.melody],
+    });
+  }
+
+  // §31 Jazz: the world's reply, a distinct voice answering the player.
+  if (track && track.responseNotes.length > 0) {
+    melody.push({
+      id: 'track-response',
+      kind: 'response',
+      layer: 'melody',
+      parameters: {
+        notes: track.responseNotes
+          .slice(0, 4)
+          .map((midi) => midiToNoteName(midi))
+          .join(' '),
+        gain: round2(0.24 * mix.melody),
+      },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.response],
     });
   }
 
@@ -522,7 +603,10 @@ export function buildLayerGraph(
       id: 'track-texture',
       kind: 'texture',
       layer: 'texture',
-      parameters: { gain: round2(grammar.textureGain * mix.texture) },
+      parameters: {
+        style: grammar.textureStyle,
+        gain: round2(grammar.textureGain * mix.texture),
+      },
       allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
     });
   }

@@ -1118,6 +1118,49 @@ The engine loads the standard Strudel sample bank (tidal drum machines, `strudel
 
 ---
 
+## 31. Genre as compositional grammar (v4 amendment — NORMATIVE, supersedes §9 and §29.5 where they conflict)
+
+### 31.1 The rule
+
+Genre is never a playlist and never a preset. A genre is a set of rules for HOW the player's own material behaves. Two consequences are binding:
+
+- **Never generate a complete genre track at once.** Every track emerges layer by layer out of player behaviour, so the player can say: *I caused the kick. That movement became the bassline. That flight path became the melody.*
+- **Player behaviour determines WHAT is created; genre determines HOW it behaves; the eleven elements of §3 determine how it evolves.**
+
+The five grammars and their principles:
+
+| Genre | Principle | Opens with | Character |
+|---|---|---|---|
+| Techno | repetition | kick | hypnotic, mechanical, 4/4 |
+| Ambient | space | texture | drifting, sparse, often drumless |
+| Jazz | conversation | harmony | swung, the world answers |
+| Drum & Bass | velocity | sub | fast, broken, heavy |
+| Experimental | mutation | irregular pulse | polymetric, dissonant |
+
+### 31.2 Every genre has its own build order
+
+The unlock ladder is genre data, not a constant (`src/music/GenreLadder.ts`). The region the player is flying through decides which layer is offered next and how long the world waits before offering it. Ambient opens with texture and harmony and only reaches a kick after roughly a minute; Jazz opens with harmony because a conversation needs a subject; Drum & Bass opens with the sub and the break.
+
+Only the next unearned step of the current grammar can be earned. Deliberate play (§29.3 intent) still brings that step forward — it can never skip ahead.
+
+### 31.3 Crossing a region keeps everything earned
+
+Layers already earned are never revoked. Flying from Techno into Drum & Bass keeps the kick and rewrites it as a break; the ladder continues from whatever is left, in the new order. One track, transforming — not a new track per region.
+
+### 31.4 Jazz: the world answers
+
+In every other region the world reacts to the player. In Jazz it takes a turn. A phrase traced through pitch space is a call; after a short silence a second voice replies with a variation of that phrase — transposed, inverted, or reversed — and each exchange takes a different angle so a conversation develops instead of an echo (`src/music/CallResponse.ts`). The answer is deterministic: the same call in the same state always produces the same reply.
+
+### 31.5 Experimental: polymeter on one clock
+
+Experimental voices run at cycle lengths that are not powers of two (7 hats against 5 percussion against a 4/4 kick), so they only realign after many bars. This runs on the single transport — a second clock is forbidden, because it would break the timing guarantees of §11 and every audio→visual sync in §12.
+
+### 31.6 Per-layer behaviour
+
+Each layer carries an active state, an intensity, and an entry condition. Layers are added and mutated by gameplay; nothing plays because a preset says so.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.
