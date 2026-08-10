@@ -6,7 +6,7 @@ export type KeyAction =
   | 'moveBackward'
   | 'moveLeft'
   | 'moveRight'
-  | 'shiftGear'
+  | 'accelerate'
   | 'resonancePulse'
   | 'toggleCode'
   | 'exportTrack'
@@ -35,8 +35,8 @@ export const DEFAULT_BINDINGS: DesktopBindings = {
     KeyS: 'moveBackward',
     KeyA: 'moveLeft',
     KeyD: 'moveRight',
-    ShiftLeft: 'shiftGear',
-    ShiftRight: 'shiftGear',
+    ShiftLeft: 'accelerate',
+    ShiftRight: 'accelerate',
     Space: 'resonancePulse',
     KeyC: 'toggleCode',
     KeyE: 'exportTrack',

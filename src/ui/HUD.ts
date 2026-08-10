@@ -5,13 +5,13 @@ export interface HudPlace {
   heading: string;
   biome: string;
   region: string;
-  /** Current gear, what it feels like, and the tempo it drives (user decision). */
-  gear: number;
-  maxGear: number;
-  gearLabel: string;
+  /** 0..1 how fast the track is developing right now (§46). */
+  speed: number;
   bpm: number;
-  /** Which track of the endless journey is playing. */
+  /** Which track of the endless journey is playing, and how full it is. */
   track: number;
+  layers: number;
+  maxLayers: number;
 }
 
 /**
@@ -54,11 +54,10 @@ export class HUD {
     const where =
       place === undefined
         ? ''
-        : `\n\nGEAR ${place.gear}/${place.maxGear}  ${gearBar(place.gear, place.maxGear)}` +
-          `\n      ${place.gearLabel}${place.bpm > 0 ? ` · ${Math.round(place.bpm)} bpm` : ''}` +
+        : `\n\nspeed ${bar(place.speed)}${place.bpm > 0 ? ` · ${Math.round(place.bpm)} bpm` : ''}` +
+          `\ntrack ${String(place.track).padStart(2, '0')} · ${place.layers}/${place.maxLayers} layers` +
           `\n\nhead: ${place.heading}\nbiome: ${place.biome}\nregion: ${place.region}`;
-    const journey = place === undefined ? '' : `track ${String(place.track).padStart(2, '0')}\n`;
-    const text = `${journey}freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
+    const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
     if (text === this.lastText) return;
     this.lastText = text;
     this.root.textContent = text;
@@ -69,9 +68,10 @@ export class HUD {
   }
 }
 
-/** One notch per gear, filled up to the current one — readable at a glance. */
-function gearBar(gear: number, maxGear: number): string {
-  let bar = '';
-  for (let i = 1; i <= maxGear; i++) bar += i <= gear ? '\u2588' : '\u2591';
-  return bar;
+/** Five notches: how fast the world is going past, and the track with it. */
+function bar(value: number): string {
+  const filled = Math.round(Math.min(1, Math.max(0, value)) * 5);
+  let out = '';
+  for (let i = 1; i <= 5; i++) out += i <= filled ? '\u2588' : '\u2591';
+  return out;
 }

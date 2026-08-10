@@ -1,4 +1,4 @@
-import { genreGrammar, hzToMidi, speedToBpm } from '../audio/MusicalPrimitives';
+import { genreGrammar, hzToMidi, regionBpm } from '../audio/MusicalPrimitives';
 import type { GenreAffinity } from './MusicState';
 import type { EventBus } from '../core/EventBus';
 import type { Store } from '../core/stores';
@@ -68,11 +68,16 @@ export interface TrackBuilderConfig {
   /** Time in open air that earns the hats, and (×2) the texture. */
   airMs: number;
   /**
-   * How fast the track's clock may follow the flight, in BPM per second. A gear
-   * change must speed the WHOLE genre up rather than cutting to another tempo
-   * (user decision) — so the tempo slides, it never jumps.
+   * How fast the track's clock may follow a change of region, in BPM per
+   * second. Crossing into another grammar has to speed the WHOLE track up or
+   * down rather than cutting to another tempo (user decision).
    */
   bpmSlewPerSecond: number;
+  /** Speed at which the track develops at DEVELOPMENT_MAX pace. */
+  fullSpeed: number;
+  /** Pace multiplier at a standstill and at full speed (§46). */
+  paceAtRest: number;
+  paceAtFullSpeed: number;
 }
 
 export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
@@ -94,6 +99,9 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   groundMs: 3500,
   airMs: 3500,
   bpmSlewPerSecond: 9,
+  fullSpeed: 66,
+  paceAtRest: 0.55,
+  paceAtFullSpeed: 2.4,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -144,6 +152,7 @@ export class TrackBuilder {
   private airMs = 0;
   private lastDeepenMs = 0;
   private lastTickMs: number | null = null;
+  private paceClockMs = 0;
   private trackNumberValue = 1;
   private turn = 0;
   private layerVariations: LayerVariations = {};
@@ -167,6 +176,16 @@ export class TrackBuilder {
     return this.trackNumberValue;
   }
 
+  /**
+   * How fast the track is developing right now: 0.55× standing still, 2.4× at
+   * full throttle (§46). Also what the HUD shows as the speed bar.
+   */
+  pace(velocity: number): number {
+    const { config } = this;
+    const t = Math.min(1, Math.max(0, velocity / config.fullSpeed));
+    return config.paceAtRest + (config.paceAtFullSpeed - config.paceAtRest) * t;
+  }
+
   /** Which variation of its part each layer is playing right now. */
   get variations(): LayerVariations {
     return this.layerVariations;
@@ -178,6 +197,7 @@ export class TrackBuilder {
     this.highActions.length = 0;
     this.strongActions.length = 0;
     this.activeMs = 0;
+    this.paceClockMs = 0;
     this.lowRegisterMs = 0;
     this.groundMs = 0;
     this.airMs = 0;
@@ -282,7 +302,15 @@ export class TrackBuilder {
     const track = this.store.getState();
     const moving = flight.velocity > 0.5 || music.dynamics >= config.activityFloor;
     const active = moving || (music.bpm > 0 && music.tempoConfidence > 0.3);
-    if (active) this.activeMs += delta;
+    // §46: SPEED IS DEVELOPMENT. Flying harder does not change the tempo — it
+    // makes the track grow, deepen and move through its sections faster, so a
+    // fast flight finishes a track sooner and reaches the next one sooner.
+    const pace = this.pace(flight.velocity);
+    const paced = delta * pace;
+    if (active) {
+      this.activeMs += paced;
+      this.paceClockMs += paced;
+    }
     this.lowRegisterMs = flight.hz < config.bassHz && active ? this.lowRegisterMs + delta : 0;
     // §3.1: WHERE you fly is which part of the register you are in. Skimming
     // the ground is mass; open air is detail. Both are earned by flying there,
@@ -297,12 +325,13 @@ export class TrackBuilder {
     // --- Fase 1: TEMPO. Flight speed sets the clock; the player's own
     // rhythm always wins once it is confident (§3.4, §29.2).
     const playerTempo = music.tempoConfidence >= 0.35 && music.bpm > 0;
-    // §39: the region decides the tempo range; the flight decides where in it.
-    const speedBpm = moving ? speedToBpm(flight.velocity, genreGrammar(this.dominant(affinity))) : 0;
+    // §46: the region decides the tempo, full stop. Flying faster develops the
+    // track faster (below) — it never moves the clock.
+    const placeBpm = moving ? regionBpm(genreGrammar(this.dominant(affinity))) : 0;
     const targetBpm = playerTempo
       ? Math.round(music.bpm)
-      : speedBpm > 0
-        ? speedBpm
+      : placeBpm > 0
+        ? placeBpm
         : track.bpm; // an earned track keeps its clock through stillness
     // The clock slides toward the flight instead of snapping to it: shifting up
     // makes the whole track accelerate, it does not swap it for a faster one.
@@ -334,9 +363,11 @@ export class TrackBuilder {
 
     // --- Fase 11: ARRANGEMENT. Movement becomes form (§29.7).
     const layerCount = this.countLayers(track);
+    // The arrangement runs on the paced clock too: sections arrive sooner when
+    // the player is moving through the world quickly.
     const section = this.arrangement.tick(
-      nowMs,
-      delta,
+      this.paceClockMs,
+      paced,
       flight.energy,
       layerCount,
       flight.climb ?? 0,

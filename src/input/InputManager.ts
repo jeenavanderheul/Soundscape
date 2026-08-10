@@ -7,8 +7,6 @@ export interface InputSnapshot {
   /** moveX: -1 left … +1 right; moveZ: -1 backward … +1 forward. */
   axes: { moveX: number; moveZ: number };
   buttons: { accelerate: boolean; windHold: boolean };
-  /** Shift was pressed since the last snapshot → up one gear (wraps at the top). */
-  gearUp: boolean;
   /** LMB was released since the last snapshot → timed pulse excitation. */
   windReleased: boolean;
   /** Space was pressed since the last snapshot. */
@@ -40,7 +38,6 @@ export class InputManager {
   private readonly heldKeys = new Set<string>();
   private windHold = false;
   private windReleased = false;
-  private gearUp = false;
   private resonancePulse = false;
   private pausePressed = false;
   private codeToggled = false;
@@ -89,12 +86,11 @@ export class InputManager {
         moveZ: this.axisValue('moveForward') - this.axisValue('moveBackward'),
       },
       buttons: {
-        // The wind IS the booster: pushing the world harder pushes the orb
-        // harder (§3.2 dynamics = force).
-        accelerate: this.windHold,
+        // The wind IS the throttle: holding it pulls the orb up to full speed
+        // (§3.2 dynamics = force). Shift does the same for the keyboard.
+        accelerate: this.windHold || this.isActionHeld('accelerate'),
         windHold: this.windHold,
       },
-      gearUp: this.gearUp,
       windReleased: this.windReleased,
       resonancePulse: this.resonancePulse,
       pausePressed: this.pausePressed,
@@ -108,7 +104,6 @@ export class InputManager {
   }
 
   private resetFrameState(): void {
-    this.gearUp = false;
     this.windReleased = false;
     this.resonancePulse = false;
     this.pausePressed = false;
@@ -135,9 +130,7 @@ export class InputManager {
     const action = this.bindings.keys[code];
     if (!action || repeat) return;
     this.heldKeys.add(code);
-    if (action === 'shiftGear') {
-      this.gearUp = true;
-    } else if (action === 'resonancePulse') {
+    if (action === 'resonancePulse') {
       this.resonancePulse = true;
       this.bus?.emit('input:resonance-pulse', null);
     } else if (action === 'toggleCode') {

@@ -93,25 +93,20 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('shift changes gear, once per press, and never as a wind release', () => {
+  it('shift is the keyboard throttle, the wind is the mouse one (§23)', () => {
     const { keyboard, pointer, manager } = setup();
 
     keyboard.dispatchEvent(key('keydown', 'ShiftLeft'));
     const shifted = manager.snapshot();
-    expect(shifted.gearUp).toBe(true);
-    expect(shifted.windReleased).toBe(false);
-    // Held down, it does not keep shifting: one press is one gear.
-    keyboard.dispatchEvent(key('keydown', 'ShiftLeft', true));
-    expect(manager.snapshot().gearUp).toBe(false);
+    expect(shifted.buttons.accelerate).toBe(true);
+    expect(shifted.buttons.windHold).toBe(false); // no wind without the button
     keyboard.dispatchEvent(key('keyup', 'ShiftLeft'));
+    expect(manager.snapshot().buttons.accelerate).toBe(false);
 
-    // The wind is on the left button and is untouched by shifting.
     pointer.dispatchEvent(mouse('mousedown', 0, 2000));
-    expect(manager.snapshot().buttons.windHold).toBe(true);
-    keyboard.dispatchEvent(key('keydown', 'ShiftRight'));
-    const both = manager.snapshot();
-    expect(both.gearUp).toBe(true);
-    expect(both.buttons.windHold).toBe(true);
+    const windy = manager.snapshot();
+    expect(windy.buttons.accelerate).toBe(true);
+    expect(windy.buttons.windHold).toBe(true);
     manager.detach();
   });
 

@@ -32,7 +32,7 @@ import { createInitialTrackState, trackGrowth, TrackEvents, TrackState } from '.
 import type { TrackGenre } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
-import { FrequencyController, MAX_GEAR } from '../player/FrequencyController';
+import { FrequencyController, FULL_SPEED } from '../player/FrequencyController';
 import {
   createInitialProgression,
   isComposerUnlocked,
@@ -78,6 +78,14 @@ import { AUTOSAVE_DEBOUNCE_MS, AUTOSAVE_INTERVAL_MS, LOGIC_STEP_MS, WORLD_SEED }
 import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
+
+/** How much of the track exists, for the HUD (§46). */
+function countUnlocked(track: TrackState): number {
+  return [
+    track.drums.kick, track.drums.snare, track.drums.hats,
+    track.bass, track.harmony, track.melody, track.texture,
+  ].filter((layer) => layer.unlocked).length;
+}
 
 /** How far behind the orb the chase camera sits, and how high above it. */
 const CAMERA_DISTANCE = 6;
@@ -682,11 +690,11 @@ export class Game {
       heading: headingLabel(Math.atan2(state.direction.x, -state.direction.z)),
       biome: this.placeGenre ?? 'void',
       region: ecologyFor(this.placeGenre).name,
-      gear: this.controller.gear,
-      maxGear: MAX_GEAR,
-      gearLabel: this.controller.gearLabel,
+      speed: state.velocity / FULL_SPEED,
       bpm: this.trackStore.getState().bpm,
       track: this.trackBuilder.trackNumber,
+      layers: countUnlocked(this.trackStore.getState()),
+      maxLayers: 7,
     });
     // Chase camera (user decision): it sits behind the orb and follows it. The
     // player never aims the camera — they fly, and the camera comes along, so

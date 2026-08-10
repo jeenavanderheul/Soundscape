@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createStore } from '../../src/core/stores';
 import { createInitialFrequencyState } from '../../src/player/FrequencyState';
-import { MAX_GEAR, FLIGHT_CONFIG, FrequencyController } from '../../src/player/FrequencyController';
+import { FLIGHT_CONFIG, FrequencyController } from '../../src/player/FrequencyController';
 import type { InputSnapshot } from '../../src/input/InputManager';
 import { createNoiseTable, terrainHeight, valueNoise } from '../../src/rendering/terrainField';
 
@@ -10,7 +10,6 @@ function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
   return {
     axes: { moveX: 0, moveZ: 0 },
     buttons: { accelerate: false, windHold: false },
-    gearUp: false,
     windReleased: false,
     resonancePulse: false,
     pausePressed: false,
@@ -82,8 +81,6 @@ describe('§35 HARD RULE — the orb never gets under the landscape', () => {
     controller.setGroundSampler(ground);
     // Look down and hold forward: fly straight into the ground.
     controller.update(snapshot({ mouseDelta: { x: 0, y: dive } }), 16);
-    // Top gear, so the dive is as fast as the game allows.
-    while (controller.gear !== MAX_GEAR) controller.update(snapshot({ gearUp: true }), 16);
     const breaches: number[] = [];
     let closest = Infinity;
     for (let i = 0; i < steps; i++) {

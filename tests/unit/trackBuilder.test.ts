@@ -6,7 +6,7 @@ vi.mock('@strudel/web', () => ({
   samples: vi.fn(async () => undefined),
 }));
 
-import { buildLayerGraph, speedToBpm } from '../../src/audio/MusicalPrimitives';
+import { buildLayerGraph, regionBpm, genreGrammar } from '../../src/audio/MusicalPrimitives';
 import { buildPatternCode } from '../../src/audio/StrudelEngine';
 import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
@@ -102,9 +102,11 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
   });
 
   it('still offers the ladder to a player who does nothing in particular', () => {
-    // Patience, not a schedule: it arrives, but later than flying for it.
-    expect(flyAt(19, 8000).drums.kick.unlocked).toBe(true);
-    expect(flyAt(19, 40_000).bass.unlocked).toBe(true);
+    // Patience, not a schedule: it arrives, but later than flying for it — and
+    // §46 means a slow flight develops the track more slowly.
+    expect(flyAt(19, 8000).drums.kick.unlocked).toBe(false);
+    expect(flyAt(19, 14_000).drums.kick.unlocked).toBe(true);
+    expect(flyAt(19, 60_000).bass.unlocked).toBe(true);
   });
 
   it('does not accumulate during stillness', () => {
@@ -115,49 +117,48 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
   });
 });
 
-describe('tempo follows flight speed (§29, user decision)', () => {
-  it('maps speed into stable bands', () => {
-    // Twelve bands, one per gear (user decision).
-    expect(speedToBpm(0)).toBe(45);
-    expect(speedToBpm(6)).toBe(60);
-    expect(speedToBpm(13)).toBe(108);
-    expect(speedToBpm(20)).toBe(128);
-    expect(speedToBpm(32)).toBe(142);
-    expect(speedToBpm(41)).toBe(158);
-    expect(speedToBpm(52)).toBe(172);
-    expect(speedToBpm(66)).toBe(190);
-    // Inside a band the tempo does not wobble.
-    expect(speedToBpm(20.1)).toBe(speedToBpm(23.4));
+describe('§46 the region carries the tempo, the flight does not', () => {
+  it('every grammar sits in the middle of its own range', () => {
+    expect(regionBpm(genreGrammar('techno'))).toBeGreaterThanOrEqual(115);
+    expect(regionBpm(genreGrammar('ambient'))).toBeLessThan(100);
+    expect(regionBpm(genreGrammar('dnb'))).toBeGreaterThan(160);
   });
 
-  it('writes the flight tempo into the track, and the player rhythm overrides it', () => {
+  it('flying faster does not move the clock, and your own rhythm still wins', () => {
     const { store, builder } = setup();
     const noRhythm = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
-    builder.tick(0, noRhythm, { velocity: 66, hz: 220, energy: 0.8 });
-    builder.tick(100, noRhythm, { velocity: 66, hz: 220, energy: 0.8 });
-    // §39: full speed in the neutral void tops out at the void's own range.
-    expect(store.getState().bpm).toBe(140);
+    const settle = (velocity: number, from: number) => {
+      for (let t = from; t <= from + 30_000; t += 100) {
+        builder.tick(t, noRhythm, { velocity, hz: 220, energy: 0.5 });
+      }
+      return store.getState().bpm;
+    };
+    const slow = settle(6, 0);
+    const fast = settle(66, 31_000);
+    expect(fast).toBe(slow); // the void's own tempo, whatever the speed
+
     const tapped = { ...createInitialMusicState(), bpm: 124, tempoConfidence: 0.9, dynamics: 0.5 };
-    for (let t = 200; t <= 4000; t += 100) {
+    for (let t = 62_000; t <= 90_000; t += 100) {
       builder.tick(t, tapped, { velocity: 66, hz: 220, energy: 0.8 });
     }
     expect(store.getState().bpm).toBe(124);
   });
 
-  // A gear change must accelerate the track, not cut to another tempo.
   it('slides to a new tempo instead of jumping (user decision)', () => {
     const { store, builder } = setup();
     const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
-    // Settle at a low gear…
-    for (let t = 0; t <= 6000; t += 100) builder.tick(t, music, { velocity: 6, hz: 220, energy: 0.4 });
-    const slow = store.getState().bpm;
-    // …then shift up hard: one second later it is on the way, not there yet.
-    for (let t = 6100; t <= 7000; t += 100) builder.tick(t, music, { velocity: 66, hz: 220, energy: 0.9 });
-    const afterOneSecond = store.getState().bpm;
-    expect(afterOneSecond).toBeGreaterThan(slow);
-    expect(afterOneSecond).toBeLessThan(slow + 20);
-    for (let t = 7100; t <= 20_000; t += 100) builder.tick(t, music, { velocity: 66, hz: 220, energy: 0.9 });
-    expect(store.getState().bpm).toBe(140);
+    for (let t = 0; t <= 6000; t += 100) builder.tick(t, music, { velocity: 8, hz: 220, energy: 0.4 });
+    const settled = store.getState().bpm;
+    const tapped = { ...music, bpm: settled + 40, tempoConfidence: 0.9 };
+    builder.tick(6100, tapped, { velocity: 8, hz: 220, energy: 0.4 });
+    // One tick later it is on its way, not there.
+    expect(store.getState().bpm).toBeGreaterThan(settled);
+    expect(store.getState().bpm).toBeLessThan(settled + 5);
+  });
+
+  it('§46 flying faster develops the track faster', () => {
+    const { builder } = setup();
+    expect(builder.pace(66)).toBeGreaterThan(builder.pace(0) * 3);
   });
 });
 

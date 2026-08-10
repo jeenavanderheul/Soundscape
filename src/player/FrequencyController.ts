@@ -127,48 +127,17 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
  * attack/release amplitude and velocity → energy. All updates immutable.
  */
 /**
- * Twelve gears (user decision). Flight speed is the clock (§29), so a gear IS a
- * tempo: each top speed sits inside one of the TEMPO_BANDS, and the region
- * stretches those bands into its own range (§39). Shifting up is the player
- * deciding the track should move faster — deliberate, not a twitch.
- *
- *   1   45 bpm  drone        7  128 bpm  house
- *   2   60 bpm  ambient      8  134 bpm  techno
- *   3   78 bpm  downtempo    9  142 bpm  club
- *   4   92 bpm  trip        10  158 bpm  breaks
- *   5  108 bpm  groove      11  172 bpm  drum & bass
- *   6  118 bpm  deep        12  190 bpm  extreme
+ * Speed is no longer a gearbox and no longer the clock (user decision, spec
+ * §46). Flying is two speeds: you cruise, and holding the wind pulls you up to
+ * full speed. What that changes is how fast the TRACK develops and how quickly
+ * you cross the world — never which tempo the music is in.
  */
-export const GEAR_SPEEDS: readonly number[] = [
-  4, 6, 8, 10.5, 13, 16, 20, 25, 32, 41, 52, 66,
-];
-
-/** Gear the journey starts in — the cruise speed the game had before gears. */
-const START_GEAR_INDEX = 4;
-
-/** What each gear feels like, shown in the HUD so the gear is never a number alone. */
-export const GEAR_LABELS: readonly string[] = [
-  'drone',
-  'ambient',
-  'downtempo',
-  'trip',
-  'groove',
-  'deep',
-  'house',
-  'techno',
-  'club',
-  'breaks',
-  'dnb',
-  'extreme',
-];
-
-export const MAX_GEAR = GEAR_SPEEDS.length;
+export const CRUISE_SPEED = 13;
+export const FULL_SPEED = 66;
 
 export class FrequencyController {
   private yaw = 0;
   private pitch = 0;
-  /** Starts at the old cruise speed, with room to shift both ways. */
-  private gearIndex = START_GEAR_INDEX;
   /** §35: samples the solid landscape; unset means the old flat floor. */
   private groundAt: ((x: number, z: number) => number) | null = null;
   /** §36: the largest formations are solid too — they push the orb aside. */
@@ -186,21 +155,10 @@ export class FrequencyController {
     return this.velocityVec.y;
   }
 
-  /** 1..8, shown in the HUD. */
-  get gear(): number {
-    return this.gearIndex + 1;
-  }
-
-  /** The feel of the current gear ('house', 'dnb', …). */
-  get gearLabel(): string {
-    return GEAR_LABELS[this.gearIndex]!;
-  }
-
   /** Reset world (§17): look level again, matching the fresh spawn state. */
   resetOrientation(): void {
     this.yaw = 0;
     this.pitch = 0;
-    this.gearIndex = START_GEAR_INDEX;
   }
   private velocityVec: Vec3Data = { x: 0, y: 0, z: 0 };
   private yawRateValue = 0;
@@ -220,10 +178,6 @@ export class FrequencyController {
     );
     const direction = directionFromLook(this.yaw, this.pitch);
 
-    // Every click shifts up one; past top gear it wraps back to first, so the
-    // whole gearbox is reachable with one button (user decision).
-    if (input.gearUp) this.gearIndex = (this.gearIndex + 1) % MAX_GEAR;
-
     const accelDirection = this.accelDirection(direction, input.axes);
     // Inside the field you cannot even STEER into the ground: the downward part
     // of the thrust is cancelled as the gap closes (§35). Without this, holding
@@ -236,17 +190,22 @@ export class FrequencyController {
     if (gap < fieldNow && accelDirection.y < 0) {
       accelDirection.y *= Math.max(0, gap) / fieldNow;
     }
-    // The gear is the ceiling: W pushes you up to the top speed of the gear you
-    // are in, and shifting is what lets the track go faster. Drag alone would
-    // settle below the higher gears, so each gear pulls harder — a high gear
-    // feels stronger, exactly like the car this is modelled on.
-    const gearSpeed = GEAR_SPEEDS[this.gearIndex]!;
-    const accelMagnitude =
-      Math.max(FLIGHT_CONFIG.acceleration, gearSpeed * FLIGHT_CONFIG.drag * 1.25) *
-      // Holding the wind is also a short booster (§3.2 dynamics = force).
-      (input.buttons.accelerate ? FLIGHT_CONFIG.boostMultiplier : 1);
-    const geared = { ...FLIGHT_CONFIG, maxSpeed: gearSpeed };
-    this.velocityVec = stepVelocity(this.velocityVec, accelDirection, accelMagnitude, deltaMs, geared);
+    // Drag alone would settle far below full speed, so the pull scales with the
+    // ceiling: opening the throttle has to feel like opening a throttle.
+    // Holding the wind opens the throttle all the way (§3.2 dynamics = force).
+    const topSpeed = input.buttons.accelerate ? FULL_SPEED : CRUISE_SPEED;
+    const accelMagnitude = Math.max(
+      FLIGHT_CONFIG.acceleration,
+      topSpeed * FLIGHT_CONFIG.drag * 1.25,
+    );
+    const throttled = { ...FLIGHT_CONFIG, maxSpeed: topSpeed };
+    this.velocityVec = stepVelocity(
+      this.velocityVec,
+      accelDirection,
+      accelMagnitude,
+      deltaMs,
+      throttled,
+    );
     const speed = Math.hypot(this.velocityVec.x, this.velocityVec.y, this.velocityVec.z);
     const dt = deltaMs / 1000;
 

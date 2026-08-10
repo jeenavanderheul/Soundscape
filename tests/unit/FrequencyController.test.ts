@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { createStore } from '../../src/core/stores';
-import { speedToBpm } from '../../src/audio/MusicalPrimitives';
 import { createInitialFrequencyState } from '../../src/player/FrequencyState';
 import type { InputSnapshot } from '../../src/input/InputManager';
 import {
   AMPLITUDE_CONFIG,
   FLIGHT_CONFIG,
   FREQUENCY_CONFIG,
+  CRUISE_SPEED,
+  FULL_SPEED,
   FrequencyController,
-  GEAR_SPEEDS,
-  MAX_GEAR,
   directionFromLook,
   mapWheelToHz,
   smoothAmplitude,
@@ -20,7 +19,6 @@ function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
   return {
     axes: { moveX: 0, moveZ: 0 },
     buttons: { accelerate: false, windHold: false },
-    gearUp: false,
     windReleased: false,
     resonancePulse: false,
     pausePressed: false,
@@ -167,8 +165,6 @@ describe('FrequencyController', () => {
   it('derives bounded energy from speed and updates look direction', () => {
     const store = createStore(createInitialFrequencyState());
     const controller = new FrequencyController(store);
-    // Top gear: the gearbox is the speed ceiling, so energy is measured there.
-    while (controller.gear !== MAX_GEAR) controller.update(snapshot({ gearUp: true }), 16);
     for (let i = 0; i < 300; i++) {
       controller.update(
         snapshot({
@@ -199,36 +195,30 @@ describe('FrequencyController', () => {
   });
 });
 
-describe('the gearbox is the speed (user decision: five gears)', () => {
-  function topSpeedIn(gear: number): number {
+describe('§46 speed is the throttle, not a gearbox', () => {
+  function settleSpeed(throttle: boolean): number {
     const store = createStore(createInitialFrequencyState());
     const controller = new FrequencyController(store);
-    // One button: click up, wrapping around, until the wanted gear comes up.
-    while (controller.gear !== gear) controller.update(snapshot({ gearUp: true }), 16);
     for (let i = 0; i < 400; i++) {
-      controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 } }), 16);
+      controller.update(
+        snapshot({
+          axes: { moveX: 0, moveZ: 1 },
+          buttons: { accelerate: throttle, windHold: throttle },
+        }),
+        16,
+      );
     }
     return store.getState().velocity;
   }
 
-  it('every gear has its own top speed, and they only go up', () => {
-    const speeds = Array.from({ length: MAX_GEAR }, (_, i) => topSpeedIn(i + 1));
-    for (let i = 1; i < speeds.length; i++) {
-      expect(speeds[i]!).toBeGreaterThan(speeds[i - 1]!);
-    }
-    expect(speeds[MAX_GEAR - 1]!).toBeLessThanOrEqual(GEAR_SPEEDS[MAX_GEAR - 1]! + 0.01);
+  it('cruises without the throttle and reaches full speed with it', () => {
+    expect(settleSpeed(false)).toBeGreaterThan(CRUISE_SPEED * 0.9);
+    expect(settleSpeed(false)).toBeLessThanOrEqual(CRUISE_SPEED + 0.01);
+    expect(settleSpeed(true)).toBeGreaterThan(FULL_SPEED * 0.9);
+    expect(settleSpeed(true)).toBeLessThanOrEqual(FULL_SPEED + 0.01);
   });
 
-  it('wraps from top gear back to first (user decision: one button)', () => {
-    const store = createStore(createInitialFrequencyState());
-    const controller = new FrequencyController(store);
-    while (controller.gear !== MAX_GEAR) controller.update(snapshot({ gearUp: true }), 16);
-    controller.update(snapshot({ gearUp: true }), 16);
-    expect(controller.gear).toBe(1);
-  });
-
-  it('each gear lands in its own tempo band — the gear IS the tempo (§29)', () => {
-    const bpms = Array.from({ length: MAX_GEAR }, (_, i) => speedToBpm(topSpeedIn(i + 1)));
-    expect(bpms).toEqual([45, 60, 78, 92, 108, 118, 128, 134, 142, 158, 172, 190]);
+  it('full speed is a different kind of flying, not a nudge', () => {
+    expect(settleSpeed(true)).toBeGreaterThan(settleSpeed(false) * 3);
   });
 });

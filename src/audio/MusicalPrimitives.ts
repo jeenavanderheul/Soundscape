@@ -89,38 +89,14 @@ export function heartbeatBpm(dynamics: number): number {
 }
 
 /**
- * §29 (user decision): FLIGHT SPEED IS THE TEMPO. Speed falls into bands so
- * the groove stays stable while flying, and shifts musically when the player
- * genuinely accelerates — tap W and the whole world speeds up.
+ * §46 (user decision, supersedes §29's "flight speed is the tempo"): the REGION
+ * carries the tempo. Each grammar sits at the middle of its own range, so a
+ * place always sounds like itself, and the player's own rhythm still takes over
+ * the moment they play one (§3.4).
  */
-export const TEMPO_BANDS: ReadonlyArray<{ minSpeed: number; bpm: number }> = [
-  { minSpeed: 0, bpm: 45 },     // 40–70   drone
-  { minSpeed: 5, bpm: 60 },     // 40–70   slow ambient
-  { minSpeed: 7, bpm: 78 },     // 70–100  downtempo
-  { minSpeed: 9.5, bpm: 92 },   // 70–100  hiphop tempo
-  { minSpeed: 12, bpm: 108 },   // 100–120 groove
-  { minSpeed: 15, bpm: 118 },   // 100–120 the way into house
-  { minSpeed: 19, bpm: 128 },   // 120–135 house
-  { minSpeed: 24, bpm: 134 },   // 120–135 techno
-  { minSpeed: 31, bpm: 142 },   // 135–150 club
-  { minSpeed: 40, bpm: 158 },   // 150–165 breaks / experimental
-  { minSpeed: 51, bpm: 172 },   // 165–180 drum & bass
-  { minSpeed: 65, bpm: 190 },   // 180–200 extreme
-];
-
-export function speedToBpm(velocity: number, grammar?: GenreGrammar): number {
-  const speed = Number.isFinite(velocity) ? Math.max(0, velocity) : 0;
-  let bpm = TEMPO_BANDS[0]!.bpm;
-  for (const band of TEMPO_BANDS) {
-    if (speed >= band.minSpeed) bpm = band.bpm;
-  }
-  if (!grammar) return bpm;
-  // §39: the same twelve speed bands, but stretched into this region's range —
-  // pushing hard in Ambient reaches the top of Ambient, not the top of DnB.
-  const low = TEMPO_BANDS[0]!.bpm;
-  const high = TEMPO_BANDS[TEMPO_BANDS.length - 1]!.bpm;
-  const position = (bpm - low) / (high - low);
-  return Math.round(grammar.bpmMin + position * (grammar.bpmMax - grammar.bpmMin));
+export function regionBpm(grammar?: GenreGrammar): number {
+  if (!grammar) return 120;
+  return Math.round((grammar.bpmMin + grammar.bpmMax) / 2);
 }
 
 export type MusicParameter = 'bpm' | 'gain';
