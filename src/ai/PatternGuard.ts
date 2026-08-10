@@ -22,7 +22,8 @@ export const ALLOWED_FUNCTIONS: ReadonlySet<string> = new Set([
   'slow', 'fast', 'ply', 'off', 'late', 'early', 'rev', 'palindrome',
   'iter', 'chunk', 'every', 'when', 'sometimes', 'sometimesBy', 'often',
   'rarely', 'almostAlways', 'almostNever', 'degrade', 'degradeBy', 'struct',
-  'euclid', 'euclidLegato', 'mask', 'segment', 'range', 'jux', 'superimpose',
+  'euclid', 'euclidLegato', 'mask', 'segment', 'seg', 'range', 'jux', 'superimpose',
+  'lastOf', 'firstOf', 'duckorbit', 'duckdepth', 'duckattack',
   'layer', 'add', 'sub', 'mul', 'div', 'scale', 'transpose', 'legato',
   // sample handling (strudel.cc/learn/samples)
   'bank', 'begin', 'end', 'loop', 'chop', 'striate', 'clip', 'fit',

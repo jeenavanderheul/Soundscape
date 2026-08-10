@@ -600,10 +600,25 @@ function renderAction(action: MusicalAction): string {
  * the voice left open. `postgain` is never used in a template, so the wind's
  * force always reaches the mix.
  */
-function applyPerformance(code: string, layer: LayerName, perf?: Performance): string {
+/** Layers whose filter travels over bars instead of standing still (§48). */
+const AUTOMATED: ReadonlySet<LayerName> = new Set<LayerName>(['harmony', 'texture', 'atmosphere']);
+
+function applyPerformance(
+  code: string,
+  layer: LayerName,
+  perf?: Performance,
+  moving = false,
+): string {
   if (perf === undefined) return code;
   let out = code;
-  if (!out.includes('.lpf(')) out += `.lpf(${Math.round(perf.brightHz)})`;
+  if (!out.includes('.lpf(')) {
+    const top = Math.round(perf.brightHz);
+    // §48 automation: a filter that opens and closes over eight bars is the
+    // difference between a pad that sits there and one that breathes.
+    out += moving && AUTOMATED.has(layer)
+      ? `.lpf(sine.range(${Math.round(top * 0.45)}, ${top}).slow(8))`
+      : `.lpf(${top})`;
+  }
   if (!out.includes('.room(')) out += `.room(${perf.space.toFixed(2)})`;
   // §3.8 duration is memory — only for voices that hold a note; clipping a
   // drum sample just chokes it.
@@ -645,6 +660,61 @@ function applyVariation(code: string, layer: LayerName, variations?: LayerVariat
   return list === undefined ? code : `${code}${list[index % list.length] ?? ''}`;
 }
 
+/**
+ * §48 PRODUCTION (user decision). Four things that turn a stack of correct
+ * parts into something that sounds mixed, all of them inside the vocabulary
+ * Strudel already gives us, and all of them dosed by the grammar:
+ *
+ * - separate reverb buses, so the kick stays dry while the harmony sits in the
+ *   room (patterns sharing an orbit share ONE delay and reverb)
+ * - sidechain pumping: the bass and the chords duck under every kick
+ * - fills: the last bar of every eight turns around instead of repeating
+ * - automation: filters that travel over bars instead of standing still
+ */
+const LAYER_ORBIT: Partial<Record<LayerName, number>> = {
+  drums: 1,
+  bass: 1,
+  harmony: 2,
+  melody: 2,
+  texture: 3,
+  atmosphere: 3,
+};
+
+/** Layers that duck under the kick, and how much of the grammar's pump they take. */
+const DUCKED: Partial<Record<LayerName, number>> = {
+  bass: 1,
+  harmony: 0.75,
+  melody: 0.5,
+  texture: 0.4,
+};
+
+/** The last bar of every eight turns around — this is what makes a loop a song. */
+const FILLS: Partial<Record<LayerName, string>> = {
+  drums: '.lastOf(8, x => x.fast(2))',
+  bass: '.lastOf(8, x => x.degradeBy(.3))',
+  harmony: '.lastOf(8, x => x.late(.02))',
+};
+
+function applyProduction(
+  code: string,
+  layer: LayerName,
+  production?: MusicalLayerGraph['production'],
+): string {
+  if (production === undefined) return code;
+  let out = code;
+  const orbit = LAYER_ORBIT[layer];
+  if (orbit !== undefined && !out.includes('.orbit(')) out += `.orbit(${orbit})`;
+  const duck = (DUCKED[layer] ?? 0) * production.duck;
+  // Ambient, jazz and classical have drive 0, so they never pump — a swelling
+  // pad ducking under a kick that is not there would be nonsense.
+  if (duck > 0.05 && !out.includes('.duckorbit(')) {
+    out += `.duckorbit(1).duckdepth(${duck.toFixed(2)}).duckattack(.06)`;
+  }
+  const fill = FILLS[layer];
+  if (fill !== undefined && production.duck > 0.05 && !out.includes('.lastOf(')) out += fill;
+  return out;
+}
+
 /** Layers that actually carry notes, and can therefore be transposed. */
 const PITCHED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>(['bass', 'harmony', 'melody']);
 
@@ -660,10 +730,19 @@ export function buildPatternCode(graph: MusicalLayerGraph, actions: MusicalActio
     const layer = graph.layers[name];
     for (const primitive of layer.primitives) {
       parts.push(
-        applyVariation(
-          applyPerformance(renderPrimitive(primitive, layer), name, graph.performance),
+        applyProduction(
+          applyVariation(
+            applyPerformance(
+              renderPrimitive(primitive, layer),
+              name,
+              graph.performance,
+              (graph.production?.duck ?? 0) > 0.05,
+            ),
+            name,
+            graph.variations,
+          ),
           name,
-          graph.variations,
+          graph.production,
         ),
       );
     }
@@ -683,10 +762,19 @@ export function trackParts(graph: MusicalLayerGraph): Array<{ id: string; code: 
     for (const primitive of layer.primitives) {
       parts.push({
         id: primitive.id,
-        code: applyVariation(
-          applyPerformance(renderPrimitive(primitive, layer), name, graph.performance),
+        code: applyProduction(
+          applyVariation(
+            applyPerformance(
+              renderPrimitive(primitive, layer),
+              name,
+              graph.performance,
+              (graph.production?.duck ?? 0) > 0.05,
+            ),
+            name,
+            graph.variations,
+          ),
           name,
-          graph.variations,
+          graph.production,
         ),
       });
     }

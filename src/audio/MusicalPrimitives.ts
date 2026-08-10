@@ -53,6 +53,12 @@ export interface MusicalLayerGraph {
   performance?: Performance;
   /** Which variation of its part each layer is currently playing (endless journey). */
   variations?: LayerVariations;
+  /**
+   * §48 production: how hard this grammar's mix pumps and moves. Derived from
+   * the grammar's own `drive`, so techno and drum & bass breathe with the kick
+   * while ambient, jazz and classical stay clean and dynamic (user decision).
+   */
+  production?: { duck: number };
 }
 
 /** Whitelisted transform names per primitive kind (spec §11, rule §25.9). */
@@ -1028,6 +1034,8 @@ export function buildLayerGraph(
       texture: { ...graph.layers.texture, primitives: authored('texture', texture), gain: level },
       atmosphere: { ...graph.layers.atmosphere, primitives: authored('atmosphere', atmosphere), gain: level },
     },
+    // §48: the grammar's own aggression decides how hard the mix pumps.
+    production: { duck: Math.min(0.7, grammar.drive * 1.7) },
   };
 }
 

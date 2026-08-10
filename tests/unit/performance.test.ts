@@ -176,3 +176,45 @@ describe('§33 a turn throws one gesture, in the grammar you are in', () => {
     }
   });
 });
+
+describe('§48 production: the grammar decides how hard the mix works', () => {
+  const kick: MusicalPrimitive = {
+    id: 'k', kind: 'kick', layer: 'drums',
+    parameters: { style: 'four', gain: 0.8 }, allowedTransforms: [],
+  };
+  const bass: MusicalPrimitive = {
+    id: 'b', kind: 'bass', layer: 'bass',
+    parameters: { style: 'repetitive', notes: 'a1 c2 e2 a2', gain: 0.6 }, allowedTransforms: [],
+  };
+
+  function render(duck: number): string {
+    const graph = createEmptyLayerGraph(128);
+    graph.layers.drums.primitives.push(kick);
+    graph.layers.bass.primitives.push(bass);
+    return buildPatternCode({ ...graph, performance: perf(), production: { duck } });
+  }
+
+  it('puts the kick and the harmony on different reverb buses', () => {
+    const code = render(0.4);
+    const kickLine = code.split('\n').find((l) => l.includes('sbd') || l.includes('bd'))!;
+    const bassLine = code.split('\n').find((l) => l.includes('note('))!;
+    expect(kickLine).toContain('.orbit(1)');
+    expect(bassLine).toContain('.orbit(1)');
+  });
+
+  it('pumps the bass under the kick in a driven grammar', () => {
+    const bassLine = render(0.4).split('\n').find((l) => l.includes('note('))!;
+    expect(bassLine).toContain('.duckorbit(1)');
+    expect(bassLine).toMatch(/\.duckdepth\(0?\.\d+\)/);
+  });
+
+  it('never pumps a grammar that has no drive (ambient, jazz, classical)', () => {
+    const code = render(0);
+    expect(code).not.toContain('.duckorbit(');
+    expect(code).not.toContain('.lastOf(');
+  });
+
+  it('turns the last bar of every eight around', () => {
+    expect(render(0.4)).toContain('.lastOf(8,');
+  });
+});
