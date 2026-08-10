@@ -274,25 +274,29 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
             : `s("sbd ~ ~ ~").gain(${gain})`;
         // §9.3 conversation: pushed off the grid.
         case 'swing':
+          // §50 reference preset: the kick and the snare trade over eight steps.
           return samplesLoaded
-            ? `s("bd ~ [~ bd] ~").bank("${DRUM_BANK}").gain(${gain})`
-            : `s("sbd ~ [~ sbd] ~").gain(${gain})`;
+            ? `s("bd ~ ~ sd ~ bd ~ sd").bank("${DRUM_BANK}").gain(${gain})`
+            : `s("sbd ~ ~ white ~ sbd ~ white").gain(${gain})`;
         // §34 garage: TWO-STEP. The second beat is left empty on purpose —
         // that hole is what the whole groove leans into.
         case 'twostep':
+          // §50 reference preset: bd ~ ~ bd ~ ~ ~ bd — beat two stays empty.
           return samplesLoaded
-            ? `s("bd ~ ~ [~ bd]").bank("RolandTR909")${shaped}.gain(${gain})`
-            : `s("sbd ~ ~ [~ sbd]").gain(${gain})`;
+            ? `s("bd ~ ~ bd ~ ~ ~ bd").bank("${DRUM_BANK}")${shaped}.gain(${gain})`
+            : `s("sbd ~ ~ sbd ~ ~ ~ sbd").gain(${gain})`;
         // §34 trap: half-time, and the 808 is allowed to ring.
         case 'halftime':
+          // §50 reference preset: bd ~ ~ bd ~ ~ bd ~, and the 808 rings.
           return samplesLoaded
-            ? `s("bd ~ ~ ~ ~ ~ [~ bd] ~").bank("${PERC_BANK}").lpf(120)${shaped}.gain(${gain})`
-            : `s("sbd ~ ~ ~ ~ ~ [~ sbd] ~").gain(${gain})`;
+            ? `s("bd ~ ~ bd ~ ~ bd ~").bank("${PERC_BANK}").lpf(120)${shaped}.gain(${gain})`
+            : `s("sbd ~ ~ sbd ~ ~ sbd ~").gain(${gain})`;
         // §34 dub: one kick, then room for the echo to answer.
         case 'echo':
+          // §50 reference preset: bd ~ ~ ~ bd ~ ~ ~ — mostly space.
           return samplesLoaded
-            ? `s("bd ~ ~ ~").bank("RolandTR909").room(.4).lpf(180).gain(${gain})`
-            : `s("sbd ~ ~ ~").room(.4).gain(${gain})`;
+            ? `s("bd ~ ~ ~ bd ~ ~ ~").bank("${DRUM_BANK}").room(.4).lpf(180).gain(${gain})`
+            : `s("sbd ~ ~ ~ sbd ~ ~ ~").room(.4).gain(${gain})`;
         // §34 classical: this region has no drum machine at all.
         case 'timpani':
           return samplesLoaded
@@ -363,8 +367,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       switch (style) {
         // §34 garage: skippy shuffled sixteenths — the displacement itself.
         case 'shuffle':
+          // §50 reference preset: ~ hh ~ [hh hh] ~ hh ~ hh — skippy, pushed late.
           return samplesLoaded
-            ? `stack(s("hh*8").bank("RolandTR909").late("<0 .02 .01 .03>").gain("${gain} ${(Number(gain) * 0.5).toFixed(3)} ${(Number(gain) * 0.85).toFixed(3)} ${(Number(gain) * 0.4).toFixed(3)}"), s("~ ~ oh ~").bank("RolandTR909").gain(${(Number(gain) * 0.7).toFixed(3)}))`
+            ? `stack(s("~ hh ~ [hh hh] ~ hh ~ hh").bank("${DRUM_BANK}").late("<0 .02 .01 .03>").gain("${gain} ${(Number(gain) * 0.5).toFixed(3)} ${(Number(gain) * 0.85).toFixed(3)} ${(Number(gain) * 0.4).toFixed(3)}"), s("~ ~ oh ~").bank("RolandTR909").gain(${(Number(gain) * 0.7).toFixed(3)}))`
             : `s("white*8").decay(.03).sustain(0).hpf(7000).late("<0 .02 .01 .03>").gain(${gain})`;
         // §34 trap: rolls that subdivide the bar under your feet.
         case 'roll':
@@ -376,9 +381,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
             ? `stack(s("hh*16").bank("${DRUM_BANK}").hpf(6500).gain("${(Number(gain) * 0.5).toFixed(2)} ${gain} ${(Number(gain) * 0.4).toFixed(2)} ${(Number(gain) * 1.1).toFixed(2)}"), s("~ oh ~ oh").bank("${DRUM_BANK}").hpf(5000).gain(${(Number(gain) * 0.8).toFixed(3)}))`
             : `s("white*8").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
         case 'swing':
+          // §50 reference preset: hh ~ hh [hh hh] hh ~ hh ~ — brushed, uneven.
           return samplesLoaded
-            ? `s("[hh ~ hh]*2").bank("${DRUM_BANK}").gain(${gain})`
-            : `s("[white ~ white]*2").decay(.035).sustain(0).hpf(6500).gain(${gain})`;
+            ? `s("hh ~ hh [hh hh] hh ~ hh ~").bank("${DRUM_BANK}").gain(${gain})`
+            : `s("white ~ white [white white] white ~ white ~").decay(.035).sustain(0).hpf(6500).gain(${gain})`;
         case 'sparse':
           return samplesLoaded
             ? `s("~ ~ oh ~").bank("${DRUM_BANK}").gain(${gain})`

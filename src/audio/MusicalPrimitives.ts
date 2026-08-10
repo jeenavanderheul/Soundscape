@@ -102,7 +102,7 @@ export function heartbeatBpm(dynamics: number): number {
  */
 export function regionBpm(grammar?: GenreGrammar): number {
   if (!grammar) return 120;
-  return Math.round((grammar.bpmMin + grammar.bpmMax) / 2);
+  return Math.round(Math.min(grammar.bpmMax, Math.max(grammar.bpmMin, grammar.bpmCentre)));
 }
 
 export type MusicParameter = 'bpm' | 'gain';
@@ -299,10 +299,20 @@ export interface GenreGrammar {
    */
   bpmMin: number;
   bpmMax: number;
+  /**
+   * §50: the tempo this region actually sits at, taken from the reference
+   * presets the product owner wrote. The range above still exists — the
+   * player's own rhythm may sit anywhere in it — but this is what you hear
+   * when you fly in.
+   */
+  bpmCentre: number;
   kickGain: number;
   hatGain: number;
   snareGain: number;
   bassGain: number;
+  /** §50 mix balance from the reference presets: chords sit under the bass. */
+  harmonyGain: number;
+  melodyGain: number;
   /** Bars a chord is held (higher = more spacious). */
   harmonySlow: number;
   /** Bars the melodic phrase spans. */
@@ -328,18 +338,31 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
   leadVoice: 'square',
   bpmMin: 90,
   bpmMax: 140,
-  kickGain: 0.95,
+  bpmCentre: 132,
+  // Reference preset: kick 1, hats .35, snare .65, bass .75, chords .3, lead .2.
+  kickGain: 1,
   hatGain: 0.35,
-  snareGain: 0.82,
-  bassGain: 0.6,
+  snareGain: 0.65,
+  bassGain: 0.75,
+  harmonyGain: 0.3,
+  melodyGain: 0.2,
   harmonySlow: 4,
   melodySlow: 2,
-  textureGain: 0.15,
+  textureGain: 0.12,
 };
 
 const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   techno: { ...NEUTRAL_GRAMMAR },
   dnb: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 174,
+    kickGain: 0.95,
+    hatGain: 0.2,
+    snareGain: 0.55,
+    bassGain: 0.9,
+    harmonyGain: 0.18,
+    melodyGain: 0.12,
+    textureGain: 0.03,
     // §49 the sound of this world: sawtooth bass, square chords, sine lead.
     bassVoice: 'sawtooth',
     chordVoice: 'square',
@@ -359,15 +382,19 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 160,
     bpmMax: 180,
     drive: 0.35,
-    kickGain: 0.95,
-    hatGain: 0.32,
-    snareGain: 0.85,
-    bassGain: 0.85,
     harmonySlow: 4,
     melodySlow: 1,
-    textureGain: 0.12,
   },
   ambient: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 70,
+    kickGain: 0.18,
+    hatGain: 0.08,
+    snareGain: 0.12,
+    bassGain: 0.4,
+    harmonyGain: 0.22,
+    melodyGain: 0.1,
+    textureGain: 0.03,
     // §49 the sound of this world: sine bass, harp chords, vibraphone lead.
     bassVoice: 'sine',
     chordVoice: 'harp',
@@ -386,15 +413,19 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 60,
     bpmMax: 90,
     drive: 0,
-    kickGain: 0.3,
-    hatGain: 0.12,
-    snareGain: 0.12,
-    bassGain: 0.4,
     harmonySlow: 8,
     melodySlow: 4,
-    textureGain: 0.25,
   },
   jazz: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 110,
+    kickGain: 0.5,
+    hatGain: 0.18,
+    snareGain: 0.16,
+    bassGain: 0.55,
+    harmonyGain: 0.3,
+    melodyGain: 0.15,
+    textureGain: 0.08,
     // §49 the sound of this world: piano bass, piano chords, sax lead.
     bassVoice: 'piano',
     chordVoice: 'piano',
@@ -413,15 +444,19 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 80,
     bpmMax: 160,
     drive: 0,
-    kickGain: 0.6,
-    hatGain: 0.3,
-    snareGain: 0.45,
-    bassGain: 0.55,
     harmonySlow: 2,
     melodySlow: 1,
-    textureGain: 0.12,
   },
   experimental: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 118,
+    kickGain: 0.55,
+    hatGain: 0.16,
+    snareGain: 0.14,
+    bassGain: 0.5,
+    harmonyGain: 0.17,
+    melodyGain: 0.1,
+    textureGain: 0.08,
     // §49 the sound of this world: square bass, marimba chords, tubularbells lead.
     bassVoice: 'square',
     chordVoice: 'marimba',
@@ -442,16 +477,20 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 70,
     bpmMax: 170,
     drive: 0.3,
-    kickGain: 0.7,
-    hatGain: 0.25,
-    snareGain: 0.3,
-    bassGain: 0.55,
     harmonySlow: 3,
     melodySlow: 2,
-    textureGain: 0.3,
   },
   // §34 UK GARAGE — displacement: the grid slides off its own centre.
   garage: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 134,
+    kickGain: 1.0,
+    hatGain: 0.3,
+    snareGain: 0.7,
+    bassGain: 0.8,
+    harmonyGain: 0.25,
+    melodyGain: 0.18,
+    textureGain: 0.15,
     // §49 the sound of this world: sine bass, organ_full chords, vibraphone lead.
     bassVoice: 'sine',
     chordVoice: 'organ_full',
@@ -470,16 +509,20 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 128,
     bpmMax: 138,
     drive: 0.12,
-    kickGain: 0.9,
-    hatGain: 0.34,
-    snareGain: 0.72,
-    bassGain: 0.72,
     harmonySlow: 2,
     melodySlow: 2,
-    textureGain: 0.14,
   },
   // §34 HOUSE — warmth: the machine plays, the hands answer.
   house: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 124,
+    kickGain: 1.0,
+    hatGain: 0.28,
+    snareGain: 0.7,
+    bassGain: 0.72,
+    harmonyGain: 0.3,
+    melodyGain: 0.16,
+    textureGain: 0.12,
     // §49 the sound of this world: sawtooth bass, piano chords, organ_full lead.
     bassVoice: 'sawtooth',
     chordVoice: 'piano',
@@ -498,16 +541,20 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 118,
     bpmMax: 128,
     drive: 0,
-    kickGain: 0.88,
-    hatGain: 0.3,
-    snareGain: 0.6,
-    bassGain: 0.6,
     harmonySlow: 2,
     melodySlow: 2,
-    textureGain: 0.14,
   },
   // §34 TRAP — weight: half-time, and the low end slides.
   trap: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 140,
+    kickGain: 1.0,
+    hatGain: 0.24,
+    snareGain: 0.75,
+    bassGain: 0.9,
+    harmonyGain: 0.15,
+    melodyGain: 0.12,
+    textureGain: 0.02,
     // §49 the sound of this world: sine bass, glockenspiel chords, glockenspiel lead.
     bassVoice: 'sine',
     chordVoice: 'glockenspiel',
@@ -526,16 +573,20 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 130,
     bpmMax: 150,
     drive: 0.2,
-    kickGain: 0.95,
-    hatGain: 0.26,
-    snareGain: 0.8,
-    bassGain: 0.9,
     harmonySlow: 4,
     melodySlow: 2,
-    textureGain: 0.1,
   },
   // §34 DUB — echo: what was played comes back, changed.
   dub: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 72,
+    kickGain: 0.7,
+    hatGain: 0.1,
+    snareGain: 0.45,
+    bassGain: 0.85,
+    harmonyGain: 0.18,
+    melodyGain: 0.12,
+    textureGain: 0.06,
     // §49 the sound of this world: sine bass, organ_full chords, harmonica lead.
     bassVoice: 'sine',
     chordVoice: 'organ_full',
@@ -554,16 +605,20 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 70,
     bpmMax: 110,
     drive: 0,
-    kickGain: 0.85,
-    hatGain: 0.2,
-    snareGain: 0.5,
-    bassGain: 0.85,
     harmonySlow: 4,
     melodySlow: 4,
-    textureGain: 0.2,
   },
   // §34 CLASSICAL — orchestration: no drum machine anywhere in this region.
   classical: {
+    // §50 mix and tempo from the reference preset.
+    bpmCentre: 82,
+    kickGain: 0.35,
+    hatGain: 0.06,
+    snareGain: 0.1,
+    bassGain: 0.35,
+    harmonyGain: 0.28,
+    melodyGain: 0.14,
+    textureGain: 0.02,
     // §49 the sound of this world: harp bass, piano chords, glockenspiel lead.
     bassVoice: 'harp',
     chordVoice: 'piano',
@@ -582,13 +637,8 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     bpmMin: 60,
     bpmMax: 110,
     drive: 0,
-    kickGain: 0.55,
-    hatGain: 0.1,
-    snareGain: 0.15,
-    bassGain: 0.5,
     harmonySlow: 4,
     melodySlow: 4,
-    textureGain: 0.18,
   },
 };
 
@@ -924,7 +974,7 @@ export function buildLayerGraph(
         style: grammar.chordStyle,
         drive: grammar.drive,
         slow: grammar.harmonySlow,
-        gain: round2(0.3 * mix.harmony),
+        gain: round2(grammar.harmonyGain * mix.harmony),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.chord],
     });
@@ -942,7 +992,7 @@ export function buildLayerGraph(
           sound: 'triangle',
           style: 'pad',
           slow: grammar.harmonySlow * 2,
-          gain: round2(0.14 * mix.harmony),
+          gain: round2(grammar.harmonyGain * 0.47 * mix.harmony),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.chord],
       });
@@ -966,7 +1016,7 @@ export function buildLayerGraph(
         style: grammar.melodyStyle,
         drive: grammar.drive,
         slow: grammar.melodySlow,
-        gain: round2(0.3 * mix.melody),
+        gain: round2(grammar.melodyGain * mix.melody),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.melody],
     });
@@ -985,7 +1035,7 @@ export function buildLayerGraph(
           sound: 'triangle',
           style: grammar.melodyStyle,
           slow: grammar.melodySlow * 2,
-          gain: round2(0.13 * mix.melody),
+          gain: round2(grammar.melodyGain * 0.43 * mix.melody),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.melody],
       });
@@ -1004,7 +1054,7 @@ export function buildLayerGraph(
           .slice(0, 4)
           .map((midi) => midiToNoteName(midi))
           .join(' '),
-        gain: round2(0.24 * mix.melody),
+        gain: round2(grammar.melodyGain * 0.8 * mix.melody),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.response],
     });

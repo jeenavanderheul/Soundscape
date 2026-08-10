@@ -6,7 +6,7 @@ vi.mock('@strudel/web', () => ({
   samples: vi.fn(async () => undefined),
 }));
 
-import { buildLayerGraph, genreGrammar } from '../../src/audio/MusicalPrimitives';
+import { buildLayerGraph, genreGrammar, regionBpm } from '../../src/audio/MusicalPrimitives';
 import { buildPatternCode, setSamplesLoaded } from '../../src/audio/StrudelEngine';
 import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
@@ -209,5 +209,33 @@ describe('§49 every world has its own voices', () => {
     expect(code('jazz')).toContain('"piano"');
     expect(code('house')).toContain('"piano"');
     expect(code('techno')).not.toContain('"piano"');
+  });
+});
+
+describe('§50 the reference presets are the tempo and the mix', () => {
+  it('every region sits at the tempo its preset was written at', () => {
+    const at = (genre: Exclude<TrackGenre, null>) => regionBpm(genreGrammar(genre));
+    expect(at('techno')).toBe(132);
+    expect(at('garage')).toBe(134);
+    expect(at('jazz')).toBe(110);
+    expect(at('house')).toBe(124);
+    expect(at('ambient')).toBe(70);
+    expect(at('classical')).toBe(82);
+    expect(at('dnb')).toBe(174);
+    expect(at('trap')).toBe(140);
+    expect(at('experimental')).toBe(118);
+    expect(at('dub')).toBe(72);
+  });
+
+  it('keeps the preset mix order: kick over bass over chords over lead', () => {
+    for (const genre of ['techno', 'house', 'garage', 'trap', 'dnb'] as const) {
+      const g = genreGrammar(genre);
+      expect(g.kickGain).toBeGreaterThanOrEqual(g.bassGain);
+      expect(g.bassGain).toBeGreaterThan(g.harmonyGain);
+      expect(g.harmonyGain).toBeGreaterThanOrEqual(g.melodyGain);
+    }
+    // Ambient and classical invert it: the kick is the quietest thing there.
+    expect(genreGrammar('ambient').kickGain).toBeLessThan(genreGrammar('ambient').bassGain);
+    expect(genreGrammar('classical').kickGain).toBeLessThan(genreGrammar('classical').harmonyGain * 2);
   });
 });
