@@ -18,6 +18,13 @@ export interface ArrangementConfig {
   lowEnergy: number;
   /** Time at high energy before the track drops. */
   buildMs: number;
+  /**
+   * §64: a drop needs something to drop. Below this many earned layers — and
+   * below `peakMinTrackMs` of track — the arrangement stays in intro, groove
+   * and break, because a build takes the FLOOR away and there is no floor yet.
+   */
+  peakMinLayers: number;
+  peakMinTrackMs: number;
   /** How long a drop holds before it settles back into the groove. */
   dropMs: number;
 }
@@ -27,6 +34,8 @@ export const ARRANGEMENT_CONFIG: ArrangementConfig = {
   highEnergy: 0.55,
   lowEnergy: 0.2,
   buildMs: 12_000,
+  peakMinLayers: 4,
+  peakMinTrackMs: 60_000,
   dropMs: 20_000,
 };
 
@@ -122,7 +131,11 @@ export class ArrangementEngine {
    * the track comes from how hard the player is flying and how long they have
    * been at it — one meaning per gesture, and nothing to learn.
    */
-  tick(nowMs: number, deltaMs: number, energy: number): Section {
+  /**
+   * `ready` is §64: does this track have a floor to take away yet. It is the
+   * only thing standing between groove and a build.
+   */
+  tick(nowMs: number, deltaMs: number, energy: number, ready = true): Section {
     const { config } = this;
     if (this.section === 'none') {
       this.enter('intro', nowMs);
@@ -139,7 +152,7 @@ export class ArrangementEngine {
         break;
       // §58: energy and time carry the form. Height is pitch and tempo only.
       case 'groove':
-        if (this.highEnergyMs >= config.buildMs) this.enter('build', nowMs);
+        if (ready && this.highEnergyMs >= config.buildMs) this.enter('build', nowMs);
         else if (energy <= config.lowEnergy) this.enter('break', nowMs);
         break;
       case 'build':

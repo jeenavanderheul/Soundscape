@@ -3,7 +3,7 @@ import type { GenreAffinity } from './MusicState';
 import type { EventBus } from '../core/EventBus';
 import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
-import { ArrangementEngine } from './ArrangementEngine';
+import { ARRANGEMENT_CONFIG, ArrangementEngine } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
 import { ladderFor, layerUnlocked, nextStep } from './GenreLadder';
 import { HarmonyEngine } from './HarmonyEngine';
@@ -422,7 +422,17 @@ export class TrackBuilder {
     }
     // The arrangement runs on the paced clock too: sections arrive sooner when
     // the player is moving through the world quickly.
-    const section = this.arrangement.tick(this.paceClockMs, paced, flight.energy);
+    // §64: a peak has to be earned twice over — enough of the track to have a
+    // floor, and enough time in it to have meant something.
+    const earned = [
+      track.drums.kick, track.drums.snare, track.drums.hats,
+      track.bass, track.harmony, track.melody, track.texture,
+    ].filter((layer) => layer.unlocked).length;
+    const readyToPeak =
+      track.bass.unlocked &&
+      earned >= ARRANGEMENT_CONFIG.peakMinLayers &&
+      this.paceClockMs - this.trackStartedMs >= ARRANGEMENT_CONFIG.peakMinTrackMs;
+    const section = this.arrangement.tick(this.paceClockMs, paced, flight.energy, readyToPeak);
 
     if (
       nextBpm !== track.bpm ||

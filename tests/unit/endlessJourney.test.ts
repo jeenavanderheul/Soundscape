@@ -54,8 +54,10 @@ function complete(track: TrackState): TrackState {
 function flyThroughADrop(builder: TrackBuilder, fromMs: number): number {
   const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, dynamics: 0.6 };
   let t = fromMs;
-  for (; t < fromMs + 40_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.9 });
-  for (; t < fromMs + 70_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.1 });
+  // §64: a peak has to be earned — a minute of track before a build is even
+  // possible, so the flight that reaches a drop is not a short one.
+  for (; t < fromMs + 110_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.9 });
+  for (; t < fromMs + 140_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.1 });
   return t;
 }
 

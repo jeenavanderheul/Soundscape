@@ -145,3 +145,25 @@ describe('§60 the sections can be told apart by ear', () => {
     expect(brk.harmony).toBeGreaterThan(0.8);
   });
 });
+
+describe('§64 a drop has to have something to drop', () => {
+  function push(engine: ArrangementEngine, ms: number, ready: boolean, from = 0) {
+    let section = engine.current;
+    for (let t = from; t <= from + ms; t += 250) section = engine.tick(t, 250, 0.9, ready);
+    return section;
+  }
+
+  it('never builds while the track has no floor yet', () => {
+    const engine = new ArrangementEngine();
+    // Full energy for a minute and a half: it grooves, and that is correct —
+    // a build takes the bass away, and there is no bass.
+    expect(push(engine, 90_000, false)).toBe('groove');
+  });
+
+  it('and builds — then drops — the moment the track is ready', () => {
+    const engine = new ArrangementEngine();
+    push(engine, 20_000, false);
+    expect(push(engine, 1000, true, 20_250)).toBe('build');
+    expect(push(engine, 12_000, true, 21_500)).toBe('drop');
+  });
+});
