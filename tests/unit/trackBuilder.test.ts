@@ -62,6 +62,32 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
   });
 });
 
+describe('auto-ladder: roaming alone unlocks the drums (§29.3, user decision)', () => {
+  it('unlocks kick ≈3s, hats ≈7s, snare ≈11s of active roaming', () => {
+    const { store, builder } = setup();
+    const roaming = { ...createInitialMusicState(), bpm: 112, dynamics: 0.5 };
+    const at = (ms: number) => {
+      for (let t = 0; t <= ms; t += 100) builder.tick(t, roaming);
+      return store.getState().drums;
+    };
+    const d1 = at(3200);
+    expect(d1.kick.unlocked).toBe(true);
+    expect(d1.hats.unlocked).toBe(false);
+    const d2 = at(7300);
+    expect(d2.hats.unlocked).toBe(true);
+    expect(d2.snare.unlocked).toBe(false);
+    const d3 = at(11400);
+    expect(d3.snare.unlocked).toBe(true);
+  });
+
+  it('does not accumulate during stillness', () => {
+    const { store, builder } = setup();
+    const still = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0 };
+    for (let t = 0; t <= 20_000; t += 100) builder.tick(t, still);
+    expect(store.getState().drums.kick.unlocked).toBe(false);
+  });
+});
+
 describe('graph from TrackState (§29.3 ghost → kick → clap)', () => {
   const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, rhythmDensity: 1 };
 

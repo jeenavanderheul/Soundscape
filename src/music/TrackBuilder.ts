@@ -1,3 +1,4 @@
+import { heartbeatBpm, HEARTBEAT_DYNAMICS_THRESHOLD } from '../audio/MusicalPrimitives';
 import type { EventBus } from '../core/EventBus';
 import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
@@ -23,6 +24,15 @@ export interface TrackBuilderConfig {
   highHz: number;
   /** Wind-release amplitude that reads as a strong transient (clap intent). */
   clapAmplitude: number;
+  /** §29.3 auto-ladder (user decision): simply roaming the world with energy
+   * unlocks the drum layers on this schedule; deliberate intent goes faster. */
+  autoKickMs: number;
+  autoHatsMs: number;
+  autoSnareMs: number;
+  /** Activity (dynamics) above this counts as roaming energy. */
+  activityFloor: number;
+  /** Clamp per-tick delta so tab suspensions never auto-unlock everything. */
+  maxTickDeltaMs: number;
 }
 
 export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
@@ -33,6 +43,11 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   lowHz: 250,
   highHz: 600,
   clapAmplitude: 0.55,
+  autoKickMs: 3000,
+  autoHatsMs: 7000,
+  autoSnareMs: 11000,
+  activityFloor: 0.12,
+  maxTickDeltaMs: 500,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -52,12 +67,23 @@ export class TrackBuilder {
   private readonly lowActions: number[] = [];
   private readonly highActions: number[] = [];
   private readonly strongActions: number[] = [];
+  private activeMs = 0;
+  private lastTickMs: number | null = null;
 
   constructor(
     private readonly store: Store<TrackState>,
     private readonly bus: EventBus<TrackEvents>,
     private readonly config: TrackBuilderConfig = TRACK_BUILDER_CONFIG,
   ) {}
+
+  /** Reset world (§17): the ladder starts over with the void. */
+  reset(): void {
+    this.lowActions.length = 0;
+    this.highActions.length = 0;
+    this.strongActions.length = 0;
+    this.activeMs = 0;
+    this.lastTickMs = null;
+  }
 
   /** Input pulses and wind releases, tagged with the player's current sound. */
   onAction(action: TrackAction): void {
@@ -83,19 +109,38 @@ export class TrackBuilder {
     prune(this.strongActions, nowMs, config.intentWindowMs);
 
     const track = this.store.getState();
-    const tempoExists = music.bpm > 0 || track.bpm > 0;
-    const bpm = music.bpm > 0 ? music.bpm : track.bpm;
+    // The heartbeat clock counts as tempo (§29 fase 1): roaming with wind IS
+    // finding a pulse — the world's ghost pulse carries the ladder.
+    const heartbeatActive = music.dynamics >= HEARTBEAT_DYNAMICS_THRESHOLD;
+    const bpm =
+      music.bpm > 0 ? music.bpm : track.bpm > 0 ? track.bpm : heartbeatActive ? heartbeatBpm(music.dynamics) : 0;
+    const tempoExists = bpm > 0;
     if (bpm !== track.bpm) this.store.setState((t) => ({ ...t, bpm }));
 
+    // §29.3 auto-ladder: roaming with energy accumulates active time.
+    const rawDelta = this.lastTickMs === null ? 0 : Math.max(0, nowMs - this.lastTickMs);
+    this.lastTickMs = nowMs;
+    const active =
+      music.dynamics >= config.activityFloor ||
+      (music.bpm > 0 && music.tempoConfidence > 0.3);
+    if (active) this.activeMs += Math.min(rawDelta, config.maxTickDeltaMs);
+
     // Ladder order (§29.2): kick first, then hats and clap on top of it.
-    if (!track.drums.kick.unlocked && tempoExists && this.lowActions.length >= config.kickActionsNeeded) {
+    // Deliberate register intent OR simply enough roaming energy unlocks.
+    const kickIntent =
+      this.lowActions.length >= config.kickActionsNeeded || this.activeMs >= config.autoKickMs;
+    if (!track.drums.kick.unlocked && tempoExists && kickIntent) {
       this.unlock('kick', nowMs);
     }
     const kicked = this.store.getState().drums.kick.unlocked;
-    if (kicked && !track.drums.hats.unlocked && this.highActions.length >= config.hatActionsNeeded) {
+    const hatIntent =
+      this.highActions.length >= config.hatActionsNeeded || this.activeMs >= config.autoHatsMs;
+    if (kicked && !track.drums.hats.unlocked && hatIntent) {
       this.unlock('hats', nowMs);
     }
-    if (kicked && !track.drums.snare.unlocked && this.strongActions.length >= config.clapActionsNeeded) {
+    const snareIntent =
+      this.strongActions.length >= config.clapActionsNeeded || this.activeMs >= config.autoSnareMs;
+    if (kicked && !track.drums.snare.unlocked && snareIntent) {
       this.unlock('snare', nowMs);
     }
   }

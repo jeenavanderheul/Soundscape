@@ -87,6 +87,7 @@ interface FrequencyDebug {
   getProgression(): unknown;
   getAnalysis(): unknown;
   getTrackState(): unknown;
+  getInputCounts(): unknown;
   saveNow(): { ok: boolean };
   loadInfo(): LoadInfo;
   resetWorld(): void;
@@ -156,6 +157,10 @@ export class Game {
   private readonly trackStore: Store<TrackState> = createStore(createInitialTrackState());
   private readonly trackBuilder = new TrackBuilder(this.trackStore, this.events);
   private beatIndex = 0;
+  /** Dev diagnostics: how often each pulse source fired this session. */
+  private readonly inputCounts = { windReleased: 0, resonancePulse: 0 };
+  /** How long the wind has been genuinely held; guards the clap intent. */
+  private windHeldMs = 0;
   /** §17: discovered causal laws; unlocks the composer mechanic. */
   private readonly progressionStore: Store<ProgressionState> = createStore(
     createInitialProgression(),
@@ -307,6 +312,7 @@ export class Game {
         getStrudelInfo: () => this.strudelEngine.status,
         getAnalysis: () => (this.audioAnalyser ? { ...this.audioAnalyser.snapshot } : null),
         getTrackState: () => this.trackStore.getState(),
+        getInputCounts: () => ({ ...this.inputCounts }),
         getGenreSnapshot: () => this.genreEngine.current,
         getProgression: () => ({
           ...this.progressionStore.getState(),
@@ -375,7 +381,12 @@ export class Game {
     const snapshot = this.input.snapshot();
     this.controller.update(snapshot, deltaMs);
     // §3.3: timed excitations (LMB release, Space) are the rhythm onsets.
+    const deliberateRelease =
+      snapshot.windReleased && !snapshot.resonancePulse && this.windHeldMs >= 400;
+    this.windHeldMs = snapshot.buttons.windHold ? this.windHeldMs + deltaMs : 0;
     if (snapshot.windReleased || snapshot.resonancePulse) {
+      if (snapshot.windReleased) this.inputCounts.windReleased += 1;
+      if (snapshot.resonancePulse) this.inputCounts.resonancePulse += 1;
       this.rhythmDetector.onOnset(elapsedMs);
       // §29.5: the same action is TRACK INTENT — its register carries meaning.
       const acting = this.frequencyStore.getState();
@@ -383,9 +394,9 @@ export class Game {
         atMs: elapsedMs,
         hz: acting.hz,
         amplitude: acting.amplitude,
-        // A clap intent is a DELIBERATE wind release, not a Space tap that
-        // happened while the wind was held (§29.3).
-        release: snapshot.windReleased && !snapshot.resonancePulse,
+        // A clap intent is a DELIBERATE wind release (§29.3): the wind was
+        // genuinely held first — never a Space tap or an input glitch.
+        release: deliberateRelease,
       });
     }
     // §17 composer reveal: once causal understanding is demonstrated, a
@@ -617,6 +628,7 @@ export class Game {
     // The void returns COMPLETELY: player back at spawn, tone at rest (§17).
     this.frequencyStore.setState(() => createInitialFrequencyState());
     this.trackStore.setState(() => createInitialTrackState());
+    this.trackBuilder.reset();
     this.controller.resetOrientation();
     for (const structure of removed) this.events.emit('structure:removed', structure);
     // Runs last: also cancels the autosave the store change just scheduled.
