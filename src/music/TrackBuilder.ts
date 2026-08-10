@@ -85,6 +85,11 @@ export interface TrackBuilderConfig {
    * has to change what you hear, or the world is one long track with scenery.
    */
   regionSwitchMs: number;
+  /**
+   * §54: a track has to be allowed to exist. Circling a border would otherwise
+   * start a new one every second and you would never build anything.
+   */
+  minTrackLifeMs: number;
 }
 
 export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
@@ -109,9 +114,11 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   fullSpeed: 66,
   paceAtRest: 0.55,
   paceAtFullSpeed: 2.4,
-  // Two seconds is long enough that clipping a corner does not restart the
-  // track, short enough that flying at a world IS arriving in it.
-  regionSwitchMs: 2000,
+  // Arriving in a world IS hearing it: the switch fires as soon as the region
+  // reads as the new one, and lands on the next bar (§11). What stops a sweep
+  // of the mouse from wiping your track is minTrackLifeMs, not a delay here.
+  regionSwitchMs: 250,
+  minTrackLifeMs: 8000,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -163,6 +170,8 @@ export class TrackBuilder {
   private lastDeepenMs = 0;
   private lastTickMs: number | null = null;
   private paceClockMs = 0;
+  /** Paced time the current track was born at, for §54's minimum life. */
+  private trackStartedMs = 0;
   private lastRegion: TrackGenre = null;
   /** Paced time spent inside a region that is not this track's own (§53). */
   private awayMs = 0;
@@ -226,6 +235,7 @@ export class TrackBuilder {
     this.handingOver = false;
     this.lastRegion = null;
     this.awayMs = 0;
+    this.trackStartedMs = 0;
   }
 
   /**
@@ -252,7 +262,7 @@ export class TrackBuilder {
     return layers.every((layer) => layerUnlocked(track, layer) && levelOf(track, layer) >= LEVEL_DEEP);
   }
 
-  private startNextTrack(nowMs: number, keepLayers = false): void {
+  private startNextTrack(nowMs: number, reason: 'completed' | 'travelled' = 'completed'): void {
     const previous = this.store.getState();
     this.trackNumberValue += 1;
     this.handingOver = false;
@@ -263,26 +273,16 @@ export class TrackBuilder {
     // What survives: the key (transposed) and ONE motif, moved with it. The
     // parts themselves are earned again — that is still the game.
     const motif = previous.melodyNotes.map((note) => note + shift);
-    // Everything you had, at its earned level: the second voices are grown
-    // again in the new grammar, because that is where the depth comes from.
-    const carried = (pattern: { unlocked: boolean }) =>
-      keepLayers && pattern.unlocked ? { unlocked: true, level: LEVEL_EARNED } : { unlocked: false, level: 0 };
+    // A track you FINISHED hands its key and one motif to the next one; a
+    // world you TRAVELLED to is a clean slate, at its own tempo, straight away
+    // (user decision §54).
+    const travelled = reason === 'travelled';
     this.store.setState((t) => ({
       ...createInitialTrackState(),
-      bpm: t.bpm, // the journey does not stop to count itself back in
       genre: bornIn,
-      rootMidi,
-      melodyNotes: motif,
-      drums: {
-        kick: carried(t.drums.kick),
-        snare: carried(t.drums.snare),
-        hats: carried(t.drums.hats),
-      },
-      bass: carried(t.bass),
-      harmony: carried(t.harmony),
-      melody: carried(t.melody),
-      texture: carried(t.texture),
-      harmonyIntervals: keepLayers ? t.harmonyIntervals : [0],
+      bpm: travelled ? regionBpm(genreGrammar(bornIn)) : t.bpm,
+      rootMidi: travelled ? createInitialTrackState().rootMidi : rootMidi,
+      melodyNotes: travelled ? [] : motif,
     }));
     this.activeMs = 0;
     this.lastDeepenMs = 0;
@@ -295,6 +295,7 @@ export class TrackBuilder {
     this.conversation.reset();
     this.arrangement.reset();
     this.awayMs = 0;
+    this.trackStartedMs = this.paceClockMs;
     this.bus.emit('track:new', { number: this.trackNumberValue, atMs: nowMs });
   }
 
@@ -403,13 +404,12 @@ export class TrackBuilder {
     // the track you were building ends and a new one starts in this grammar.
     const away = this.lastRegion !== null && track.genre !== null && this.lastRegion !== track.genre;
     this.awayMs = away ? this.awayMs + paced : 0;
-    if (this.awayMs >= config.regionSwitchMs) {
+    const lived = this.paceClockMs - this.trackStartedMs;
+    if (this.awayMs >= config.regionSwitchMs && lived >= config.minTrackLifeMs) {
       this.awayMs = 0;
-      // §53: crossing into another world REWRITES what you have in that
-      // grammar — the same fullness, in dnb's kit and at dnb's tempo, from the
-      // moment you arrive. A track that finished on its own starts empty
-      // instead; that one you earned to the end.
-      this.startNextTrack(nowMs, true);
+      // §54: a world is a track. Arrive somewhere else and you start there —
+      // from the first layer, at that world's tempo, with nothing carried over.
+      this.startNextTrack(nowMs, 'travelled');
       return;
     }
     // The arrangement runs on the paced clock too: sections arrive sooner when

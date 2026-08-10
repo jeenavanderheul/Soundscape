@@ -122,3 +122,41 @@ describe('arriving somewhere new starts a track in that world', () => {
     expect(trap.bpmCentre).not.toBe(techno.bpmCentre);
   });
 });
+
+describe('staying is the trip: deeper into one world, endlessly', () => {
+  it('deepens, varies and hands over to another track of the SAME world', () => {
+    const store = createStore(createInitialTrackState());
+    const bus = createEventBus<TrackEvents>();
+    const born: (string | null)[] = [];
+    const deepened: string[] = [];
+    bus.on('track:new', () => born.push(store.getState().genre));
+    bus.on('track:depth', ({ layer }) => deepened.push(layer));
+    const builder = new TrackBuilder(store, bus);
+    const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.6 };
+    const techno = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+
+    const variations: string[] = [];
+    // Six minutes in one world: climb, dive, climb, dive — the flight keeps
+    // making form, and the world keeps answering with more of itself.
+    for (let t = 0; t <= 360_000; t += 250) {
+      const phase = Math.floor(t / 20_000) % 2 === 0 ? 6 : -6;
+      builder.tick(
+        t,
+        music,
+        { velocity: 30, hz: 220, energy: 0.7, altitude: 20, climb: phase },
+        techno,
+      );
+      const shape = JSON.stringify(builder.variations);
+      if (variations[variations.length - 1] !== shape) variations.push(shape);
+    }
+
+    // It never leaves the world…
+    expect(born.length).toBeGreaterThan(0);
+    expect(new Set(born)).toEqual(new Set(['techno']));
+    expect(store.getState().genre).toBe('techno');
+    // …it grows depth…
+    expect(deepened.length).toBeGreaterThan(3);
+    // …and it keeps rewriting its own parts, so it is never the same loop.
+    expect(variations.length).toBeGreaterThan(6);
+  });
+});
