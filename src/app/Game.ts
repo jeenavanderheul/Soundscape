@@ -542,6 +542,8 @@ export class Game {
           hz: state.hz,
           energy: Math.min(1, state.energy * 0.6 + state.amplitude * 0.4),
           altitude: state.position.y - this.terrain.groundHeightAt(state.position.x, state.position.z),
+          // Climbing builds the track, diving out of the build is the drop.
+          climb: this.controller.climbRate,
         },
         genre?.affinity,
       );

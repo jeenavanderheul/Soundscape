@@ -592,10 +592,16 @@ function applyPerformance(code: string, layer: LayerName, perf?: Performance): s
     out += `.clip(${perf.length.toFixed(2)})`;
   }
   if (perf.grit > 0.02 && !out.includes('.shape(')) out += `.shape(${perf.grit.toFixed(2)})`;
+  // Climbing lifts the pitched voices together, in steps of the key, so the
+  // track transposes without ever going out of tune (user decision).
+  if (perf.transpose !== 0 && PITCHED_LAYERS.has(layer)) out += `.add(note(${perf.transpose}))`;
   // §3.1: skimming the ground IS the low register — it leans on the bass.
   const push = layer === 'bass' ? perf.push * (0.8 + perf.weight * 0.5) : perf.push;
   return `${out}.postgain(${clamp(push, 0, 2).toFixed(2)})`;
 }
+
+/** Layers that actually carry notes, and can therefore be transposed. */
+const PITCHED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>(['bass', 'harmony', 'melody']);
 
 /** Layers whose voices hold a note long enough for note length to mean anything. */
 const SUSTAINED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>([

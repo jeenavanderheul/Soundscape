@@ -136,6 +136,11 @@ export class FrequencyController {
     null;
   private grounded = false;
 
+  /** Vertical speed in units/s: positive is climbing (§29.7 arrangement). */
+  get climbRate(): number {
+    return this.velocityVec.y;
+  }
+
   /** 1..5, shown in the HUD. */
   get gear(): number {
     return this.gearIndex + 1;

@@ -1074,6 +1074,7 @@ function performanceChanged(prev?: Performance, next?: Performance): boolean {
     prev.push !== next.push ||
     prev.length !== next.length ||
     prev.grit !== next.grit ||
-    prev.weight !== next.weight
+    prev.weight !== next.weight ||
+    prev.transpose !== next.transpose
   );
 }

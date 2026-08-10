@@ -112,3 +112,36 @@ describe('ArrangementEngine (§29.7 movement becomes arrangement)', () => {
     expect(sectionMix('break').harmony).toBe(1);
   });
 });
+
+describe('height is the arrangement (user decision)', () => {
+  const engine = () => new ArrangementEngine();
+
+  /** Run the engine for `ms` at a fixed energy and climb rate. */
+  function run(e: ArrangementEngine, ms: number, energy: number, climb: number, fromMs = 0) {
+    let section = e.current;
+    for (let t = fromMs; t <= fromMs + ms; t += 250) section = e.tick(t, 250, energy, 4, climb);
+    return section;
+  }
+
+  it('climbing builds the track and diving out of the build is the drop', () => {
+    const e = engine();
+    run(e, 9000, 0.4, 0); // settle into a groove
+    expect(run(e, 3000, 0.4, 6, 9250)).toBe('build');
+    expect(run(e, 500, 0.4, -6, 12_500)).toBe('drop');
+  });
+
+  it('a drop has to be earned: diving without a build does not drop', () => {
+    const e = engine();
+    run(e, 9000, 0.4, 0);
+    expect(run(e, 4000, 0.4, -6, 9250)).not.toBe('drop');
+  });
+
+  it('and it cannot be repeated straight away', () => {
+    const e = engine();
+    run(e, 9000, 0.4, 0);
+    run(e, 3000, 0.4, 6, 9250);
+    run(e, 500, 0.4, -6, 12_500);
+    // Climbing again immediately after the drop must not build another one.
+    expect(run(e, 4000, 0.4, 6, 13_500)).not.toBe('build');
+  });
+});

@@ -20,6 +20,12 @@ export interface ArrangementConfig {
   buildMs: number;
   /** How long a drop holds before it settles back into the groove. */
   dropMs: number;
+  /** Vertical rate (units/s) that counts as deliberately climbing or diving. */
+  climbRate: number;
+  /** Time climbing before the track starts building (user decision). */
+  climbMs: number;
+  /** Quiet after a drop before climbing can build another one. */
+  dropCooldownMs: number;
 }
 
 export const ARRANGEMENT_CONFIG: ArrangementConfig = {
@@ -28,6 +34,9 @@ export const ARRANGEMENT_CONFIG: ArrangementConfig = {
   lowEnergy: 0.2,
   buildMs: 12_000,
   dropMs: 20_000,
+  climbRate: 3,
+  climbMs: 2500,
+  dropCooldownMs: 12_000,
 };
 
 /** Per-section layer gain multipliers (0 = muted for this section). */
@@ -61,6 +70,8 @@ export class ArrangementEngine {
   private section: Section = 'none';
   private sectionSinceMs = 0;
   private highEnergyMs = 0;
+  private climbMs = 0;
+  private lastDropMs = -Infinity;
 
   constructor(private readonly config: ArrangementConfig = ARRANGEMENT_CONFIG) {}
 
@@ -72,7 +83,19 @@ export class ArrangementEngine {
    * `energy` blends how hard the player pushes (0..1); `layers` is how much
    * of the track exists. Deterministic given its inputs.
    */
-  tick(nowMs: number, deltaMs: number, energy: number, layers: number): Section {
+  /**
+   * `climb` is the orb's vertical speed in units/s (user decision): a sustained
+   * climb builds the track up, and diving out of that build IS the drop. A drop
+   * has to be earned by a climb and cannot be repeated straight away, so it
+   * keeps its weight.
+   */
+  tick(
+    nowMs: number,
+    deltaMs: number,
+    energy: number,
+    layers: number,
+    climb = 0,
+  ): Section {
     const { config } = this;
     if (layers === 0) {
       this.section = 'none';
@@ -84,7 +107,31 @@ export class ArrangementEngine {
       return this.section;
     }
     this.highEnergyMs = energy >= config.highEnergy ? this.highEnergyMs + deltaMs : 0;
+    this.climbMs = climb >= config.climbRate ? this.climbMs + deltaMs : 0;
     const inSectionMs = nowMs - this.sectionSinceMs;
+
+    // Height is the arrangement (user decision). Climbing lifts the track into
+    // a build; dropping out of the sky is the drop. Both bypass the patience
+    // timer, because the player asked for them with the stick.
+    const climbing = this.climbMs >= config.climbMs;
+    const diving = climb <= -config.climbRate;
+    if (this.section === 'build' && diving) {
+      this.lastDropMs = nowMs;
+      this.climbMs = 0;
+      this.enter('drop', nowMs);
+      return this.section;
+    }
+    if (
+      climbing &&
+      this.section !== 'build' &&
+      this.section !== 'drop' &&
+      this.section !== 'intro' &&
+      nowMs - this.lastDropMs >= config.dropCooldownMs
+    ) {
+      this.enter('build', nowMs);
+      return this.section;
+    }
+
     if (inSectionMs < config.minSectionMs) return this.section;
 
     switch (this.section) {
@@ -124,6 +171,8 @@ export class ArrangementEngine {
     this.section = 'none';
     this.sectionSinceMs = 0;
     this.highEnergyMs = 0;
+    this.climbMs = 0;
+    this.lastDropMs = -Infinity;
   }
 
   private enter(section: Section, nowMs: number): void {

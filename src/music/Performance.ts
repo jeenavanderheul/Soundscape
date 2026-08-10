@@ -40,10 +40,22 @@ export interface Performance {
   grit: number;
   /** Sub emphasis: 1 when skimming the ground, 0 high up (§3.1 low = mass). */
   weight: number;
+  /**
+   * Semitones the whole track is lifted by, quantized to steps of the key so
+   * it always stays in tune (user decision). Climbing raises the pitch.
+   */
+  transpose: number;
 }
 
 /** Height at which the world is fully "air" rather than "ground". */
 const AIR_ALTITUDE = 45;
+
+/**
+ * Steps of the key the track can be lifted by as the player climbs. Scale
+ * degrees, never raw semitones: height must change the pitch without ever
+ * putting the track out of tune (§3.1, §3.6).
+ */
+const CLIMB_STEPS: readonly number[] = [0, 3, 5, 7, 12];
 
 export function performanceFrom(music: MusicState, flight: FlightPose): Performance {
   const air = clamp01(flight.altitude / AIR_ALTITUDE);
@@ -62,6 +74,8 @@ export function performanceFrom(music: MusicState, flight: FlightPose): Performa
     grit: step(clamp01(music.dissonance * 0.8 + music.timbreNoise * 0.3), 8) * 0.4,
     // §3.1: low frequencies are mass. Skimming the ground IS the low register.
     weight: step(ground * ground, 8),
+    // Climbing lifts the whole track, in steps of its own key.
+    transpose: CLIMB_STEPS[Math.min(CLIMB_STEPS.length - 1, Math.floor(air * CLIMB_STEPS.length))]!,
   };
 }
 

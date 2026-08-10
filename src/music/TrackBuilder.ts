@@ -104,6 +104,8 @@ export interface FlightState {
   energy: number;
   /** Height above the terrain right under the orb (§3.1 low = mass, high = air). */
   altitude?: number;
+  /** Vertical speed in units/s: climbing builds the track, diving drops it. */
+  climb?: number;
 }
 
 function prune(times: number[], nowMs: number, windowMs: number): void {
@@ -232,7 +234,13 @@ export class TrackBuilder {
 
     // --- Fase 11: ARRANGEMENT. Movement becomes form (§29.7).
     const layerCount = this.countLayers(track);
-    const section = this.arrangement.tick(nowMs, delta, flight.energy, layerCount);
+    const section = this.arrangement.tick(
+      nowMs,
+      delta,
+      flight.energy,
+      layerCount,
+      flight.climb ?? 0,
+    );
 
     if (
       nextBpm !== track.bpm ||
