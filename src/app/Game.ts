@@ -21,7 +21,7 @@ import {
 import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
 import { dominantZone, setZoneGenres, zoneAffinity } from '../genres/GenreZones';
-import { headingLabel, lookFor, NEUTRAL_LOOK } from '../genres/ZonePalette';
+import { headingLabel, lookFor, placeName, NEUTRAL_LOOK } from '../genres/ZonePalette';
 import type { GenreEvents } from '../genres/GenreAffinityEngine';
 import { createInitialMusicState, MusicState } from '../music/MusicState';
 import type { GenreAffinity } from '../music/MusicState';
@@ -692,7 +692,7 @@ export class Game {
     const flightDir = state.velocity > 0.6 ? this.camDir : state.direction;
     this.hud.update(state, {
       heading: headingLabel(Math.atan2(flightDir.x, -flightDir.z)),
-      biome: this.placeGenre ?? 'the void',
+      biome: placeName(this.placeGenre),
       speed: this.controller.throttleLevel,
       track: this.trackBuilder.trackNumber,
       trackGenre: this.trackStore.getState().genre ?? 'forming',

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { placeName } from '../../src/genres/ZonePalette';
 import { ArrangementEngine, sectionMix } from '../../src/music/ArrangementEngine';
 import { dominantZone, zoneAffinity } from '../../src/genres/GenreZones';
 import { HarmonyEngine, ratioToSemitones } from '../../src/music/HarmonyEngine';
@@ -192,5 +193,16 @@ describe('§34 the altitude regions are places you go, not side effects', () => 
 
   it('and skimming the floor takes you to Dub', () => {
     expect(dominantZone(zoneAffinity({ ...inHouse, y: -3 }))).toBe('dub');
+  });
+});
+
+describe('a place has a place name, a grammar has a grammar name', () => {
+  it('never calls a location by a genre that is also an altitude band', () => {
+    // The eight compass regions ARE their music; the two altitude bands are not.
+    expect(placeName('techno')).toBe('techno');
+    expect(placeName('house')).toBe('house');
+    expect(placeName('experimental')).toBe('the heights');
+    expect(placeName('dub')).toBe('the deep');
+    expect(placeName(null)).toBe('the void');
   });
 });

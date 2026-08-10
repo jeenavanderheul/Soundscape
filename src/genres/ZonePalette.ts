@@ -124,3 +124,17 @@ export function headingLabel(heading: number): string {
   } as const;
   return `${point} · ${byPoint[point]}`;
 }
+
+/**
+ * What a region is CALLED, as a place. The eight compass regions carry their
+ * grammar's name because there you are literally in that music. The two
+ * altitude bands do not: "experimental" and "dub" are grammars, and using them
+ * as a location as well made the world read as if the same thing existed
+ * twice. Up there you are in the HEIGHTS; down on the floor you are on the
+ * DECK — and the music those places make is still Experimental and Dub.
+ */
+export function placeName(region: keyof GenreAffinity | null): string {
+  if (region === 'experimental') return 'the heights';
+  if (region === 'dub') return 'the deep';
+  return region ?? 'the void';
+}
