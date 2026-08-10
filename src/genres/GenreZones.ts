@@ -85,7 +85,7 @@ export function zoneGenres(): Readonly<typeof assignment> {
  * Genre pull of a world position, 0..1 per genre. Pure and deterministic.
  * The player never sees numbers — they hear the world change as they travel.
  */
-export function zoneAffinity(position: Vec3Data): GenreAffinity {
+export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreAffinity {
   const affinity: GenreAffinity = {
     techno: 0,
     ambient: 0,
@@ -102,8 +102,13 @@ export function zoneAffinity(position: Vec3Data): GenreAffinity {
   const span = ZONE_CONFIG.fullInfluenceDistance - ZONE_CONFIG.neutralRadius;
   const influence = clamp01((distance - ZONE_CONFIG.neutralRadius) / span);
   if (influence > 0) {
+    // §56 HARD RULE: the world you are IN is the world you are flying INTO.
+    // `flightHeading` is the direction the orb is travelling; without it the
+    // bearing from spawn decides, and then the HUD can honestly say
+    // "flying: E · jazz" next to "here: classical" — which is nonsense to a
+    // player. Distance from spawn still gates it, so the start is neutral.
     // atan2(x, -z): 0 points north, +π/2 east — matches HEADINGS.
-    const heading = Math.atan2(position.x, -position.z);
+    const heading = flightHeading ?? Math.atan2(position.x, -position.z);
     for (const [compass, target] of Object.entries(BEARINGS) as [Compass, number][]) {
       // Cosine lobe, sharpened for eight points: full at the compass point,
       // about a third at the 45° neighbour, zero at 90° and beyond. Narrowing

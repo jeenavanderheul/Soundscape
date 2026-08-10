@@ -79,24 +79,19 @@ import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
-/**
- * §53: how far ahead of the orb the world is sampled while it is moving. Kept
- * LONG on purpose: a direction is a place (§33), so the world you are in is
- * the world you are heading into. Sampling close to the orb made the bearing
- * from spawn dominate, which is why flying north-west out of Techno kept
- * reading as Techno — geographically true, and useless.
- */
-const REGION_LOOKAHEAD = 400;
-
-/** The point whose region the player counts as being in (§53). */
-function lookAhead(state: Readonly<FrequencyState>): { x: number; y: number; z: number } {
-  const reach = Math.min(1, state.velocity / 8) * REGION_LOOKAHEAD;
-  return {
-    x: state.position.x + state.direction.x * reach,
-    y: state.position.y,
-    z: state.position.z + state.direction.z * reach,
-  };
-}
+/** How far behind and above the orb the chase camera sits (§52). */
+const CAMERA_DISTANCE = 5;
+const CAMERA_HEIGHT = 1.6;
+/** How fast the camera swings in behind a turn (1/s); low is a lazy chase. */
+const CAMERA_FOLLOW_RATE = 3.5;
+/** The camera never goes below this above the landscape (§35). */
+const CAMERA_GROUND_CLEARANCE = 1.4;
+/** Radians/s that count as banking hard enough to throw a gesture (§33). */
+const TURN_THROW_RATE = 1.8;
+/** Turning must fall back below this before another throw is armed. */
+const TURN_RELEASE_RATE = 0.6;
+/** Floor between throws, so a shaky hand cannot machine-gun them. */
+const TURN_THROW_GAP_MS = 1200;
 
 /** How much of the track exists, for the HUD (§46). */
 function countUnlocked(track: TrackState): number {
@@ -105,22 +100,6 @@ function countUnlocked(track: TrackState): number {
     track.bass, track.harmony, track.melody, track.texture,
   ].filter((layer) => layer.unlocked).length;
 }
-
-/** How far behind the orb the chase camera sits, and how high above it. */
-const CAMERA_DISTANCE = 6;
-const CAMERA_HEIGHT = 1.8;
-/** How fast the camera swings in behind a turn (1/s); low is a lazy chase. */
-const CAMERA_FOLLOW_RATE = 3.5;
-
-/** The camera never goes below this above the landscape (§35). */
-const CAMERA_GROUND_CLEARANCE = 1.4;
-
-/** Radians/s that count as banking hard enough to throw a gesture (§33). */
-const TURN_THROW_RATE = 1.8;
-/** Turning must fall back below this before another throw is armed. */
-const TURN_RELEASE_RATE = 0.6;
-/** Floor between throws, so a shaky hand cannot machine-gun them. */
-const TURN_THROW_GAP_MS = 1200;
 
 export type GameEvents = ResonanceEvents & StructureEvents & GenreEvents & TrackEvents & {
   /** Strudel-clock beat boundary (§20 M4); consumed by BeatSync. */
@@ -590,12 +569,10 @@ export class Game {
       );
       // §29.5: WHERE you are is a genre too — every direction of the world
       // leans toward one attractor; behaviour and place carry equal weight.
-      // §53: the region has to answer the way you are FLYING. Sampling only
-      // the position means that once you are out north, turning north-west
-      // barely moves your bearing from spawn and you stay stuck in Techno.
-      // Sampling a little ahead of the orb makes a turn arrive within seconds,
-      // and standing still still reads exactly where you are.
-      const zone = zoneAffinity(lookAhead(state));
+      // §56: ONE source for both HUD lines and for the music. The heading the
+      // player is flying decides the region; the distance from spawn still
+      // gates it, so the start is neutral until a direction has been chosen.
+      const zone = zoneAffinity(state.position, this.flightHeading(state));
       this.genreEngine.update(elapsedMs, this.musicStore.getState(), zone);
       const genre = this.genreEngine.current;
       // §29: the Track Builder interprets intent into layers. Flight speed is
@@ -731,11 +708,8 @@ export class Game {
       },
       dtSeconds,
     );
-    // The heading is the way you are actually FLYING (user decision) — at a
-    // standstill it keeps the way you are looking, so it never spins.
-    const flightDir = state.velocity > 0.6 ? this.camDir : state.direction;
     this.hud.update(state, {
-      heading: headingLabel(Math.atan2(flightDir.x, -flightDir.z)),
+      heading: headingLabel(this.flightHeading(state)),
       biome: placeName(this.placeGenre),
       speed: this.controller.throttleLevel,
       track: this.trackBuilder.trackNumber,
@@ -887,6 +861,16 @@ export class Game {
       },
       'beat',
     );
+  }
+
+  /**
+   * §56: the one heading everything reads — the direction the orb is actually
+   * travelling, or where it is looking while it is standing still, so the
+   * world never spins around a motionless player.
+   */
+  private flightHeading(state: Readonly<FrequencyState>): number {
+    const dir = state.velocity > 0.6 ? this.camDir : state.direction;
+    return Math.atan2(dir.x, -dir.z);
   }
 
   /** §32: the flight so far as Strudel source — from E and from the pause menu. */

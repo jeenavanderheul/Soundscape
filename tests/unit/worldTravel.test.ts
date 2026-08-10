@@ -22,15 +22,16 @@ import { createInitialTrackState, type TrackEvents } from '../../src/music/Track
  * broken.
  */
 
-/** Where the player counts as being — a little ahead while moving (§53). */
-const LOOKAHEAD = 400;
-function here(position: { x: number; z: number }, direction: { x: number; z: number }, speed = 13) {
-  const reach = Math.min(1, speed / 8) * LOOKAHEAD;
-  return {
-    x: position.x + direction.x * reach,
-    y: 6,
-    z: position.z + direction.z * reach,
-  };
+/**
+ * §56: where the player counts as being is the direction they are FLYING —
+ * the same heading the HUD's `flying:` line reads, so the two can never
+ * disagree. Distance from spawn still gates it.
+ */
+function headingOf(direction: { x: number; z: number }): number {
+  return Math.atan2(direction.x, -direction.z);
+}
+function regionFlying(position: { x: number; z: number }, direction: { x: number; z: number }) {
+  return dominantZone(zoneAffinity({ ...position, y: 6 }, headingOf(direction)), 0.4);
 }
 
 const COMPASS = {
@@ -63,16 +64,24 @@ describe('the journey: neutral start → a direction → that world', () => {
 
   it('every compass direction leads to its own world', () => {
     for (const [point, direction] of Object.entries(COMPASS)) {
-      const region = dominantZone(zoneAffinity(here({ x: 0, z: 0 }, direction)), 0.4);
+      // Far enough out of the neutral middle that a direction counts (§34).
+      const region = regionFlying({ x: 0, z: 70 }, direction);
       expect(`${point}:${region}`).toBe(`${point}:${EXPECTED[point as keyof typeof EXPECTED]}`);
     }
   });
 
   it('turning from one world towards another arrives in the new one', () => {
     const deepInTechno = { x: 0, z: -120 };
-    expect(dominantZone(zoneAffinity({ ...deepInTechno, y: 6 }), 0.4)).toBe('techno');
-    expect(dominantZone(zoneAffinity(here(deepInTechno, COMPASS.NW)), 0.4)).toBe('trap');
-    expect(dominantZone(zoneAffinity(here(deepInTechno, COMPASS.NE)), 0.4)).toBe('garage');
+    expect(regionFlying(deepInTechno, COMPASS.N)).toBe('techno');
+    expect(regionFlying(deepInTechno, COMPASS.NW)).toBe('trap');
+    expect(regionFlying(deepInTechno, COMPASS.NE)).toBe('garage');
+  });
+
+  it('§56 what the HUD says you are flying into is what you are in', () => {
+    // Deep in Classical, heading east: `flying: E · jazz` must mean jazz.
+    const inClassical = { x: -200, z: 200 };
+    expect(regionFlying(inClassical, COMPASS.E)).toBe('jazz');
+    expect(regionFlying(inClassical, COMPASS.N)).toBe('techno');
   });
 });
 
