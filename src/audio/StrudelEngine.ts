@@ -132,6 +132,27 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       }
       return `note("${note}").s("sine").gain(${gain})`;
     }
+    case 'break': {
+      // DnB break (§9.4): chopped double-time drums; intensity 1 or 2.
+      const intensity = Math.round(
+        clamp(finite(primitive.parameters['intensity'] ?? 1, `${primitive.id}.intensity`), 1, 2),
+      );
+      return intensity === 2
+        ? `s("[bd bd] [~ sn] [bd ~] [sn hh]").fast(2).gain(${gain})`
+        : `s("bd [~ sn] [bd bd] sn").fast(2).gain(${gain})`;
+    }
+    case 'response': {
+      // Jazz answer (§9.3): a constrained phrase up from the root — no free code.
+      const root = primitive.parameters['root'];
+      if (typeof root !== 'string' || !NOTE_RE.test(root)) {
+        throw new TypeError(`StrudelEngine: invalid root for primitive "${primitive.id}"`);
+      }
+      return `note("${root}").add(note("0 3 7 10")).s("triangle").slow(2).gain(${gain})`;
+    }
+    case 'texture': {
+      // Experimental mutation (§9.5): unstable filtered noise wash.
+      return `s("white").slow(4).lpf(1200).gain(${gain})`;
+    }
     case 'drone': {
       // Ambient drone (§9.2): one sustained root note stretched over 4 bars.
       const note = primitive.parameters['note'];

@@ -111,7 +111,7 @@ describe('persistence round trip (FormEmergence → save → load → geometry)'
       resonators: [],
       structures: [...structures],
       genreHistory: [],
-      progression: { controlsRevealed: 0 },
+      progression: { controlsRevealed: 0, resonanceClassesSeen: [], structuresCreated: 0, permanentStructures: 0, genresSeen: [], playerResonatorsCreated: 0 },
     };
 
     const manager = new SaveManager(memoryStorage(), () => 1_000);
@@ -130,7 +130,7 @@ describe('persistence round trip (FormEmergence → save → load → geometry)'
       resonators: [],
       structures: [...structures],
       genreHistory: [],
-      progression: { controlsRevealed: 0 },
+      progression: { controlsRevealed: 0, resonanceClassesSeen: [], structuresCreated: 0, permanentStructures: 0, genresSeen: [], playerResonatorsCreated: 0 },
     };
     const manager = new SaveManager(memoryStorage(), () => 1_000);
     manager.save(world);

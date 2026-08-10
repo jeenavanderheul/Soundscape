@@ -49,6 +49,24 @@ function migrateV1Structure(entry: unknown, worldSeed: string): unknown {
 }
 
 const MIGRATIONS: MigrationRegistry = {
+  // v2 → v3: progression grew discovery tracking (§17); defaults are empty.
+  2: (raw) => {
+    const prev =
+      typeof raw.progression === 'object' && raw.progression !== null && !Array.isArray(raw.progression)
+        ? (raw.progression as RawSave)
+        : {};
+    return {
+      ...raw,
+      progression: {
+        controlsRevealed: finiteNumber(prev.controlsRevealed, 0),
+        resonanceClassesSeen: [],
+        structuresCreated: 0,
+        permanentStructures: 0,
+        genresSeen: [],
+        playerResonatorsCreated: 0,
+      },
+    };
+  },
   // v1 → v2: SavedStructure aligned with the world StructureData contract (§18).
   1: (raw) => {
     if (!Array.isArray(raw.structures)) return raw;

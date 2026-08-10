@@ -2,6 +2,9 @@ import type { EventBus } from '../core/EventBus';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { GenreSnapshot } from '../persistence/WorldSerializer';
 import { scoreAmbient } from './AmbientProfile';
+import { scoreDnb } from './DnbProfile';
+import { scoreExperimental } from './ExperimentalProfile';
+import { scoreJazz } from './JazzProfile';
 import { scoreTechno } from './TechnoProfile';
 
 export type GenreEvents = {
@@ -60,10 +63,16 @@ export class GenreAffinityEngine {
       this.lastEvalMs === null ? this.config.intervalMs / 1000 : (nowMs - this.lastEvalMs) / 1000;
     this.lastEvalMs = nowMs;
 
-    const raw: GenreAffinity = {
-      ...ZERO_AFFINITY,
+    const base = {
       techno: scoreTechno(music),
       ambient: scoreAmbient(music),
+      jazz: scoreJazz(music),
+      dnb: scoreDnb(music),
+    };
+    const raw: GenreAffinity = {
+      ...base,
+      // §9.5: experimental feeds on conflict between the other attractors.
+      experimental: scoreExperimental(music, base),
     };
     const blend = 1 - Math.exp(-this.config.smoothingRate * deltaSec);
     for (const key of Object.keys(this.affinity) as (keyof GenreAffinity)[]) {

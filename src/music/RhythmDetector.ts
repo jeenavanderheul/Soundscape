@@ -107,6 +107,23 @@ export class RhythmDetector {
     return this.regularity;
   }
 
+  /**
+   * §9.3 syncopation proxy: mean deviation of inter-onset intervals from the
+   * nearest whole multiple of the beat period, normalized to the half-period.
+   * 0 = onsets sit on the grid, →1 = onsets consistently between gridlines.
+   * Only meaningful while a tempo exists; 0 without one.
+   */
+  get syncopation(): number {
+    if (this.bpmValue <= 0 || this.iois.length < 2) return 0;
+    const period = 60_000 / this.bpmValue;
+    let sum = 0;
+    for (const ioi of this.iois) {
+      const offset = Math.abs(ioi - Math.round(ioi / period) * period);
+      sum += Math.min(1, offset / (period / 2));
+    }
+    return clamp01((sum / this.iois.length) * this.confidence * 2);
+  }
+
   get ioiHistorySize(): number {
     return this.iois.length;
   }

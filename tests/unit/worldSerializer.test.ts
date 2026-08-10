@@ -32,7 +32,7 @@ function sampleWorld(): SerializableWorld {
         materialProfile: 'glass',
       },
     ],
-    progression: { controlsRevealed: 2 },
+    progression: { controlsRevealed: 2, resonanceClassesSeen: [], structuresCreated: 0, permanentStructures: 0, genresSeen: [], playerResonatorsCreated: 0 },
     genreHistory: [],
   };
 }

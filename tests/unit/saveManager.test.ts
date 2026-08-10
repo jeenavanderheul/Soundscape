@@ -18,7 +18,7 @@ function sampleWorld(seed = 'seed-a'): SerializableWorld {
     musicState: createInitialMusicState(),
     resonators: createInitialResonators(createRng(seed)),
     structures: [],
-    progression: { controlsRevealed: 0 },
+    progression: { controlsRevealed: 0, resonanceClassesSeen: [], structuresCreated: 0, permanentStructures: 0, genresSeen: [], playerResonatorsCreated: 0 },
     genreHistory: [],
   };
 }

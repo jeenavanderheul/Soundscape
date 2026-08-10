@@ -19,6 +19,15 @@ import { RhythmDetector } from '../music/RhythmDetector';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
 import { FrequencyController } from '../player/FrequencyController';
+import {
+  createInitialProgression,
+  isComposerUnlocked,
+  ProgressionState,
+  recordGenre,
+  recordPlayerResonator,
+  recordResonance,
+  recordStructure,
+} from '../progression/ProgressionState';
 import { createInitialFrequencyState, FrequencyState } from '../player/FrequencyState';
 import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
@@ -66,6 +75,7 @@ interface FrequencyDebug {
   getMusicState(): Readonly<MusicState>;
   getStrudelInfo(): { playing: boolean; bpm: number; evaluations: number };
   getGenreSnapshot(): unknown;
+  getProgression(): unknown;
   saveNow(): { ok: boolean };
   loadInfo(): LoadInfo;
   resetWorld(): void;
@@ -123,6 +133,11 @@ export class Game {
   private lastLayerGraph: MusicalLayerGraph | null = null;
   /** §9/§20 M5: genre affinity evaluated in the logic loop, never per frame. */
   private readonly genreEngine = new GenreAffinityEngine(this.events);
+  /** §17: discovered causal laws; unlocks the composer mechanic. */
+  private readonly progressionStore: Store<ProgressionState> = createStore(
+    createInitialProgression(),
+  );
+  private readonly detachProgression: Array<() => void> = [];
   /** Bus events buffered between logic steps; drained into FormEmergence.tick. */
   private readonly pendingResonanceEvents: ResonanceEvent[] = [];
   // §18 / MVP item 13: local save, load and reset of the serializable stores.
@@ -163,6 +178,27 @@ export class Game {
     this.detachResonanceCapture = this.events.on('resonance:event', (event) => {
       this.pendingResonanceEvents.push(event);
     });
+    // §17: discovery listeners feed the progression record (never XP).
+    const progressIfChanged = (next: (s: ProgressionState) => ProgressionState): void => {
+      // Reducers return the SAME object when nothing new was discovered; the
+      // store contract requires a fresh object, so identity means "skip".
+      if (next(this.progressionStore.getState()) !== this.progressionStore.getState()) {
+        this.progressionStore.setState(next);
+      }
+    };
+    this.detachProgression.push(
+      this.events.on('resonance:event', (event) => {
+        progressIfChanged((s) => recordResonance(s, event));
+      }),
+      this.events.on('structure:spawned', (structure) => {
+        this.progressionStore.setState((s) => recordStructure(s, structure.persistence));
+      }),
+      this.events.on('genre:snapshot', (snapshot) => {
+        if (snapshot.dominant) {
+          progressIfChanged((s) => recordGenre(s, snapshot.dominant));
+        }
+      }),
+    );
     this.structures = new StructureRenderer();
     this.renderer.scene.add(this.structures.group);
     this.detachStructures = this.structures.subscribe(this.events);
@@ -211,6 +247,10 @@ export class Game {
         getMusicState: () => this.musicStore.getState(),
         getStrudelInfo: () => this.strudelEngine.status,
         getGenreSnapshot: () => this.genreEngine.current,
+        getProgression: () => ({
+          ...this.progressionStore.getState(),
+          composerUnlocked: isComposerUnlocked(this.progressionStore.getState()),
+        }),
         saveNow: () => this.saveManager.save(this.snapshotWorld()),
         loadInfo: () => ({ ...this.startupLoadInfo }),
         resetWorld: () => this.resetWorld(),
@@ -235,6 +275,7 @@ export class Game {
     this.detachIntroHint();
     this.detachInterference();
     this.detachResonanceCapture();
+    for (const off of this.detachProgression) off();
     this.detachStructures();
     this.detachBeatSync();
     this.detachStrudelBeat();
@@ -265,6 +306,12 @@ export class Game {
     if (snapshot.windReleased || snapshot.resonancePulse) {
       this.rhythmDetector.onOnset(elapsedMs);
     }
+    // §17 composer reveal: once causal understanding is demonstrated, a
+    // resonance pulse in empty space CREATES a resonator from the player's
+    // current frequency — the world becomes intentionally composable.
+    if (snapshot.resonancePulse && isComposerUnlocked(this.progressionStore.getState())) {
+      this.tryCreatePlayerResonator();
+    }
     const state = this.frequencyStore.getState();
     const dtSeconds = deltaMs / 1000;
     // Lower-frequency logical loop (§15): resonance never runs per render frame.
@@ -272,9 +319,20 @@ export class Game {
       const resonators = this.worldStore.getState().resonators;
       this.resonanceEngine.tick(elapsedMs, state, resonators);
       this.formEmergence.tick(elapsedMs, this.pendingResonanceEvents, resonators);
+      // §3.6: dissonance flows from the same shared events (P5) into MusicState.
+      const pending = this.pendingResonanceEvents;
+      const eventDissonance =
+        pending.length > 0
+          ? pending.reduce((sum, event) => sum + event.dissonance, 0) / pending.length
+          : null;
       this.pendingResonanceEvents.length = 0;
       // §10: analyzers run in this lower-frequency loop, never per render frame.
-      this.musicAnalyzer.update(elapsedMs, state, this.audioAnalyser?.snapshot.lowBand ?? 0);
+      this.musicAnalyzer.update(
+        elapsedMs,
+        state,
+        this.audioAnalyser?.snapshot.lowBand ?? 0,
+        eventDissonance,
+      );
       // §9: genre affinity from the same MusicState the patterns come from.
       this.genreEngine.update(elapsedMs, this.musicStore.getState());
       const genre = this.genreEngine.current;
@@ -282,6 +340,8 @@ export class Game {
       this.structures.setOrganization(genre?.affinity.techno ?? 0);
       // §9.2 world tendency: sustained space thickens the fog.
       this.renderer.setAtmosphere(genre?.affinity.ambient ?? 0);
+      // §9.5 world tendency: mutation destabilizes existing form.
+      this.structures.setMutation(genre?.affinity.experimental ?? 0);
       this.updateStrudelGraph();
       if (this.audioAnalyser) {
         const stepSeconds = LOGIC_STEP_MS / 1000;
@@ -398,6 +458,39 @@ export class Game {
     this.events.emit('game:started', null);
   }
 
+  /** §17: place a resonator carrying the player's current sound in empty space. */
+  private tryCreatePlayerResonator(): void {
+    if (!this.unlocked) return;
+    const state = this.frequencyStore.getState();
+    if (state.amplitude < 0.2) return; // intent requires wind, not a idle tap
+    const world = this.worldStore.getState();
+    const clearance = 12;
+    const tooClose = world.resonators.some((r) => {
+      const dx = r.position.x - state.position.x;
+      const dy = r.position.y - state.position.y;
+      const dz = r.position.z - state.position.z;
+      return Math.hypot(dx, dy, dz) < clearance;
+    });
+    if (tooClose) return; // near an existing sound, Space stays a pulse (§5)
+    const progression = this.progressionStore.getState();
+    const resonator = {
+      id: `player-resonator-${progression.playerResonatorsCreated + 1}`,
+      position: { ...state.position },
+      baseHz: state.hz,
+      waveform: state.waveform,
+      amplitude: 0.5,
+      interactionRadius: 6,
+      audibleRadius: 60,
+      persistenceThreshold: 4,
+      materialProfile: 'player',
+      spatialProfile: 'point',
+      active: true,
+    };
+    this.worldStore.setState((s) => ({ ...s, resonators: [...s.resonators, resonator] }));
+    this.spatialAudio?.addResonator(resonator);
+    this.progressionStore.setState((s) => recordPlayerResonator(s));
+  }
+
   /** MVP item 13: clear persistent forms and the local save; the void returns. */
   resetWorld(): void {
     const removed = this.worldStore.getState().structures;
@@ -415,6 +508,7 @@ export class Game {
       resonators: save.resonators.length > 0 ? save.resonators : [...state.resonators],
       structures: save.structures,
     }));
+    this.progressionStore.setState(() => ({ ...save.progression }));
     // Resume spawn counters so post-load spawns never reuse a saved structure's id.
     this.formEmergence.rehydrate(save.structures);
     for (const structure of save.structures) this.events.emit('structure:spawned', structure);
@@ -430,7 +524,7 @@ export class Game {
       resonators: [...world.resonators],
       structures: [...world.structures],
       genreHistory: [...this.genreEngine.history],
-      progression: { controlsRevealed: 0 },
+      progression: this.progressionStore.getState(),
     };
   }
 

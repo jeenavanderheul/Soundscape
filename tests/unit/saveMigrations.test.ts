@@ -52,7 +52,7 @@ describe('migrate', () => {
     const result = migrate(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.raw.schemaVersion).toBe(2);
+    expect(result.raw.schemaVersion).toBe(3);
     const migrated = (result.raw.structures as Record<string, unknown>[])[0]!;
     expect(migrated.id).toBe('structure-1');
     expect(migrated.waveform).toBe('saw'); // §3.7 inverse: metallic ← saw

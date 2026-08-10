@@ -87,6 +87,13 @@ export class StructureRenderer {
     this.organization = Math.min(1, Math.max(0, amount));
   }
 
+  /** §9.5 Experimental world tendency: mutation destabilizes ALL structures. */
+  private mutation = 0;
+
+  setMutation(amount: number): void {
+    this.mutation = Math.min(1, Math.max(0, amount));
+  }
+
   get count(): number {
     return this.entries.length;
   }
@@ -183,8 +190,9 @@ export class StructureRenderer {
       const ox = entry.baseX + (gridSnap(entry.baseX) - entry.baseX) * org;
       const oy = entry.baseY + (gridSnap(entry.baseY) - entry.baseY) * org;
       const oz = entry.baseZ + (gridSnap(entry.baseZ) - entry.baseZ) * org;
-      if (entry.stability < cfg.instabilityThreshold) {
-        const amp = cfg.jitterAmplitude * (1 - entry.stability);
+      const unstable = entry.stability < cfg.instabilityThreshold || this.mutation > 0;
+      if (unstable) {
+        const amp = cfg.jitterAmplitude * Math.max(1 - entry.stability, this.mutation);
         const w = entry.ageSeconds * entry.jitterHz * Math.PI * 2;
         entry.mesh.position.set(
           ox + Math.sin(w + entry.jitterPhaseX) * amp,

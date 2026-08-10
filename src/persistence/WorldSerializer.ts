@@ -5,7 +5,7 @@ import type { ResonatorData } from '../world/Resonator';
 import { HZ_SCALE_RANGE, type StructureData } from '../world/StructureData';
 
 /** Bump when the save contract changes and register a migration (spec §18). */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 const WAVEFORMS: readonly Waveform[] = ['sine', 'triangle', 'square', 'saw', 'noise'];
 const FORM_PHASES = ['void', 'intro', 'build', 'peak', 'break', 'return', 'mutation'] as const;
@@ -28,10 +28,9 @@ export interface GenreSnapshot {
   confidence: number;
 }
 
-/** Placeholder until §17 composer-reveal progression lands. */
-export interface ProgressionState {
-  controlsRevealed: number;
-}
+export type { ProgressionState } from '../progression/ProgressionState';
+import { createInitialProgression } from '../progression/ProgressionState';
+import type { ProgressionState } from '../progression/ProgressionState';
 
 /** Spec §18 save contract. Serializable primitives and plain objects only. */
 export interface WorldSave {
@@ -207,9 +206,19 @@ export function validate(raw: unknown): ValidationResult {
   const frequency = frequencyState(raw.frequencyState);
   if (!frequency) return { ok: false, error: 'frequencyState is missing or malformed' };
 
+  const base = createInitialProgression();
+  const strings = (value: unknown): string[] =>
+    Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string').slice(0, 16) : [];
   const progression = isObject(raw.progression)
-    ? { controlsRevealed: num(raw.progression.controlsRevealed, 0, 0, 100) }
-    : { controlsRevealed: 0 };
+    ? {
+        controlsRevealed: num(raw.progression.controlsRevealed, 0, 0, 100),
+        resonanceClassesSeen: strings(raw.progression.resonanceClassesSeen),
+        structuresCreated: num(raw.progression.structuresCreated, 0, 0, 1e6),
+        permanentStructures: num(raw.progression.permanentStructures, 0, 0, 1e6),
+        genresSeen: strings(raw.progression.genresSeen),
+        playerResonatorsCreated: num(raw.progression.playerResonatorsCreated, 0, 0, 1e6),
+      }
+    : base;
 
   return {
     ok: true,

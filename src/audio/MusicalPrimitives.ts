@@ -172,7 +172,20 @@ export function buildLayerGraph(music: MusicState, genre?: GenreAffinity): Music
     allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
   };
   const ambient = clamp01(genre?.ambient ?? 0);
+  const jazz = clamp01(genre?.jazz ?? 0);
+  const dnb = clamp01(genre?.dnb ?? 0);
+  const experimental = clamp01(genre?.experimental ?? 0);
   const drumPrimitives: MusicalPrimitive[] = [pulse];
+  if (dnb >= 0.5) {
+    // §9.4: velocity mutates the break — double-time chopped drums.
+    drumPrimitives.push({
+      id: 'dnb-break',
+      kind: 'break',
+      layer: 'drums',
+      parameters: { intensity: dnb >= 0.75 ? 2 : 1, gain: 0.5 },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.break],
+    });
+  }
   if (techno >= 0.5) {
     drumPrimitives.push({
       id: 'techno-hat',
@@ -205,12 +218,41 @@ export function buildLayerGraph(music: MusicState, genre?: GenreAffinity): Music
           },
         ]
       : [];
+  // §9.3: the world answers — a short procedurally constrained response
+  // phrase rooted on the pitch center (call-and-response, no LLM).
+  const melodyPrimitives: MusicalPrimitive[] =
+    jazz >= 0.5
+      ? [
+          {
+            id: 'jazz-response',
+            kind: 'response',
+            layer: 'melody',
+            parameters: { root: subNoteFromHz(music.pitchCenter * 4), gain: 0.3 },
+            allowedTransforms: [...ALLOWED_TRANSFORMS.response],
+          },
+        ]
+      : [];
+  // §9.5: mutation adds unstable noise texture.
+  const texturePrimitives: MusicalPrimitive[] =
+    experimental >= 0.5
+      ? [
+          {
+            id: 'experimental-texture',
+            kind: 'texture',
+            layer: 'texture',
+            parameters: { gain: experimental >= 0.75 ? 0.25 : 0.15 },
+            allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
+          },
+        ]
+      : [];
   return {
     ...graph,
     layers: {
       ...graph.layers,
       drums: { ...graph.layers.drums, primitives: drumPrimitives, density },
       bass: { ...graph.layers.bass, primitives: [sub] },
+      melody: { ...graph.layers.melody, primitives: melodyPrimitives },
+      texture: { ...graph.layers.texture, primitives: texturePrimitives },
       atmosphere: { ...graph.layers.atmosphere, primitives: atmospherePrimitives },
     },
   };

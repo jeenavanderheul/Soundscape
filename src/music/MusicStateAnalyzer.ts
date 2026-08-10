@@ -41,6 +41,14 @@ export interface MusicStateAnalyzerConfig {
   spatialityRate: number;
   /** Player speed at/above which spatiality reads as 0 (fast = not spacious). */
   spatialityFullSpeed: number;
+  /** M7 jazz/experimental signals. */
+  syncopationRate: number;
+  variationRate: number;
+  melodicRate: number;
+  /** Octaves-per-second of pitch movement that counts as melodicActivity = 1. */
+  melodicFullScale: number;
+  dissonanceRate: number;
+  dissonanceDecayRate: number;
 }
 
 export const MUSIC_STATE_ANALYZER_CONFIG: MusicStateAnalyzerConfig = {
@@ -62,6 +70,12 @@ export const MUSIC_STATE_ANALYZER_CONFIG: MusicStateAnalyzerConfig = {
   durationAmplitudeFloor: 0.25,
   spatialityRate: 1,
   spatialityFullSpeed: 14,
+  syncopationRate: 1.5,
+  variationRate: 1.5,
+  melodicRate: 2,
+  melodicFullScale: 1.5,
+  dissonanceRate: 3,
+  dissonanceDecayRate: 0.5,
 };
 
 const WAVEFORM_NOISE: Record<FrequencyState['waveform'], number> = {
@@ -103,6 +117,7 @@ export class MusicStateAnalyzer {
   private introEnergyMs = 0;
   /** Length of the current sustained hold (§3.8 duration = memory). */
   private holdMs = 0;
+  private lastLogHz: number | null = null;
 
   constructor(
     private readonly store: Store<MusicState>,
@@ -112,7 +127,12 @@ export class MusicStateAnalyzer {
 
   /** Logic-loop step: advance rhythm time and publish a smoothed MusicState.
    * `lowBand` is the smoothed low-band energy from the audio analyser (§12). */
-  update(nowMs: number, frequency: Readonly<FrequencyState>, lowBand = 0): void {
+  update(
+    nowMs: number,
+    frequency: Readonly<FrequencyState>,
+    lowBand = 0,
+    eventDissonance: number | null = null,
+  ): void {
     const { config, rhythm } = this;
     const rawDelta = this.lastNowMs === null ? 0 : nowMs - this.lastNowMs;
     this.lastNowMs = nowMs;
@@ -130,6 +150,16 @@ export class MusicStateAnalyzer {
     const durationTarget = clamp01(this.holdMs / config.durationFullScaleMs);
     // §9.2 spatiality proxy: unhurried movement reads as space.
     const spatialityTarget = clamp01(1 - frequency.velocity / config.spatialityFullSpeed);
+    // §9.3 melody: pitch movement rate in octaves/second (§3.5 remembered movement).
+    const logHz = frequency.hz > 0 ? Math.log2(frequency.hz) : null;
+    const octavesPerSec =
+      logHz !== null && this.lastLogHz !== null && deltaSec > 0
+        ? Math.abs(logHz - this.lastLogHz) / deltaSec
+        : 0;
+    this.lastLogHz = logHz;
+    const melodicTarget = clamp01(octavesPerSec / config.melodicFullScale);
+    // Variation: confident but loose playing (§9.3) — the inverse of repetition.
+    const variationTarget = clamp01((1 - rhythm.rhythmicRegularity) * rhythm.tempoConfidence);
 
     this.store.setState((current) => {
       // pitchCenter smoothing runs in log-frequency space (spec §5).
@@ -175,6 +205,22 @@ export class MusicStateAnalyzer {
         ),
         spatiality: clamp01(
           smooth(current.spatiality, spatialityTarget, config.spatialityRate, deltaSec),
+        ),
+        syncopation: clamp01(
+          smooth(current.syncopation, rhythm.syncopation, config.syncopationRate, deltaSec),
+        ),
+        variation: clamp01(
+          smooth(current.variation, variationTarget, config.variationRate, deltaSec),
+        ),
+        melodicActivity: clamp01(
+          smooth(current.melodicActivity, melodicTarget, config.melodicRate, deltaSec),
+        ),
+        // §3.6: dissonance flows from the shared ResonanceEvents (P5) and
+        // relaxes toward 0 between interactions.
+        dissonance: clamp01(
+          eventDissonance !== null
+            ? smooth(current.dissonance, clamp01(eventDissonance), config.dissonanceRate, deltaSec)
+            : smooth(current.dissonance, 0, config.dissonanceDecayRate, deltaSec),
         ),
         formPhase: this.nextFormPhase(current.formPhase, amplitude, rawDelta),
       };
