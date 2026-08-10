@@ -80,8 +80,8 @@ import { GameLoop, LogicInterval } from './GameLoop';
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
 /** How far behind and above the orb the chase camera sits (§52). */
-const CAMERA_DISTANCE = 5;
-const CAMERA_HEIGHT = 1.6;
+const CAMERA_DISTANCE = 3.6;
+const CAMERA_HEIGHT = 1.25;
 /** How fast the camera swings in behind a turn (1/s); low is a lazy chase. */
 const CAMERA_FOLLOW_RATE = 3.5;
 /** The camera never goes below this above the landscape (§35). */
