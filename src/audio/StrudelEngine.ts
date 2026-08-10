@@ -72,6 +72,7 @@ export const MAX_BPM = 300;
 const GAIN_RAMP_SECONDS = 0.03;
 
 const NOTE_RE = /^[a-g]#?[0-8]$/;
+const VOICE_SOUNDS = new Set(['sine', 'triangle', 'square', 'sawtooth']);
 
 const clamp = (v: number, min: number, max: number): number => Math.min(max, Math.max(min, v));
 
@@ -131,6 +132,18 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         throw new TypeError(`StrudelEngine: invalid note for primitive "${primitive.id}"`);
       }
       return `note("${note}").s("sine").gain(${gain})`;
+    }
+    case 'chord': {
+      // Structure voice (§17): one sustained note per built form, offset into
+      // its own bar slot so multiple voices interlock as a progression.
+      const note = primitive.parameters['note'];
+      if (typeof note !== 'string' || !NOTE_RE.test(note)) {
+        throw new TypeError(`StrudelEngine: invalid note for primitive "${primitive.id}"`);
+      }
+      const sound = primitive.parameters['sound'];
+      const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'sine';
+      const slot = Math.round(clamp(finite(primitive.parameters['slot'] ?? 0, `${primitive.id}.slot`), 0, 7));
+      return `note("${note}").s("${s}").slow(2).late(${(slot * 0.25).toFixed(2)}).gain(${gain})`;
     }
     case 'break': {
       // DnB break (§9.4): chopped double-time drums; intensity 1 or 2.

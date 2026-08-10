@@ -110,6 +110,12 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
 export class FrequencyController {
   private yaw = 0;
   private pitch = 0;
+
+  /** Reset world (§17): look level again, matching the fresh spawn state. */
+  resetOrientation(): void {
+    this.yaw = 0;
+    this.pitch = 0;
+  }
   private velocityVec: Vec3Data = { x: 0, y: 0, z: 0 };
 
   constructor(private readonly store: Store<FrequencyState>) {}

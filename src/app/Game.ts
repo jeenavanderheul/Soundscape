@@ -32,6 +32,7 @@ import { createInitialFrequencyState, FrequencyState } from '../player/Frequency
 import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
+import { ForestSystem } from '../rendering/ForestSystem';
 import { ParticleSystem } from '../rendering/ParticleSystem';
 import { PlayerOrb } from '../rendering/PlayerOrb';
 import { Renderer } from '../rendering/Renderer';
@@ -126,6 +127,7 @@ export class Game {
   private readonly terrain = new WaveTerrain();
   private readonly orb = new PlayerOrb();
   private readonly hud = new HUD();
+  private readonly forest = new ForestSystem(WORLD_SEED, this.worldStore.getState().resonators);
   private readonly beatSync: BeatSync;
   private readonly detachBeatSync: () => void;
   // §11/§20 M4: Strudel shares our AudioContext; its beat boundaries feed the bus.
@@ -225,12 +227,14 @@ export class Game {
     // setPulse hooks through one shared, strobe-capped envelope (§23).
     this.renderer.scene.add(this.terrain.lines);
     this.renderer.scene.add(this.orb.mesh);
+    this.renderer.scene.add(this.forest.mesh);
     this.beatSync = new BeatSync([
       this.particles,
       this.interference,
       this.structures,
       this.terrain,
       this.orb,
+      this.forest,
     ]);
     this.detachBeatSync = this.beatSync.subscribe(this.events);
     // §20 M4 synchronized world behavior: the Strudel clock's beat boundaries
@@ -322,6 +326,8 @@ export class Game {
     this.structures.dispose();
     this.renderer.scene.remove(this.terrain.lines);
     this.terrain.dispose();
+    this.renderer.scene.remove(this.forest.mesh);
+    this.forest.dispose();
     this.renderer.scene.remove(this.orb.mesh);
     this.orb.dispose();
     this.hud.dispose();
@@ -400,6 +406,7 @@ export class Game {
       this.terrain.excite('player', state.position, state.hz, state.amplitude * 0.12);
     }
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
+    this.forest.update(elapsedMs / 1000);
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
     this.hud.update(state);
     // Third-person: the camera trails the orb along the flight direction.
@@ -421,7 +428,11 @@ export class Game {
   /** §11: rebuild the layer graph from MusicState; hand Strudel only real diffs at bar boundaries. */
   private updateStrudelGraph(): void {
     if (!this.unlocked) return;
-    const next = buildLayerGraph(this.musicStore.getState(), this.genreEngine.current?.affinity);
+    const next = buildLayerGraph(
+      this.musicStore.getState(),
+      this.genreEngine.current?.affinity,
+      this.worldStore.getState().structures,
+    );
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     this.lastLayerGraph = next;
     this.strudelEngine.setLayerGraph(next, 'bar');
@@ -547,6 +558,7 @@ export class Game {
     this.worldStore.setState((state) => ({ ...state, structures: [] }));
     // The void returns COMPLETELY: player back at spawn, tone at rest (§17).
     this.frequencyStore.setState(() => createInitialFrequencyState());
+    this.controller.resetOrientation();
     for (const structure of removed) this.events.emit('structure:removed', structure);
     // Runs last: also cancels the autosave the store change just scheduled.
     this.saveManager.reset();

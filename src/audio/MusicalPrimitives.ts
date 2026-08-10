@@ -128,17 +128,71 @@ export function subNoteFromHz(hz: number): string {
  * tone still sounds. Above it: a pulse at the detected BPM whose density
  * follows rhythmDensity, plus a soft sub on the octave-reduced pitch root.
  */
-export function buildLayerGraph(music: MusicState, genre?: GenreAffinity): MusicalLayerGraph {
+/** The serializable slice of a structure the music needs (§17: form = voice). */
+export interface StructureVoiceSource {
+  id: string;
+  hz: number;
+  waveform: string;
+  persistence: number;
+}
+
+const VOICE_SOUND: Record<string, string> = {
+  sine: 'sine',
+  triangle: 'triangle',
+  square: 'square',
+  saw: 'sawtooth',
+  noise: 'sine',
+};
+
+/**
+ * §17/§P5: every persistent structure the player built becomes a VOICE in the
+ * track — its birth pitch is the note, its timbre the sound. Building the
+ * world literally builds the composition. Bounded, deterministic, diff-stable
+ * (only changes when the structure set changes).
+ */
+export function structureVoices(structures: readonly StructureVoiceSource[]): MusicalPrimitive[] {
+  return structures
+    .filter((s) => s.persistence >= 0.5)
+    .slice(0, 5)
+    .map((s, index) => ({
+      id: `voice-${s.id}`,
+      kind: 'chord' as const,
+      layer: 'harmony' as const,
+      parameters: {
+        note: subNoteFromHz(s.hz * 2),
+        sound: VOICE_SOUND[s.waveform] ?? 'sine',
+        // Spread voices across the bar so they interlock instead of stacking.
+        slot: index,
+        gain: 0.28,
+      },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.chord],
+    }));
+}
+
+export function buildLayerGraph(
+  music: MusicState,
+  genre?: GenreAffinity,
+  structures: readonly StructureVoiceSource[] = [],
+): MusicalLayerGraph {
   if (music.tempoConfidence < TEMPO_CONFIDENCE_THRESHOLD || music.bpm <= 0) {
     // §9.2: Ambient needs no pulse — sustained behavior alone can carry a
     // drone in the tempo-less void (at a slow default clock).
     const ambientOnly = clamp01(genre?.ambient ?? 0);
-    if (ambientOnly < 0.5) return createEmptyLayerGraph();
+    const voices = structureVoices(structures);
+    // Built form keeps sounding even without a pulse (§17): the world hums.
+    if (ambientOnly < 0.5 && voices.length === 0) return createEmptyLayerGraph();
     const droneGraph = createEmptyLayerGraph(60);
+    if (ambientOnly < 0.5) {
+      return {
+        ...droneGraph,
+        layers: { ...droneGraph.layers, harmony: { ...droneGraph.layers.harmony, primitives: voices } },
+      };
+    }
     return {
       ...droneGraph,
       layers: {
         ...droneGraph.layers,
+        harmony: { ...droneGraph.layers.harmony, primitives: voices },
         atmosphere: {
           ...droneGraph.layers.atmosphere,
           primitives: [
@@ -251,6 +305,7 @@ export function buildLayerGraph(music: MusicState, genre?: GenreAffinity): Music
       ...graph.layers,
       drums: { ...graph.layers.drums, primitives: drumPrimitives, density },
       bass: { ...graph.layers.bass, primitives: [sub] },
+      harmony: { ...graph.layers.harmony, primitives: structureVoices(structures) },
       melody: { ...graph.layers.melody, primitives: melodyPrimitives },
       texture: { ...graph.layers.texture, primitives: texturePrimitives },
       atmosphere: { ...graph.layers.atmosphere, primitives: atmospherePrimitives },
