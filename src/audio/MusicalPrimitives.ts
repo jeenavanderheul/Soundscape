@@ -633,6 +633,12 @@ export function buildLayerGraph(
   structures: readonly StructureVoiceSource[] = [],
   track?: TrackState,
   patterns: LayerPatterns = {},
+  /**
+   * §42: MOVEMENT IS THE MUSIC. 0 = the orb is still and the world is silent;
+   * 1 = flying. Earned layers are never lost — they simply stop sounding
+   * until the player moves again.
+   */
+  motion = 1,
 ): MusicalLayerGraph {
   const playerTempo = music.tempoConfidence >= TEMPO_CONFIDENCE_THRESHOLD && music.bpm > 0;
   const trackClock = track && track.bpm > 0;
@@ -981,16 +987,20 @@ export function buildLayerGraph(
     ];
   };
 
+  // Quantized: a continuously drifting gain would re-evaluate the pattern on
+  // every frame, which §11 forbids. Eight steps is inaudible as stepping and
+  // keeps the graph diff-stable.
+  const level = Math.round(clamp01(motion) * 8) / 8;
   return {
     ...graph,
     layers: {
       ...graph.layers,
-      drums: { ...graph.layers.drums, primitives: authored('drums', drums), density },
-      bass: { ...graph.layers.bass, primitives: authored('bass', bass) },
-      harmony: { ...graph.layers.harmony, primitives: authored('harmony', harmony) },
-      melody: { ...graph.layers.melody, primitives: authored('melody', melody) },
-      texture: { ...graph.layers.texture, primitives: authored('texture', texture) },
-      atmosphere: { ...graph.layers.atmosphere, primitives: authored('atmosphere', atmosphere) },
+      drums: { ...graph.layers.drums, primitives: authored('drums', drums), density, gain: level },
+      bass: { ...graph.layers.bass, primitives: authored('bass', bass), gain: level },
+      harmony: { ...graph.layers.harmony, primitives: authored('harmony', harmony), gain: level },
+      melody: { ...graph.layers.melody, primitives: authored('melody', melody), gain: level },
+      texture: { ...graph.layers.texture, primitives: authored('texture', texture), gain: level },
+      atmosphere: { ...graph.layers.atmosphere, primitives: authored('atmosphere', atmosphere), gain: level },
     },
   };
 }

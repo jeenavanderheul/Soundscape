@@ -647,6 +647,9 @@ export class Game {
       this.worldStore.getState().structures,
       this.trackStore.getState(),
       this.worldPatterns,
+      // §42: no movement, no music. A gentle ramp so starting to fly fades
+      // the world in rather than switching it on.
+      Math.min(1, Math.max(0, (this.frequencyStore.getState().velocity - 0.4) / 3)),
     );
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     this.lastLayerGraph = next;

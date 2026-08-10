@@ -32,3 +32,13 @@
 [   40241ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [   44183ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [   46918ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   54922ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   65589ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   70891ms] [LOG] %c[cyclist] stop background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   71482ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   71482ms] [LOG] %c[cyclist] start background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[   76047ms] [LOG] %c[cyclist] stop background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  141036ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  141057ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5212/:0
+[  161199ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5212/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  161216ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5212/:0

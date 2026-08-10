@@ -127,6 +127,25 @@ describe('graph from TrackState (§29.3 ghost → kick → clap)', () => {
     expect(graph.layers.drums.primitives).toHaveLength(0);
   });
 
+  // §42: movement is the music — standing still silences the world, but the
+  // track itself is never lost.
+  it('goes silent when the orb stops, and keeps every earned layer', () => {
+    const track = createInitialTrackState();
+    track.bpm = 128;
+    track.drums.kick = { unlocked: true, level: 1 };
+    track.bass = { unlocked: true, level: 1 };
+    const flying = buildLayerGraph(music, undefined, [], track, {}, 1);
+    const still = buildLayerGraph(music, undefined, [], track, {}, 0);
+    expect(flying.layers.drums.gain).toBe(1);
+    expect(still.layers.drums.gain).toBe(0);
+    expect(still.layers.bass.gain).toBe(0);
+    // The layers are still THERE — they are just not sounding.
+    expect(still.layers.drums.primitives.length).toBe(flying.layers.drums.primitives.length);
+    expect(track.drums.kick.unlocked).toBe(true);
+    // Starting to move fades the world back in rather than switching it on.
+    expect(buildLayerGraph(music, undefined, [], track, {}, 0.5).layers.drums.gain).toBeCloseTo(0.5);
+  });
+
   it('earned layers STAY in the track through stillness (§29, user decision)', () => {
     const still = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0 };
     const track = createInitialTrackState();
