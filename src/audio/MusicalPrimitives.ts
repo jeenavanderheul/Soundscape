@@ -6,6 +6,7 @@
  * templates. Primitives are declarative — never executable user data.
  */
 import type { GenreAffinity, MusicState } from '../music/MusicState';
+import type { TrackState } from '../music/TrackState';
 
 export type PrimitiveKind =
   | 'pulse' | 'kick' | 'snare' | 'hat' | 'break'
@@ -183,6 +184,7 @@ export function buildLayerGraph(
   music: MusicState,
   genre?: GenreAffinity,
   structures: readonly StructureVoiceSource[] = [],
+  track?: TrackState,
 ): MusicalLayerGraph {
   const playerTempo = music.tempoConfidence >= TEMPO_CONFIDENCE_THRESHOLD && music.bpm > 0;
   const heartbeat = music.dynamics >= HEARTBEAT_DYNAMICS_THRESHOLD;
@@ -227,7 +229,10 @@ export function buildLayerGraph(
   // a movement-derived tempo. The player's own rhythm, once confident,
   // ALWAYS takes over and the world quantizes to it (§3.4).
   const bpm = playerTempo ? music.bpm : heartbeatBpm(music.dynamics);
-  const pulseGain = playerTempo ? 0.8 : 0.45;
+  // §29.3: before the KICK is unlocked the pulse stays a GHOST — audible
+  // timekeeping, deliberately thin, so the unlocked kick lands as a reward.
+  const kickUnlocked = track ? track.drums.kick.unlocked : true;
+  const pulseGain = kickUnlocked ? (playerTempo ? 0.85 : 0.5) : 0.2;
   const graph = createEmptyLayerGraph(bpm);
   const density = clamp01(music.rhythmDensity);
   const techno = clamp01(genre?.techno ?? 0);
@@ -247,6 +252,17 @@ export function buildLayerGraph(
   const dnb = clamp01(genre?.dnb ?? 0);
   const experimental = clamp01(genre?.experimental ?? 0);
   const drumPrimitives: MusicalPrimitive[] = [pulse];
+  // §29.3: CLAP/SNARE layer — strong transients on the backbeat unlocked it.
+  // Ambient grammar softens it (§29.5).
+  if (track?.drums.snare.unlocked) {
+    drumPrimitives.push({
+      id: 'track-snare',
+      kind: 'snare',
+      layer: 'drums',
+      parameters: { gain: ambient >= GENRE_LAYER_STRONG ? 0.2 : 0.5 },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.snare],
+    });
+  }
   if (dnb >= GENRE_LAYER_THRESHOLD) {
     // §9.4: velocity mutates the break — double-time chopped drums.
     drumPrimitives.push({
@@ -257,7 +273,10 @@ export function buildLayerGraph(
       allowedTransforms: [...ALLOWED_TRANSFORMS.break],
     });
   }
-  if (techno >= GENRE_LAYER_THRESHOLD) {
+  // §29.3: HAT layer — unlocked by high-register intent; the techno attractor
+  // is the legacy path when no track state is supplied.
+  const hatsActive = track ? track.drums.hats.unlocked : techno >= GENRE_LAYER_THRESHOLD;
+  if (hatsActive) {
     drumPrimitives.push({
       id: 'techno-hat',
       kind: 'hat',

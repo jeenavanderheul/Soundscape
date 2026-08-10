@@ -1,3 +1,4 @@
+import { createInitialTrackState } from '../../src/music/TrackState';
 import { describe, expect, it } from 'vitest';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { createInitialFrequencyState } from '../../src/player/FrequencyState';
@@ -33,6 +34,7 @@ function sampleWorld(): SerializableWorld {
       },
     ],
     progression: { controlsRevealed: 2, resonanceClassesSeen: [], structuresCreated: 0, permanentStructures: 0, genresSeen: [], playerResonatorsCreated: 0 },
+    trackState: createInitialTrackState(),
     genreHistory: [],
   };
 }

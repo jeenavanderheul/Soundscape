@@ -147,6 +147,13 @@ export class WaveTerrain {
     this.pulse = value;
   }
 
+  /** §29.6 clap flash: a sharp extra field-pulse that decays fast. */
+  private flash = 0;
+
+  clapFlash(): void {
+    this.flash = 1;
+  }
+
   /** Raise (or refresh) an excitation source; terrain grows where sound happens. */
   excite(id: string, position: Vec3Data, hz: number, amount: number, permanent = false): void {
     const existing = this.sources.find((s) => s.id === id);
@@ -195,8 +202,9 @@ export class WaveTerrain {
       s.strength = Math.max(floor, s.strength - TERRAIN_CONFIG.exciteDecayPerSec * dt);
       if (!s.permanent && s.strength <= 0.01) this.sources.splice(i, 1);
     }
+    this.flash = Math.max(0, this.flash - dt * 5);
     this.material.uniforms.uTime!.value = elapsedSeconds;
-    this.material.uniforms.uPulse!.value = this.pulse;
+    this.material.uniforms.uPulse!.value = Math.min(1.5, this.pulse + this.flash);
     this.material.uniforms.uSources!.value = packSources(this.sources, this.sourceArray);
     this.material.uniforms.uSourceCount!.value = this.sources.length;
   }

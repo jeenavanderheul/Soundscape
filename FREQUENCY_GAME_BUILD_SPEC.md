@@ -1017,6 +1017,81 @@ Always verify version-sensitive integration details against the pinned dependenc
 
 ---
 
+## 29. Track Builder (v2 amendment — NORMATIVE, supersedes conflicting earlier sections)
+
+> Approved by the product owner on 2026-08-10. The eleven elements are not only world-physics: they are a **compositional pipeline**. The world does not merely generate sound — **the world builds a track in layers**, and the world is the visualized composition.
+
+### 29.1 Revised primary product test
+
+The MVP question of §19 is replaced by:
+
+> **Can someone without music software audibly build a kick, hats, bass, harmony and melody into something that feels like a real track within two minutes?**
+
+Track emergence comes before (or at minimum parallel to) world emergence. The §1 experience arc is reprioritized accordingly.
+
+### 29.2 The compositional pipeline
+
+| Fase | Speleractie | Element | Toegevoegd aan track | Hoorbaar |
+|---|---|---|---|---|
+| 1 | stabiele pulse vinden | Tempo | BPM clock | ghost pulse (heartbeat) |
+| 2 | herhaalde movement/collisions | Rhythm | drum pattern | kick / snare / hats |
+| 3 | door lage frequenties bewegen | Pitch | bass notes | bassline |
+| 4 | resonante frequenties combineren | Harmony | chords | akkoordlaag |
+| 5 | door pitch-space vliegen | Melody | melodic phrase | lead |
+| 6 | waveform wisselen | Timbre | instrument character | synth/metal/noise/pad |
+| 7 | amplitude variëren | Dynamics | velocity/automation | groove leeft |
+| 8 | sounds lang/kort vasthouden | Duration | note lengths | staccato ↔ pads |
+| 9 | ritmische acties groeperen | Meter | bar structure | 4/4, 3/4, 5/4 |
+| 10 | meerdere systemen activeren | Texture | layer density | volle mix |
+| 11 | door de wereld reizen over tijd | Form | arrangement | intro → build → drop → break → outro |
+
+### 29.3 Layer unlock choreography (drums example, Techno grammar)
+
+Ghost pulse verschijnt bij stabiele beweging (nog geen kick). Unlock-condities zijn **soepel: intentie telt** — 2-3 acties die ongeveer kloppen volstaan; de GenreGrammar maakt het resultaat muzikaal coherent zodat niet-muzikanten slagen.
+
+- **KICK**: enkele low-frequency excitaties (puls of resonantie < ~250 Hz) ruwweg op de beat → four-on-the-floor valt binnen op de maatgrens.
+- **HAT**: offbeat-achtige acties of high-frequency resonantie (> ~600 Hz) → offbeat/16th hats.
+- **CLAP/SNARE**: sterke transienten ruwweg op 2 en 4 → clap-laag.
+- Daarna: BASS (low pitch-space), HARMONY (resonantie-combinaties), MELODY (pitch-traject), TEXTURE, ARRANGEMENT.
+
+Elke unlock wordt gecommuniceerd **hoorbaar (laag valt binnen op maatgrens) + visueel (het systeem van die laag verschijnt) + één kort monospace-woord** (bv. `KICK`). Nooit een popup, badge of score (§25.13 blijft gelden).
+
+### 29.4 TrackState — wat zit er in de track
+
+Naast MusicState (hoe gedraagt de muziek zich) komt een serializable **TrackState** (wat zit er daadwerkelijk in de track): bpm, meter, drums (kick/snare/hats/percussion als PatternState met unlocked-status), bass (pattern + notes), harmony (chords + rhythm), melody (notes + rhythm), texture (layers), dynamics (automation), form (arrangement). TrackState wordt opgeslagen in de save en gevisualiseerd door de wereld.
+
+### 29.5 Data flow (vervangt de directe movement→sound koppeling)
+
+```text
+PLAYER → GAME MECHANICS → MUSICAL INTERPRETATION (analyzers §10)
+  → TRACK BUILDER (Drum/Bass/Harmony/Melody/Texture composers)
+  → GENRE GRAMMAR (regels per genre, geen sound-palette)
+  → ARRANGEMENT ENGINE (§3.11 form: intro→build→drop→break→return→mutation)
+  → STRUDEL → ACTUAL TRACK → AUDIO ANALYSIS → WORLD GENERATION
+```
+
+GenreGrammar: affiniteiten zetten geen genre "aan", maar geven de Track Builder vertaalregels (Techno: 125-135 BPM, 4otf-kick, clap op 2/4, offbeat hats, korte repetitieve bass, minimal motif; Ambient: nauwelijks kick, lange durations, drones, sustained harmony, vrije form; DnB: 165-180, breakbeat grammar, snare-nadruk, zware sub).
+
+### 29.6 Elke tracklaag heeft een visuele systeemfunctie
+
+| Laag | Visueel systeem |
+|---|---|
+| Kick | grote terrain-pulse / low-frequency shockwave |
+| Snare/clap | scherpe horizontale flashes |
+| Hi-hat | kleine high-frequency particles |
+| Bassline | bewegende terrain ridges |
+| Chord | verbindende geometry / bridges |
+| Melody | luminous trajectory |
+| Pad/atmosphere | fog / volumetric field |
+
+De speler moet kunnen zeggen: "die particles zijn mijn hats, dat landschap is mijn bass, die lichtlijn is mijn melody."
+
+### 29.7 Arrangement — de speler hoort waar hij in de song zit
+
+De track is nooit een eindeloze 8-bar loop. Energie-gedrag stuurt de vorm: meer energie → build; zweven/stoppen → breakdown; daarna hard pulseren → drop. Secties (~16s schaal): INTRO (kick+atmosphere) → GROOVE (+hat+bass) → BUILD (+percussion, rising harmony) → DROP (alles) → BREAK (kick weg, harmony blijft) → RETURN → MUTATION (speler verandert de vorm). Movement becomes arrangement.
+
+---
+
 ## Final product thesis
 
 FREQUENCY begins with one vibration.

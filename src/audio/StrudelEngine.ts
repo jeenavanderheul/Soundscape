@@ -119,6 +119,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       );
       return `s("bd*${steps}").gain(${gain})`;
     }
+    case 'snare': {
+      // Clap on the backbeat (§29.3): beats 2 and 4.
+      return `s("[~ cp ~ cp]").gain(${gain})`;
+    }
     case 'hat': {
       // Techno hats (§9.1): off-beat or 16th closed hats depending on density.
       const steps = Math.round(

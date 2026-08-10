@@ -16,6 +16,8 @@ import type { GenreEvents } from '../genres/GenreAffinityEngine';
 import { createInitialMusicState, MusicState } from '../music/MusicState';
 import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
 import { RhythmDetector } from '../music/RhythmDetector';
+import { TrackBuilder } from '../music/TrackBuilder';
+import { createInitialTrackState, TrackEvents, TrackState } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
 import { FrequencyController } from '../player/FrequencyController';
@@ -43,6 +45,7 @@ import { ResonanceEngine } from '../resonance/ResonanceEngine';
 import type { ResonanceEvents } from '../resonance/ResonanceEngine';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { Hints } from '../ui/Hints';
+import { LayerCue } from '../ui/LayerCue';
 import { HUD } from '../ui/HUD';
 import { attachIntroHint } from '../ui/Intro';
 import { PauseOverlay } from '../ui/PauseOverlay';
@@ -54,7 +57,7 @@ import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
-export type GameEvents = ResonanceEvents & StructureEvents & GenreEvents & {
+export type GameEvents = ResonanceEvents & StructureEvents & GenreEvents & TrackEvents & {
   /** Strudel-clock beat boundary (§20 M4); consumed by BeatSync. */
   'beat': BeatEvent;
   'audio:unlocked': null;
@@ -83,6 +86,7 @@ interface FrequencyDebug {
   getGenreSnapshot(): unknown;
   getProgression(): unknown;
   getAnalysis(): unknown;
+  getTrackState(): unknown;
   saveNow(): { ok: boolean };
   loadInfo(): LoadInfo;
   resetWorld(): void;
@@ -133,6 +137,7 @@ export class Game {
   private readonly forest = new ForestSystem(WORLD_SEED, this.worldStore.getState().resonators);
   private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
   private readonly hints = new Hints();
+  private readonly layerCue = new LayerCue(this.events);
   private readonly beatSync: BeatSync;
   private readonly detachBeatSync: () => void;
   // §11/§20 M4: Strudel shares our AudioContext; its beat boundaries feed the bus.
@@ -147,6 +152,10 @@ export class Game {
   private lastLayerGraph: MusicalLayerGraph | null = null;
   /** §9/§20 M5: genre affinity evaluated in the logic loop, never per frame. */
   private readonly genreEngine = new GenreAffinityEngine(this.events);
+  /** §29: what is actually IN the track; built by intent, saved, visualized. */
+  private readonly trackStore: Store<TrackState> = createStore(createInitialTrackState());
+  private readonly trackBuilder = new TrackBuilder(this.trackStore, this.events);
+  private beatIndex = 0;
   /** §17: discovered causal laws; unlocks the composer mechanic. */
   private readonly progressionStore: Store<ProgressionState> = createStore(
     createInitialProgression(),
@@ -191,6 +200,8 @@ export class Game {
     this.formEmergence = new FormEmergence(this.events, this.worldStore, WORLD_SEED);
     this.detachResonanceCapture = this.events.on('resonance:event', (event) => {
       this.pendingResonanceEvents.push(event);
+      // §29.5: resonance is track intent too.
+      this.trackBuilder.onResonance(event);
       // Terrain grows where resonance happens (user decision, §3.8): the
       // engaged resonator's zone swells and slowly relaxes.
       const target = this.worldStore.getState().resonators.find((r) => r.id === event.targetId);
@@ -248,6 +259,16 @@ export class Game {
     // become 'beat' bus events, the strong pulse BeatSync locks visuals to.
     this.detachStrudelBeat = this.strudelEngine.onBeat((event) => {
       this.events.emit('beat', { atMs: event.atMs });
+      // §29.6 layer visuals: kick = terrain shockwave; clap = backbeat flash.
+      this.beatIndex += 1;
+      const track = this.trackStore.getState();
+      if (track.drums.kick.unlocked) {
+        const p = this.frequencyStore.getState().position;
+        this.terrain.excite('kick-beat', p, 55, 0.3);
+      }
+      if (track.drums.snare.unlocked && this.beatIndex % 2 === 0) {
+        this.terrain.clapFlash();
+      }
     });
     // §18: hydrate before the autosave subscription exists, so restoring a
     // save never immediately rewrites the snapshot it was loaded from.
@@ -285,6 +306,7 @@ export class Game {
         getMusicState: () => this.musicStore.getState(),
         getStrudelInfo: () => this.strudelEngine.status,
         getAnalysis: () => (this.audioAnalyser ? { ...this.audioAnalyser.snapshot } : null),
+        getTrackState: () => this.trackStore.getState(),
         getGenreSnapshot: () => this.genreEngine.current,
         getProgression: () => ({
           ...this.progressionStore.getState(),
@@ -339,6 +361,7 @@ export class Game {
     this.renderer.scene.remove(this.markers.mesh);
     this.markers.dispose();
     this.hints.dispose();
+    this.layerCue.dispose();
     this.renderer.scene.remove(this.orb.mesh);
     this.orb.dispose();
     this.hud.dispose();
@@ -354,6 +377,16 @@ export class Game {
     // §3.3: timed excitations (LMB release, Space) are the rhythm onsets.
     if (snapshot.windReleased || snapshot.resonancePulse) {
       this.rhythmDetector.onOnset(elapsedMs);
+      // §29.5: the same action is TRACK INTENT — its register carries meaning.
+      const acting = this.frequencyStore.getState();
+      this.trackBuilder.onAction({
+        atMs: elapsedMs,
+        hz: acting.hz,
+        amplitude: acting.amplitude,
+        // A clap intent is a DELIBERATE wind release, not a Space tap that
+        // happened while the wind was held (§29.3).
+        release: snapshot.windReleased && !snapshot.resonancePulse,
+      });
     }
     // §17 composer reveal: once causal understanding is demonstrated, a
     // resonance pulse in empty space CREATES a resonator from the player's
@@ -384,6 +417,10 @@ export class Game {
       );
       // §9: genre affinity from the same MusicState the patterns come from.
       this.genreEngine.update(elapsedMs, this.musicStore.getState());
+      // §29: the Track Builder interprets intent into layers.
+      this.trackBuilder.tick(elapsedMs, this.musicStore.getState());
+      // §29.6: hats live in the particles.
+      this.particles.setSparkle(this.trackStore.getState().drums.hats.unlocked);
       const genre = this.genreEngine.current;
       // §9.1 world tendency: repetition organizes structures onto the grid.
       this.structures.setOrganization(genre?.affinity.techno ?? 0);
@@ -451,6 +488,7 @@ export class Game {
       this.musicStore.getState(),
       this.genreEngine.current?.affinity,
       this.worldStore.getState().structures,
+      this.trackStore.getState(),
     );
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     this.lastLayerGraph = next;
@@ -578,6 +616,7 @@ export class Game {
     this.worldStore.setState((state) => ({ ...state, structures: [] }));
     // The void returns COMPLETELY: player back at spawn, tone at rest (§17).
     this.frequencyStore.setState(() => createInitialFrequencyState());
+    this.trackStore.setState(() => createInitialTrackState());
     this.controller.resetOrientation();
     for (const structure of removed) this.events.emit('structure:removed', structure);
     // Runs last: also cancels the autosave the store change just scheduled.
@@ -593,6 +632,7 @@ export class Game {
       structures: save.structures,
     }));
     this.progressionStore.setState(() => ({ ...save.progression }));
+    this.trackStore.setState(() => ({ ...save.trackState }));
     // Resume spawn counters so post-load spawns never reuse a saved structure's id.
     this.formEmergence.rehydrate(save.structures);
     for (const structure of save.structures) this.events.emit('structure:spawned', structure);
@@ -609,6 +649,7 @@ export class Game {
       structures: [...world.structures],
       genreHistory: [...this.genreEngine.history],
       progression: this.progressionStore.getState(),
+      trackState: this.trackStore.getState(),
     };
   }
 

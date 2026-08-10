@@ -5,7 +5,7 @@ import type { ResonatorData } from '../world/Resonator';
 import { HZ_SCALE_RANGE, type StructureData } from '../world/StructureData';
 
 /** Bump when the save contract changes and register a migration (spec §18). */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 const WAVEFORMS: readonly Waveform[] = ['sine', 'triangle', 'square', 'saw', 'noise'];
 const FORM_PHASES = ['void', 'intro', 'build', 'peak', 'break', 'return', 'mutation'] as const;
@@ -31,6 +31,8 @@ export interface GenreSnapshot {
 export type { ProgressionState } from '../progression/ProgressionState';
 import { createInitialProgression } from '../progression/ProgressionState';
 import type { ProgressionState } from '../progression/ProgressionState';
+import { createInitialTrackState } from '../music/TrackState';
+import type { PatternState, TrackState } from '../music/TrackState';
 
 /** Spec §18 save contract. Serializable primitives and plain objects only. */
 export interface WorldSave {
@@ -43,6 +45,8 @@ export interface WorldSave {
   structures: SavedStructure[];
   genreHistory: GenreSnapshot[];
   progression: ProgressionState;
+  /** §29.4: what is actually in the track. */
+  trackState: TrackState;
 }
 
 /** What callers hand to serialize; schemaVersion and savedAt are injected. */
@@ -195,6 +199,38 @@ function collect<T>(raw: unknown, parse: (entry: unknown) => T | null): T[] {
  * return a typed error; recoverable field damage is clamped or defaulted.
  * Never throws on malformed input.
  */
+/** Defensive TrackState validation: unknown input → valid state, never throws. */
+function validateTrackState(raw: unknown): TrackState {
+  const base = createInitialTrackState();
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return base;
+  const r = raw as Record<string, unknown>;
+  const pattern = (value: unknown): PatternState => {
+    if (typeof value !== 'object' || value === null) return { unlocked: false, level: 0 };
+    const p = value as Record<string, unknown>;
+    const unlocked = p.unlocked === true;
+    const level =
+      typeof p.level === 'number' && Number.isFinite(p.level)
+        ? Math.min(1, Math.max(0, p.level))
+        : 0;
+    return { unlocked, level: unlocked ? Math.max(level, 0.01) : level };
+  };
+  const drums =
+    typeof r.drums === 'object' && r.drums !== null ? (r.drums as Record<string, unknown>) : {};
+  return {
+    ...base,
+    bpm: typeof r.bpm === 'number' && Number.isFinite(r.bpm) ? Math.min(300, Math.max(0, r.bpm)) : 0,
+    drums: {
+      kick: pattern(drums.kick),
+      snare: pattern(drums.snare),
+      hats: pattern(drums.hats),
+    },
+    bass: pattern(r.bass),
+    harmony: pattern(r.harmony),
+    melody: pattern(r.melody),
+    texture: pattern(r.texture),
+  };
+}
+
 export function validate(raw: unknown): ValidationResult {
   if (!isObject(raw)) return { ok: false, error: 'save is not an object' };
   if (raw.schemaVersion !== SCHEMA_VERSION) {
@@ -232,6 +268,7 @@ export function validate(raw: unknown): ValidationResult {
       structures: collect(raw.structures, structure),
       genreHistory: collect(raw.genreHistory, genreSnapshot),
       progression,
+      trackState: validateTrackState(raw.trackState),
     },
   };
 }

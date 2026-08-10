@@ -126,9 +126,20 @@ export class ParticleSystem {
     }
     this.positionAttribute.needsUpdate = true;
 
-    this.material.uniforms.uSize!.value = hzToPointSize(snapshot.hz);
+    // §29.6: hats live in the particles — a fast shimmer once unlocked.
+    this.sparklePhase += dt * 26;
+    const sparkle = this.sparkle ? 1 + Math.sin(this.sparklePhase) * 0.3 : 1;
+    this.material.uniforms.uSize!.value = hzToPointSize(snapshot.hz) * sparkle;
     this.material.uniforms.uBrightness!.value =
-      amplitudeToBrightness(snapshot.amplitude) * (1 + this.pulse);
+      amplitudeToBrightness(snapshot.amplitude) * (1 + this.pulse) * (this.sparkle ? 1.25 : 1);
+  }
+
+  private sparkle = false;
+  private sparklePhase = 0;
+
+  /** "Those particles are my hats" (§29.6). */
+  setSparkle(on: boolean): void {
+    this.sparkle = on;
   }
 
   dispose(): void {

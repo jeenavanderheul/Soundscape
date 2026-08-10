@@ -1,0 +1,5 @@
+- generic [active] [ref=f42e1]:
+  - generic: "freq: 220 hz amp: 0.00 wave: sine"
+  - status
+  - status
+  - paragraph: Use headphones. Move with WASD. Listen.

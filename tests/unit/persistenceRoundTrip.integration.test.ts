@@ -1,3 +1,4 @@
+import { createInitialTrackState } from '../../src/music/TrackState';
 import { describe, expect, it } from 'vitest';
 import { createEventBus } from '../../src/core/EventBus';
 import { createRng } from '../../src/core/rng';
@@ -112,6 +113,7 @@ describe('persistence round trip (FormEmergence → save → load → geometry)'
       structures: [...structures],
       genreHistory: [],
       progression: { controlsRevealed: 0, resonanceClassesSeen: [], structuresCreated: 0, permanentStructures: 0, genresSeen: [], playerResonatorsCreated: 0 },
+    trackState: createInitialTrackState(),
     };
 
     const manager = new SaveManager(memoryStorage(), () => 1_000);
@@ -131,6 +133,7 @@ describe('persistence round trip (FormEmergence → save → load → geometry)'
       structures: [...structures],
       genreHistory: [],
       progression: { controlsRevealed: 0, resonanceClassesSeen: [], structuresCreated: 0, permanentStructures: 0, genresSeen: [], playerResonatorsCreated: 0 },
+    trackState: createInitialTrackState(),
     };
     const manager = new SaveManager(memoryStorage(), () => 1_000);
     manager.save(world);

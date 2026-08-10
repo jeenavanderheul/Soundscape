@@ -1,3 +1,4 @@
+import { createInitialTrackState } from '../../src/music/TrackState';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRng } from '../../src/core/rng';
 import { createInitialMusicState } from '../../src/music/MusicState';
@@ -19,6 +20,7 @@ function sampleWorld(seed = 'seed-a'): SerializableWorld {
     resonators: createInitialResonators(createRng(seed)),
     structures: [],
     progression: { controlsRevealed: 0, resonanceClassesSeen: [], structuresCreated: 0, permanentStructures: 0, genresSeen: [], playerResonatorsCreated: 0 },
+    trackState: createInitialTrackState(),
     genreHistory: [],
   };
 }

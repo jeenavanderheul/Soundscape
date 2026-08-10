@@ -49,6 +49,8 @@ function migrateV1Structure(entry: unknown, worldSeed: string): unknown {
 }
 
 const MIGRATIONS: MigrationRegistry = {
+  // v3 → v4: TrackState added (§29.4); older saves start with a locked track.
+  3: (raw) => ({ ...raw, trackState: null }),
   // v2 → v3: progression grew discovery tracking (§17); defaults are empty.
   2: (raw) => {
     const prev =
