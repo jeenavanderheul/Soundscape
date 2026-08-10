@@ -545,6 +545,8 @@ export class Game {
   resetWorld(): void {
     const removed = this.worldStore.getState().structures;
     this.worldStore.setState((state) => ({ ...state, structures: [] }));
+    // The void returns COMPLETELY: player back at spawn, tone at rest (§17).
+    this.frequencyStore.setState(() => createInitialFrequencyState());
     for (const structure of removed) this.events.emit('structure:removed', structure);
     // Runs last: also cancels the autosave the store change just scheduled.
     this.saveManager.reset();

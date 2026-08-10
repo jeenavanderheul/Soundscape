@@ -27,6 +27,10 @@ export const FLIGHT_CONFIG = {
   drag: 1.6,
   /** units/s */
   maxSpeed: 24,
+  /** Flight band above the terrain plane (y −6): the field below is the
+   * always-visible reference, so the player never dives under or loses it. */
+  minY: -3,
+  maxY: 70,
 } as const;
 
 export const LOOK_CONFIG = {
@@ -138,7 +142,7 @@ export class FrequencyController {
       direction,
       position: {
         x: state.position.x + vx * dt,
-        y: state.position.y + vy * dt,
+        y: clamp(state.position.y + vy * dt, FLIGHT_CONFIG.minY, FLIGHT_CONFIG.maxY),
         z: state.position.z + vz * dt,
       },
     }));

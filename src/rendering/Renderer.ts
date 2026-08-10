@@ -19,6 +19,7 @@ export class Renderer {
     this.container = container;
     this.scene = new Scene();
     this.scene.background = new Color(RENDER_CONFIG.clearColor);
+    this.scene.fog = this.fog;
     this.camera = new Camera(window.innerWidth / window.innerHeight);
     this.webgl = new WebGLRenderer({ antialias: true });
     this.webgl.setClearColor(RENDER_CONFIG.clearColor);
@@ -27,13 +28,16 @@ export class Renderer {
     window.addEventListener('resize', this.onResize);
   }
 
-  /** §9.2 Ambient world tendency: fog thickens with affinity; 0 clears it. */
-  private readonly fog = new FogExp2(RENDER_CONFIG.clearColor, 0);
+  /** Distance fog is always on (game-style depth reference, §13); the
+   * ambient attractor only thickens it toward its ceiling (§9.2). */
+  private readonly fog = new FogExp2(RENDER_CONFIG.clearColor, RENDER_CONFIG.baseFogDensity);
 
   setAtmosphere(amount: number): void {
     const clamped = Math.min(1, Math.max(0, amount));
-    this.fog.density = clamped * RENDER_CONFIG.maxFogDensity;
-    this.scene.fog = clamped > 0 ? this.fog : null;
+    this.fog.density =
+      RENDER_CONFIG.baseFogDensity +
+      clamped * (RENDER_CONFIG.maxFogDensity - RENDER_CONFIG.baseFogDensity);
+    this.scene.fog = this.fog;
   }
 
   render(): void {

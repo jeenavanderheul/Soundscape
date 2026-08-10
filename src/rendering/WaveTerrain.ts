@@ -51,6 +51,7 @@ const VERTEX = /* glsl */ `
 uniform float uTime;
 uniform float uPulse;
 uniform vec2 uOrigin; // the field follows the player; sources stay in world space
+uniform vec2 uPlayer; // world position of the orb: the lantern lives here
 uniform vec4 uSources[${TERRAIN_CONFIG.maxSources}]; // x, z, strength, hzNorm
 uniform int uSourceCount;
 varying float vGlow;
@@ -88,7 +89,11 @@ void main() {
     zone += zoneColor(s.w) * envelope;
   }
   pos.y += h;
-  vGlow = clamp(glow + abs(h) * 0.12, 0.0, 1.4);
+  // Lantern: an always-on pool of light under the orb, so the field beneath
+  // the player is ALWAYS a visible reference (game-style spot, no lighting rig).
+  float dPlayer = distance(world, uPlayer);
+  float lantern = exp(-(dPlayer * dPlayer) / (26.0 * 26.0)) * 0.85;
+  vGlow = clamp(glow + lantern + abs(h) * 0.12, 0.0, 1.6);
   vZone = zone;
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
   // Manual depth fade: the field dissolves into the void (§13).
@@ -127,6 +132,7 @@ export class WaveTerrain {
         uTime: { value: 0 },
         uPulse: { value: 0 },
         uOrigin: { value: [0, 0] },
+        uPlayer: { value: [0, 0] },
         uSources: { value: packSources([], this.sourceArray) },
         uSourceCount: { value: 0 },
       },
@@ -168,12 +174,20 @@ export class WaveTerrain {
 
   update(dt: number, elapsedSeconds: number, playerPosition?: Vec3Data): void {
     if (playerPosition) {
-      // Infinite field: the grid rides along under the player; the shader
-      // adds uOrigin back so waves and sources stay world-anchored.
-      this.lines.position.set(playerPosition.x, TERRAIN_CONFIG.planeY, playerPosition.z);
+      // Infinite field that reads as MOTION: recenter in whole grid cells so
+      // every scan line stays glued to fixed world positions — lines stream
+      // past the camera instead of riding along with it.
+      const cellX = TERRAIN_CONFIG.size / TERRAIN_CONFIG.columns;
+      const cellZ = TERRAIN_CONFIG.size / (TERRAIN_CONFIG.rows - 1);
+      const snapX = Math.round(playerPosition.x / cellX) * cellX;
+      const snapZ = Math.round(playerPosition.z / cellZ) * cellZ;
+      this.lines.position.set(snapX, TERRAIN_CONFIG.planeY, snapZ);
       const origin = this.material.uniforms.uOrigin!.value as number[];
-      origin[0] = playerPosition.x;
-      origin[1] = playerPosition.z;
+      origin[0] = snapX;
+      origin[1] = snapZ;
+      const player = this.material.uniforms.uPlayer!.value as number[];
+      player[0] = playerPosition.x;
+      player[1] = playerPosition.z;
     }
     for (let i = this.sources.length - 1; i >= 0; i--) {
       const s = this.sources[i]!;
