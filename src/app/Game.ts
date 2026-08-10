@@ -624,8 +624,11 @@ export class Game {
       [...world.resonators.map((r) => r.position), ...world.structures.map((s) => s.position)],
       state.position,
     );
-    // §29.6: the orb and the cloud around it ARE the track so far.
-    const growth = trackGrowth(this.trackStore.getState());
+    // §29.6: the orb and the cloud around it ARE the track so far — and §42:
+    // stand still and do nothing and it sinks back to its first form while the
+    // music goes out. Nothing is lost: the layers stay earned, so moving again
+    // grows the orb straight back to where the track is.
+    const growth = trackGrowth(this.trackStore.getState()) * this.motionLevel;
     this.orb.setGrowth(growth);
     this.particles.setGrowth(growth);
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);

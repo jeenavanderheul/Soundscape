@@ -71,6 +71,19 @@ describe('§29.6 the orb becomes the track', () => {
     orb.dispose();
   });
 
+  it('sinks back to its first form when the growth it is fed falls away', () => {
+    const orb = new PlayerOrb();
+    orb.setGrowth(1);
+    fly(orb, 30);
+    expect(orb.mesh.scale.x).toBeGreaterThan(2);
+    // §42: standing still feeds it zero — the orb returns to the first form.
+    orb.setGrowth(0);
+    fly(orb, 20);
+    expect(orb.mesh.scale.x).toBeLessThan(1.1);
+    expect(orb.material.uniforms.uGrowth!.value).toBeLessThan(0.05);
+    orb.dispose();
+  });
+
   it('stays inside the collision radius at full growth', () => {
     const orb = new PlayerOrb();
     orb.setGrowth(1);
