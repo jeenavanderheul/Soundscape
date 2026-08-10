@@ -40,11 +40,14 @@ export class Renderer {
     // The world stays near-black (§13): the region only TINTS the darkness.
     // Anything brighter turns the screen into a colour wash and the terrain
     // loses its contrast.
-    this.fog.color.setRGB(color.r * 0.17, color.g * 0.17, color.b * 0.2);
+    // A region has to be nameable at a glance. The world still reads as
+    // near-black (§13) — the fog and the sky are what carry the hue, and the
+    // scan lines stay bright on top of it.
+    this.fog.color.setRGB(color.r * 0.34, color.g * 0.34, color.b * 0.38);
     (this.scene.background as Color).setRGB(
-      0.004 + color.r * 0.05,
-      0.004 + color.g * 0.05,
-      0.008 + color.b * 0.06,
+      0.004 + color.r * 0.11,
+      0.004 + color.g * 0.11,
+      0.008 + color.b * 0.13,
     );
     this.webgl.setClearColor(this.scene.background as Color);
   }

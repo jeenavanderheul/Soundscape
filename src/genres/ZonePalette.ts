@@ -34,25 +34,25 @@ export const NEUTRAL_LOOK: ZoneLook = {
 /** One identity per grammar, from the poster palette. */
 export const GENRE_LOOKS: Record<keyof GenreAffinity, ZoneLook> = {
   // Machine red: hard, hot, industrial.
-  techno: { color: { r: 1.0, g: 0.24, b: 0.2 }, relief: 0.85, haze: 0.2 },
+  techno: { color: { r: 1.0, g: 0.12, b: 0.1 }, relief: 0.85, haze: 0.2 },
   // Deep blue space: soft, endless, low horizon.
-  ambient: { color: { r: 0.2, g: 0.5, b: 1.0 }, relief: 0.15, haze: 0.85 },
+  ambient: { color: { r: 0.18, g: 0.34, b: 1.0 }, relief: 0.15, haze: 0.85 },
   // Warm amber: human, lit from within.
-  jazz: { color: { r: 1.0, g: 0.72, b: 0.24 }, relief: 0.4, haze: 0.35 },
+  jazz: { color: { r: 1.0, g: 0.84, b: 0.18 }, relief: 0.4, haze: 0.35 },
   // Acid green: fast, sharp, jagged.
-  dnb: { color: { r: 0.4, g: 1.0, b: 0.35 }, relief: 0.7, haze: 0.3 },
+  dnb: { color: { r: 0.6, g: 1.0, b: 0.05 }, relief: 0.7, haze: 0.3 },
   // Violet mutation: the sky above everything.
-  experimental: { color: { r: 0.72, g: 0.35, b: 1.0 }, relief: 0.55, haze: 0.5 },
+  experimental: { color: { r: 0.62, g: 0.2, b: 1.0 }, relief: 0.55, haze: 0.5 },
   // Cool cyan, rolling and skippy — the ground never quite settles.
-  garage: { color: { r: 0.25, g: 0.85, b: 0.95 }, relief: 0.5, haze: 0.28 },
+  garage: { color: { r: 0.1, g: 0.8, b: 1.0 }, relief: 0.5, haze: 0.28 },
   // Warm gold, soft hills: the friendliest region in the world.
-  house: { color: { r: 1.0, g: 0.55, b: 0.3 }, relief: 0.3, haze: 0.4 },
+  house: { color: { r: 1.0, g: 0.42, b: 0.05 }, relief: 0.3, haze: 0.4 },
   // Deep purple with steep cliffs — weight you can see.
-  trap: { color: { r: 0.55, g: 0.2, b: 0.75 }, relief: 0.95, haze: 0.22 },
+  trap: { color: { r: 1.0, g: 0.08, b: 0.72 }, relief: 0.95, haze: 0.22 },
   // Almost black-green, cut by deep ravines: the echo chamber below.
-  dub: { color: { r: 0.1, g: 0.65, b: 0.5 }, relief: 0.65, haze: 0.7 },
+  dub: { color: { r: 0.0, g: 0.85, b: 0.62 }, relief: 0.65, haze: 0.7 },
   // Ivory, wide and low: a hall rather than a landscape.
-  classical: { color: { r: 0.95, g: 0.92, b: 0.82 }, relief: 0.22, haze: 0.45 },
+  classical: { color: { r: 1.0, g: 0.97, b: 0.86 }, relief: 0.22, haze: 0.45 },
 };
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));

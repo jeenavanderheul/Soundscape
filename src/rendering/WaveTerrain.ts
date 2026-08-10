@@ -123,7 +123,7 @@ void main() {
   // Tying it to the RELIEF fade (140 units) meant the land stayed colourless
   // exactly where the player starts, which is why every region looked alike.
   float colourIn = clamp((length(world) - 8.0) / 45.0, 0.0, 1.0);
-  vZone = zone + uZoneColor * (0.55 + vRidge * 0.08) * colourIn;
+  vZone = zone + uZoneColor * (0.8 + vRidge * 0.1) * colourIn;
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
   // Manual depth fade: the field dissolves into the void (§13).
   vGlow *= clamp(1.0 - (-mv.z - 40.0) / 180.0, 0.0, 1.0);
@@ -137,8 +137,11 @@ varying vec3 vZone;
 varying float vRidge;
 void main() {
   vec3 base = vec3(0.62, 0.72, 0.74); // cold monochrome scan line
-  // Ridge tops catch the light: the relief reads as landscape, not as noise.
-  vec3 color = base * (0.10 + vGlow * 0.9) + vZone * 0.55 + vec3(vRidge * 0.012);
+  // The region TINTS the line rather than only adding to it, so a red world
+  // has red scan lines instead of white ones with a red wash behind them.
+  vec3 lit = base * (0.10 + vGlow * 0.9);
+  vec3 color = mix(lit, lit * (vZone + 0.15), clamp(length(vZone), 0.0, 1.0))
+    + vZone * 0.85 + vec3(vRidge * 0.012);
   gl_FragColor = vec4(color, 1.0);
 }
 `;

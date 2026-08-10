@@ -157,7 +157,8 @@ export class ForestRenderer {
 
   /** §33: the forest takes the colour of its region. */
   setTint(color: { r: number; g: number; b: number }): void {
-    this.tint.setRGB(0.35 + color.r * 0.65, 0.35 + color.g * 0.65, 0.35 + color.b * 0.65);
+    // Saturated: the forest is the second thing that names a world (§55).
+    this.tint.setRGB(0.12 + color.r * 0.88, 0.12 + color.g * 0.88, 0.12 + color.b * 0.88);
   }
 
   setPulse(value: number): void {

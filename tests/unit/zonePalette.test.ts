@@ -97,3 +97,45 @@ describe('§57 a place is its music', () => {
     expect(placeName(null)).toBe('the void');
   });
 });
+
+describe('§59 ten worlds you can tell apart at a glance', () => {
+  const WORLDS = [
+    'techno', 'garage', 'jazz', 'house', 'ambient',
+    'classical', 'dnb', 'trap', 'dub', 'experimental',
+  ] as const;
+
+  /** Hue in degrees — what "a different colour" actually means to an eye. */
+  function hue(world: keyof typeof GENRE_LOOKS): number {
+    const { r, g, b } = GENRE_LOOKS[world].color;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    if (max === min) return 0;
+    const d = max - min;
+    const h =
+      max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return ((h * 60) % 360 + 360) % 360;
+  }
+
+  it('no two worlds sit on the same hue', () => {
+    // Classical is deliberately the one without a hue: near-white ivory.
+    const hued = WORLDS.filter((w) => w !== 'classical');
+    for (const a of hued) {
+      for (const b of hued) {
+        if (a === b) continue;
+        const apart = Math.abs(hue(a) - hue(b));
+        const shortest = Math.min(apart, 360 - apart);
+        expect(`${a}/${b}:${shortest >= 15}`).toBe(`${a}/${b}:true`);
+      }
+    }
+  });
+
+  it('and every world is a colour, not a grey', () => {
+    for (const world of WORLDS) {
+      const { r, g, b } = GENRE_LOOKS[world].color;
+      const spread = Math.max(r, g, b) - Math.min(r, g, b);
+      // Classical is deliberately near-white; everything else is a hue.
+      if (world !== 'classical') expect(`${world}:${spread > 0.3}`).toBe(`${world}:true`);
+      expect(Math.max(r, g, b)).toBeGreaterThan(0.79);
+    }
+  });
+});
