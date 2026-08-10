@@ -51,19 +51,25 @@ export interface Performance {
 const AIR_ALTITUDE = 45;
 
 /**
- * Steps of the key the track can be lifted by as the player climbs. Scale
- * degrees, never raw semitones: height must change the pitch without ever
- * putting the track out of tune (§3.1, §3.6).
+ * How far the track is shifted at each height band. Steps of the key, never
+ * raw semitones, so height changes the pitch without ever putting the track
+ * out of tune (§3.1, §3.6). Flying low pulls it DOWN — that is where the mass
+ * is — and climbing lifts it.
+ *
+ * The bottom stops at a fourth down on purpose: a full octave would take the
+ * sub under 30 Hz, which §21 says must stay perceptible on ordinary speakers.
  */
-const CLIMB_STEPS: readonly number[] = [0, 3, 5, 7, 12];
+const PITCH_STEPS: readonly number[] = [-5, -3, -2, 0, 2, 3, 7, 12];
 
 export function performanceFrom(music: MusicState, flight: FlightPose): Performance {
   const air = clamp01(flight.altitude / AIR_ALTITUDE);
   const ground = 1 - air;
   // §3.1 + §3.7: register and timbre brightness, pulled down by flying low.
   const tone = clamp01(0.35 * music.timbreBrightness + 0.35 * pitchNorm(music.pitchCenter) + 0.3 * air);
+  const weight = step(ground * ground, 8);
   return {
-    brightHz: quantizeLog(300 + tone * 8700, 400, 9000),
+    // Skimming the ground closes the filter down hard: low is dark and heavy.
+    brightHz: quantizeLog((300 + tone * 8700) * (1 - 0.45 * weight), 300, 9000),
     // §3.10: space is altitude plus not being in a hurry.
     space: step(clamp01(0.15 + air * 0.45 + music.spatiality * 0.3), 8),
     // §3.2: louder is not better — it is *more force*, and it is audible.
@@ -73,9 +79,9 @@ export function performanceFrom(music: MusicState, flight: FlightPose): Performa
     // §3.6: dissonance is material, so it has a sound — edge, not error.
     grit: step(clamp01(music.dissonance * 0.8 + music.timbreNoise * 0.3), 8) * 0.4,
     // §3.1: low frequencies are mass. Skimming the ground IS the low register.
-    weight: step(ground * ground, 8),
+    weight,
     // Climbing lifts the whole track, in steps of its own key.
-    transpose: CLIMB_STEPS[Math.min(CLIMB_STEPS.length - 1, Math.floor(air * CLIMB_STEPS.length))]!,
+    transpose: PITCH_STEPS[Math.min(PITCH_STEPS.length - 1, Math.floor(air * PITCH_STEPS.length))]!,
   };
 }
 

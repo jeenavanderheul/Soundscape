@@ -31,8 +31,39 @@ describe('§3 the flight plays the track', () => {
     const low = perf({}, { ...flying, altitude: 0 });
     expect(high.brightHz).toBeGreaterThan(low.brightHz);
     expect(high.space).toBeGreaterThan(low.space);
-    expect(low.weight).toBe(1);
+    expect(low.weight).toBeGreaterThan(0.8);
     expect(high.weight).toBe(0);
+  });
+
+  it('flying low is heavy: lower pitch, darker filter, far more weight', () => {
+    const low = perf({}, { ...flying, altitude: 2 });
+    const mid = perf({}, { ...flying, altitude: 20 });
+    const high = perf({}, { ...flying, altitude: 60 });
+    expect(low.transpose).toBeLessThan(0);
+    expect(low.transpose).toBeGreaterThanOrEqual(-5); // §21: the sub must stay audible
+    expect(high.transpose).toBeGreaterThan(mid.transpose);
+    expect(low.brightHz).toBeLessThan(mid.brightHz);
+    expect(low.weight).toBeGreaterThan(0.8);
+  });
+
+  it('and the bass really hears it: ground level pushes it far harder', () => {
+    const kick: MusicalPrimitive = {
+      id: 'k', kind: 'kick', layer: 'drums',
+      parameters: { style: 'four', gain: 0.8 }, allowedTransforms: [],
+    };
+    const bassVoice: MusicalPrimitive = {
+      id: 'b', kind: 'bass', layer: 'bass',
+      parameters: { style: 'repetitive', notes: 'a1 c2 e2 a2', gain: 0.6 }, allowedTransforms: [],
+    };
+    const graph = createEmptyLayerGraph(128);
+    graph.layers.drums.primitives.push(kick);
+    graph.layers.bass.primitives.push(bassVoice);
+    const at = (altitude: number) => {
+      const code = buildPatternCode({ ...graph, performance: perf({}, { ...flying, altitude }) });
+      const line = code.split('\n').find((l) => l.includes('note('))!;
+      return Number(/\.postgain\(([\d.]+)\)/.exec(line)![1]);
+    };
+    expect(at(2)).toBeGreaterThan(at(60) * 1.5);
   });
 
   it('§3.2 the wind you hold is the force of the whole track', () => {

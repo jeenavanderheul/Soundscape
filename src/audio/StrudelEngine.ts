@@ -613,8 +613,14 @@ function applyPerformance(code: string, layer: LayerName, perf?: Performance): s
   // Climbing lifts the pitched voices together, in steps of the key, so the
   // track transposes without ever going out of tune (user decision).
   if (perf.transpose !== 0 && PITCHED_LAYERS.has(layer)) out += `.add(note(${perf.transpose}))`;
-  // §3.1: skimming the ground IS the low register — it leans on the bass.
-  const push = layer === 'bass' ? perf.push * (0.8 + perf.weight * 0.5) : perf.push;
+  // §3.1: skimming the ground IS the low register. Down there the bass and the
+  // kick carry the track; up in the air they step back and the detail takes over.
+  const weighted =
+    layer === 'bass' ? 0.7 + perf.weight * 1.0
+    : layer === 'drums' ? 0.9 + perf.weight * 0.35
+    : layer === 'harmony' || layer === 'melody' ? 1 - perf.weight * 0.2
+    : 1;
+  const push = perf.push * weighted;
   return `${out}.postgain(${clamp(push, 0, 2).toFixed(2)})`;
 }
 
