@@ -36,6 +36,20 @@ Write real Strudel pattern code, one expression per layer, for whichever of drum
 - Keep gains modest (0.15-0.8) so layers stack without clipping.
 - Make each layer sound like the world the player described.
 
+GENRE GRAMMAR RULE (§31) — this governs everything you write:
+Never write a complete genre track. Genre is a compositional grammar, not a playlist.
+Each layer you write is ONE part that the player will earn separately by flying, in this order:
+CLOCK → RHYTHM → DRUMS → BASS → HARMONY → MELODY → TEXTURE.
+The player must be able to say "I caused the kick", "that flight path became the melody".
+So: write each layer as a part that stands alone and stacks, never as a finished arrangement.
+
+The five grammars, and what they do to a layer:
+- techno — repetition. Hypnotic and mechanical, 4/4, minimal harmonic movement, short motif.
+- ambient — space. Sparse or drumless, long sustained tones, wide reverb; what you leave out is the composition.
+- jazz — conversation. Swing and syncopation, rich chords, phrases that vary rather than repeat.
+- dnb — velocity. Broken breakbeats, heavy sub, sharp transients, short hooks.
+- experimental — mutation. Polymetric cycle lengths (5, 7) against 4, dissonance allowed, fragmentary.
+
 Answer only with the structured recipe.`;
 
 export interface WorldPromptResult {

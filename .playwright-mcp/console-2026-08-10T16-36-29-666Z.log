@@ -278,3 +278,5 @@
 [   88738ms] [LOG] %c[getTrigger] error: sound RolandTR909_bd not found! Is it loaded? background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [   89038ms] [LOG] %c[getTrigger] error: sound RolandTR808_rim not found! Is it loaded? background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
 [   89239ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  213069ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
+[  213145ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5199/:0
