@@ -94,15 +94,16 @@ describe('ArrangementEngine (§29.7 movement becomes arrangement)', () => {
     // §47: the form is the flight's, so it starts the moment the flight does.
     expect(engine.tick(0, 0, 0.5, 0)).toBe('intro');
     let t = 100;
-    const run = (energy: number, ms: number) => {
+    const run = (energy: number, ms: number, climb = 0) => {
       const end = t + ms;
       let section = engine.current;
-      for (; t <= end; t += 500) section = engine.tick(t, 500, energy, 0);
+      for (; t <= end; t += 500) section = engine.tick(t, 500, energy, climb);
       return section;
     };
     expect(run(0.5, 9000)).toBe('groove');
-    expect(run(0.9, 14_000)).toBe('build');
-    expect(run(0.9, 9000)).toBe('drop');
+    // Only flying builds and drops now: climb into it, dive out of it.
+    expect(run(0.9, 3000, 6)).toBe('build');
+    expect(run(0.9, 500, -6)).toBe('drop');
     expect(run(0.05, 9000)).toBe('break');
     // The break steps the kick aside without going silent (§32): the
     // percussion and the top end still carry it.
@@ -143,5 +144,35 @@ describe('height is the arrangement (user decision)', () => {
     run(e, 500, 0.4, -6, 12_500);
     // Climbing again immediately after the drop must not build another one.
     expect(run(e, 4000, 0.4, 6, 13_500)).not.toBe('build');
+  });
+});
+
+describe('§47 only the flight builds and drops', () => {
+  function run(e: ArrangementEngine, ms: number, energy: number, climb: number, from = 0) {
+    let section = e.current;
+    for (let t = from; t <= from + ms; t += 250) section = e.tick(t, 250, energy, climb);
+    return section;
+  }
+
+  it('flying flat out for a long time never hands you a build', () => {
+    const engine = new ArrangementEngine();
+    // Maximum energy, no climbing at all: it grooves, and that is all.
+    expect(run(engine, 60_000, 1, 0)).toBe('groove');
+  });
+
+  it('a dive still counts after the ground field has damped it (§35)', () => {
+    const engine = new ArrangementEngine();
+    run(engine, 9000, 0.5, 0);
+    expect(run(engine, 3000, 0.5, 6, 9250)).toBe('build');
+    // One frame of real descent, then the field flattens it out: still a drop.
+    engine.tick(12_500, 250, 0.5, -7);
+    expect(engine.tick(12_750, 250, 0.5, -0.2)).toBe('drop');
+  });
+
+  it('floating breathes out and coming back in resumes the groove', () => {
+    const engine = new ArrangementEngine();
+    run(engine, 9000, 0.5, 0);
+    expect(run(engine, 9000, 0.05, 0, 9250)).toBe('break');
+    expect(run(engine, 9000, 0.6, 0, 18_500)).toBe('groove');
   });
 });

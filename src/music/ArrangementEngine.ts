@@ -26,6 +26,10 @@ export interface ArrangementConfig {
   climbMs: number;
   /** Quiet after a drop before climbing can build another one. */
   dropCooldownMs: number;
+  /** How fast a remembered dive fades, in units/s per second. */
+  descentDecay: number;
+  /** How long a build waits for the dive before it settles back into the groove. */
+  buildHoldMs: number;
 }
 
 export const ARRANGEMENT_CONFIG: ArrangementConfig = {
@@ -37,6 +41,8 @@ export const ARRANGEMENT_CONFIG: ArrangementConfig = {
   climbRate: 3,
   climbMs: 2500,
   dropCooldownMs: 12_000,
+  descentDecay: 6,
+  buildHoldMs: 18_000,
 };
 
 /** Per-section layer gain multipliers (0 = muted for this section). */
@@ -71,6 +77,8 @@ export class ArrangementEngine {
   private sectionSinceMs = 0;
   private highEnergyMs = 0;
   private climbMs = 0;
+  /** Strongest descent seen recently: a dive counts even after the ground field damps it. */
+  private descent = 0;
   private lastDropMs = -Infinity;
 
   constructor(private readonly config: ArrangementConfig = ARRANGEMENT_CONFIG) {}
@@ -100,16 +108,21 @@ export class ArrangementEngine {
     }
     this.highEnergyMs = energy >= config.highEnergy ? this.highEnergyMs + deltaMs : 0;
     this.climbMs = climb >= config.climbRate ? this.climbMs + deltaMs : 0;
+    // The ground field kills downward speed exactly where a dive is most
+    // dramatic, so the dive is remembered for a moment instead of being read
+    // off the current frame (§35 must not be able to swallow §47).
+    this.descent = Math.max(-climb, this.descent - (deltaMs / 1000) * config.descentDecay);
     const inSectionMs = nowMs - this.sectionSinceMs;
 
     // Height is the arrangement (user decision). Climbing lifts the track into
     // a build; dropping out of the sky is the drop. Both bypass the patience
     // timer, because the player asked for them with the stick.
     const climbing = this.climbMs >= config.climbMs;
-    const diving = climb <= -config.climbRate;
+    const diving = this.descent >= config.climbRate;
     if (this.section === 'build' && diving) {
       this.lastDropMs = nowMs;
       this.climbMs = 0;
+      this.descent = 0;
       this.enter('drop', nowMs);
       return this.section;
     }
@@ -130,24 +143,26 @@ export class ArrangementEngine {
       case 'intro':
         this.enter('groove', nowMs);
         break;
+      // §47: HEIGHT is what builds and drops. Energy only decides whether the
+      // track is breathing (floating) or running — it can never hand the player
+      // a build or a drop they did not fly for.
       case 'groove':
-        if (this.highEnergyMs >= config.buildMs) this.enter('build', nowMs);
-        else if (energy <= config.lowEnergy) this.enter('break', nowMs);
+        if (energy <= config.lowEnergy) this.enter('break', nowMs);
         break;
       case 'build':
-        if (energy >= config.highEnergy) this.enter('drop', nowMs);
-        else this.enter('groove', nowMs);
+        // A build waits a while for its dive; unclaimed, it settles back.
+        if (inSectionMs >= config.buildHoldMs) this.enter('groove', nowMs);
         break;
       case 'drop':
         if (energy <= config.lowEnergy) this.enter('break', nowMs);
         else if (inSectionMs >= config.dropMs) this.enter('return', nowMs);
         break;
       case 'break':
-        if (energy >= config.highEnergy) this.enter('drop', nowMs);
+        if (energy > config.lowEnergy) this.enter('groove', nowMs);
         break;
       case 'return':
         if (energy <= config.lowEnergy) this.enter('break', nowMs);
-        else if (this.highEnergyMs >= config.buildMs) this.enter('mutation', nowMs);
+        else if (inSectionMs >= config.dropMs) this.enter('mutation', nowMs);
         break;
       case 'mutation':
         if (energy <= config.lowEnergy) this.enter('break', nowMs);
@@ -164,6 +179,7 @@ export class ArrangementEngine {
     this.sectionSinceMs = 0;
     this.highEnergyMs = 0;
     this.climbMs = 0;
+    this.descent = 0;
     this.lastDropMs = -Infinity;
   }
 
