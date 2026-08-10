@@ -89,14 +89,17 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
     for (let ms = 0; ms <= 12_000; ms += 250) builder.tick(ms, music, ROAMING, affinityOf('techno'));
     const earned = store.getState().drums;
     expect(earned.kick.unlocked).toBe(true);
-    // Fly west into Drum & Bass: the kick stays, and the ladder continues.
-    for (let ms = 12_250; ms <= 20_000; ms += 250) {
+    // §47 (user decision): flying west into Drum & Bass does NOT rewrite this
+    // track. It keeps the grammar it was born in; the region only decides what
+    // the NEXT track will be.
+    for (let ms = 12_250; ms <= 60_000; ms += 250) {
       builder.tick(ms, music, ROAMING, affinityOf('dnb'));
     }
     const after = store.getState();
     expect(after.drums.kick.unlocked).toBe(true);
-    expect(after.genre).toBe('dnb');
-    expect(after.bass.unlocked).toBe(true);
+    expect(after.genre).toBe('techno');
+    // …and it keeps building in the techno order, not the drum & bass one.
+    expect(after.drums.hats.unlocked).toBe(true);
   });
 });
 

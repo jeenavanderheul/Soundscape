@@ -84,24 +84,16 @@ export class ArrangementEngine {
    * of the track exists. Deterministic given its inputs.
    */
   /**
-   * `climb` is the orb's vertical speed in units/s (user decision): a sustained
-   * climb builds the track up, and diving out of that build IS the drop. A drop
-   * has to be earned by a climb and cannot be repeated straight away, so it
-   * keeps its weight.
+   * `climb` is the orb's vertical speed in units/s: a sustained climb builds the
+   * track up, and diving out of that build IS the drop. A drop has to be earned
+   * by a climb and cannot be repeated straight away, so it keeps its weight.
+   *
+   * §47 (user decision): the form belongs to the FLIGHT, not to how much of the
+   * track exists. Climbing and diving build and drop whether you have one layer
+   * or seven — height is the arrangement, full stop.
    */
-  tick(
-    nowMs: number,
-    deltaMs: number,
-    energy: number,
-    layers: number,
-    climb = 0,
-  ): Section {
+  tick(nowMs: number, deltaMs: number, energy: number, climb = 0): Section {
     const { config } = this;
-    if (layers === 0) {
-      this.section = 'none';
-      this.sectionSinceMs = nowMs;
-      return this.section;
-    }
     if (this.section === 'none') {
       this.enter('intro', nowMs);
       return this.section;
@@ -136,7 +128,7 @@ export class ArrangementEngine {
 
     switch (this.section) {
       case 'intro':
-        if (layers >= 2) this.enter('groove', nowMs);
+        this.enter('groove', nowMs);
         break;
       case 'groove':
         if (this.highEnergyMs >= config.buildMs) this.enter('build', nowMs);

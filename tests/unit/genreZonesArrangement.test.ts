@@ -91,13 +91,13 @@ describe('MelodyTracker (§29.2 fase 5)', () => {
 describe('ArrangementEngine (§29.7 movement becomes arrangement)', () => {
   it('walks intro → groove → build → drop and breaks down when the player floats', () => {
     const engine = new ArrangementEngine();
-    expect(engine.tick(0, 0, 0.5, 0)).toBe('none');
-    expect(engine.tick(100, 100, 0.5, 1)).toBe('intro');
+    // §47: the form is the flight's, so it starts the moment the flight does.
+    expect(engine.tick(0, 0, 0.5, 0)).toBe('intro');
     let t = 100;
     const run = (energy: number, ms: number) => {
       const end = t + ms;
       let section = engine.current;
-      for (; t <= end; t += 500) section = engine.tick(t, 500, energy, 3);
+      for (; t <= end; t += 500) section = engine.tick(t, 500, energy, 0);
       return section;
     };
     expect(run(0.5, 9000)).toBe('groove');
@@ -119,7 +119,7 @@ describe('height is the arrangement (user decision)', () => {
   /** Run the engine for `ms` at a fixed energy and climb rate. */
   function run(e: ArrangementEngine, ms: number, energy: number, climb: number, fromMs = 0) {
     let section = e.current;
-    for (let t = fromMs; t <= fromMs + ms; t += 250) section = e.tick(t, 250, energy, 4, climb);
+    for (let t = fromMs; t <= fromMs + ms; t += 250) section = e.tick(t, 250, energy, climb);
     return section;
   }
 

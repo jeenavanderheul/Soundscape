@@ -153,6 +153,7 @@ export class TrackBuilder {
   private lastDeepenMs = 0;
   private lastTickMs: number | null = null;
   private paceClockMs = 0;
+  private lastRegion: TrackGenre = null;
   private trackNumberValue = 1;
   private turn = 0;
   private layerVariations: LayerVariations = {};
@@ -211,6 +212,7 @@ export class TrackBuilder {
     this.turn = 0;
     this.layerVariations = {};
     this.handingOver = false;
+    this.lastRegion = null;
   }
 
   /**
@@ -242,6 +244,8 @@ export class TrackBuilder {
     this.trackNumberValue += 1;
     this.handingOver = false;
     const rootMidi = nextRootMidi(previous.rootMidi, this.trackNumberValue);
+    // The next track is born in the region the player is in RIGHT NOW (§47).
+    const bornIn = this.lastRegion ?? previous.genre;
     const shift = rootMidi - previous.rootMidi;
     // What survives: the key (transposed) and ONE motif, moved with it. The
     // parts themselves are earned again — that is still the game.
@@ -249,7 +253,7 @@ export class TrackBuilder {
     this.store.setState((t) => ({
       ...createInitialTrackState(),
       bpm: t.bpm, // the journey does not stop to count itself back in
-      genre: t.genre,
+      genre: bornIn,
       rootMidi,
       melodyNotes: motif,
     }));
@@ -327,7 +331,7 @@ export class TrackBuilder {
     const playerTempo = music.tempoConfidence >= 0.35 && music.bpm > 0;
     // §46: the region decides the tempo, full stop. Flying faster develops the
     // track faster (below) — it never moves the clock.
-    const placeBpm = moving ? regionBpm(genreGrammar(this.dominant(affinity))) : 0;
+    const placeBpm = moving ? regionBpm(genreGrammar(track.genre ?? this.dominant(affinity))) : 0;
     const targetBpm = playerTempo
       ? Math.round(music.bpm)
       : placeBpm > 0
@@ -353,7 +357,10 @@ export class TrackBuilder {
     const melodyNotes = track.melody.unlocked
       ? this.melody.phrase(rootMidi).map((n) => foldToRange(n, rootMidi + 24, rootMidi + 36))
       : track.melodyNotes;
-    const genre = this.dominant(affinity);
+    // §47 (user decision): a track keeps the grammar it was born in. Flying
+    // from Techno into Garage does not rewrite your techno track — the region
+    // you are in when the NEXT track starts is what decides that one.
+    const genre = track.genre ?? this.dominant(affinity);
     // §31: in Jazz the world takes its turn — it answers the player's phrase
     // with a variation instead of looping underneath it.
     const responseNotes =
@@ -362,14 +369,14 @@ export class TrackBuilder {
         : [];
 
     // --- Fase 11: ARRANGEMENT. Movement becomes form (§29.7).
-    const layerCount = this.countLayers(track);
+    // Where the player actually is — the next track will be born here (§47).
+    this.lastRegion = this.dominant(affinity);
     // The arrangement runs on the paced clock too: sections arrive sooner when
     // the player is moving through the world quickly.
     const section = this.arrangement.tick(
       this.paceClockMs,
       paced,
       flight.energy,
-      layerCount,
       flight.climb ?? 0,
     );
 
@@ -482,19 +489,6 @@ export class TrackBuilder {
       case 'texture':
         return this.airMs >= config.airMs * 2;
     }
-  }
-
-  private countLayers(track: TrackState): number {
-    const patterns = [
-      track.drums.kick,
-      track.drums.hats,
-      track.drums.snare,
-      track.bass,
-      track.harmony,
-      track.melody,
-      track.texture,
-    ];
-    return patterns.filter((p) => p.unlocked).length;
   }
 
   private dominant(affinity?: GenreAffinity): TrackGenre {
