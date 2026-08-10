@@ -42,10 +42,15 @@ export interface SectionMix {
 
 const MIXES: Record<Section, SectionMix> = {
   none: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 1 },
-  intro: { drums: 0.85, bass: 0.7, harmony: 0.6, melody: 0, texture: 0.4, atmosphere: 1 },
-  groove: { drums: 1, bass: 1, harmony: 0.8, melody: 0.7, texture: 0.6, atmosphere: 0.8 },
-  build: { drums: 1, bass: 1, harmony: 1, melody: 0.9, texture: 1, atmosphere: 0.6 },
-  drop: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 0.5 },
+  intro: { drums: 0.8, bass: 0.6, harmony: 0.55, melody: 0, texture: 0.35, atmosphere: 1 },
+  // §60: the sections have to be TOLD APART by ear. Groove is the baseline it
+  // all reads against, so it sits deliberately below full.
+  groove: { drums: 0.9, bass: 0.85, harmony: 0.7, melody: 0.6, texture: 0.5, atmosphere: 0.7 },
+  // A build takes the FLOOR away: the bass all but disappears, the top end
+  // pushes, and everything leans forward waiting for the bottom to come back.
+  build: { drums: 0.8, bass: 0.28, harmony: 0.9, melody: 0.85, texture: 1, atmosphere: 0.9 },
+  // And the drop is that floor slamming back in at full, with the air gone.
+  drop: { drums: 1, bass: 1, harmony: 0.85, melody: 1, texture: 0.55, atmosphere: 0.25 },
   // The kick steps aside — but a break is not silence: the percussion and
   // the top end carry it, or the track stops sounding like a track (§32).
   break: { drums: 0.55, bass: 0.5, harmony: 1, melody: 0.8, texture: 0.9, atmosphere: 1 },
@@ -53,8 +58,48 @@ const MIXES: Record<Section, SectionMix> = {
   mutation: { drums: 0.8, bass: 0.9, harmony: 0.8, melody: 1, texture: 1, atmosphere: 0.9 },
 };
 
-export function sectionMix(section: Section): SectionMix {
-  return MIXES[section];
+/**
+ * §61: a section means something different in each grammar. Techno drops by
+ * slamming the floor back in; Ambient has no floor to slam, so it swells and
+ * opens instead; Dub drops by letting the echo answer; Jazz plays dynamics,
+ * not filters. Same seven sections, five ways of meaning them.
+ */
+export type SectionStyle = 'driven' | 'swell' | 'dynamic' | 'echo' | 'mutant';
+
+const STYLE_OVERRIDES: Record<SectionStyle, Partial<Record<Section, Partial<SectionMix>>>> = {
+  // The classic: the bottom leaves and comes back.
+  driven: {},
+  // Ambient and Classical: nothing is taken away, everything is opened up.
+  swell: {
+    build: { drums: 0.5, bass: 0.75, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
+    drop: { drums: 0.7, bass: 0.9, harmony: 1, melody: 1, texture: 0.9, atmosphere: 0.9 },
+    break: { drums: 0.2, bass: 0.5, harmony: 1, melody: 0.6, texture: 1, atmosphere: 1 },
+  },
+  // Jazz: the band plays louder and busier, it does not filter itself.
+  dynamic: {
+    build: { drums: 0.9, bass: 0.8, harmony: 1, melody: 1, texture: 0.7, atmosphere: 0.5 },
+    drop: { drums: 1, bass: 0.95, harmony: 1, melody: 1, texture: 0.5, atmosphere: 0.3 },
+    break: { drums: 0.4, bass: 0.7, harmony: 0.9, melody: 0.5, texture: 0.6, atmosphere: 0.8 },
+  },
+  // Dub: the build empties the room, the drop is the bass and the skank
+  // walking back in while the echo is still talking.
+  echo: {
+    build: { drums: 0.35, bass: 0.2, harmony: 0.8, melody: 0.7, texture: 0.9, atmosphere: 1 },
+    drop: { drums: 0.9, bass: 1, harmony: 0.9, melody: 0.6, texture: 0.7, atmosphere: 0.7 },
+    break: { drums: 0.25, bass: 0.35, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
+  },
+  // Experimental: it drops by removing what you expected to stay.
+  mutant: {
+    build: { drums: 1, bass: 0.5, harmony: 0.6, melody: 0.9, texture: 1, atmosphere: 0.8 },
+    drop: { drums: 0.8, bass: 1, harmony: 0.4, melody: 1, texture: 1, atmosphere: 0.2 },
+    break: { drums: 0.6, bass: 0.3, harmony: 1, melody: 0.4, texture: 1, atmosphere: 0.9 },
+  },
+};
+
+export function sectionMix(section: Section, style: SectionStyle = 'driven'): SectionMix {
+  const base = MIXES[section];
+  const override = STYLE_OVERRIDES[style][section];
+  return override === undefined ? base : { ...base, ...override };
 }
 
 export class ArrangementEngine {

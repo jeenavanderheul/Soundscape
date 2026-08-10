@@ -10,7 +10,7 @@
  * The same earned kick becomes four-on-the-floor in Techno, a break in DnB
  * and a distant heartbeat in Ambient.
  */
-import { sectionMix } from '../music/ArrangementEngine';
+import { sectionMix, type SectionStyle } from '../music/ArrangementEngine';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { Performance } from '../music/Performance';
 import type { LayerVariations } from '../music/Variation';
@@ -113,7 +113,7 @@ export type MusicParameter = 'bpm' | 'gain';
  * Which gesture depends on the grammar, so a turn always sounds like the music
  * it is in.
  */
-export type ThrowStyle = 'echo' | 'riser' | 'sweep' | 'bell';
+export type ThrowStyle = 'echo' | 'riser' | 'sweep' | 'bell' | 'impact';
 
 /** One-shot musical event routed through the port (spec §11 schedule()). */
 export interface MusicalAction {
@@ -292,6 +292,8 @@ export interface GenreGrammar {
   bassVoice: string;
   chordVoice: string;
   leadVoice: string;
+  /** §61: how this grammar means intro/build/drop/break. */
+  sectionStyle: SectionStyle;
   /**
    * §39: the tempo range of this grammar. Flight speed still chooses WHERE in
    * the range you sit — but a region has its own natural pace, so ambient can
@@ -336,6 +338,7 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
   bassVoice: 'sawtooth',
   chordVoice: 'square',
   leadVoice: 'square',
+  sectionStyle: 'driven',
   bpmMin: 90,
   bpmMax: 140,
   bpmCentre: 132,
@@ -354,6 +357,7 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
 const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   techno: { ...NEUTRAL_GRAMMAR },
   dnb: {
+    sectionStyle: 'driven',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 174,
     kickGain: 0.95,
@@ -386,6 +390,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodySlow: 1,
   },
   ambient: {
+    sectionStyle: 'swell',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 70,
     kickGain: 0.18,
@@ -417,6 +422,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodySlow: 4,
   },
   jazz: {
+    sectionStyle: 'dynamic',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 110,
     kickGain: 0.5,
@@ -448,6 +454,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodySlow: 1,
   },
   experimental: {
+    sectionStyle: 'mutant',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 118,
     kickGain: 0.55,
@@ -482,6 +489,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 UK GARAGE — displacement: the grid slides off its own centre.
   garage: {
+    sectionStyle: 'driven',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 134,
     kickGain: 1.0,
@@ -514,6 +522,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 HOUSE — warmth: the machine plays, the hands answer.
   house: {
+    sectionStyle: 'driven',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 124,
     kickGain: 1.0,
@@ -546,6 +555,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 TRAP — weight: half-time, and the low end slides.
   trap: {
+    sectionStyle: 'driven',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 140,
     kickGain: 1.0,
@@ -578,6 +588,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 DUB — echo: what was played comes back, changed.
   dub: {
+    sectionStyle: 'echo',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 72,
     kickGain: 0.7,
@@ -610,6 +621,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   },
   // §34 CLASSICAL — orchestration: no drum machine anywhere in this region.
   classical: {
+    sectionStyle: 'swell',
     // §50 mix and tempo from the reference preset.
     bpmCentre: 82,
     kickGain: 0.35,
@@ -795,7 +807,7 @@ export function buildLayerGraph(
   // behavioural affinity still decides how the drums are written (§29.5).
   const resolvedGenre = track?.genre ?? dominantGenre(genre);
   const grammar = genreGrammar(resolvedGenre);
-  const mix = sectionMix(track?.form ?? 'none');
+  const mix = sectionMix(track?.form ?? 'none', grammar.sectionStyle);
   const graph = createEmptyLayerGraph(bpm);
   const density = clamp01(music.rhythmDensity);
   const kickUnlocked = track ? track.drums.kick.unlocked : true;

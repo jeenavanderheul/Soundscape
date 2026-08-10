@@ -124,3 +124,24 @@ describe('§53 turning towards a world takes you there', () => {
     expect(dominantZone(zoneAffinity({ x: 110, y: 0, z: 110 }, step * 3))).toBe('house');
   });
 });
+
+describe('§60 the sections can be told apart by ear', () => {
+  it('a build takes the floor away and the drop slams it back', () => {
+    const build = sectionMix('build');
+    const drop = sectionMix('drop');
+    const groove = sectionMix('groove');
+    // The bass is what makes a drop a drop: nearly gone, then full.
+    expect(build.bass).toBeLessThan(0.4);
+    expect(drop.bass).toBe(1);
+    expect(drop.bass - build.bass).toBeGreaterThan(0.6);
+    // And neither of them is the groove: it sits below both, as the baseline.
+    expect(groove.drums).toBeLessThan(drop.drums);
+    expect(groove.texture).toBeLessThan(build.texture);
+  });
+
+  it('a break steps the bottom aside without going silent (§32)', () => {
+    const brk = sectionMix('break');
+    expect(brk.drums).toBeLessThan(sectionMix('groove').drums);
+    expect(brk.harmony).toBeGreaterThan(0.8);
+  });
+});

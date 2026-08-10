@@ -8,6 +8,7 @@ vi.mock('@strudel/web', () => ({
 
 import { buildLayerGraph, genreGrammar, regionBpm } from '../../src/audio/MusicalPrimitives';
 import { buildPatternCode, setSamplesLoaded } from '../../src/audio/StrudelEngine';
+import { sectionMix } from '../../src/music/ArrangementEngine';
 import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
 import { CallResponse, respondTo } from '../../src/music/CallResponse';
@@ -316,5 +317,44 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
     fly(0, 40_000, 0, 0.9);
     fly(40_250, 30_000, 0, 0.1);
     expect(genres).toEqual(['techno']);
+  });
+});
+
+describe('§61 a section means something different in every world', () => {
+  it('techno drops by slamming the floor back in', () => {
+    const build = sectionMix('build', genreGrammar('techno').sectionStyle);
+    const drop = sectionMix('drop', genreGrammar('techno').sectionStyle);
+    expect(build.bass).toBeLessThan(0.4);
+    expect(drop.bass).toBe(1);
+  });
+
+  it('ambient has no floor to slam: it opens up instead', () => {
+    const style = genreGrammar('ambient').sectionStyle;
+    expect(style).toBe('swell');
+    const build = sectionMix('build', style);
+    const drop = sectionMix('drop', style);
+    // The bass never disappears, and the drums never take over.
+    expect(build.bass).toBeGreaterThan(0.6);
+    expect(drop.drums).toBeLessThan(0.8);
+    expect(drop.harmony).toBe(1);
+  });
+
+  it('no two section styles read the same in a build', () => {
+    const styles = ['driven', 'swell', 'dynamic', 'echo', 'mutant'] as const;
+    const shapes = styles.map((s) => JSON.stringify(sectionMix('build', s)));
+    expect(new Set(shapes).size).toBe(styles.length);
+  });
+
+  it('every grammar declares how it means its sections', () => {
+    const worlds = [
+      'techno', 'garage', 'jazz', 'house', 'ambient',
+      'classical', 'dnb', 'trap', 'dub', 'experimental',
+    ] as const;
+    for (const world of worlds) {
+      expect(genreGrammar(world).sectionStyle).toBeTruthy();
+    }
+    expect(genreGrammar('dub').sectionStyle).toBe('echo');
+    expect(genreGrammar('jazz').sectionStyle).toBe('dynamic');
+    expect(genreGrammar('experimental').sectionStyle).toBe('mutant');
   });
 });

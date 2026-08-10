@@ -34,15 +34,20 @@ export class LayerCue {
       bus.on('track:genre', ({ genre }) => {
         if (genre) this.show(genre.toUpperCase());
       }),
-      bus.on('track:section', ({ section }) => {
-        if (section !== 'none') this.show(section.toUpperCase());
-      }),
+      // §60: sections are NOT announced here. The Game holds the word until
+      // the bar boundary where the music actually changes, so what you read
+      // and what you hear arrive together.
       // The journey never stops: the next track announces itself the same way.
       bus.on('track:new', ({ number }) => this.show(`TRACK ${String(number).padStart(2, '0')}`)),
     ];
     this.detach = () => {
       for (const off of offs) off();
     };
+  }
+
+  /** Say a word now — used for anything the Game times itself (§60). */
+  announce(word: string): void {
+    this.show(word);
   }
 
   private show(word: string): void {

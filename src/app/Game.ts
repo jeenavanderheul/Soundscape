@@ -18,7 +18,8 @@ import {
   genreGrammar,
   throwStyleFor,
 } from '../audio/MusicalPrimitives';
-import type { MusicalLayerGraph } from '../audio/MusicalPrimitives';
+import type { MusicalLayerGraph, ThrowStyle } from '../audio/MusicalPrimitives';
+import type { SectionStyle } from '../music/ArrangementEngine';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
 import { dominantZone, setZoneGenres, zoneAffinity } from '../genres/GenreZones';
 import { headingLabel, lookFor, placeName, NEUTRAL_LOOK } from '../genres/ZonePalette';
@@ -110,6 +111,21 @@ const TURN_THROW_RATE = 1.8;
 const TURN_RELEASE_RATE = 0.6;
 /** Floor between throws, so a shaky hand cannot machine-gun them. */
 const TURN_THROW_GAP_MS = 1200;
+
+/**
+ * §60: the sound of a section ARRIVING. A build lifts on a riser, a drop lands
+ * on an impact, a break exhales — so the word on screen has something under it.
+ */
+const SECTION_GESTURE: Record<SectionStyle, Partial<Record<TrackState['form'], ThrowStyle>>> = {
+  driven: { build: 'riser', drop: 'impact', break: 'sweep' },
+  // A swell announces itself with a bell, not with a slam.
+  swell: { build: 'bell', drop: 'bell', break: 'sweep' },
+  // Jazz: a cymbal-ish shimmer going in, the band hitting on the drop.
+  dynamic: { build: 'sweep', drop: 'impact', break: 'bell' },
+  // Dub answers everything with echo.
+  echo: { build: 'echo', drop: 'echo', break: 'sweep' },
+  mutant: { build: 'riser', drop: 'sweep', break: 'echo' },
+};
 
 /** How much of the track exists, for the HUD (§46). */
 function countUnlocked(track: TrackState): number {
@@ -290,6 +306,10 @@ export class Game {
   private motionLevel = 0;
   /** Smoothed chase direction: the camera follows, it is never aimed. */
   private readonly camDir = { x: 0, y: 0, z: -1 };
+  /** The grammar the last applied graph was written in (§60). */
+  private lastGraphGenre: TrackGenre = null;
+  /** §60: the section word waits for the bar where the music turns. */
+  private pendingSection: TrackState['form'] | null = null;
   /** §33 turn throws: one gesture per turn, never a stream. */
   private turnArmed = true;
   private lastThrowMs = -Infinity;
@@ -389,10 +409,26 @@ export class Game {
     this.detachBeatSync = this.beatSync.subscribe(this.events);
     // §20 M4 synchronized world behavior: the Strudel clock's beat boundaries
     // become 'beat' bus events, the strong pulse BeatSync locks visuals to.
+    // §60: hold each new section until the bar where its mix takes effect.
+    this.events.on('track:section', ({ section }) => {
+      if (section !== 'none') this.pendingSection = section;
+    });
     this.detachStrudelBeat = this.strudelEngine.onBeat((event) => {
       this.events.emit('beat', { atMs: event.atMs });
       // §29.6 layer visuals: kick = terrain shockwave; clap = backbeat flash.
       this.beatIndex += 1;
+      // §60: the section word and its sound both land on the bar where the mix
+      // actually changes — never before it, or the screen lies about the music.
+      if (this.pendingSection !== null && this.beatIndex % 4 === 0) {
+        const section = this.pendingSection;
+        this.pendingSection = null;
+        this.layerCue.announce(section.toUpperCase());
+        const style = genreGrammar(this.trackStore.getState().genre).sectionStyle;
+        const gesture = SECTION_GESTURE[style][section];
+        if (gesture !== undefined && this.motionLevel > 0.25) {
+          this.strudelEngine.schedule({ kind: 'throw', gain: 0.55 * this.motionLevel, style: gesture }, 'beat');
+        }
+      }
       const track = this.trackStore.getState();
       if (track.drums.kick.unlocked) {
         const p = this.frequencyStore.getState().position;
@@ -802,8 +838,13 @@ export class Game {
     // Endless journey: which variation each layer is playing right now.
     next.variations = this.trackBuilder.variations;
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
+    // §60: arriving in another world lands on the next BEAT, not the next bar.
+    // At 132 bpm a bar is 1.8s and a beat 0.45s, so a crossing is unmistakable
+    // inside the three seconds the player is given to notice it.
+    const worldChanged = this.trackStore.getState().genre !== this.lastGraphGenre;
+    this.lastGraphGenre = this.trackStore.getState().genre;
     this.lastLayerGraph = next;
-    this.strudelEngine.setLayerGraph(next, 'bar');
+    this.strudelEngine.setLayerGraph(next, worldChanged ? 'beat' : 'bar');
   }
 
   /**

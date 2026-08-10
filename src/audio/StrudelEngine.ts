@@ -602,6 +602,12 @@ function renderAction(action: MusicalAction): string {
           : `s("~ white").decay(.09).sustain(0).bpf(1800).delay("0.55:0.375:0.72").gain(${gain})`;
       case 'riser':
         return `s("white").hpf(1400).attack(.35).decay(.5).sustain(0).room(.45).gain(${gain})`;
+      case 'impact':
+        // §60 the drop itself: a low hit with a crash of air over it, so the
+        // word on screen and the sound arrive together.
+        return samplesLoaded
+          ? `stack(s("bd").bank("${DEFAULT_BANK}").lpf(140).gain(${gain}), s("white").hpf(900).decay(.9).sustain(0).room(.6).gain(${(Number(gain) * 0.55).toFixed(3)}))`
+          : `stack(s("sbd").gain(${gain}), s("white").hpf(900).decay(.9).sustain(0).room(.6).gain(${(Number(gain) * 0.55).toFixed(3)}))`;
       case 'bell':
         return samplesLoaded
           ? `s("vibraphone").room(.6).gain(${gain})`
