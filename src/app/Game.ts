@@ -225,7 +225,12 @@ export class Game {
   private readonly genreEngine = new GenreAffinityEngine(this.events);
   /** §29: what is actually IN the track; built by intent, saved, visualized. */
   private readonly trackStore: Store<TrackState> = createStore(createInitialTrackState());
-  private readonly trackBuilder = new TrackBuilder(this.trackStore, this.events);
+  private readonly trackBuilder = new TrackBuilder(
+    this.trackStore,
+    this.events,
+    undefined,
+    WORLD_SEED,
+  );
   private beatIndex = 0;
   /** Dev diagnostics: how often each pulse source fired this session. */
   private readonly inputCounts = { windReleased: 0, resonancePulse: 0 };
@@ -669,6 +674,7 @@ export class Game {
       maxGear: MAX_GEAR,
       gearLabel: this.controller.gearLabel,
       bpm: this.trackStore.getState().bpm,
+      track: this.trackBuilder.trackNumber,
     });
     // Third-person: the camera trails the orb along the flight direction.
     const camera = this.renderer.camera.instance;
@@ -713,6 +719,8 @@ export class Game {
       this.motionLevel,
     );
     next.performance = performance;
+    // Endless journey: which variation each layer is playing right now.
+    next.variations = this.trackBuilder.variations;
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     this.lastLayerGraph = next;
     this.strudelEngine.setLayerGraph(next, 'bar');

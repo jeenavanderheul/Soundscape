@@ -10,6 +10,8 @@ export interface HudPlace {
   maxGear: number;
   gearLabel: string;
   bpm: number;
+  /** Which track of the endless journey is playing. */
+  track: number;
 }
 
 /**
@@ -55,7 +57,8 @@ export class HUD {
         : `\n\nGEAR ${place.gear}/${place.maxGear}  ${gearBar(place.gear, place.maxGear)}` +
           `\n      ${place.gearLabel}${place.bpm > 0 ? ` · ${Math.round(place.bpm)} bpm` : ''}` +
           `\n\nhead: ${place.heading}\nbiome: ${place.biome}\nregion: ${place.region}`;
-    const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
+    const journey = place === undefined ? '' : `track ${String(place.track).padStart(2, '0')}\n`;
+    const text = `${journey}freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
     if (text === this.lastText) return;
     this.lastText = text;
     this.root.textContent = text;

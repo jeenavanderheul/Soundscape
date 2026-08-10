@@ -13,6 +13,7 @@
 import { sectionMix } from '../music/ArrangementEngine';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { Performance } from '../music/Performance';
+import type { LayerVariations } from '../music/Variation';
 import { LEVEL_DEEP, type TrackGenre, type TrackState } from '../music/TrackState';
 
 export type PrimitiveKind =
@@ -50,6 +51,8 @@ export interface MusicalLayerGraph {
    * shaping", which is what the tests and the empty graph use.
    */
   performance?: Performance;
+  /** Which variation of its part each layer is currently playing (endless journey). */
+  variations?: LayerVariations;
 }
 
 /** Whitelisted transform names per primitive kind (spec §11, rule §25.9). */
@@ -157,6 +160,8 @@ export type GraphChange =
   | { type: 'tempo'; bpm: number }
   /** §3: the flight is playing the track differently (brightness, space, push…). */
   | { type: 'performance' }
+  /** A layer is playing a different variation of the same part (endless journey). */
+  | { type: 'variation'; layer: LayerName }
   | { type: 'layer-gain'; layer: LayerName; gain: number }
   | { type: 'add'; layer: LayerName; primitive: MusicalPrimitive }
   | { type: 'remove'; layer: LayerName; id: string }
@@ -1059,6 +1064,11 @@ export function diffLayerGraph(prev: MusicalLayerGraph, next: MusicalLayerGraph)
   // track even when the primitives are identical.
   if (performanceChanged(prev.performance, next.performance)) {
     changes.push({ type: 'performance' });
+  }
+  for (const layer of LAYER_NAMES) {
+    if ((prev.variations?.[layer] ?? 0) !== (next.variations?.[layer] ?? 0)) {
+      changes.push({ type: 'variation', layer });
+    }
   }
   for (const layer of LAYER_NAMES) {
     const prevLayer = prev.layers[layer];

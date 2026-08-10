@@ -37,6 +37,8 @@ export class LayerCue {
       bus.on('track:section', ({ section }) => {
         if (section !== 'none') this.show(section.toUpperCase());
       }),
+      // The journey never stops: the next track announces itself the same way.
+      bus.on('track:new', ({ number }) => this.show(`TRACK ${String(number).padStart(2, '0')}`)),
     ];
     this.detach = () => {
       for (const off of offs) off();

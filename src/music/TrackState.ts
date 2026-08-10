@@ -103,6 +103,8 @@ export type TrackEvents = {
   'track:depth': { layer: TrackLayerName; atMs: number };
   /** Emitted when the world's grammar changes region (§29.5). */
   'track:genre': { genre: TrackGenre; atMs: number };
+  /** Emitted when a finished track hands over to the next one (endless journey). */
+  'track:new': { number: number; atMs: number };
   /** Emitted when the arrangement moves to a new section (§29.7). */
   'track:section': { section: TrackState['form']; atMs: number };
 };

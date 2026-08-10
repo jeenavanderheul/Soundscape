@@ -35,6 +35,7 @@
 import { getSuperdoughAudioController, initStrudel, samples, type StrudelRepl } from '@strudel/web';
 import { guardPattern } from '../ai/PatternGuard';
 import type { Performance } from '../music/Performance';
+import type { LayerVariations } from '../music/Variation';
 import {
   diffLayerGraph,
   createEmptyLayerGraph,
@@ -624,6 +625,26 @@ function applyPerformance(code: string, layer: LayerName, perf?: Performance): s
   return `${out}.postgain(${clamp(push, 0, 2).toFixed(2)})`;
 }
 
+/**
+ * The variations of a part (endless journey, user decision). Structural
+ * transforms only — the material stays the player's, it just moves
+ * differently, so a finished track never loops itself to death.
+ */
+const VARIATIONS: Partial<Record<LayerName, readonly string[]>> = {
+  drums: ['', '.iter(4)', '.degradeBy(.09)', '.late(.012)', '.ply("<1 1 2 1>")'],
+  bass: ['', '.iter(2)', '.rev()', '.ply(2)', '.degradeBy(.1)'],
+  harmony: ['', '.jux(rev)', '.iter(4)', '.late(.03)', '.ply(2)'],
+  melody: ['', '.rev()', '.iter(3)', '.jux(rev)', '.late(.05)'],
+  texture: ['', '.rev()', '.iter(2)', '.late(.05)', '.degradeBy(.15)'],
+};
+
+function applyVariation(code: string, layer: LayerName, variations?: LayerVariations): string {
+  const index = variations?.[layer] ?? 0;
+  if (index === 0) return code;
+  const list = VARIATIONS[layer];
+  return list === undefined ? code : `${code}${list[index % list.length] ?? ''}`;
+}
+
 /** Layers that actually carry notes, and can therefore be transposed. */
 const PITCHED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>(['bass', 'harmony', 'melody']);
 
@@ -638,7 +659,13 @@ export function buildPatternCode(graph: MusicalLayerGraph, actions: MusicalActio
   for (const name of LAYER_NAMES) {
     const layer = graph.layers[name];
     for (const primitive of layer.primitives) {
-      parts.push(applyPerformance(renderPrimitive(primitive, layer), name, graph.performance));
+      parts.push(
+        applyVariation(
+          applyPerformance(renderPrimitive(primitive, layer), name, graph.performance),
+          name,
+          graph.variations,
+        ),
+      );
     }
   }
   for (const action of actions) {
@@ -656,7 +683,11 @@ export function trackParts(graph: MusicalLayerGraph): Array<{ id: string; code: 
     for (const primitive of layer.primitives) {
       parts.push({
         id: primitive.id,
-        code: applyPerformance(renderPrimitive(primitive, layer), name, graph.performance),
+        code: applyVariation(
+          applyPerformance(renderPrimitive(primitive, layer), name, graph.performance),
+          name,
+          graph.variations,
+        ),
       });
     }
   }

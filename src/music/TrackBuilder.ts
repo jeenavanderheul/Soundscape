@@ -9,7 +9,9 @@ import { ladderFor, layerUnlocked, nextStep } from './GenreLadder';
 import { HarmonyEngine } from './HarmonyEngine';
 import { MelodyTracker } from './MelodyTracker';
 import type { MusicState } from './MusicState';
+import { nextRootMidi, rotateVariations, type LayerVariations } from './Variation';
 import {
+  createInitialTrackState,
   LEVEL_DEEP,
   LEVEL_EARNED,
   type TrackEvents,
@@ -130,6 +132,11 @@ export class TrackBuilder {
   private airMs = 0;
   private lastDeepenMs = 0;
   private lastTickMs: number | null = null;
+  private trackNumberValue = 1;
+  private turn = 0;
+  private layerVariations: LayerVariations = {};
+  /** True once the finished track has reached a drop and is waiting to hand over. */
+  private handingOver = false;
   readonly conversation = new CallResponse();
   readonly harmony = new HarmonyEngine();
   readonly melody = new MelodyTracker();
@@ -139,7 +146,19 @@ export class TrackBuilder {
     private readonly store: Store<TrackState>,
     private readonly bus: EventBus<TrackEvents>,
     private readonly config: TrackBuilderConfig = TRACK_BUILDER_CONFIG,
+    /** Journey seed: the same flight always writes the same tracks (§25.16). */
+    private readonly seed = 'frequency',
   ) {}
+
+  /** 1-based; the journey never ends, it just moves on to the next track. */
+  get trackNumber(): number {
+    return this.trackNumberValue;
+  }
+
+  /** Which variation of its part each layer is playing right now. */
+  get variations(): LayerVariations {
+    return this.layerVariations;
+  }
 
   /** Reset world (§17): the ladder starts over with the void. */
   reset(): void {
@@ -156,6 +175,63 @@ export class TrackBuilder {
     this.harmony.reset();
     this.melody.reset();
     this.arrangement.reset();
+    this.trackNumberValue = 1;
+    this.turn = 0;
+    this.layerVariations = {};
+    this.handingOver = false;
+  }
+
+  /**
+   * The endless journey (user decision): once every layer is earned AND grown
+   * deep, the track is finished. It ends on its next drop, and coming out of
+   * that drop the world starts the following track — same journey, related key,
+   * one motif carried over, everything else earned again.
+   */
+  private advanceJourney(nowMs: number, section: TrackState['form']): void {
+    const track = this.store.getState();
+    if (!this.handingOver) {
+      if (!this.isComplete(track) || section !== 'drop') return;
+      this.handingOver = true;
+      return;
+    }
+    if (section === 'drop') return; // still in it — let the drop land
+    this.startNextTrack(nowMs);
+  }
+
+  private isComplete(track: Readonly<TrackState>): boolean {
+    const layers: TrackLayerName[] = [
+      'kick', 'snare', 'hats', 'bass', 'harmony', 'melody', 'texture',
+    ];
+    return layers.every((layer) => layerUnlocked(track, layer) && levelOf(track, layer) >= LEVEL_DEEP);
+  }
+
+  private startNextTrack(nowMs: number): void {
+    const previous = this.store.getState();
+    this.trackNumberValue += 1;
+    this.handingOver = false;
+    const rootMidi = nextRootMidi(previous.rootMidi, this.trackNumberValue);
+    const shift = rootMidi - previous.rootMidi;
+    // What survives: the key (transposed) and ONE motif, moved with it. The
+    // parts themselves are earned again — that is still the game.
+    const motif = previous.melodyNotes.map((note) => note + shift);
+    this.store.setState((t) => ({
+      ...createInitialTrackState(),
+      bpm: t.bpm, // the journey does not stop to count itself back in
+      genre: t.genre,
+      rootMidi,
+      melodyNotes: motif,
+    }));
+    this.activeMs = 0;
+    this.lastDeepenMs = 0;
+    this.lowRegisterMs = 0;
+    this.groundMs = 0;
+    this.airMs = 0;
+    this.layerVariations = {};
+    this.harmony.reset();
+    this.melody.reset();
+    this.conversation.reset();
+    this.arrangement.reset();
+    this.bus.emit('track:new', { number: this.trackNumberValue, atMs: nowMs });
   }
 
   /** Input pulses and wind releases, tagged with the player's current sound. */
@@ -221,9 +297,12 @@ export class TrackBuilder {
     // --- Fase 4/5 content: what the player's resonances and flight built.
     const rootMidi = 36 + (((Math.round(hzToMidi(Math.max(music.pitchCenter, 20))) % 12) + 12) % 12);
     const intervals = this.harmony.chordIntervals();
+    // While the melody is not earned, whatever is in there stays: on a fresh
+    // track that is nothing, and on the next track of the journey it is the
+    // motif carried over from the last one (user decision).
     const melodyNotes = track.melody.unlocked
       ? this.melody.phrase(rootMidi).map((n) => foldToRange(n, rootMidi + 24, rootMidi + 36))
-      : [];
+      : track.melodyNotes;
     const genre = this.dominant(affinity);
     // §31: in Jazz the world takes its turn — it answers the player's phrase
     // with a variation instead of looping underneath it.
@@ -264,6 +343,19 @@ export class TrackBuilder {
       if (genre !== track.genre) this.bus.emit('track:genre', { genre, atMs: nowMs });
       if (section !== track.form) this.bus.emit('track:section', { section, atMs: nowMs });
     }
+    // Endless journey: every turn of the arrangement rewrites ONE layer with a
+    // different variation of the same part (user decision), so a finished track
+    // keeps moving instead of looping itself to death.
+    if (section !== track.form) {
+      this.turn += 1;
+      this.layerVariations = rotateVariations(
+        this.layerVariations,
+        this.turn,
+        this.trackNumberValue,
+        this.seed,
+      );
+    }
+    this.advanceJourney(nowMs, section);
 
     // --- The unlock ladder (§29.2, §31): the REGION decides the composition
     // order. Only the next step of this genre's ladder can be earned, so a
@@ -276,7 +368,11 @@ export class TrackBuilder {
     // with a player who is doing nothing in particular (§29.3) — it must never
     // be the mechanism, or the track becomes a progress bar instead of a
     // consequence.
-    const patience = step === null ? 0 : step.atMs * config.patienceFactor;
+    // From the second track on the world is half as patient: you have shown you
+    // know how to build one, so it comes to meet you (user decision).
+    const patienceFactor =
+      this.trackNumberValue === 1 ? config.patienceFactor : config.patienceFactor / 2;
+    const patience = step === null ? 0 : step.atMs * patienceFactor;
     if (step !== null && (this.intent(step.layer) || this.activeMs >= patience)) {
       this.unlock(step.layer, nowMs);
       return;
