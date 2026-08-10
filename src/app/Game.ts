@@ -33,11 +33,14 @@ import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ParticleSystem } from '../rendering/ParticleSystem';
+import { PlayerOrb } from '../rendering/PlayerOrb';
 import { Renderer } from '../rendering/Renderer';
 import { StructureRenderer } from '../rendering/StructureRenderer';
+import { WaveTerrain } from '../rendering/WaveTerrain';
 import { ResonanceEngine } from '../resonance/ResonanceEngine';
 import type { ResonanceEvents } from '../resonance/ResonanceEngine';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
+import { HUD } from '../ui/HUD';
 import { attachIntroHint } from '../ui/Intro';
 import { PauseOverlay } from '../ui/PauseOverlay';
 import { FormEmergence } from '../world/FormEmergence';
@@ -119,6 +122,10 @@ export class Game {
   private readonly detachStructures: () => void;
   private readonly detachResonanceCapture: () => void;
   // M4 analysis→world sync (§12, §20): one depth-capped pulse across renderers.
+  // Visual world (poster direction): scan-line terrain, player orb, HUD.
+  private readonly terrain = new WaveTerrain();
+  private readonly orb = new PlayerOrb();
+  private readonly hud = new HUD();
   private readonly beatSync: BeatSync;
   private readonly detachBeatSync: () => void;
   // §11/§20 M4: Strudel shares our AudioContext; its beat boundaries feed the bus.
@@ -177,7 +184,19 @@ export class Game {
     this.formEmergence = new FormEmergence(this.events, this.worldStore, WORLD_SEED);
     this.detachResonanceCapture = this.events.on('resonance:event', (event) => {
       this.pendingResonanceEvents.push(event);
+      // Terrain grows where resonance happens (user decision, §3.8): the
+      // engaged resonator's zone swells and slowly relaxes.
+      const target = this.worldStore.getState().resonators.find((r) => r.id === event.targetId);
+      if (target) {
+        this.terrain.excite(target.id, target.position, target.baseHz, event.strength);
+      }
     });
+    // Born structures deform the field permanently (§3.8 duration = memory).
+    this.detachProgression.push(
+      this.events.on('structure:spawned', (structure) => {
+        this.terrain.excite(`structure:${structure.id}`, structure.position, structure.hz, 0.8, true);
+      }),
+    );
     // §17: discovery listeners feed the progression record (never XP).
     const progressIfChanged = (next: (s: ProgressionState) => ProgressionState): void => {
       // Reducers return the SAME object when nothing new was discovered; the
@@ -204,7 +223,15 @@ export class Game {
     this.detachStructures = this.structures.subscribe(this.events);
     // §12 audio→visual bus: beat events + analyser onsets drive the renderers'
     // setPulse hooks through one shared, strobe-capped envelope (§23).
-    this.beatSync = new BeatSync([this.particles, this.interference, this.structures]);
+    this.renderer.scene.add(this.terrain.lines);
+    this.renderer.scene.add(this.orb.mesh);
+    this.beatSync = new BeatSync([
+      this.particles,
+      this.interference,
+      this.structures,
+      this.terrain,
+      this.orb,
+    ]);
     this.detachBeatSync = this.beatSync.subscribe(this.events);
     // §20 M4 synchronized world behavior: the Strudel clock's beat boundaries
     // become 'beat' bus events, the strong pulse BeatSync locks visuals to.
@@ -293,6 +320,11 @@ export class Game {
     this.interference.dispose();
     this.renderer.scene.remove(this.structures.group);
     this.structures.dispose();
+    this.renderer.scene.remove(this.terrain.lines);
+    this.terrain.dispose();
+    this.renderer.scene.remove(this.orb.mesh);
+    this.orb.dispose();
+    this.hud.dispose();
     this.renderer.dispose();
     if (import.meta.env.DEV) delete (window as DebugWindow).__FREQUENCY_DEBUG__;
     await this.audioEngine.dispose();
@@ -362,10 +394,27 @@ export class Game {
     this.particles.update(state, dtSeconds);
     this.interference.update(dtSeconds);
     this.structures.update(dtSeconds);
+    // Visual world: the player's wind excites the field directly — the first
+    // cause-effect the eye gets, before any resonator is found.
+    if (state.amplitude > 0.05) {
+      this.terrain.excite('player', state.position, state.hz, state.amplitude * 0.12);
+    }
+    this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
+    this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
+    this.hud.update(state);
+    // Third-person: the camera trails the orb along the flight direction.
     const camera = this.renderer.camera.instance;
     const { position, direction } = state;
-    camera.position.set(position.x, position.y, position.z);
-    camera.lookAt(position.x + direction.x, position.y + direction.y, position.z + direction.z);
+    camera.position.set(
+      position.x - direction.x * 5,
+      position.y - direction.y * 5 + 1.6,
+      position.z - direction.z * 5,
+    );
+    camera.lookAt(
+      position.x + direction.x * 3,
+      position.y + direction.y * 3,
+      position.z + direction.z * 3,
+    );
     this.renderer.render();
   };
 
@@ -450,6 +499,7 @@ export class Game {
     } catch (error) {
       console.error('FREQUENCY: Strudel engine failed to start', error);
     }
+    this.hud.show();
     this.input.attach();
     // The unlock click is a user gesture, so pointer lock may be requested here.
     this.pointerLock.request();
