@@ -94,3 +94,39 @@ describe('§29.6 the orb becomes the track', () => {
     orb.dispose();
   });
 });
+
+describe('§52 the orb is shaped by how it flies', () => {
+  const flying = (velocity: number, direction = { x: 0, y: 0, z: -1 }) => ({
+    ...createInitialFrequencyState(),
+    velocity,
+    direction,
+  });
+
+  function settle(orb: PlayerOrb, state: ReturnType<typeof flying>, seconds: number) {
+    for (let t = 0; t < seconds; t += 1 / 60) orb.update(state, 0, 1 / 60, t);
+  }
+
+  it('stretches into an oval with speed instead of wobbling', () => {
+    const orb = new PlayerOrb();
+    settle(orb, flying(0), 1);
+    const still = orb.mesh.scale.clone();
+    expect(still.z / still.x).toBeCloseTo(1, 2); // round at rest
+    settle(orb, flying(66), 1);
+    expect(orb.mesh.scale.z / orb.mesh.scale.x).toBeGreaterThan(1.8);
+    // And the surface itself stays calm: the shape comes from the flight.
+    expect(orb.material.uniforms.uDeform!.value).toBeLessThan(0.12);
+    orb.dispose();
+  });
+
+  it('leans into a turn, and the lean settles instead of snapping', () => {
+    const orb = new PlayerOrb();
+    settle(orb, flying(30), 0.5);
+    const level = orb.mesh.rotation.z;
+    for (let t = 0; t < 1; t += 1 / 60) {
+      orb.setFlight(2.5, 0, 1 / 60);
+      orb.update(flying(30), 0, 1 / 60, t);
+    }
+    expect(Math.abs(orb.mesh.rotation.z - level)).toBeGreaterThan(0.05);
+    orb.dispose();
+  });
+});

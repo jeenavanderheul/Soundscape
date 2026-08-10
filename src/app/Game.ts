@@ -49,6 +49,7 @@ import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer } from '../rendering/ForestRenderer';
 import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
 import { ParticleSystem } from '../rendering/ParticleSystem';
+import { OrbTrail } from '../rendering/OrbTrail';
 import { PlayerOrb } from '../rendering/PlayerOrb';
 import { Renderer } from '../rendering/Renderer';
 import { SpeedStreaks } from '../rendering/SpeedStreaks';
@@ -187,6 +188,7 @@ export class Game {
   // Visual world (poster direction): scan-line terrain, player orb, HUD.
   private readonly terrain = new WaveTerrain(WORLD_SEED);
   private readonly orb = new PlayerOrb();
+  private readonly orbTrail = new OrbTrail();
   private readonly hud = new HUD();
   private readonly forest = new ForestRenderer(WORLD_SEED);
   private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
@@ -353,6 +355,7 @@ export class Game {
     // setPulse hooks through one shared, strobe-capped envelope (§23).
     this.renderer.scene.add(this.terrain.lines);
     this.renderer.scene.add(this.orb.mesh);
+    this.renderer.scene.add(this.orbTrail.mesh);
     this.renderer.scene.add(this.forest.mesh);
     this.renderer.scene.add(this.markers.mesh);
     this.renderer.scene.add(this.melodyTrail.line);
@@ -504,6 +507,7 @@ export class Game {
     this.layerCue.dispose();
     this.renderer.scene.remove(this.orb.mesh);
     this.orb.dispose();
+    this.orbTrail.dispose();
     this.hud.dispose();
     this.renderer.dispose();
     if (import.meta.env.DEV) delete (window as DebugWindow).__FREQUENCY_DEBUG__;
@@ -674,7 +678,19 @@ export class Game {
     const growth = trackGrowth(this.trackStore.getState()) * this.motionLevel;
     this.orb.setGrowth(growth);
     this.particles.setGrowth(growth);
+    // §52: the shape of the orb is how it is being flown.
+    this.orb.setFlight(this.controller.yawRate, this.controller.climbRate, dtSeconds);
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
+    this.orbTrail.update(
+      state.position,
+      {
+        x: state.direction.x * state.velocity,
+        y: state.direction.y * state.velocity,
+        z: state.direction.z * state.velocity,
+      },
+      this.controller.throttleLevel,
+      growth,
+    );
     // §35: what the orb clears grows with the orb — a small orb hugs the land.
     this.controller.setOrbRadius(this.orb.radius + 0.35);
     // §33: streaks rushing past the orb are what makes speed legible.
@@ -1010,6 +1026,7 @@ export class Game {
     look.relief += (target.relief - look.relief) * k;
     this.renderer.setZoneColor(look.color);
     this.terrain.setZone(look.color, look.relief);
+    this.orbTrail.setColor(look.color);
     this.streaks.setColor(look.color);
     this.forest.setTint(look.color);
   }
