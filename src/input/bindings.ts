@@ -12,7 +12,12 @@ export type KeyAction =
   | 'exportTrack'
   | 'pause';
 
-export type MouseButtonAction = 'windHold';
+/**
+ * Left button does two things that are never wanted at once: a short click
+ * shifts up a gear, holding it builds wind (§5 dynamics). Right button shifts
+ * down.
+ */
+export type MouseButtonAction = 'windHold' | 'gearDown';
 export type WheelAction = 'frequencyFocus';
 export type MouseMoveAction = 'look';
 
@@ -40,6 +45,7 @@ export const DEFAULT_BINDINGS: DesktopBindings = {
   },
   mouseButtons: {
     0: 'windHold',
+    2: 'gearDown',
   },
   wheel: 'frequencyFocus',
   mouseMove: 'look',

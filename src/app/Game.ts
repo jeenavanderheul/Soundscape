@@ -31,7 +31,7 @@ import { createInitialTrackState, trackGrowth, TrackEvents, TrackState } from '.
 import type { TrackGenre } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
-import { FrequencyController } from '../player/FrequencyController';
+import { FrequencyController, MAX_GEAR } from '../player/FrequencyController';
 import {
   createInitialProgression,
   isComposerUnlocked,
@@ -648,6 +648,9 @@ export class Game {
       heading: headingLabel(Math.atan2(state.direction.x, -state.direction.z)),
       biome: this.placeGenre ?? 'void',
       region: ecologyFor(this.placeGenre).name,
+      gear: this.controller.gear,
+      maxGear: MAX_GEAR,
+      bpm: this.trackStore.getState().bpm,
     });
     // Third-person: the camera trails the orb along the flight direction.
     const camera = this.renderer.camera.instance;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createStore } from '../../src/core/stores';
+import { speedToBpm } from '../../src/audio/MusicalPrimitives';
 import { createInitialFrequencyState } from '../../src/player/FrequencyState';
 import type { InputSnapshot } from '../../src/input/InputManager';
 import {
@@ -7,6 +8,8 @@ import {
   FLIGHT_CONFIG,
   FREQUENCY_CONFIG,
   FrequencyController,
+  GEAR_SPEEDS,
+  MAX_GEAR,
   directionFromLook,
   mapWheelToHz,
   smoothAmplitude,
@@ -17,6 +20,8 @@ function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
   return {
     axes: { moveX: 0, moveZ: 0 },
     buttons: { accelerate: false, windHold: false },
+    gearUp: false,
+    gearDown: false,
     windReleased: false,
     resonancePulse: false,
     pausePressed: false,
@@ -163,6 +168,8 @@ describe('FrequencyController', () => {
   it('derives bounded energy from speed and updates look direction', () => {
     const store = createStore(createInitialFrequencyState());
     const controller = new FrequencyController(store);
+    // Top gear: the gearbox is the speed ceiling, so energy is measured there.
+    for (let i = 0; i < 4; i++) controller.update(snapshot({ gearUp: true }), 16);
     for (let i = 0; i < 300; i++) {
       controller.update(
         snapshot({
@@ -190,5 +197,42 @@ describe('FrequencyController', () => {
 
   it('respects the configured amplitude bounds config', () => {
     expect(AMPLITUDE_CONFIG.attackMs).toBeLessThan(AMPLITUDE_CONFIG.releaseMs);
+  });
+});
+
+describe('the gearbox is the speed (user decision: five gears)', () => {
+  function topSpeedIn(gear: number): number {
+    const store = createStore(createInitialFrequencyState());
+    const controller = new FrequencyController(store);
+    // Shift from second into the wanted gear, then hold forward.
+    for (let i = 2; i < gear; i++) controller.update(snapshot({ gearUp: true }), 16);
+    for (let i = gear; i < 2; i++) controller.update(snapshot({ gearDown: true }), 16);
+    expect(controller.gear).toBe(gear);
+    for (let i = 0; i < 400; i++) {
+      controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 } }), 16);
+    }
+    return store.getState().velocity;
+  }
+
+  it('every gear has its own top speed, and they only go up', () => {
+    const speeds = [1, 2, 3, 4, 5].map(topSpeedIn);
+    for (let i = 1; i < speeds.length; i++) {
+      expect(speeds[i]!).toBeGreaterThan(speeds[i - 1]!);
+    }
+    expect(speeds[4]!).toBeLessThanOrEqual(GEAR_SPEEDS[MAX_GEAR - 1]! + 0.01);
+  });
+
+  it('cannot shift past either end', () => {
+    const store = createStore(createInitialFrequencyState());
+    const controller = new FrequencyController(store);
+    for (let i = 0; i < 10; i++) controller.update(snapshot({ gearUp: true }), 16);
+    expect(controller.gear).toBe(MAX_GEAR);
+    for (let i = 0; i < 10; i++) controller.update(snapshot({ gearDown: true }), 16);
+    expect(controller.gear).toBe(1);
+  });
+
+  it('each gear lands in its own tempo band — the gear IS the tempo (§29)', () => {
+    const bpms = [1, 2, 3, 4, 5].map((gear) => speedToBpm(topSpeedIn(gear)));
+    expect(bpms).toEqual([90, 110, 128, 145, 170]);
   });
 });

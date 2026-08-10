@@ -10,6 +10,8 @@ function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
   return {
     axes: { moveX: 0, moveZ: 0 },
     buttons: { accelerate: false, windHold: false },
+    gearUp: false,
+    gearDown: false,
     windReleased: false,
     resonancePulse: false,
     pausePressed: false,
@@ -81,6 +83,8 @@ describe('§35 HARD RULE — the orb never gets under the landscape', () => {
     controller.setGroundSampler(ground);
     // Look down and hold forward: fly straight into the ground.
     controller.update(snapshot({ mouseDelta: { x: 0, y: dive } }), 16);
+    // Top gear, so the dive is as fast as the game allows.
+    for (let i = 0; i < 4; i++) controller.update(snapshot({ gearUp: true }), 16);
     const breaches: number[] = [];
     for (let i = 0; i < steps; i++) {
       controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 }, buttons: { accelerate: true, windHold: false } }), 16);

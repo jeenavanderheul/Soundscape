@@ -6,8 +6,10 @@ function key(type: 'keydown' | 'keyup', code: string, repeat = false): Event {
   return Object.assign(new Event(type), { code, repeat });
 }
 
-function mouse(type: 'mousedown' | 'mouseup', button: number): Event {
-  return Object.assign(new Event(type), { button });
+function mouse(type: 'mousedown' | 'mouseup', button: number, ms = 0): Event {
+  const event = Object.assign(new Event(type), { button });
+  Object.defineProperty(event, 'timeStamp', { value: ms }); // read-only getter
+  return event;
 }
 
 function setup() {
@@ -44,9 +46,9 @@ describe('InputManager', () => {
 
   it('reports wind hold while LMB is down and a release pulse exactly once', () => {
     const { pointer, manager } = setup();
-    pointer.dispatchEvent(mouse('mousedown', 0));
+    pointer.dispatchEvent(mouse('mousedown', 0, 0));
     expect(manager.snapshot().buttons.windHold).toBe(true);
-    pointer.dispatchEvent(mouse('mouseup', 0));
+    pointer.dispatchEvent(mouse('mouseup', 0, 800));
     const released = manager.snapshot();
     expect(released.buttons.windHold).toBe(false);
     expect(released.windReleased).toBe(true);
@@ -91,33 +93,28 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('double-tapping forward starts a dash and holding keeps it (§29 tempo)', () => {
-    const { keyboard, manager } = setup();
-    const at = (type: 'keydown' | 'keyup', ms: number): Event => {
-      const event = Object.assign(new Event(type), { code: 'KeyW', repeat: false });
-      Object.defineProperty(event, 'timeStamp', { value: ms }); // read-only getter
-      return event;
-    };
+  it('a flick of the left button shifts up, a hold is wind (user decision)', () => {
+    const { pointer, manager } = setup();
 
-    // One tap alone is just forward.
-    keyboard.dispatchEvent(at('keydown', 0));
-    expect(manager.snapshot().buttons.accelerate).toBe(false);
-    keyboard.dispatchEvent(at('keyup', 80));
+    // Short click: a gear, and NOT a wind release — the rhythm must not hear it.
+    pointer.dispatchEvent(mouse('mousedown', 0, 1000));
+    pointer.dispatchEvent(mouse('mouseup', 0, 1120));
+    const clicked = manager.snapshot();
+    expect(clicked.gearUp).toBe(true);
+    expect(clicked.windReleased).toBe(false);
+    expect(manager.snapshot().gearUp).toBe(false);
 
-    // A second tap inside the window dashes, and it lasts while held.
-    keyboard.dispatchEvent(at('keydown', 200));
-    expect(manager.snapshot().buttons.accelerate).toBe(true);
-    expect(manager.snapshot().buttons.accelerate).toBe(true);
+    // Real hold: wind, and its release is the pulse.
+    pointer.dispatchEvent(mouse('mousedown', 0, 2000));
+    pointer.dispatchEvent(mouse('mouseup', 0, 2600));
+    const held = manager.snapshot();
+    expect(held.gearUp).toBe(false);
+    expect(held.windReleased).toBe(true);
 
-    // Releasing forward ends the dash.
-    keyboard.dispatchEvent(at('keyup', 900));
-    expect(manager.snapshot().buttons.accelerate).toBe(false);
-
-    // A slow second tap is not a dash.
-    keyboard.dispatchEvent(at('keydown', 5000));
-    keyboard.dispatchEvent(at('keyup', 5100));
-    keyboard.dispatchEvent(at('keydown', 6000));
-    expect(manager.snapshot().buttons.accelerate).toBe(false);
+    // Right button shifts down, once.
+    pointer.dispatchEvent(mouse('mousedown', 2, 3000));
+    expect(manager.snapshot().gearDown).toBe(true);
+    expect(manager.snapshot().gearDown).toBe(false);
     manager.detach();
   });
 

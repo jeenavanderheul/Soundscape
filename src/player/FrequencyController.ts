@@ -83,7 +83,7 @@ export function stepVelocity(
   accelDirection: Vec3Data,
   accelMagnitude: number,
   deltaMs: number,
-  config = FLIGHT_CONFIG,
+  config: Omit<typeof FLIGHT_CONFIG, 'maxSpeed'> & { maxSpeed: number } = FLIGHT_CONFIG,
 ): Vec3Data {
   const dt = deltaMs / 1000;
   const dragFactor = Math.exp(-config.drag * dt);
@@ -115,9 +115,20 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
  * (spec §5, §15): free-flight movement, logarithmic frequency focus,
  * attack/release amplitude and velocity → energy. All updates immutable.
  */
+/**
+ * Five gears (user decision). Flight speed is the clock (§29), so a gear IS a
+ * tempo: each top speed sits inside one of the TEMPO_BANDS, and the region
+ * stretches those bands into its own range (§39). Shifting up is the player
+ * deciding the track should move faster — deliberate, not a twitch.
+ */
+export const GEAR_SPEEDS: readonly number[] = [3.5, 7, 13, 18, 24];
+export const MAX_GEAR = GEAR_SPEEDS.length;
+
 export class FrequencyController {
   private yaw = 0;
   private pitch = 0;
+  /** Starts in second: moving, with room to shift both ways. */
+  private gearIndex = 1;
   /** §35: samples the solid landscape; unset means the old flat floor. */
   private groundAt: ((x: number, z: number) => number) | null = null;
   /** §36: the largest formations are solid too — they push the orb aside. */
@@ -125,10 +136,16 @@ export class FrequencyController {
     null;
   private grounded = false;
 
+  /** 1..5, shown in the HUD. */
+  get gear(): number {
+    return this.gearIndex + 1;
+  }
+
   /** Reset world (§17): look level again, matching the fresh spawn state. */
   resetOrientation(): void {
     this.yaw = 0;
     this.pitch = 0;
+    this.gearIndex = 1;
   }
   private velocityVec: Vec3Data = { x: 0, y: 0, z: 0 };
 
@@ -145,10 +162,20 @@ export class FrequencyController {
     );
     const direction = directionFromLook(this.yaw, this.pitch);
 
+    if (input.gearUp) this.gearIndex = Math.min(MAX_GEAR - 1, this.gearIndex + 1);
+    if (input.gearDown) this.gearIndex = Math.max(0, this.gearIndex - 1);
+
     const accelDirection = this.accelDirection(direction, input.axes);
+    // The gear is the ceiling: W pushes you up to the top speed of the gear you
+    // are in, and shifting is what lets the track go faster. Drag alone would
+    // settle below the higher gears, so each gear pulls harder — a high gear
+    // feels stronger, exactly like the car this is modelled on.
+    const gearSpeed = GEAR_SPEEDS[this.gearIndex]!;
     const accelMagnitude =
-      FLIGHT_CONFIG.acceleration * (input.buttons.accelerate ? FLIGHT_CONFIG.boostMultiplier : 1);
-    this.velocityVec = stepVelocity(this.velocityVec, accelDirection, accelMagnitude, deltaMs);
+      Math.max(FLIGHT_CONFIG.acceleration, gearSpeed * FLIGHT_CONFIG.drag * 1.25) *
+      (input.buttons.accelerate ? FLIGHT_CONFIG.boostMultiplier : 1);
+    const geared = { ...FLIGHT_CONFIG, maxSpeed: gearSpeed };
+    this.velocityVec = stepVelocity(this.velocityVec, accelDirection, accelMagnitude, deltaMs, geared);
     const speed = Math.hypot(this.velocityVec.x, this.velocityVec.y, this.velocityVec.z);
     const dt = deltaMs / 1000;
 

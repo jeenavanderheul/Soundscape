@@ -2,13 +2,21 @@ import { EventBus } from '../core/EventBus';
 import { DEFAULT_BINDINGS, DesktopBindings, KeyAction } from './bindings';
 
 /** Per-frame typed input snapshot (spec §6: systems consume snapshots, not DOM events). */
-/** Double-tapping forward within this window starts a dash (§5, §29 tempo). */
-export const DOUBLE_TAP_MS = 320;
+/**
+ * A left-button press shorter than this is a gear shift; anything longer is
+ * wind. The two are never wanted at the same moment, so one button carries
+ * both (§5).
+ */
+export const GEAR_CLICK_MS = 200;
 
 export interface InputSnapshot {
   /** moveX: -1 left … +1 right; moveZ: -1 backward … +1 forward. */
   axes: { moveX: number; moveZ: number };
   buttons: { accelerate: boolean; windHold: boolean };
+  /** Short left click since the last snapshot → shift up a gear. */
+  gearUp: boolean;
+  /** Right click since the last snapshot → shift down a gear. */
+  gearDown: boolean;
   /** LMB was released since the last snapshot → timed pulse excitation. */
   windReleased: boolean;
   /** Space was pressed since the last snapshot. */
@@ -40,8 +48,9 @@ export class InputManager {
   private readonly heldKeys = new Set<string>();
   private windHold = false;
   private windReleased = false;
-  private dashing = false;
-  private lastForwardDownMs: number | null = null;
+  private windDownMs = 0;
+  private gearUp = false;
+  private gearDown = false;
   private resonancePulse = false;
   private pausePressed = false;
   private codeToggled = false;
@@ -66,6 +75,7 @@ export class InputManager {
     this.pointerTarget.addEventListener('mouseup', this.onMouseUp);
     this.pointerTarget.addEventListener('mousemove', this.onMouseMove);
     this.pointerTarget.addEventListener('wheel', this.onWheel);
+    this.pointerTarget.addEventListener('contextmenu', this.onContextMenu);
   }
 
   detach(): void {
@@ -77,10 +87,9 @@ export class InputManager {
     this.pointerTarget.removeEventListener('mouseup', this.onMouseUp);
     this.pointerTarget.removeEventListener('mousemove', this.onMouseMove);
     this.pointerTarget.removeEventListener('wheel', this.onWheel);
+    this.pointerTarget.removeEventListener('contextmenu', this.onContextMenu);
     this.heldKeys.clear();
     this.windHold = false;
-    this.dashing = false;
-    this.lastForwardDownMs = null;
     this.resetFrameState();
   }
 
@@ -92,9 +101,11 @@ export class InputManager {
         moveZ: this.axisValue('moveForward') - this.axisValue('moveBackward'),
       },
       buttons: {
-        accelerate: this.isActionHeld('accelerate') || this.dashing,
+        accelerate: this.isActionHeld('accelerate'),
         windHold: this.windHold,
       },
+      gearUp: this.gearUp,
+      gearDown: this.gearDown,
       windReleased: this.windReleased,
       resonancePulse: this.resonancePulse,
       pausePressed: this.pausePressed,
@@ -108,6 +119,8 @@ export class InputManager {
   }
 
   private resetFrameState(): void {
+    this.gearUp = false;
+    this.gearDown = false;
     this.windReleased = false;
     this.resonancePulse = false;
     this.pausePressed = false;
@@ -134,16 +147,6 @@ export class InputManager {
     const action = this.bindings.keys[code];
     if (!action || repeat) return;
     this.heldKeys.add(code);
-    if (action === 'moveForward') {
-      // Double-tap forward = dash: the same boost Shift gives, without
-      // holding a modifier. Flight speed is the tempo (§29), so this is
-      // literally the player pushing the track faster.
-      const now = (event as KeyboardEvent).timeStamp;
-      if (this.lastForwardDownMs !== null && now - this.lastForwardDownMs <= DOUBLE_TAP_MS) {
-        this.dashing = true;
-      }
-      this.lastForwardDownMs = now;
-    }
     if (action === 'resonancePulse') {
       this.resonancePulse = true;
       this.bus?.emit('input:resonance-pulse', null);
@@ -158,23 +161,32 @@ export class InputManager {
   };
 
   private readonly onKeyUp = (event: Event): void => {
-    const { code } = event as KeyboardEvent;
-    // The dash lasts as long as forward stays held after the double tap.
-    if (this.bindings.keys[code] === 'moveForward') this.dashing = false;
-    this.heldKeys.delete(code);
+    this.heldKeys.delete((event as KeyboardEvent).code);
   };
 
   private readonly onMouseDown = (event: Event): void => {
-    if (this.bindings.mouseButtons[(event as MouseEvent).button] === 'windHold') {
+    const action = this.bindings.mouseButtons[(event as MouseEvent).button];
+    if (action === 'windHold') {
       this.windHold = true;
+      this.windDownMs = (event as MouseEvent).timeStamp;
+    } else if (action === 'gearDown') {
+      this.gearDown = true;
     }
   };
 
   private readonly onMouseUp = (event: Event): void => {
-    if (this.bindings.mouseButtons[(event as MouseEvent).button] === 'windHold') {
-      if (this.windHold) this.windReleased = true;
-      this.windHold = false;
-    }
+    if (this.bindings.mouseButtons[(event as MouseEvent).button] !== 'windHold') return;
+    if (!this.windHold) return;
+    // A flick of the button is a gear shift; a real hold is wind, and only a
+    // hold releases the pulse that the rhythm listens for (§3.3).
+    if ((event as MouseEvent).timeStamp - this.windDownMs <= GEAR_CLICK_MS) this.gearUp = true;
+    else this.windReleased = true;
+    this.windHold = false;
+  };
+
+  /** Right-click shifts down, so the browser menu must not open on it. */
+  private readonly onContextMenu = (event: Event): void => {
+    event.preventDefault();
   };
 
   private readonly onMouseMove = (event: Event): void => {
