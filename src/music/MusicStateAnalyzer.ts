@@ -32,6 +32,15 @@ export interface MusicStateAnalyzerConfig {
   /** M5 genre signals: smoothing rates for repetition and low-end energy. */
   repetitionRate: number;
   lowEndRate: number;
+  /** M6 ambient signals (§3.8, §9.2). */
+  durationRate: number;
+  /** Sustained-hold length that counts as durationAverage = 1. */
+  durationFullScaleMs: number;
+  /** Amplitude above which a hold accumulates duration. */
+  durationAmplitudeFloor: number;
+  spatialityRate: number;
+  /** Player speed at/above which spatiality reads as 0 (fast = not spacious). */
+  spatialityFullSpeed: number;
 }
 
 export const MUSIC_STATE_ANALYZER_CONFIG: MusicStateAnalyzerConfig = {
@@ -48,6 +57,11 @@ export const MUSIC_STATE_ANALYZER_CONFIG: MusicStateAnalyzerConfig = {
   maxBpm: 300,
   repetitionRate: 1.5,
   lowEndRate: 3,
+  durationRate: 0.8,
+  durationFullScaleMs: 8000,
+  durationAmplitudeFloor: 0.25,
+  spatialityRate: 1,
+  spatialityFullSpeed: 14,
 };
 
 const WAVEFORM_NOISE: Record<FrequencyState['waveform'], number> = {
@@ -87,6 +101,8 @@ function logHzNorm(hz: number): number {
 export class MusicStateAnalyzer {
   private lastNowMs: number | null = null;
   private introEnergyMs = 0;
+  /** Length of the current sustained hold (§3.8 duration = memory). */
+  private holdMs = 0;
 
   constructor(
     private readonly store: Store<MusicState>,
@@ -109,6 +125,11 @@ export class MusicStateAnalyzer {
       0.5 * WAVEFORM_BRIGHTNESS[frequency.waveform] + 0.5 * logHzNorm(frequency.hz),
     );
     const transientTarget = clamp01(rhythm.rhythmDensity / config.transientFullScale);
+    // §3.8/§9.2: sustained holds accumulate; release lets the average decay.
+    this.holdMs = amplitude >= config.durationAmplitudeFloor ? this.holdMs + deltaSec * 1000 : 0;
+    const durationTarget = clamp01(this.holdMs / config.durationFullScaleMs);
+    // §9.2 spatiality proxy: unhurried movement reads as space.
+    const spatialityTarget = clamp01(1 - frequency.velocity / config.spatialityFullSpeed);
 
     this.store.setState((current) => {
       // pitchCenter smoothing runs in log-frequency space (spec §5).
@@ -148,6 +169,12 @@ export class MusicStateAnalyzer {
         ),
         timbreNoise: clamp01(
           smooth(current.timbreNoise, WAVEFORM_NOISE[frequency.waveform], config.brightnessRate, deltaSec),
+        ),
+        durationAverage: clamp01(
+          smooth(current.durationAverage, durationTarget, config.durationRate, deltaSec),
+        ),
+        spatiality: clamp01(
+          smooth(current.spatiality, spatialityTarget, config.spatialityRate, deltaSec),
         ),
         formPhase: this.nextFormPhase(current.formPhase, amplitude, rawDelta),
       };

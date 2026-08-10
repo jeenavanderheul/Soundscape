@@ -16,6 +16,8 @@ export const AUTOSAVE_INTERVAL_MS = 15_000;
 
 export const RENDER_CONFIG = {
   clearColor: 0x020202, // near-black void
+  /** §9.2 fog density at full ambient affinity — soft, never a whiteout. */
+  maxFogDensity: 0.02,
   maxPixelRatio: 2,
 } as const;
 

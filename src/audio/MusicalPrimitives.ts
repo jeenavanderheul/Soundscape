@@ -130,7 +130,32 @@ export function subNoteFromHz(hz: number): string {
  */
 export function buildLayerGraph(music: MusicState, genre?: GenreAffinity): MusicalLayerGraph {
   if (music.tempoConfidence < TEMPO_CONFIDENCE_THRESHOLD || music.bpm <= 0) {
-    return createEmptyLayerGraph();
+    // §9.2: Ambient needs no pulse — sustained behavior alone can carry a
+    // drone in the tempo-less void (at a slow default clock).
+    const ambientOnly = clamp01(genre?.ambient ?? 0);
+    if (ambientOnly < 0.5) return createEmptyLayerGraph();
+    const droneGraph = createEmptyLayerGraph(60);
+    return {
+      ...droneGraph,
+      layers: {
+        ...droneGraph.layers,
+        atmosphere: {
+          ...droneGraph.layers.atmosphere,
+          primitives: [
+            {
+              id: 'ambient-drone',
+              kind: 'drone',
+              layer: 'atmosphere',
+              parameters: {
+                note: subNoteFromHz(music.pitchCenter),
+                gain: ambientOnly >= 0.75 ? 0.3 : 0.2,
+              },
+              allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
+            },
+          ],
+        },
+      },
+    };
   }
   const graph = createEmptyLayerGraph(music.bpm);
   const density = clamp01(music.rhythmDensity);
@@ -146,6 +171,7 @@ export function buildLayerGraph(music: MusicState, genre?: GenreAffinity): Music
     },
     allowedTransforms: [...ALLOWED_TRANSFORMS.pulse],
   };
+  const ambient = clamp01(genre?.ambient ?? 0);
   const drumPrimitives: MusicalPrimitive[] = [pulse];
   if (techno >= 0.5) {
     drumPrimitives.push({
@@ -165,12 +191,27 @@ export function buildLayerGraph(music: MusicState, genre?: GenreAffinity): Music
     parameters: { note: subNoteFromHz(music.pitchCenter), gain: 0.45 },
     allowedTransforms: [...ALLOWED_TRANSFORMS.sub],
   };
+  // §9.2 Ambient tendency: a slow drone at the pitch-center root joins the
+  // atmosphere layer. Quantized on/off keeps the graph diff-stable (§11).
+  const atmospherePrimitives: MusicalPrimitive[] =
+    ambient >= 0.5
+      ? [
+          {
+            id: 'ambient-drone',
+            kind: 'drone',
+            layer: 'atmosphere',
+            parameters: { note: subNoteFromHz(music.pitchCenter), gain: ambient >= 0.75 ? 0.3 : 0.2 },
+            allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
+          },
+        ]
+      : [];
   return {
     ...graph,
     layers: {
       ...graph.layers,
       drums: { ...graph.layers.drums, primitives: drumPrimitives, density },
       bass: { ...graph.layers.bass, primitives: [sub] },
+      atmosphere: { ...graph.layers.atmosphere, primitives: atmospherePrimitives },
     },
   };
 }

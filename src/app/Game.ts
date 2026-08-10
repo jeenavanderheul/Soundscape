@@ -280,6 +280,8 @@ export class Game {
       const genre = this.genreEngine.current;
       // §9.1 world tendency: repetition organizes structures onto the grid.
       this.structures.setOrganization(genre?.affinity.techno ?? 0);
+      // §9.2 world tendency: sustained space thickens the fog.
+      this.renderer.setAtmosphere(genre?.affinity.ambient ?? 0);
       this.updateStrudelGraph();
       if (this.audioAnalyser) {
         const stepSeconds = LOGIC_STEP_MS / 1000;

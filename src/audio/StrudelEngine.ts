@@ -132,6 +132,14 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       }
       return `note("${note}").s("sine").gain(${gain})`;
     }
+    case 'drone': {
+      // Ambient drone (§9.2): one sustained root note stretched over 4 bars.
+      const note = primitive.parameters['note'];
+      if (typeof note !== 'string' || !NOTE_RE.test(note)) {
+        throw new TypeError(`StrudelEngine: invalid note for primitive "${primitive.id}"`);
+      }
+      return `note("${note}").s("sine").slow(4).gain(${gain})`;
+    }
     default:
       throw new Error(`StrudelEngine: primitive kind "${primitive.kind}" is not in the template library`);
   }

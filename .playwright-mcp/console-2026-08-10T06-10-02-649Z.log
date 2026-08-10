@@ -76,3 +76,4 @@
 [  237490ms] [LOG] %c[getTrigger] error: sound bd not found! Is it loaded? background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
 [  237729ms] [LOG] %c[cyclist] stop background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
 [  240589ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5199/@vite/client:998
+[  406039ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10

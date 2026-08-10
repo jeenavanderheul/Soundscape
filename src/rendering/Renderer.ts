@@ -1,4 +1,4 @@
-import { Color, Scene, WebGLRenderer } from 'three';
+import { Color, FogExp2, Scene, WebGLRenderer } from 'three';
 import { RENDER_CONFIG } from '../app/Config';
 import { Camera } from './Camera';
 
@@ -25,6 +25,15 @@ export class Renderer {
     this.applySize();
     container.appendChild(this.webgl.domElement);
     window.addEventListener('resize', this.onResize);
+  }
+
+  /** §9.2 Ambient world tendency: fog thickens with affinity; 0 clears it. */
+  private readonly fog = new FogExp2(RENDER_CONFIG.clearColor, 0);
+
+  setAtmosphere(amount: number): void {
+    const clamped = Math.min(1, Math.max(0, amount));
+    this.fog.density = clamped * RENDER_CONFIG.maxFogDensity;
+    this.scene.fog = clamped > 0 ? this.fog : null;
   }
 
   render(): void {

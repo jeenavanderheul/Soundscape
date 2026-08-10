@@ -1,6 +1,7 @@
 import type { EventBus } from '../core/EventBus';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { GenreSnapshot } from '../persistence/WorldSerializer';
+import { scoreAmbient } from './AmbientProfile';
 import { scoreTechno } from './TechnoProfile';
 
 export type GenreEvents = {
@@ -59,7 +60,11 @@ export class GenreAffinityEngine {
       this.lastEvalMs === null ? this.config.intervalMs / 1000 : (nowMs - this.lastEvalMs) / 1000;
     this.lastEvalMs = nowMs;
 
-    const raw: GenreAffinity = { ...ZERO_AFFINITY, techno: scoreTechno(music) };
+    const raw: GenreAffinity = {
+      ...ZERO_AFFINITY,
+      techno: scoreTechno(music),
+      ambient: scoreAmbient(music),
+    };
     const blend = 1 - Math.exp(-this.config.smoothingRate * deltaSec);
     for (const key of Object.keys(this.affinity) as (keyof GenreAffinity)[]) {
       this.affinity[key] += (raw[key] - this.affinity[key]) * blend;
