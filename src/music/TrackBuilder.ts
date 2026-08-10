@@ -109,7 +109,9 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   fullSpeed: 66,
   paceAtRest: 0.55,
   paceAtFullSpeed: 2.4,
-  regionSwitchMs: 9000,
+  // Two seconds is long enough that clipping a corner does not restart the
+  // track, short enough that flying at a world IS arriving in it.
+  regionSwitchMs: 2000,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -250,7 +252,7 @@ export class TrackBuilder {
     return layers.every((layer) => layerUnlocked(track, layer) && levelOf(track, layer) >= LEVEL_DEEP);
   }
 
-  private startNextTrack(nowMs: number): void {
+  private startNextTrack(nowMs: number, keepLayers = false): void {
     const previous = this.store.getState();
     this.trackNumberValue += 1;
     this.handingOver = false;
@@ -261,12 +263,26 @@ export class TrackBuilder {
     // What survives: the key (transposed) and ONE motif, moved with it. The
     // parts themselves are earned again — that is still the game.
     const motif = previous.melodyNotes.map((note) => note + shift);
+    // Everything you had, at its earned level: the second voices are grown
+    // again in the new grammar, because that is where the depth comes from.
+    const carried = (pattern: { unlocked: boolean }) =>
+      keepLayers && pattern.unlocked ? { unlocked: true, level: LEVEL_EARNED } : { unlocked: false, level: 0 };
     this.store.setState((t) => ({
       ...createInitialTrackState(),
       bpm: t.bpm, // the journey does not stop to count itself back in
       genre: bornIn,
       rootMidi,
       melodyNotes: motif,
+      drums: {
+        kick: carried(t.drums.kick),
+        snare: carried(t.drums.snare),
+        hats: carried(t.drums.hats),
+      },
+      bass: carried(t.bass),
+      harmony: carried(t.harmony),
+      melody: carried(t.melody),
+      texture: carried(t.texture),
+      harmonyIntervals: keepLayers ? t.harmonyIntervals : [0],
     }));
     this.activeMs = 0;
     this.lastDeepenMs = 0;
@@ -389,7 +405,11 @@ export class TrackBuilder {
     this.awayMs = away ? this.awayMs + paced : 0;
     if (this.awayMs >= config.regionSwitchMs) {
       this.awayMs = 0;
-      this.startNextTrack(nowMs);
+      // §53: crossing into another world REWRITES what you have in that
+      // grammar — the same fullness, in dnb's kit and at dnb's tempo, from the
+      // moment you arrive. A track that finished on its own starts empty
+      // instead; that one you earned to the end.
+      this.startNextTrack(nowMs, true);
       return;
     }
     // The arrangement runs on the paced clock too: sections arrive sooner when

@@ -14,7 +14,7 @@ import { CallResponse, respondTo } from '../../src/music/CallResponse';
 import { GENRE_LADDERS, ladderFor, nextStep } from '../../src/music/GenreLadder';
 import { createInitialMusicState, type GenreAffinity } from '../../src/music/MusicState';
 import { TrackBuilder, type FlightState } from '../../src/music/TrackBuilder';
-import { LEVEL_DEEP, createInitialTrackState, TrackEvents, type TrackGenre } from '../../src/music/TrackState';
+import { LEVEL_DEEP, LEVEL_EARNED, createInitialTrackState, TrackEvents, type TrackGenre } from '../../src/music/TrackState';
 
 const ROAMING: FlightState = { velocity: 12, hz: 220, energy: 0.5 };
 
@@ -89,14 +89,14 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
     for (let ms = 0; ms <= 12_000; ms += 250) builder.tick(ms, music, ROAMING, affinityOf('techno'));
     const earned = store.getState().drums;
     expect(earned.kick.unlocked).toBe(true);
-    // §47: a short crossing does NOT rewrite this track — it keeps the grammar
-    // it was born in and keeps building in the techno order.
+    // §53: crossing into Drum & Bass rewrites what you have in ITS grammar —
+    // nothing is lost, and you hear the new world immediately.
     for (let ms = 12_250; ms <= 18_000; ms += 250) {
       builder.tick(ms, music, ROAMING, affinityOf('dnb'));
     }
     const after = store.getState();
+    expect(after.genre).toBe('dnb');
     expect(after.drums.kick.unlocked).toBe(true);
-    expect(after.genre).toBe('techno');
   });
 });
 
@@ -257,8 +257,8 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
     const { store, fly } = flightIn('techno');
     fly(0, 12_000, 0, 0.6);
     expect(store.getState().genre).toBe('techno');
-    // Crossing a border briefly does not touch the track you are building.
-    fly(12_250, 5000, 0, 0.6, 'ambient');
+    // Clipping a corner does not restart the track…
+    fly(12_250, 1200, 0, 0.6, 'ambient');
     expect(store.getState().genre).toBe('techno');
   });
 
@@ -268,11 +268,13 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
     const { store, genres, fly } = flightIn('techno');
     fly(0, 12_000, 0, 0.6);
     expect(store.getState().genre).toBe('techno');
-    fly(12_250, 20_000, 0, 0.6, 'ambient');
+    fly(12_250, 6000, 0, 0.6, 'ambient');
     expect(genres).toEqual(['ambient']);
     expect(store.getState().genre).toBe('ambient');
-    // And the new track is genuinely a new track: earned from nothing again.
-    expect(store.getState().drums.kick.unlocked).toBe(false);
+    // …and what you had comes with you, rewritten in the new grammar: you hear
+    // the new world straight away instead of an empty track.
+    expect(store.getState().drums.kick.unlocked).toBe(true);
+    expect(store.getState().drums.kick.level).toBe(LEVEL_EARNED);
   });
 
   it('starts the NEXT track in the region the player is still flying in', () => {

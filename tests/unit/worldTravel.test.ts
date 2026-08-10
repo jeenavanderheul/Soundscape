@@ -100,14 +100,17 @@ describe('arriving somewhere new starts a track in that world', () => {
     const technoTrack = store.getState();
     expect(technoTrack.drums.kick.unlocked).toBe(true);
 
-    // Head north-west and stay: within ten seconds this is a trap track.
-    t = fly('trap', 20, builder, t + 250);
+    // Head north-west and stay: within a couple of seconds this is a trap
+    // track, carrying what was already earned.
+    t = fly('trap', 8, builder, t + 250);
     expect(born).toEqual(['trap']);
     const trapTrack = store.getState();
     expect(trapTrack.genre).toBe('trap');
     // Earned from nothing again, in trap's own order and at trap's own tempo.
     expect(trapTrack.bpm).toBe(genreGrammar('trap').bpmCentre);
     expect(builder.trackNumber).toBe(2);
+    // You hear the new world at once: the kick you earned is now a trap kick.
+    expect(trapTrack.drums.kick.unlocked).toBe(true);
   });
 
   it('and the sounds of that world come with it', () => {
