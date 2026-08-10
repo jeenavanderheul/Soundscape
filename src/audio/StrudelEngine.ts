@@ -80,6 +80,25 @@ export function setSamplesLoaded(value: boolean): void {
 }
 /** Drum machine used for the sampled kit (strudel.cc/learn/samples § banks). */
 const DRUM_BANK = 'RolandTR909';
+/**
+ * The sample maps strudel.cc itself loads. @strudel/web ships none of them,
+ * which is why `.bank("RolandTR909")` resolved to nothing and oh/rim did not
+ * exist at all. Maps are JSON only — individual audio files are still fetched
+ * lazily on first hit, so this costs a few hundred KB, not a library.
+ *
+ * - tidal-drum-machines: 73 drum machines, what `bank()` looks up
+ * - VCSL: acoustic and orchestral instruments
+ * - EmuSP12 / Dirt-Samples: the classic tracker and Tidal kits
+ */
+export const SAMPLE_MAPS = [
+  'https://raw.githubusercontent.com/felixroos/dough-samples/main/tidal-drum-machines.json',
+  'https://raw.githubusercontent.com/felixroos/dough-samples/main/vcsl.json',
+  'https://raw.githubusercontent.com/felixroos/dough-samples/main/EmuSP12.json',
+  'https://raw.githubusercontent.com/felixroos/dough-samples/main/Dirt-Samples.json',
+  'https://raw.githubusercontent.com/felixroos/dough-samples/main/piano.json',
+] as const;
+/** The one the drum templates depend on; the rest widen the palette. */
+export const DRUM_MACHINES_URL = SAMPLE_MAPS[0];
 
 const NOTE_RE = /^[a-g]#?[0-8]$/;
 const VOICE_SOUNDS = new Set(['sine', 'triangle', 'square', 'sawtooth']);
@@ -478,15 +497,25 @@ export class StrudelEngine implements StrudelEnginePort {
     } catch (cause) {
       throw new Error('StrudelEngine: failed to initialize @strudel/web', { cause });
     }
-    // Load the standard drum/instrument sample bank (strudel.cc/learn/samples).
+    // The drum machines (strudel.cc/learn/samples § Sound Banks). This map is
+    // what `.bank("RolandTR909")` resolves against — WITHOUT it every banked
+    // template is silent, and oh/rim do not exist at all. Dirt-Samples alone
+    // is not enough: it has no banks.
     // Sample maps are fetched lazily over the network, so this can fail
     // offline — the templates fall back to built-in synth voices and the
     // world still sounds. Never blocks the unlock.
     void Promise.resolve()
-      .then(() => samples('github:tidalcycles/dirt-samples'))
+      // The drum machines decide whether the kit is real; the rest are extra
+      // palette and must not be able to hold the drums back.
+      .then(() => samples(DRUM_MACHINES_URL))
       .then(() => {
         this.samplesReady = true;
         setSamplesLoaded(true);
+        for (const map of SAMPLE_MAPS.slice(1)) {
+          void Promise.resolve()
+            .then(() => samples(map))
+            .catch(() => undefined);
+        }
       })
       .catch(() => {
         this.samplesReady = false;

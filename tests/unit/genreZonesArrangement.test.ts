@@ -85,8 +85,11 @@ describe('ArrangementEngine (§29.7 movement becomes arrangement)', () => {
     expect(run(0.9, 14_000)).toBe('build');
     expect(run(0.9, 9000)).toBe('drop');
     expect(run(0.05, 9000)).toBe('break');
+    // The break steps the kick aside without going silent (§32): the
+    // percussion and the top end still carry it.
     // The break keeps what the player built harmonically, and drops the kick.
-    expect(sectionMix('break').drums).toBeLessThan(0.3);
+    expect(sectionMix('break').drums).toBeLessThan(sectionMix('drop').drums);
+    expect(sectionMix('break').drums).toBeGreaterThan(0.4);
     expect(sectionMix('break').harmony).toBe(1);
   });
 });

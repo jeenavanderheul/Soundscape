@@ -42,12 +42,13 @@ export interface SectionMix {
 
 const MIXES: Record<Section, SectionMix> = {
   none: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 1 },
-  intro: { drums: 0.6, bass: 0.5, harmony: 0.6, melody: 0, texture: 0.4, atmosphere: 1 },
+  intro: { drums: 0.85, bass: 0.7, harmony: 0.6, melody: 0, texture: 0.4, atmosphere: 1 },
   groove: { drums: 1, bass: 1, harmony: 0.8, melody: 0.7, texture: 0.6, atmosphere: 0.8 },
   build: { drums: 1, bass: 1, harmony: 1, melody: 0.9, texture: 1, atmosphere: 0.6 },
   drop: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 0.5 },
-  // The kick steps aside; what the player built harmonically carries the room.
-  break: { drums: 0.15, bass: 0.4, harmony: 1, melody: 0.8, texture: 0.8, atmosphere: 1 },
+  // The kick steps aside — but a break is not silence: the percussion and
+  // the top end carry it, or the track stops sounding like a track (§32).
+  break: { drums: 0.55, bass: 0.5, harmony: 1, melody: 0.8, texture: 0.9, atmosphere: 1 },
   return: { drums: 1, bass: 1, harmony: 0.9, melody: 0.8, texture: 0.7, atmosphere: 0.7 },
   mutation: { drums: 0.8, bass: 0.9, harmony: 0.8, melody: 1, texture: 1, atmosphere: 0.9 },
 };
