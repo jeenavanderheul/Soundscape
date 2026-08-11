@@ -78,7 +78,7 @@ export type SectionStyle = 'driven' | 'swell' | 'dynamic' | 'echo' | 'mutant';
 const STYLE_OVERRIDES: Record<SectionStyle, Partial<Record<Section, Partial<SectionMix>>>> = {
   // The classic: the bottom leaves and comes back.
   driven: {},
-  // Ambient and Classical: nothing is taken away, everything is opened up.
+  // Ambient and Breakbeat: nothing is taken away, everything is opened up.
   swell: {
     build: { drums: 0.5, bass: 0.75, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
     drop: { drums: 0.7, bass: 0.9, harmony: 1, melody: 1, texture: 0.9, atmosphere: 0.9 },

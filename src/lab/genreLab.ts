@@ -29,7 +29,7 @@ import type { Section } from '../music/ArrangementEngine';
 
 const WORLDS: Exclude<TrackGenre, null>[] = [
   'techno', 'garage', 'jazz', 'house', 'ambient',
-  'classical', 'dnb', 'trap', 'dub', 'experimental',
+  'breakbeat', 'dnb', 'trap', 'dub', 'experimental',
 ];
 
 const SECTIONS: Section[] = ['intro', 'groove', 'build', 'drop', 'break', 'return', 'mutation'];
@@ -56,7 +56,7 @@ function finishedTrack(genre: Exclude<TrackGenre, null>, section: Section): Trac
 function affinityFor(genre: Exclude<TrackGenre, null>): GenreAffinity {
   const zero = {
     techno: 0, ambient: 0, jazz: 0, dnb: 0, experimental: 0,
-    garage: 0, house: 0, trap: 0, dub: 0, classical: 0,
+    garage: 0, house: 0, trap: 0, dub: 0, breakbeat: 0,
   };
   return { ...zero, [genre]: 1 };
 }

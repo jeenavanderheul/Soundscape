@@ -11,7 +11,7 @@ import { placeName,
 } from '../../src/genres/ZonePalette';
 import type { GenreAffinity } from '../../src/music/MusicState';
 
-const NONE: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, garage: 0, house: 0, trap: 0, classical: 0, dub: 0, experimental: 0 };
+const NONE: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
 
 describe('§33 zone palette — every direction is a place you can see', () => {
   it('leaves the void neutral', () => {
@@ -102,7 +102,7 @@ describe('§57 a place is its music', () => {
 describe('§59 ten worlds you can tell apart at a glance', () => {
   const WORLDS = [
     'techno', 'garage', 'jazz', 'house', 'ambient',
-    'classical', 'dnb', 'trap', 'dub', 'experimental',
+    'breakbeat', 'dnb', 'trap', 'dub', 'experimental',
   ] as const;
 
   /** Hue in degrees — what "a different colour" actually means to an eye. */
@@ -118,8 +118,8 @@ describe('§59 ten worlds you can tell apart at a glance', () => {
   }
 
   it('no two worlds sit on the same hue', () => {
-    // Classical is deliberately the one without a hue: near-white ivory.
-    const hued = WORLDS.filter((w) => w !== 'classical');
+    // Breakbeat is deliberately the one without a hue: near-white ivory.
+    const hued = WORLDS.filter((w) => w !== 'breakbeat');
     for (const a of hued) {
       for (const b of hued) {
         if (a === b) continue;
@@ -134,8 +134,8 @@ describe('§59 ten worlds you can tell apart at a glance', () => {
     for (const world of WORLDS) {
       const { r, g, b } = GENRE_LOOKS[world].color;
       const spread = Math.max(r, g, b) - Math.min(r, g, b);
-      // Classical is deliberately near-white; everything else is a hue.
-      if (world !== 'classical') expect(`${world}:${spread > 0.3}`).toBe(`${world}:true`);
+      // Breakbeat is deliberately near-white; everything else is a hue.
+      if (world !== 'breakbeat') expect(`${world}:${spread > 0.3}`).toBe(`${world}:true`);
       expect(Math.max(r, g, b)).toBeGreaterThan(0.79);
     }
   });

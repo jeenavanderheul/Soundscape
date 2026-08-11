@@ -56,7 +56,7 @@ export interface MusicalLayerGraph {
   /**
    * §48 production: how hard this grammar's mix pumps and moves. Derived from
    * the grammar's own `drive`, so techno and drum & bass breathe with the kick
-   * while ambient, jazz and classical stay clean and dynamic (user decision).
+   * while ambient, jazz and breakbeat stay clean and dynamic (user decision).
    */
   production?: { duck: number };
 }
@@ -120,7 +120,7 @@ export type EnergyStyle =
   | 'layers'      // techno, house: more voices, more fills
   | 'subdivision' // trap, garage: the hats divide the bar further
   | 'breaks'      // dnb: the break gets busier, ghosts appear
-  | 'texture'     // ambient, classical: more air, more harmonic layers
+  | 'texture'     // ambient, breakbeat: more air, more harmonic layers
   | 'improv'      // jazz: more interplay, busier ride
   | 'echo'        // dub: more skank and more delay
   | 'mutation';   // experimental: more probability, more irregularity
@@ -141,7 +141,7 @@ const THROWS: Record<Exclude<TrackGenre, null> | 'void', readonly [ThrowStyle, T
   dnb: ['riser', 'sweep'],
   jazz: ['bell', 'sweep'],
   ambient: ['bell', 'sweep'],
-  classical: ['bell', 'sweep'],
+  breakbeat: ['bell', 'sweep'],
   dub: ['echo', 'sweep'],
   experimental: ['riser', 'echo'],
   void: ['sweep', 'riser'],
@@ -228,8 +228,10 @@ export type DrumStyle =
   | 'halftime'
   /** §34 dub: one deep kick, then space. */
   | 'echo'
-  /** §34 classical: a timpani, not a machine. */
-  | 'timpani';
+  /** §34 breakbeat: a timpani, not a machine. */
+  | 'timpani'
+  /** §69 breakbeat: a kick that lands broken — never on all four. */
+  | 'broken';
 export type HatStyle =
   | 'offbeat'
   | 'sixteenth'
@@ -239,8 +241,12 @@ export type HatStyle =
   /** §34 garage: skippy, shuffled sixteenths. */
   | 'shuffle'
   /** §34 trap: rolls that subdivide. */
-  | 'roll';
-export type SnareStyle = 'backbeat' | 'ghost' | 'break' | 'body' | 'rim' | 'clap';
+  | 'roll'
+  /** §69 breakbeat: minimal, dark, four hits and gone. */
+  | 'dark';
+export type SnareStyle = 'backbeat' | 'ghost' | 'break' | 'body' | 'rim' | 'clap'
+  /** §69 breakbeat: one hard hit on 3 and 7, driven. */
+  | 'hard';
 export type BassStyle =
   | 'repetitive'
   | 'sub'
@@ -252,13 +258,17 @@ export type BassStyle =
   | 'slide'
   /** §34 dub: a bass that is mostly silence and decay. */
   | 'dubwise'
-  /** §34 classical: the left hand. */
+  /** §34 breakbeat: the left hand. */
+  /** §69 breakbeat: the pressure under the sub — saw, filtered, driven. */
+  | 'pressure'
   | 'arco';
 /** §31: harmony behaves differently per grammar — a stab is not a pad. */
 export type ChordStyle =
   /** §66 garage: short stabs pushed OFF the grid — the signature of two-step. */
   | 'skip'
-  | 'stab' | 'pad' | 'jazz' | 'piano' | 'organ' | 'skank';
+  | 'stab' | 'pad' | 'jazz' | 'piano' | 'organ' | 'skank'
+  /** §69 breakbeat: a stab so sparse it reads as a warning light. */
+  | 'dark';
 export type MelodyStyle =
   | 'motif'
   | 'stab'
@@ -269,7 +279,9 @@ export type MelodyStyle =
   | 'bell'
   | 'vocal'
   | 'melodica';
-export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic' | 'shaker' | 'tape';
+export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic' | 'shaker' | 'tape'
+  /** §69 breakbeat: low atmospheric rumble under everything. */
+  | 'rumble';
 
 export interface GenreGrammar {
   kickStyle: DrumStyle;
@@ -649,39 +661,39 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     harmonySlow: 4,
     melodySlow: 4,
   },
-  // §34 CLASSICAL — orchestration: no drum machine anywhere in this region.
-  classical: {
-    energyStyle: 'texture',
-    sectionStyle: 'swell',
-    // §50 mix and tempo from the reference preset.
-    bpmCentre: 82,
-    kickGain: 0.35,
-    hatGain: 0.06,
-    snareGain: 0.1,
-    bassGain: 0.35,
-    harmonyGain: 0.28,
-    melodyGain: 0.14,
+  // §34 BREAKBEAT — orchestration: no drum machine anywhere in this region.
+  breakbeat: {
+    energyStyle: 'breaks',
+    sectionStyle: 'driven',
+    // §69 BREAKBEAT TECHNO, from the reference preset: 142 BPM, a broken 909
+    // kick, and everything below 300 Hz doing the work.
+    bpmCentre: 142,
+    kickGain: 1.0,
+    hatGain: 0.12,
+    snareGain: 0.82,
+    bassGain: 0.55,
+    harmonyGain: 0.1,
+    melodyGain: 0.12,
     textureGain: 0.02,
-    // §49 the sound of this world: harp bass, piano chords, glockenspiel lead.
-    bassVoice: 'harp',
-    chordVoice: 'piano',
-    leadVoice: 'glockenspiel',
-    kickStyle: 'timpani',
-    hatStyle: 'sparse',
-    snareStyle: 'ghost',
-    bassStyle: 'arco',
-    chordStyle: 'piano',
-    melodyStyle: 'bell',
-    textureStyle: 'tape',
+    bassVoice: 'sawtooth',
+    chordVoice: 'square',
+    leadVoice: 'square',
+    kickStyle: 'broken',
+    hatStyle: 'dark',
+    snareStyle: 'hard',
+    bassStyle: 'pressure',
+    chordStyle: 'dark',
+    melodyStyle: 'stab',
+    textureStyle: 'rumble',
     hatCycle: 4,
     percCycle: 0,
-    drumBank: 'AlesisHR16',
-    percBank: 'AlesisHR16',
-    bpmMin: 60,
-    bpmMax: 110,
-    drive: 0,
-    harmonySlow: 4,
-    melodySlow: 4,
+    drumBank: 'RolandTR909',
+    percBank: 'RolandTR909',
+    bpmMin: 132,
+    bpmMax: 150,
+    drive: 0.45,
+    harmonySlow: 2,
+    melodySlow: 2,
   },
 };
 

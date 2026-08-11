@@ -21,7 +21,7 @@ describe('GenreZones — every direction is a genre (§29.5)', () => {
     expect(at(3)).toBe('house');
     expect(at(4)).toBe('experimental');
     expect(at(5)).toBe('ambient');
-    expect(at(6)).toBe('classical');
+    expect(at(6)).toBe('breakbeat');
     expect(at(7)).toBe('dnb');
     expect(at(8)).toBe('dub');
     expect(at(9)).toBe('trap');
@@ -35,7 +35,7 @@ describe('GenreZones — every direction is a genre (§29.5)', () => {
     expect(between.garage).toBeGreaterThan(0.4);
     // The far side of the compass has no say here.
     expect(between.ambient).toBe(0);
-    expect(between.classical).toBe(0);
+    expect(between.breakbeat).toBe(0);
   });
 
   it('§57 altitude is expression, never a place', () => {

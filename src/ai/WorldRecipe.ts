@@ -60,7 +60,7 @@ const GENRES: readonly RecipeGenre[] = [
   'garage',
   'house',
   'trap',
-  'classical',
+  'breakbeat',
 ];
 const LAYERS: readonly LayerName[] = ['drums', 'bass', 'harmony', 'melody', 'texture', 'atmosphere'];
 
@@ -199,7 +199,7 @@ export function validateRecipe(raw: unknown): RecipeValidation {
         eastNorthEast: oneOf(zonesRaw.eastNorthEast, GENRES, 'jazz'),
         eastSouthEast: oneOf(zonesRaw.eastSouthEast, GENRES, 'house'),
         south: oneOf(zonesRaw.south, GENRES, 'ambient'),
-        southSouthWest: oneOf(zonesRaw.southSouthWest, GENRES, 'classical'),
+        southSouthWest: oneOf(zonesRaw.southSouthWest, GENRES, 'breakbeat'),
         westSouthWest: oneOf(zonesRaw.westSouthWest, GENRES, 'dnb'),
         northNorthWest: oneOf(zonesRaw.northNorthWest, GENRES, 'trap'),
       },

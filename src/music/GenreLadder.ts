@@ -131,15 +131,16 @@ const DUB: readonly LadderStep[] = [
   { layer: 'hats', atMs: 44_000 },
 ];
 
-/** Classical: orchestration. Harmony and melody carry it; percussion is rare. */
-const CLASSICAL: readonly LadderStep[] = [
-  { layer: 'harmony', atMs: 3000 },
-  { layer: 'melody', atMs: 9000 },
-  { layer: 'bass', atMs: 15_000 },
-  { layer: 'texture', atMs: 24_000 },
-  { layer: 'kick', atMs: 36_000 },
-  { layer: 'hats', atMs: 60_000 },
-  { layer: 'snare', atMs: 85_000 },
+/** Breakbeat: orchestration. Harmony and melody carry it; percussion is rare. */
+const BREAKBEAT: readonly LadderStep[] = [
+  // §69: the broken kick first, then everything that gives it weight.
+  { layer: 'kick', atMs: 3000 },
+  { layer: 'bass', atMs: 6000 },
+  { layer: 'snare', atMs: 10_000 },
+  { layer: 'hats', atMs: 14_000 },
+  { layer: 'texture', atMs: 20_000 },
+  { layer: 'harmony', atMs: 28_000 },
+  { layer: 'melody', atMs: 36_000 },
 ];
 
 export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderStep[]> = {
@@ -152,7 +153,7 @@ export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderSte
   house: HOUSE,
   trap: TRAP,
   dub: DUB,
-  classical: CLASSICAL,
+  breakbeat: BREAKBEAT,
 };
 
 /** The neutral void builds like Techno: a pulse you can immediately feel. */

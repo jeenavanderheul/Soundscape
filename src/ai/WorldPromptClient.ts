@@ -53,7 +53,7 @@ The grammars, and what they do to a layer:
 - garage — displacement. Two-step kick leaving beat two empty, shuffled skippy hats, short syncopated sub.
 - house — warmth. Four to the floor, offbeat open hat, clap on 2 and 4, piano or organ chords.
 - trap — weight. Half-time 808 kick that rings, hi-hat rolls that subdivide, sliding sub, bright bells.
-- classical — orchestration. NO drum machine: piano, harp, glockenspiel, marimba, timpani, tubular bells; dynamics carry the form.
+- breakbeat — orchestration. NO drum machine: piano, harp, glockenspiel, marimba, timpani, tubular bells; dynamics carry the form.
 - experimental — mutation. Polymetric cycle lengths (5, 7) against 4, dissonance allowed, fragmentary.
 - dub — echo. Mostly silence, one deep kick, offbeat skank chords, everything drenched in delay feedback.
 

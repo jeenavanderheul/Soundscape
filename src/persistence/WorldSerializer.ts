@@ -174,7 +174,7 @@ function genreSnapshot(raw: unknown): GenreSnapshot | null {
     garage: num(a.garage, 0, 0, 1),
     house: num(a.house, 0, 0, 1),
     trap: num(a.trap, 0, 0, 1),
-    classical: num(a.classical, 0, 0, 1),
+    breakbeat: num(a.breakbeat, 0, 0, 1),
     dub: num(a.dub, 0, 0, 1),
     ambient: num(a.ambient, 0, 0, 1),
     jazz: num(a.jazz, 0, 0, 1),

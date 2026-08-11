@@ -20,7 +20,7 @@ const affinity = (partial: Partial<GenreAffinity>): GenreAffinity => ({
   garage: 0,
   house: 0,
   trap: 0,
-  classical: 0,
+  breakbeat: 0,
   dub: 0,
   dnb: 0,
   experimental: 0,

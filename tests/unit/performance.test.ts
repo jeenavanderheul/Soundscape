@@ -160,12 +160,12 @@ describe('§33 a turn throws one gesture, in the grammar you are in', () => {
     expect(throwStyleFor('techno', 'left')).not.toBe(throwStyleFor('techno', 'right'));
     // A region built on echo throws echo; a drumless one throws a bell.
     expect(throwStyleFor('dub', 'left')).toBe('echo');
-    expect(throwStyleFor('classical', 'left')).toBe('bell');
+    expect(throwStyleFor('breakbeat', 'left')).toBe('bell');
     expect(throwStyleFor(null, 'left')).toBeTruthy();
   });
 
   it('renders to a real one-shot voice for every style', () => {
-    for (const genre of ['techno', 'dub', 'classical', 'dnb', null] as const) {
+    for (const genre of ['techno', 'dub', 'breakbeat', 'dnb', null] as const) {
       for (const side of ['left', 'right'] as const) {
         const code = buildPatternCode(createEmptyLayerGraph(120), [
           { kind: 'throw', gain: 0.5, style: throwStyleFor(genre, side) },
@@ -208,7 +208,7 @@ describe('§48 production: the grammar decides how hard the mix works', () => {
     expect(bassLine).toMatch(/\.duckdepth\(0?\.\d+\)/);
   });
 
-  it('never pumps a grammar that has no drive (ambient, jazz, classical)', () => {
+  it('never pumps a grammar that has no drive (ambient, jazz, breakbeat)', () => {
     const code = render(0);
     expect(code).not.toContain('.duckorbit(');
     expect(code).not.toContain('.lastOf(');

@@ -40,7 +40,7 @@ export interface GenreAffinity {
   garage: number;
   house: number;
   trap: number;
-  classical: number;
+  breakbeat: number;
   dub: number;
   experimental: number;
 }
@@ -54,7 +54,7 @@ export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = [
   'garage',
   'house',
   'trap',
-  'classical',
+  'breakbeat',
   'dub',
   'experimental',
 ];

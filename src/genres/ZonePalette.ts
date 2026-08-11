@@ -51,8 +51,8 @@ export const GENRE_LOOKS: Record<keyof GenreAffinity, ZoneLook> = {
   trap: { color: { r: 1.0, g: 0.08, b: 0.72 }, relief: 0.95, haze: 0.22 },
   // Almost black-green, cut by deep ravines: the echo chamber below.
   dub: { color: { r: 0.0, g: 0.85, b: 0.62 }, relief: 0.65, haze: 0.7 },
-  // Ivory, wide and low: a hall rather than a landscape.
-  classical: { color: { r: 1.0, g: 0.97, b: 0.86 }, relief: 0.22, haze: 0.45 },
+  // §69 steel green: hard, cold, industrial — the colour of a broken machine.
+  breakbeat: { color: { r: 0.1, g: 1.0, b: 0.55 }, relief: 0.22, haze: 0.45 },
 };
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));

@@ -241,17 +241,18 @@ function styleOf<T extends string>(value: unknown, allowed: readonly T[], fallba
 
 const KICK_STYLES = [
   'four', 'break', 'sparse', 'swing', 'irregular', 'twostep', 'halftime', 'echo', 'timpani',
+  'broken',
 ] as const;
-const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse', 'dirt', 'shuffle', 'roll'] as const;
-const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body', 'rim', 'clap'] as const;
+const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse', 'dirt', 'shuffle', 'roll', 'dark'] as const;
+const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body', 'rim', 'clap', 'hard'] as const;
 const BASS_STYLES = [
-  'repetitive', 'sub', 'walking', 'rolling', 'skip', 'slide', 'dubwise', 'arco',
+  'repetitive', 'sub', 'walking', 'rolling', 'skip', 'slide', 'dubwise', 'arco', 'pressure',
 ] as const;
-const CHORD_STYLES = ['stab', 'pad', 'jazz', 'piano', 'organ', 'skank', 'skip'] as const;
+const CHORD_STYLES = ['stab', 'pad', 'jazz', 'piano', 'organ', 'skank', 'skip', 'dark'] as const;
 const MELODY_STYLES = [
   'motif', 'stab', 'long', 'improv', 'hook', 'fragment', 'bell', 'vocal', 'melodica',
 ] as const;
-const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic', 'shaker', 'tape'] as const;
+const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic', 'shaker', 'tape', 'rumble'] as const;
 
 /**
  * Whitelisted template library (spec §11, §29.5): primitive kind + genre
@@ -316,6 +317,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `stack(s("bd ~ ~ [~ bd]")${drumBank}.shape(.2).gain(${gain}), s("<rim rim [rim rim] rim>")${percBank}.fast(2).gain(${(Number(gain) * 0.3).toFixed(3)}).pan("<.2 .8 .4 .65>"))`
             : `s("sbd ~ ~ [~ sbd]").gain(${gain})`;
+        // §69 breakbeat: bd ~ ~ bd ~ ~ [bd ~] ~ — it never lands on all four,
+        // and it is driven hard enough to be the loudest thing in the mix.
+        case 'broken':
+          return samplesLoaded
+            ? `s("bd ~ ~ bd ~ ~ [bd ~] ~")${drumBank}${shaped}.gain(${gain})`
+            : `s("sbd ~ ~ sbd ~ ~ [sbd ~] ~").gain(${gain})`;
         // §9.2 space: a distant heartbeat, one hit per bar.
         case 'sparse':
           return samplesLoaded
@@ -346,7 +353,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `s("bd ~ ~ ~ bd ~ ~ ~")${drumBank}.room(.4).lpf(180).gain(${gain})`
             : `s("sbd ~ ~ ~ sbd ~ ~ ~").room(.4).gain(${gain})`;
-        // §34 classical: this region has no drum machine at all.
+        // §34 breakbeat: this region has no drum machine at all.
         case 'timpani':
           return samplesLoaded
             ? `s("timpani ~ ~ ~").room(.6).gain(${gain})`
@@ -375,6 +382,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         return samplesLoaded
           ? `s("~ ~ rim ~")${percBank}.room(.25).gain(${gain})`
           : `s("~ ~ white ~").decay(.05).sustain(0).bpf(2400).room(.25).gain(${gain})`;
+      }
+      // §69 breakbeat: one hard snare on 3 and 7, shaped.
+      if (style === 'hard') {
+        return samplesLoaded
+          ? `s("~ ~ sd ~ ~ ~ sd ~")${drumBank}${shaped}.gain(${gain})`
+          : `s("~ ~ white ~ ~ ~ white ~").decay(.14).sustain(0).bpf(1500)${shaped}.gain(${gain})`;
       }
       // §66b garage/house: the clap IS the backbeat — eight steps, on 3 and 7,
       // dry, exactly as the reference preset writes it.
@@ -435,6 +448,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `s("hh*8 [hh*16] hh*8 [hh*32]")${percBank}.gain("${gain} ${(Number(gain) * 0.6).toFixed(3)}")`
             : `s("white*8 [white*16] white*8 [white*32]").decay(.02).sustain(0).hpf(8000).gain(${gain})`;
+        // §69 breakbeat: four dark hits and gone — hh ~ ~ hh ~ hh ~ ~.
+        case 'dark':
+          return samplesLoaded
+            ? `s("hh ~ ~ hh ~ hh ~ ~")${drumBank}.lpf(4200).gain(${gain})`
+            : `s("white ~ ~ white ~ white ~ ~").decay(.03).sustain(0).hpf(6000).lpf(4200).gain(${gain})`;
         case 'sixteenth':
           return samplesLoaded
             ? `stack(s("hh*16")${drumBank}.hpf(6500).gain("${(Number(gain) * 0.5).toFixed(2)} ${gain} ${(Number(gain) * 0.4).toFixed(2)} ${(Number(gain) * 1.1).toFixed(2)}"), s("~ oh ~ oh")${drumBank}.hpf(5000).gain(${(Number(gain) * 0.8).toFixed(3)}))`
@@ -512,9 +530,13 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           // register must stay perceptible).
           return `note("<${root} ~ ${notes[2] ?? root} ~>").s("sine").penv(-12).pdec(.14).decay(.9).sustain(.3).lpf(560).shape(.25).gain(${gain})`;
         // §34 dub: mostly silence, and a long decay into the room.
+        // §69 breakbeat: the pressure under the sub — a saw, filtered low and
+        // driven, on the same broken figure as the kick.
+        case 'pressure':
+          return `note("${notes[0] ?? root} ~ ~ ${notes[0] ?? root} ~ ${notes[1] ?? root} ${notes[2] ?? root} ~").s("sawtooth").lpf(240).shape(.65).gain(${gain})`;
         case 'dubwise':
           return `note("<${root} ~ ~ [${notes[1] ?? root} ~] ~ ~ ${notes[2] ?? root} ~>").s("sine").decay(.5).sustain(.2).room(.3).gain(${gain})`;
-        // §34 classical: the left hand, bowed and sustained.
+        // §34 breakbeat: the left hand, bowed and sustained.
         case 'arco':
           return `note("<${root} ~ ${notes[2] ?? root} ~>").s("triangle").attack(.4).release(1.2).room(.5).gain(${gain})`;
         case 'rolling':
@@ -543,7 +565,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         if (style === 'jazz') {
           return `note("[${stacked}]").s("triangle").slow(${slow}).lpf(2200).decay(.5).sustain(.25).late(.02).room(.25).gain(${gain})`;
         }
-        // §34 house/classical: real hands on a real instrument.
+        // §34 house/breakbeat: real hands on a real instrument.
         if (style === 'piano') {
           return `note("[${stacked}]").s("piano").slow(${slow}).room(.3).gain(${gain})`;
         }
@@ -557,6 +579,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           // §66b reference preset: <[f3 ab3 c4] ~ …> — the chord lands, then a
           // whole bar of air. The hole is the hook.
           return `note("<[${stacked}] ~>").s("triangle").slow(${slow}).gain(${gain})`;
+        }
+        // §69 breakbeat: one dark stab every other bar, and nothing else.
+        if (style === 'dark') {
+          return `note("<[${stacked}] ~ ~ ~>").s("square").slow(${slow}).lpf(550).gain(${gain})`;
         }
         // §34 dub: the off-beat skank, drowned in delay.
         if (style === 'skank') {
@@ -583,7 +609,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // Techno: not a tune but a dark stab — the hook is the rhythm.
         case 'stab':
           return `note("${notes}").s("square").slow(${slow}).lpf("<500 900 650 1300>")${shaped}.decay(.18).sustain(0).gain(${gain})`;
-        // §34 trap/classical: bells and mallets, bright and struck.
+        // §34 trap/breakbeat: bells and mallets, bright and struck.
         case 'bell':
           return `note("${notes}").s("glockenspiel").slow(${slow}).room(.45).gain(${gain})`;
         // §34 garage: the chopped vocal-like hook.
@@ -639,7 +665,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `s("shaker_small*8").gain(${gain})`
             : `s("white*8").decay(.02).sustain(0).hpf(8000).gain(${gain})`;
-        // §34 dub/classical: air and tape, the room breathing.
+        // §34 dub/breakbeat: air and tape, the room breathing.
+        // §69 breakbeat: low rumble under everything, felt more than heard.
+        case 'rumble':
+          return `s("white").slow(4).lpf(400).room(.75).gain(${gain})`;
         case 'tape':
           return `s("brown").slow(6).lpf(900).room(.7).gain(${gain})`;
         // DnB: high-frequency noise riding over the break.
@@ -814,7 +843,7 @@ function applyProduction(
   const orbit = LAYER_ORBIT[layer];
   if (orbit !== undefined && !out.includes('.orbit(')) out += `.orbit(${orbit})`;
   const duck = (DUCKED[layer] ?? 0) * production.duck;
-  // Ambient, jazz and classical have drive 0, so they never pump — a swelling
+  // Ambient, jazz and breakbeat have drive 0, so they never pump — a swelling
   // pad ducking under a kick that is not there would be nonsense.
   if (duck > 0.05 && !out.includes('.duckorbit(')) {
     out += `.duckorbit(1).duckdepth(${duck.toFixed(2)}).duckattack(.06)`;

@@ -64,7 +64,7 @@ let assignment: Record<Compass, GroundGenre> = {
   eastSouthEast: 'house',
   southSouthEast: 'experimental',
   south: 'ambient',
-  southSouthWest: 'classical',
+  southSouthWest: 'breakbeat',
   westSouthWest: 'dnb',
   westNorthWest: 'dub',
   northNorthWest: 'trap',
@@ -91,7 +91,7 @@ export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreA
     garage: 0,
     house: 0,
     trap: 0,
-    classical: 0,
+    breakbeat: 0,
     dub: 0,
     experimental: 0,
   };
@@ -102,7 +102,7 @@ export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreA
     // §56 HARD RULE: the world you are IN is the world you are flying INTO.
     // `flightHeading` is the direction the orb is travelling; without it the
     // bearing from spawn decides, and then the HUD can honestly say
-    // "flying: E · jazz" next to "here: classical" — which is nonsense to a
+    // "flying: E · jazz" next to "here: breakbeat" — which is nonsense to a
     // player. Distance from spawn still gates it, so the start is neutral.
     // atan2(x, -z): 0 points north, +π/2 east — matches HEADINGS.
     const heading = flightHeading ?? Math.atan2(position.x, -position.z);

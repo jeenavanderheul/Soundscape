@@ -192,9 +192,9 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
     mix: { root: 4, canopy: 2.5, trunk: 0.8, spore: 1.5, thin: 0.3 },
   },
   // Hall forest: colonnades — the most ordered ecosystem of all.
-  classical: {
-    name: 'HALL FOREST',
-    forms: ['arch', 'pillar'],
+  breakbeat: {
+    name: 'BROKEN FOREST',
+    forms: ['monolith', 'shard'],
     formBias: 0.55,
     density: 0.8,
     heightScale: 1.4,

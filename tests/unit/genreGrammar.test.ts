@@ -27,7 +27,7 @@ import { LEVEL_DEEP, createInitialTrackState, TrackEvents, type TrackGenre } fro
 const ROAMING: FlightState = { velocity: 12, hz: 220, energy: 0.5 };
 
 function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
-  const zero: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, garage: 0, house: 0, trap: 0, classical: 0, dub: 0, experimental: 0 };
+  const zero: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
   return { ...zero, [genre]: 0.9 };
 }
 
@@ -199,7 +199,7 @@ describe('§49 every world has its own voices', () => {
     expect(techno.chordVoice).not.toBe(jazz.chordVoice);
     // Acoustic where the genre is acoustic, synthetic where it is synthetic.
     expect(['sine', 'square', 'sawtooth', 'triangle']).toContain(techno.bassVoice);
-    expect(genreGrammar('classical').chordVoice).toBe('piano');
+    expect(genreGrammar('breakbeat').chordVoice).toBe('square'); // §69: a machine, not a hall
     expect(genreGrammar('dub').leadVoice).toBe('harmonica');
   });
 
@@ -225,7 +225,7 @@ describe('§50 the reference presets are the tempo and the mix', () => {
     expect(at('jazz')).toBe(110);
     expect(at('house')).toBe(124);
     expect(at('ambient')).toBe(70);
-    expect(at('classical')).toBe(82);
+    expect(at('breakbeat')).toBe(142); // §69 breakbeat techno
     expect(at('dnb')).toBe(174);
     expect(at('trap')).toBe(140);
     expect(at('experimental')).toBe(118);
@@ -239,9 +239,10 @@ describe('§50 the reference presets are the tempo and the mix', () => {
       expect(g.bassGain).toBeGreaterThan(g.harmonyGain);
       expect(g.harmonyGain).toBeGreaterThanOrEqual(g.melodyGain);
     }
-    // Ambient and classical invert it: the kick is the quietest thing there.
+    // Ambient and breakbeat invert it: the kick is the quietest thing there.
     expect(genreGrammar('ambient').kickGain).toBeLessThan(genreGrammar('ambient').bassGain);
-    expect(genreGrammar('classical').kickGain).toBeLessThan(genreGrammar('classical').harmonyGain * 2);
+    // §69 breakbeat is driven, not orchestral: the kick leads everything.
+    expect(genreGrammar('breakbeat').kickGain).toBeGreaterThan(genreGrammar('breakbeat').bassGain);
   });
 });
 
@@ -355,7 +356,7 @@ describe('§61 a section means something different in every world', () => {
   it('every grammar declares how it means its sections', () => {
     const worlds = [
       'techno', 'garage', 'jazz', 'house', 'ambient',
-      'classical', 'dnb', 'trap', 'dub', 'experimental',
+      'breakbeat', 'dnb', 'trap', 'dub', 'experimental',
     ] as const;
     for (const world of worlds) {
       expect(genreGrammar(world).sectionStyle).toBeTruthy();
@@ -410,7 +411,7 @@ describe('§62 speed is energy, and every world spends it its own way', () => {
   it('every grammar declares how it spends energy', () => {
     const worlds = [
       'techno', 'garage', 'jazz', 'house', 'ambient',
-      'classical', 'dnb', 'trap', 'dub', 'experimental',
+      'breakbeat', 'dnb', 'trap', 'dub', 'experimental',
     ] as const;
     for (const world of worlds) expect(genreGrammar(world).energyStyle).toBeTruthy();
     expect(genreGrammar('dnb').energyStyle).toBe('breaks');

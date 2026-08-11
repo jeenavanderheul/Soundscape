@@ -59,7 +59,7 @@ const EXPECTED = {
   ESE: 'house',
   SSE: 'experimental',
   S: 'ambient',
-  SSW: 'classical',
+  SSW: 'breakbeat',
   WSW: 'dnb',
   WNW: 'dub',
   NNW: 'trap',
@@ -87,10 +87,10 @@ describe('the journey: neutral start → a direction → that world', () => {
   });
 
   it('§56 what the HUD says you are flying into is what you are in', () => {
-    // Deep in Classical, heading east: `flying: E · jazz` must mean jazz.
-    const inClassical = { x: -200, z: 200 };
-    expect(regionFlying(inClassical, COMPASS.ENE)).toBe('jazz');
-    expect(regionFlying(inClassical, COMPASS.N)).toBe('techno');
+    // Deep in Breakbeat, heading east: `flying: E · jazz` must mean jazz.
+    const inBreakbeat = { x: -200, z: 200 };
+    expect(regionFlying(inBreakbeat, COMPASS.ENE)).toBe('jazz');
+    expect(regionFlying(inBreakbeat, COMPASS.N)).toBe('techno');
   });
 });
 

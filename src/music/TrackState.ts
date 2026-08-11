@@ -25,7 +25,7 @@ export type TrackGenre =
   | 'garage'
   | 'house'
   | 'trap'
-  | 'classical'
+  | 'breakbeat'
   | 'dub'
   | 'experimental'
   | null;

@@ -39,7 +39,7 @@ const ZERO_AFFINITY: GenreAffinity = {
   garage: 0,
   house: 0,
   trap: 0,
-  classical: 0,
+  breakbeat: 0,
   dub: 0,
   experimental: 0,
 };
