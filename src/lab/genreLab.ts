@@ -89,12 +89,18 @@ const MIX: Knob[] = LAYER_NAMES.filter((l) => l !== 'events').map((layer) => ({
   value: 1,
 }));
 
+const ALL_KNOBS = [...FLIGHT, ...MIX];
 const values = new Map<string, number>();
-for (const knob of [...FLIGHT, ...MIX]) values.set(knob.id, knob.value);
+for (const knob of ALL_KNOBS) values.set(knob.id, knob.value);
+/** Every slider element, so `reset` can put them back where they started. */
+const inputs = new Map<string, HTMLInputElement>();
+/** What the grammar itself says, before anything on this page touched it. */
+const DEFAULT_SECTION: Section = 'drop';
 
 let genre: Exclude<TrackGenre, null> = 'techno';
 let section: Section = 'drop';
 let playing = false;
+const sectionSelect = document.createElement('select');
 
 const audio = new AudioEngine();
 const strudel = new StrudelEngine();
@@ -124,8 +130,30 @@ function knobRow(knob: Knob, onInput: () => void): HTMLElement {
     print();
     onInput();
   });
+  inputs.set(knob.id, input);
+  knobPrinters.set(knob.id, print);
   label.append(name, input, out);
   return label;
+}
+
+/** Redraws a knob's read-out after `reset` moves it. */
+const knobPrinters = new Map<string, () => void>();
+
+/**
+ * Back to what the grammar says: every slider to its default and the section
+ * to the drop. Tuning is only useful if you can hear the untouched version
+ * again in one click.
+ */
+function resetKnobs(): void {
+  for (const knob of ALL_KNOBS) {
+    values.set(knob.id, knob.value);
+    const input = inputs.get(knob.id);
+    if (input) input.value = String(knob.value);
+    knobPrinters.get(knob.id)?.();
+  }
+  section = DEFAULT_SECTION;
+  sectionSelect.value = DEFAULT_SECTION;
+  apply();
 }
 
 /** Everything the sliders say, turned into the graph the engine plays. */
@@ -232,7 +260,6 @@ for (const knob of FLIGHT) flightPanel.appendChild(knobRow(knob, apply));
 const sectionLabel = document.createElement('label');
 const sectionName = document.createElement('span');
 sectionName.textContent = 'section';
-const sectionSelect = document.createElement('select');
 for (const name of SECTIONS) {
   const option = document.createElement('option');
   option.value = name;
@@ -252,4 +279,8 @@ for (const knob of MIX) mixPanel.appendChild(knobRow(knob, apply));
 
 $('play').addEventListener('click', () => void start());
 $('stop').addEventListener('click', stop);
+$('reset').addEventListener('click', () => {
+  resetKnobs();
+  status.textContent = playing ? `back to defaults · ${genre}` : 'back to defaults';
+});
 apply();
