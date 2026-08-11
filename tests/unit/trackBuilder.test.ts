@@ -212,7 +212,7 @@ describe('graph from TrackState (§29.3 ghost → kick → clap)', () => {
     const graph = buildLayerGraph(music, undefined, [], track);
     const pulse = graph.layers.drums.primitives.find((p) => p.id === 'pulse')!;
     expect(pulse.parameters['gain']).toBeGreaterThanOrEqual(0.8);
-    expect(buildPatternCode(graph)).toContain('[~ white ~ white]');
+    expect(buildPatternCode(graph)).toContain('~ ~ white ~ ~ ~ white ~'); // §66b clap on 3 and 7
   });
 
   it('renders bass, harmony and melody once they are earned (§29.2 fase 3-5)', () => {

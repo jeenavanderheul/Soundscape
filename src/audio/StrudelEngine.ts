@@ -136,9 +136,11 @@ export const DRUM_BANKS = new Set([
   'RolandTR808', 'RolandTR909', 'SakataDPM48', 'SequentialCircuitsDrumtracks', 'YamahaRY30',
 ]);
 const DEFAULT_BANK = 'RolandTR909';
+/** A grammar that names this plays the plain kit, with no `.bank()` at all. */
+export const PLAIN_KIT = 'none';
 /**
  * The sample maps strudel.cc itself loads. @strudel/web ships none of them,
- * which is why `.bank("RolandTR909")` resolved to nothing and oh/rim did not
+ * which is why `${drumBank}` resolved to nothing and oh/rim did not
  * exist at all. Maps are JSON only — individual audio files are still fetched
  * lazily on first hit, so this costs a few hundred KB, not a library.
  *
@@ -288,6 +290,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
     typeof value === 'string' && DRUM_BANKS.has(value) ? value : DEFAULT_BANK;
   const DRUM_BANK = bankOf(p['bank']);
   const PERC_BANK = bankOf(p['percBank'] ?? p['bank']);
+  // §66b: a grammar may ask for the plain kit — UK garage's reference preset
+  // names no machine at all, and that bare kit IS part of how it sounds.
+  const plain = p['bank'] === PLAIN_KIT;
+  const drumBank = plain ? '' : `.bank("${DRUM_BANK}")`;
+  const percBank = plain ? '' : `.bank("${PERC_BANK}")`;
   const shaped = drive > 0 ? `.shape(${drive.toFixed(2)})` : '';
   // §30: authored/AI source is rendered ONLY if it passes the allowlist
   // grammar — the same boundary every other parameter crosses.
@@ -307,37 +314,37 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §9.4 velocity: the kick is chopped into a break.
         case 'break':
           return samplesLoaded
-            ? `stack(s("bd ~ ~ [~ bd]").bank("${DRUM_BANK}").shape(.2).gain(${gain}), s("<rim rim [rim rim] rim>").bank("${PERC_BANK}").fast(2).gain(${(Number(gain) * 0.3).toFixed(3)}).pan("<.2 .8 .4 .65>"))`
+            ? `stack(s("bd ~ ~ [~ bd]")${drumBank}.shape(.2).gain(${gain}), s("<rim rim [rim rim] rim>")${percBank}.fast(2).gain(${(Number(gain) * 0.3).toFixed(3)}).pan("<.2 .8 .4 .65>"))`
             : `s("sbd ~ ~ [~ sbd]").gain(${gain})`;
         // §9.2 space: a distant heartbeat, one hit per bar.
         case 'sparse':
           return samplesLoaded
-            ? `s("bd ~ ~ ~").bank("${DRUM_BANK}").gain(${gain})`
+            ? `s("bd ~ ~ ~")${drumBank}.gain(${gain})`
             : `s("sbd ~ ~ ~").gain(${gain})`;
         // §9.3 conversation: pushed off the grid.
         case 'swing':
           // §50 reference preset: the kick and the snare trade over eight steps.
           return samplesLoaded
-            ? `s("bd ~ ~ sd ~ bd ~ sd").bank("${DRUM_BANK}").gain(${gain})`
+            ? `s("bd ~ ~ sd ~ bd ~ sd")${drumBank}.gain(${gain})`
             : `s("sbd ~ ~ white ~ sbd ~ white").gain(${gain})`;
         // §34 garage: TWO-STEP. The second beat is left empty on purpose —
         // that hole is what the whole groove leans into.
         case 'twostep':
-          // §50 reference preset: bd ~ ~ bd ~ ~ ~ bd — beat two stays empty.
+          // §66b reference preset, to the letter: bd ~ ~ bd ~ ~ ~ bd, plain kit.
           return samplesLoaded
-            ? `s("bd ~ ~ bd ~ ~ ~ bd").bank("${DRUM_BANK}")${shaped}.gain(${gain})`
+            ? `s("bd ~ ~ bd ~ ~ ~ bd")${drumBank}${shaped}.gain(${gain})`
             : `s("sbd ~ ~ sbd ~ ~ ~ sbd").gain(${gain})`;
         // §34 trap: half-time, and the 808 is allowed to ring.
         case 'halftime':
           // §50 reference preset: bd ~ ~ bd ~ ~ bd ~, and the 808 rings.
           return samplesLoaded
-            ? `s("bd ~ ~ bd ~ ~ bd ~").bank("${PERC_BANK}").lpf(120)${shaped}.gain(${gain})`
+            ? `s("bd ~ ~ bd ~ ~ bd ~")${percBank}.lpf(120)${shaped}.gain(${gain})`
             : `s("sbd ~ ~ sbd ~ ~ sbd ~").gain(${gain})`;
         // §34 dub: one kick, then room for the echo to answer.
         case 'echo':
           // §50 reference preset: bd ~ ~ ~ bd ~ ~ ~ — mostly space.
           return samplesLoaded
-            ? `s("bd ~ ~ ~ bd ~ ~ ~").bank("${DRUM_BANK}").room(.4).lpf(180).gain(${gain})`
+            ? `s("bd ~ ~ ~ bd ~ ~ ~")${drumBank}.room(.4).lpf(180).gain(${gain})`
             : `s("sbd ~ ~ ~ sbd ~ ~ ~").room(.4).gain(${gain})`;
         // §34 classical: this region has no drum machine at all.
         case 'timpani':
@@ -347,12 +354,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §9.5 mutation: grouping that refuses to settle.
         case 'irregular':
           return samplesLoaded
-            ? `s("[bd ~ ~] [bd ~] [~ bd]").bank("${DRUM_BANK}").gain(${gain})`
+            ? `s("[bd ~ ~] [bd ~] [~ bd]")${drumBank}.gain(${gain})`
             : `s("[sbd ~ ~] [sbd ~] [~ sbd]").gain(${gain})`;
         default:
           // Per-step velocity keeps a straight kick from sounding mechanical.
           return samplesLoaded
-            ? `s("bd*${steps}").bank("${DRUM_BANK}").gain("${gain} ${(Number(gain) * 0.94).toFixed(2)} ${gain} ${(Number(gain) * 0.96).toFixed(2)}")${shaped}`
+            ? `s("bd*${steps}")${drumBank}.gain("${gain} ${(Number(gain) * 0.94).toFixed(2)} ${gain} ${(Number(gain) * 0.96).toFixed(2)}")${shaped}`
             : `s("sbd*${steps}").gain(${gain})`;
       }
     }
@@ -360,82 +367,92 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const style = styleOf(p['style'], SNARE_STYLES, 'backbeat');
       if (style === 'ghost') {
         return samplesLoaded
-          ? `s("[~ cp ~ cp]").bank("${DRUM_BANK}").degradeBy(.4).gain(${gain})`
+          ? `s("[~ cp ~ cp]")${drumBank}.degradeBy(.4).gain(${gain})`
           : `s("[~ white ~ white]").decay(.06).sustain(0).bpf(1500).degradeBy(.4).gain(${gain})`;
       }
       // §34 trap/dub: a rim on the third beat instead of a backbeat.
       if (style === 'rim') {
         return samplesLoaded
-          ? `s("~ ~ rim ~").bank("${PERC_BANK}").room(.25).gain(${gain})`
+          ? `s("~ ~ rim ~")${percBank}.room(.25).gain(${gain})`
           : `s("~ ~ white ~").decay(.05).sustain(0).bpf(2400).room(.25).gain(${gain})`;
       }
-      // §34 garage/house: the clap IS the backbeat, wide and bright.
+      // §66b garage/house: the clap IS the backbeat — eight steps, on 3 and 7,
+      // dry, exactly as the reference preset writes it.
       if (style === 'clap') {
         return samplesLoaded
-          ? `s("~ cp ~ cp").bank("RolandTR909").room(.2).gain(${gain})`
+          ? `s("~ ~ cp ~ ~ ~ cp ~")${drumBank}.gain(${gain})`
           : `s("~ white ~ white").decay(.1).sustain(0).bpf(1700).room(.2).gain(${gain})`;
       }
       // §32: the second snare — an 808 body a hair behind the clap.
       if (style === 'body') {
         return samplesLoaded
-          ? `s("~ sd ~ sd").bank("${PERC_BANK}").late(.01).gain(${gain})`
+          ? `s("~ sd ~ sd")${percBank}.late(.01).gain(${gain})`
           : `s("~ white ~ white").decay(.12).sustain(0).bpf(1200).late(.01).gain(${gain})`;
       }
       if (style === 'break') {
         return samplesLoaded
-          ? `s("~ sd ~ [sd ~]").bank("${PERC_BANK}").room(.08).gain(${gain})`
+          ? `s("~ sd ~ [sd ~]")${percBank}.room(.08).gain(${gain})`
           : `s("[~ white] [white ~ white ~]").decay(.07).sustain(0).bpf(1900).gain(${gain})`;
       }
       return samplesLoaded
-        ? `s("[~ cp]*2").bank("${DRUM_BANK}").room(.12).gain(${gain})`
-        : `s("[~ white ~ white]").decay(.09).sustain(0).bpf(1800).gain(${gain})`;
+        // §66b reference preset: ~ ~ cp ~ ~ ~ cp ~ — dry, and on the plain
+        // kit when the grammar asked for one.
+        ? `s("~ ~ cp ~ ~ ~ cp ~")${drumBank}.gain(${gain})`
+        : `s("~ ~ white ~ ~ ~ white ~").decay(.09).sustain(0).bpf(1800).gain(${gain})`;
     }
     case 'hat': {
       const style = styleOf(p['style'], HAT_STYLES, 'offbeat');
       // A cycle length that is not a power of two runs against the 4/4 grid
       // and only realigns after many bars: polymeter on one clock (§31).
       const cycle = Math.round(clamp(finite(p['cycle'] ?? 4, `${primitive.id}.cycle`), 2, 16));
-      if (cycle !== 4) {
+      // §66c: a cycle other than four is polymeter (§31) — or, since §62,
+      // energy asking a grammar to subdivide. Either way it must NOT replace a
+      // style that has a figure of its own: doing so took UK garage's shuffle
+      // away the moment the player flew hard, which is the one thing that
+      // makes it UK garage.
+      const hasOwnFigure = style === 'shuffle' || style === 'swing' || style === 'roll';
+      if (cycle !== 4 && !hasOwnFigure) {
         return samplesLoaded
-          ? `s("hh*${cycle}").bank("${DRUM_BANK}").hpf(8000).gain(${gain})`
+          ? `s("hh*${cycle}")${drumBank}.hpf(8000).gain(${gain})`
           : `s("white*${cycle}").decay(.03).sustain(0).hpf(8000).gain(${gain})`;
       }
       // §32: the second hat voice — 32nds of dirt at the very top.
       if (style === 'dirt') {
         return samplesLoaded
-          ? `s("hh*32").bank("${DRUM_BANK}").hpf(9500).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 1.2).toFixed(3)}")`
+          ? `s("hh*32")${drumBank}.hpf(9500).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 1.2).toFixed(3)}")`
           : `s("white*32").decay(.015).sustain(0).hpf(9500).gain(${gain})`;
       }
       switch (style) {
         // §34 garage: skippy shuffled sixteenths — the displacement itself.
         case 'shuffle':
-          // §50 reference preset: ~ hh ~ [hh hh] ~ hh ~ hh — skippy, pushed late.
+          // §66b reference preset: ~ hh ~ [hh hh] ~ hh ~ hh. No open hat over
+          // it and no push — the figure itself is the shuffle.
           return samplesLoaded
-            ? `stack(s("~ hh ~ [hh hh] ~ hh ~ hh").bank("${DRUM_BANK}").late("<0 .02 .01 .03>").gain("${gain} ${(Number(gain) * 0.5).toFixed(3)} ${(Number(gain) * 0.85).toFixed(3)} ${(Number(gain) * 0.4).toFixed(3)}"), s("~ ~ oh ~").bank("RolandTR909").gain(${(Number(gain) * 0.7).toFixed(3)}))`
-            : `s("white*8").decay(.03).sustain(0).hpf(7000).late("<0 .02 .01 .03>").gain(${gain})`;
+            ? `s("~ hh ~ [hh hh] ~ hh ~ hh")${drumBank}.gain(${gain})`
+            : `s("~ white ~ [white white] ~ white ~ white").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
         // §34 trap: rolls that subdivide the bar under your feet.
         case 'roll':
           return samplesLoaded
-            ? `s("hh*8 [hh*16] hh*8 [hh*32]").bank("${PERC_BANK}").gain("${gain} ${(Number(gain) * 0.6).toFixed(3)}")`
+            ? `s("hh*8 [hh*16] hh*8 [hh*32]")${percBank}.gain("${gain} ${(Number(gain) * 0.6).toFixed(3)}")`
             : `s("white*8 [white*16] white*8 [white*32]").decay(.02).sustain(0).hpf(8000).gain(${gain})`;
         case 'sixteenth':
           return samplesLoaded
-            ? `stack(s("hh*16").bank("${DRUM_BANK}").hpf(6500).gain("${(Number(gain) * 0.5).toFixed(2)} ${gain} ${(Number(gain) * 0.4).toFixed(2)} ${(Number(gain) * 1.1).toFixed(2)}"), s("~ oh ~ oh").bank("${DRUM_BANK}").hpf(5000).gain(${(Number(gain) * 0.8).toFixed(3)}))`
+            ? `stack(s("hh*16")${drumBank}.hpf(6500).gain("${(Number(gain) * 0.5).toFixed(2)} ${gain} ${(Number(gain) * 0.4).toFixed(2)} ${(Number(gain) * 1.1).toFixed(2)}"), s("~ oh ~ oh")${drumBank}.hpf(5000).gain(${(Number(gain) * 0.8).toFixed(3)}))`
             : `s("white*8").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
         case 'swing':
           // §50 reference preset: hh ~ hh [hh hh] hh ~ hh ~ — brushed, uneven.
           return samplesLoaded
-            ? `s("hh ~ hh [hh hh] hh ~ hh ~").bank("${DRUM_BANK}").gain(${gain})`
+            ? `s("hh ~ hh [hh hh] hh ~ hh ~")${drumBank}.gain(${gain})`
             : `s("white ~ white [white white] white ~ white ~").decay(.035).sustain(0).hpf(6500).gain(${gain})`;
         case 'sparse':
           return samplesLoaded
-            ? `s("~ ~ oh ~").bank("${DRUM_BANK}").gain(${gain})`
+            ? `s("~ ~ oh ~")${drumBank}.gain(${gain})`
             : `s("~ ~ white ~").decay(.05).sustain(0).hpf(5000).gain(${gain})`;
         default:
           // Offbeat open hat, with ghost sixteenths underneath (the classic
           // four-to-the-floor lift).
           return samplesLoaded
-            ? `stack(s("[~ oh]*4").bank("${DRUM_BANK}").gain(${gain}), s("[~ hh]*8").bank("${DRUM_BANK}").gain(${(Number(gain) * 0.4).toFixed(3)}))`
+            ? `stack(s("[~ oh]*4")${drumBank}.gain(${gain}), s("[~ hh]*8")${drumBank}.gain(${(Number(gain) * 0.4).toFixed(3)}))`
             : `s("[~ white]*2").decay(.035).sustain(0).hpf(6000).gain(${gain})`;
       }
     }
@@ -450,8 +467,8 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       // off the grid (5, 7) it stays even, because the cycle length is the
       // point (§31 polymeter).
       return cycle > 4
-        ? `s("rim*${cycle}").bank("${PERC_BANK}").pan("<.25 .7 .45 .8>").gain(${gain})`
-        : `s("<rim [~ rim] rim [rim ~]>").bank("${PERC_BANK}").fast(${cycle / 2}).pan("<.25 .75 .4 .65>").gain("${gain} ${(Number(gain) * 1.5).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)} ${(Number(gain) * 1.3).toFixed(3)}")`;
+        ? `s("rim*${cycle}")${percBank}.pan("<.25 .7 .45 .8>").gain(${gain})`
+        : `s("<rim [~ rim] rim [rim ~]>")${percBank}.fast(${cycle / 2}).pan("<.25 .75 .4 .65>").gain("${gain} ${(Number(gain) * 1.5).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)} ${(Number(gain) * 1.3).toFixed(3)}")`;
     }
     case 'sub': {
       // §32: the sub moves with the bass rather than sitting on one note —
@@ -485,7 +502,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           // §66 reference preset: `f2 ~ ~ ab2 ~ c3 ~ eb2` — eight steps, all
           // holes and offbeats. That syncopation IS two-step; a rolling
           // sub-figure reads as house however you filter it.
-          return `note("${notes[0] ?? root} ~ ~ ${notes[1] ?? root} ~ ${notes[2] ?? root} ~ ${notes[3] ?? notes[1] ?? root}").s("sine").decay(.22).sustain(.05).gain(${gain})`;
+          return `note("${notes[0] ?? root} ~ ~ ${notes[1] ?? root} ~ ${notes[2] ?? root} ~ ${notes[3] ?? notes[1] ?? root}").s("sine").gain(${gain})`;
         // §34 trap: the 808 that slides between its notes.
         case 'slide':
           // §34 trap: the 808 IS the low end, so it has to be heard on a
@@ -537,7 +554,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §66 garage: the chord lands OFF the beat and stops immediately —
         // that displacement is what makes two-step sound like two-step.
         if (style === 'skip') {
-          return `note("[${stacked}]").s("triangle").struct("~ x ~ ~ ~ x ~ ~").slow(${slow}).decay(.28).sustain(.05).room(.2).gain(${gain})`;
+          // §66b reference preset: <[f3 ab3 c4] ~ …> — the chord lands, then a
+          // whole bar of air. The hole is the hook.
+          return `note("<[${stacked}] ~>").s("triangle").slow(${slow}).gain(${gain})`;
         }
         // §34 dub: the off-beat skank, drowned in delay.
         if (style === 'skank') {
@@ -569,9 +588,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return `note("${notes}").s("glockenspiel").slow(${slow}).room(.45).gain(${gain})`;
         // §34 garage: the chopped vocal-like hook.
         case 'vocal':
-          // §66: the garage hook sits high and clean, one note every other
-          // step, with just enough delay to smear it into the shuffle.
-          return `note("${notes}").s("sine").slow(${slow}).decay(.35).sustain(.1).delay(.2).room(.25).gain(${gain})`;
+          // §66b reference preset: c5 ~ eb5 ~ g4 ~ bb4 ~ — a rest after every
+          // note, high and clean.
+          return `note("${notes.split(' ').join(' ~ ')}").s("sine").slow(${slow}).gain(${gain})`;
         // §34 dub: the melodica line, always one echo behind.
         case 'melodica':
           return `note("${notes}").s("harmonica").slow(${slow}).delay(.6).delayfeedback(.65).room(.5).gain(${gain})`;
@@ -611,12 +630,14 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // Ambient: air. Barely-there ticks drifting in a large room (§31).
         case 'air':
           return samplesLoaded
-            ? `s("hh*8").bank("${DRUM_BANK}").hpf(9000).slow(4).room(.9).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)}")`
+            ? `s("hh*8")${drumBank}.hpf(9000).slow(4).room(.9).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)}")`
             : `s("white*8").decay(.02).sustain(0).hpf(9000).slow(4).room(.9).gain(${gain})`;
         // §34 garage/house: hand percussion keeping the top end alive.
         case 'shaker':
+          // §66b reference preset: sh*8, even. `sh` is not in the maps we load,
+          // and an absent name is silence (§38) — shaker_small is the real one.
           return samplesLoaded
-            ? `s("cabasa*8").gain("${(Number(gain) * 0.5).toFixed(3)} ${gain} ${(Number(gain) * 0.35).toFixed(3)} ${(Number(gain) * 0.8).toFixed(3)}")`
+            ? `s("shaker_small*8").gain(${gain})`
             : `s("white*8").decay(.02).sustain(0).hpf(8000).gain(${gain})`;
         // §34 dub/classical: air and tape, the room breathing.
         case 'tape':
@@ -630,7 +651,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         default:
           // Techno: the top-end shimmer of fast, quiet hats.
           return samplesLoaded
-            ? `s("hh*16").bank("${DRUM_BANK}").hpf(9000).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${gain}")`
+            ? `s("hh*16")${drumBank}.hpf(9000).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${gain}")`
             : `s("white*16").decay(.02).sustain(0).hpf(9000).gain(${gain})`;
       }
     }
@@ -916,7 +937,7 @@ export class StrudelEngine implements StrudelEnginePort {
       throw new Error('StrudelEngine: failed to initialize @strudel/web', { cause });
     }
     // The drum machines (strudel.cc/learn/samples § Sound Banks). This map is
-    // what `.bank("RolandTR909")` resolves against — WITHOUT it every banked
+    // what `${drumBank}` resolves against — WITHOUT it every banked
     // template is silent, and oh/rim do not exist at all. Dirt-Samples alone
     // is not enough: it has no banks.
     // Sample maps are fetched lazily over the network, so this can fail

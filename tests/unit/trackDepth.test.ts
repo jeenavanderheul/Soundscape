@@ -118,6 +118,11 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
     const banks = new Map<string, string>();
     for (const genre of ['techno', 'ambient', 'jazz', 'dnb', 'garage', 'house', 'trap', 'dub'] as const) {
       const code = buildPatternCode(graphOf(genre));
+      // §66b: garage asks for the plain kit — no machine name at all.
+      if (genre === 'garage') {
+        expect(code).not.toContain('.bank(');
+        continue;
+      }
       const match = code.match(/bank\("([A-Za-z0-9]+)"\)/);
       expect(match, genre).not.toBeNull();
       banks.set(genre, match![1]!);

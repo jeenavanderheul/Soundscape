@@ -7,7 +7,7 @@ vi.mock('@strudel/web', () => ({
 }));
 
 import { buildLayerGraph } from '../../src/audio/MusicalPrimitives';
-import { DRUM_BANKS, buildPatternCode, setSamplesLoaded } from '../../src/audio/StrudelEngine';
+import { DRUM_BANKS, PLAIN_KIT, buildPatternCode, setSamplesLoaded } from '../../src/audio/StrudelEngine';
 import { GRAMMAR_BANKS } from '../../src/audio/MusicalPrimitives';
 import { SOUND_INVENTORY } from '../../src/audio/soundInventory.generated';
 import { GENRE_NAMES, createInitialMusicState } from '../../src/music/MusicState';
@@ -89,7 +89,12 @@ describe('§38 the sound library actually supports the game', () => {
   });
 
   it('lets every grammar name a machine the engine will actually use', () => {
-    const unknown = GRAMMAR_BANKS.filter((bank) => !DRUM_BANKS.has(bank));
+    // §66b: PLAIN_KIT is a deliberate choice — no `.bank()` at all, the way UK
+    // garage's reference preset is written. Anything ELSE that is not a real
+    // machine would silently fall back to the 909, which is what this guards.
+    const unknown = GRAMMAR_BANKS.filter(
+      (bank) => bank !== PLAIN_KIT && !DRUM_BANKS.has(bank),
+    );
     expect(unknown, 'these silently fall back to the 909').toEqual([]);
   });
 

@@ -437,15 +437,15 @@ describe('§66 UK garage sounds like UK garage', () => {
     expect(g.leadVoice).toBe('sine');
   });
 
-  it('its chord lands off the beat and stops', () => {
+  it('its chord lands, then a whole bar of air (the reference preset)', () => {
     const track = createInitialTrackState();
     track.bpm = 134;
     track.harmony = { unlocked: true, level: 1 };
     track.harmonyIntervals = [0, 3, 7];
     const music = { ...createInitialMusicState(), bpm: 134, tempoConfidence: 0.6 };
     const code = buildPatternCode(buildLayerGraph(music, affinityOf('garage'), [], track));
-    const chord = code.split('\n').find((line) => line.includes('struct('))!;
-    expect(chord).toContain('~ x ~ ~ ~ x ~ ~');
-    expect(chord).toContain('"triangle"');
+    const chord = code.split('\n').find((line) => line.includes('"triangle"'))!;
+    expect(chord).toContain('<[');
+    expect(chord).toContain('] ~>');
   });
 });
