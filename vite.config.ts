@@ -1,8 +1,15 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
   build: {
     rollupOptions: {
+      // §68: the game, plus the genre lab at /genres/ — a bench where every
+      // world plays as a finished track so its grammar can be judged.
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        genres: resolve(__dirname, 'genres/index.html'),
+      },
       output: {
         // three dominates bundle size; isolating it keeps the app chunk small
         // and lets the browser cache three across app-only deploys (§22).

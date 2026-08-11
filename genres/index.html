@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FREQUENCY — genre lab</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root { --void: #050506; --text: #dfe8ea; --dim: rgba(223, 232, 234, 0.45); }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 28px 26px 60px; background: var(--void); color: var(--text);
+        font: 12px/1.7 "SF Mono", ui-monospace, Menlo, monospace; letter-spacing: 0.04em;
+      }
+      h1 { font-size: 12px; font-weight: 400; letter-spacing: 0.5em; margin: 0 0 4px; }
+      p.sub { color: var(--dim); margin: 0 0 22px; max-width: 62ch; }
+      .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+      button {
+        font: inherit; color: var(--text); background: transparent;
+        border: 1px solid rgba(223, 232, 234, 0.35); padding: 7px 12px; cursor: pointer;
+      }
+      button:hover { background: rgba(223, 232, 234, 0.1); }
+      button[aria-pressed="true"] { background: var(--text); color: var(--void); }
+      #transport button { min-width: 92px; }
+      .panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 26px; }
+      fieldset { border: 1px solid rgba(223, 232, 234, 0.18); padding: 14px 16px 18px; margin: 0; }
+      legend { color: var(--dim); padding: 0 6px; }
+      label { display: grid; grid-template-columns: 8.5em 1fr 3.6em; align-items: center; gap: 10px; margin: 7px 0; }
+      input[type="range"] { width: 100%; accent-color: #dfe8ea; }
+      output { color: var(--dim); text-align: right; }
+      pre {
+        margin: 22px 0 0; padding: 14px 16px; white-space: pre-wrap; word-break: break-word;
+        border: 1px solid rgba(223, 232, 234, 0.18); color: rgba(223, 232, 234, 0.72);
+        max-height: 42vh; overflow: auto;
+      }
+      #status { color: var(--dim); margin-left: 10px; }
+    </style>
+  </head>
+  <body>
+    <h1>GENRE LAB</h1>
+    <p class="sub">
+      Every world, played as a FINISHED track — all seven layers earned and grown deep, so what
+      you hear is the end result and not a build-up. Tune it, then take the numbers back into
+      the grammar.
+    </p>
+
+    <div class="row" id="genres"></div>
+    <div class="row" id="transport">
+      <button id="play" type="button">play</button>
+      <button id="stop" type="button">stop</button>
+      <span id="status">audio starts on the first click</span>
+    </div>
+
+    <div class="panels">
+      <fieldset>
+        <legend>the flight</legend>
+        <div id="flight"></div>
+      </fieldset>
+      <fieldset>
+        <legend>the mix — every layer of the finished track</legend>
+        <div id="mix"></div>
+      </fieldset>
+    </div>
+
+    <pre id="code">// nothing playing yet</pre>
+    <script type="module" src="/src/lab/genreLab.ts"></script>
+  </body>
+</html>
