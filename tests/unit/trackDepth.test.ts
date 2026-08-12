@@ -90,7 +90,7 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
   it('stacks a body under the snare and dirt over the hats', () => {
     const code = buildPatternCode(graphOf('techno'));
     expect(code).toContain('RolandTR808');
-    expect(code).toContain('late(.01)'); // the snare body, a hair behind
+    expect(code).toContain('late(.012)'); // the snare body, a hair behind
     expect(code).toContain('hh*32'); // high frequency dirt
   });
 
@@ -131,11 +131,23 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
     expect(new Set(banks.values()).size).toBeGreaterThanOrEqual(6);
   });
 
-  it('writes the techno lead as sequencer lines, not a tune (§71)', () => {
-    // §71: the techno lead is sequencer lines — a pulse, a clavisynth and a
-    // casio, none of them singing.
-    expect(buildPatternCode(graphOf('techno'))).toContain('"pulse"');
-    expect(buildPatternCode(graphOf('techno'))).toContain('"casio"');
+  it('writes the techno lead as a short machine signal, not a tune (§80)', () => {
+    const code = buildPatternCode(graphOf('techno'));
+    expect(code).toContain('"clavisynth"');
+    expect(code).not.toContain('"casio"');
+  });
+
+  it('renders the complete Techno Machine Pressure figures (§80)', () => {
+    const code = buildPatternCode(graphOf('techno'));
+
+    expect(code).toContain('s("hh*16")');
+    expect(code).toContain('.gain("[.22 .10 .16 .08]*4")');
+    expect(code).toContain('.s("sawtooth").lpf(416).lpq(11.36)');
+    expect(code).toContain('.s("square").hpf(145).lpf(855).lpq(9)');
+    expect(code).toContain('.s("supersaw").lpf(1253).lpq(7)');
+    expect(code).toContain('.s("pulse").lpf(756).lpq(12)');
+    expect(code).toContain('s("bytebeat").slow(2).bpf(1510).crush(5)');
+    expect(code).toContain('s("white*16").degradeBy(.58).hpf(8200)');
   });
 });
 

@@ -250,11 +250,14 @@ export type HatStyle =
   | 'dark'
   /** §71 techno: eighths, an offbeat open hat and a second machine under it. */
   | 'techno'
+  /** §80 techno: degraded 808 dust over the 16th-note machine hats. */
+  | 'machine-dust'
   /** §73 bass music: hard sixteenths with an open hat above them. */
   | 'pressure'
   /** §73 bass music: hard sixteenths with an open hat above them. */
   | 'pressure';
 export type SnareStyle = 'backbeat' | 'ghost' | 'break' | 'body' | 'rim' | 'clap' | 'hardclap'
+  | 'machine-clap' | 'machine-body'
   /** §69 breakbeat: one hard hit on 3 and 7, driven. */
   | 'hard';
 export type BassStyle =
@@ -306,6 +309,8 @@ export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic' | 'shaker' | 't
   | 'rumble'
   /** §71 techno: the machine room — bytebeat, air, rumble and dust. */
   | 'machine'
+  | 'machine-room'
+  | 'machine-rise'
   /** §72 garage: air and dust, nothing you would call a part. */
   | 'dust'
   /** §73 bass music: one long detuned note in a huge room. */
@@ -454,6 +459,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodyStyle: 'sequence',
     textureStyle: 'machine',
     percStyle: 'machine',
+    deepStyle: 'machine',
     bassVoice: 'sawtooth',
     chordVoice: 'supersaw',
     leadVoice: 'clavisynth',
@@ -1045,7 +1051,8 @@ export function buildLayerGraph(
         kind: 'hat',
         layer: 'drums',
         parameters: {
-          style: 'dirt',
+          style: grammar.deepStyle === 'machine' ? 'machine-dust' : 'dirt',
+          deep: grammar.deepStyle ?? '',
           cycle: grammar.hatCycle,
           bank: grammar.deepBank ?? grammar.percBank,
           gain: round2(grammar.hatGain * 0.35 * mix.drums),
@@ -1079,7 +1086,7 @@ export function buildLayerGraph(
       kind: 'snare',
       layer: 'drums',
       parameters: {
-        style: grammar.snareStyle,
+        style: grammar.deepStyle === 'machine' ? 'machine-clap' : grammar.snareStyle,
         bank: grammar.drumBank,
         percBank: grammar.percBank,
         gain: round2(grammar.snareGain * mix.drums),
@@ -1094,8 +1101,9 @@ export function buildLayerGraph(
         kind: 'snare',
         layer: 'drums',
         parameters: {
-          style: 'body',
-          bank: grammar.deepBank ?? grammar.percBank,
+          style: grammar.deepStyle === 'machine' ? 'machine-body' : 'body',
+          deep: grammar.deepStyle ?? '',
+          bank: grammar.deepStyle === 'machine' ? 'EmuSP12' : grammar.deepBank ?? grammar.percBank,
           percBank: grammar.percBank,
           gain: round2(grammar.snareGain * 0.5 * mix.drums),
         },
@@ -1122,6 +1130,8 @@ export function buildLayerGraph(
                 .slice(0, 4)
                 .map((semitones) => midiToNoteName(rootMidi + semitones))
                 .join(' ')
+            : grammar.deepStyle === 'machine'
+              ? [0, -2, 1, 7].map((semitones) => midiToNoteName(rootMidi + semitones)).join(' ')
             : [0, 0, 3, 7].map((semitones) => midiToNoteName(rootMidi + semitones)).join(' '),
         drive: grammar.drive,
         voice: grammar.bassVoice,
@@ -1137,9 +1147,10 @@ export function buildLayerGraph(
         kind: 'sub',
         layer: 'bass',
         parameters: {
-          notes: [0, 0, 3, 7]
+          notes: (grammar.deepStyle === 'machine' ? [0, -2, 0, 0] : [0, 0, 3, 7])
             .map((semitones) => midiToNoteName(rootMidi - 12 + semitones))
             .join(' '),
+          style: grammar.deepStyle ?? '',
           gain: round2(grammar.bassGain * 0.9 * mix.bass),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.sub],
@@ -1186,10 +1197,11 @@ export function buildLayerGraph(
         parameters: {
           notes: (track.harmonyIntervals.length > 0 ? track.harmonyIntervals : [0])
             .slice(0, 4)
-            .map((semitones) => midiToNoteName(rootMidi + 24 + semitones))
+            .map((semitones) => midiToNoteName(rootMidi + (grammar.deepStyle === 'machine' ? 12 : 24) + semitones))
             .join(','),
           sound: 'triangle',
           style: 'pad',
+          deep: grammar.deepStyle ?? '',
           slow: grammar.harmonySlow * 2,
           gain: round2(grammar.harmonyGain * 0.47 * mix.harmony),
         },
@@ -1291,7 +1303,24 @@ export function buildLayerGraph(
     }
   }
   const atmosphere: MusicalPrimitive[] =
-    ambientAffinity >= GENRE_LAYER_THRESHOLD
+    track?.genre === 'techno'
+      ? [
+          {
+            id: 'techno-machine-room',
+            kind: 'texture',
+            layer: 'atmosphere',
+            parameters: { style: 'machine-room', gain: 1 },
+            allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
+          },
+          {
+            id: 'techno-machine-rise',
+            kind: 'texture',
+            layer: 'atmosphere',
+            parameters: { style: 'machine-rise', gain: 1 },
+            allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
+          },
+        ]
+      : ambientAffinity >= GENRE_LAYER_THRESHOLD
       ? [
           {
             id: 'ambient-drone',

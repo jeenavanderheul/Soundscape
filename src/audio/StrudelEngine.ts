@@ -280,9 +280,12 @@ const KICK_STYLES = [
 ] as const;
 const HAT_STYLES = [
   'offbeat', 'sixteenth', 'swing', 'sparse', 'dirt', 'shuffle', 'roll', 'dark', 'muffled',
-  'techno', 'pressure',
+  'techno', 'machine-dust', 'pressure',
 ] as const;
-const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body', 'rim', 'clap', 'hard', 'hardclap'] as const;
+const SNARE_STYLES = [
+  'backbeat', 'ghost', 'break', 'body', 'rim', 'clap', 'hard', 'hardclap',
+  'machine-clap', 'machine-body',
+] as const;
 const BASS_STYLES = [
   'repetitive', 'sub', 'walking', 'rolling', 'skip', 'slide', 'dubwise', 'arco', 'pressure',
   'deep', 'rollingsub',
@@ -292,7 +295,28 @@ const MELODY_STYLES = [
   'motif', 'stab', 'long', 'improv', 'hook', 'fragment', 'bell', 'vocal', 'melodica',
   'sequence', 'hook2',
 ] as const;
-const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic', 'shaker', 'tape', 'rumble', 'machine', 'dust', 'foghorn'] as const;
+const TEXTURE_STYLES = [
+  'hats', 'air', 'noise', 'metallic', 'shaker', 'tape', 'rumble', 'machine', 'dust',
+  'foghorn', 'machine-room', 'machine-rise',
+] as const;
+
+const TECHNO_MASK = {
+  hats: '<1!24 0!4 1!4>',
+  hatsDeep: '<0!8 1!16 0!4 1!4>',
+  kick: '<0!4 1!20 0!4 1!4>',
+  kickDeep: '<0!12 1!12 0!4 1!4>',
+  snare: '<0!8 1!16 0!4 1!4>',
+  snareDeep: '<0!14 1!10 0!4 1!4>',
+  sub: '<0!12 1!12 0!4 1!4>',
+  bass: '<0!16 1!8 0!4 1!4>',
+  reese: '<0!20 1!4 0!4 1!4>',
+  stab: '<0!16 1!8 0!4 1!4>',
+  acid: '<0!20 1!4 0!4 1!4>',
+  signal: '<0!22 1!2 0!4 1!4>',
+  texture: '<0!8 1!16 0!4 1!4>',
+  textureDeep: '<0!20 1!4 0!4 1!4>',
+  rise: '<0!15 1 0!15 1>',
+} as const;
 
 /**
  * Whitelisted template library (spec §11, §29.5): primitive kind + genre
@@ -373,6 +397,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `s("bd*4")${drumBank}.distort("1.8:.25").clip(.85).gain(${gain})`
             : `s("sbd*4").distort("1.8:.25").clip(.85).gain(${gain})`;
+        case 'machine':
+          return samplesLoaded
+            ? `s("bd*4")${drumBank}.shape(.416).distort(.456).postgain(.68).gain(1.020).mask("${TECHNO_MASK.kick}")`
+            : `s("sbd*4").shape(.416).distort(.456).postgain(.68).gain(1.020).mask("${TECHNO_MASK.kick}")`;
         // §9.2 space: a distant heartbeat, one hit per bar.
         case 'sparse':
           return samplesLoaded
@@ -428,6 +456,16 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           ? `s("[~ cp ~ cp]")${drumBank}.degradeBy(.4).gain(${gain})`
           : `s("[~ white ~ white]").decay(.06).sustain(0).bpf(1500).degradeBy(.4).gain(${gain})`;
       }
+      if (style === 'machine-clap') {
+        return samplesLoaded
+          ? `s("~ ~ cp ~ ~ ~ cp ~")${drumBank}.gain(.630).room(.18).mask("${TECHNO_MASK.snare}")`
+          : `s("~ ~ white ~ ~ ~ white ~").decay(.1).sustain(0).bpf(1700).gain(.630).room(.18).mask("${TECHNO_MASK.snare}")`;
+      }
+      if (style === 'machine-body') {
+        return samplesLoaded
+          ? `s("~ ~ sd ~ ~ ~ sd ~")${drumBank}.late(.012).hpf(1200).shape(.282).gain(.194).mask("${TECHNO_MASK.snareDeep}")`
+          : `s("~ ~ white ~ ~ ~ white ~").decay(.12).sustain(0).late(.012).hpf(1200).shape(.282).gain(.194).mask("${TECHNO_MASK.snareDeep}")`;
+      }
       // §34 trap/dub: a rim on the third beat instead of a backbeat.
       if (style === 'rim') {
         return samplesLoaded
@@ -481,6 +519,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           : `s("white*${cycle}").decay(.03).sustain(0).hpf(8000).gain(${gain})`;
       }
       // §32: the second hat voice — 32nds of dirt at the very top.
+      if (style === 'machine-dust') {
+        return samplesLoaded
+          ? `s("hh*32")${drumBank}.degradeBy(.55).hpf(9500).gain(.040).pan(.72).mask("${TECHNO_MASK.hatsDeep}")`
+          : `s("white*32").decay(.015).sustain(0).degradeBy(.55).hpf(9500).gain(.040).pan(.72).mask("${TECHNO_MASK.hatsDeep}")`;
+      }
       if (style === 'dirt') {
         return samplesLoaded
           ? `s("hh*32")${drumBank}.degradeBy(.55).hpf(9500).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 1.2).toFixed(3)}")`
@@ -509,8 +552,8 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // second machine's shuffle whispering underneath.
         case 'techno':
           return samplesLoaded
-            ? `stack(s("hh*8")${drumBank}.hpf(4000).gain(${gain}), s("~ oh ~ ~ ~ oh ~ ~")${drumBank}.hpf(3200).gain(${(Number(gain) * 0.76).toFixed(3)}), s("~ hh ~ [hh hh] ~ hh ~ hh")${percBank}.hpf(5000).gain(${(Number(gain) * 0.41).toFixed(3)}))`
-            : `stack(s("white*8").decay(.02).sustain(0).hpf(4000).gain(${gain}), s("~ white ~ ~ ~ white ~ ~").decay(.08).sustain(0).hpf(3200).gain(${(Number(gain) * 0.76).toFixed(3)}))`;
+            ? `s("hh*16")${drumBank}.gain("[.22 .10 .16 .08]*4").hpf(7688).pan(.55).mask("${TECHNO_MASK.hats}")`
+            : `s("white*16").decay(.02).sustain(0).gain("[.22 .10 .16 .08]*4").hpf(7688).pan(.55).mask("${TECHNO_MASK.hats}")`;
         // §73 bass music: sixteenths with a hard accent pattern, and an open
         // hat on the offbeat above them.
         case 'pressure':
@@ -559,8 +602,8 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §80 techno depth: one syncopated kick off another machine, filtered
         // down so it lands under the four rather than beside it.
         return samplesLoaded
-          ? `s("~ ~ bd ~ ~ bd ~ ~")${percBank}.lpf(1800).gain(${gain})`
-          : `s("~ ~ sbd ~ ~ sbd ~ ~").lpf(1800).gain(${gain})`;
+          ? `s("~ ~ bd ~ ~ bd ~ ~")${percBank}.lpf(1800).gain(.214).mask("${TECHNO_MASK.kickDeep}")`
+          : `s("~ ~ sbd ~ ~ sbd ~ ~").lpf(1800).gain(.214).mask("${TECHNO_MASK.kickDeep}")`;
       }
       if (p['style'] === 'toms') {
         // §71 techno: toms walking across the bar, rim ghosts on the other machine.
@@ -580,6 +623,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         : `s("<rim [~ rim] rim [rim ~]>")${percBank}.fast(${cycle / 2}).pan("<.25 .75 .4 .65>").gain("${gain} ${(Number(gain) * 1.5).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)} ${(Number(gain) * 1.3).toFixed(3)}")`;
     }
     case 'sub': {
+      if (p['style'] === 'machine') {
+        const notes = noteList(p['notes'], primitive.id, ' ').split(' ');
+        const root = notes[0]!;
+        const flatSeven = notes[1] ?? root;
+        return `note("${root} ~ ${root} ~ ~ ${flatSeven} ~ ${root}").s("sine").lpf(88).attack(.002).decay(.34).sustain(.32).release(.07).gain(.948).orbit(2).mask("${TECHNO_MASK.sub}")`;
+      }
       // §32: the sub moves with the bass rather than sitting on one note —
       // rests are what make a sub read as weight instead of as a drone.
       if (typeof p['notes'] === 'string') {
@@ -630,7 +679,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §71 techno: a saw body with a little distortion, a square edge above
         // it and a slow pulse under everything. The sub is its own voice (§32).
         case 'deep':
-          return `stack(note("${notes[0] ?? root} ~ ${notes[0] ?? root} ${notes[0] ?? root} ~ ${notes[1] ?? root} ~ ${notes[2] ?? root}").s("sawtooth").lpf(260).distort(.18).gain(${gain}), note("~ ${notes[0] ?? root} ~ ~ ${notes[1] ?? root} ~ ${notes[2] ?? root} ~").s("square").hpf(130).lpf(430).gain(${(Number(gain) * 0.29).toFixed(3)}), note("${notes[0] ?? root} ~ ~ ~ ${notes[0] ?? root} ~ ~ ~").s("pulse").lpf(330).gain(${(Number(gain) * 0.17).toFixed(3)}))`;
+          return `stack(note("${root} ~ ${root} ${root} ~ ${notes[1] ?? root} ${notes[2] ?? root} ~").s("sawtooth").lpf(416).lpq(11.36).decay(.13).sustain(.1).release(.05).distort(2.216).postgain(.3).gain(.488).orbit(2).mask("${TECHNO_MASK.bass}"), note("~ ${root} ~ ~ ${notes[2] ?? root} ~ ${notes[1] ?? root} ${root}").s("square").hpf(145).lpf(855).lpq(9).distort(2.616).postgain(.22).gain(.168).orbit(2).mask("${TECHNO_MASK.reese}"))`;
         // §73 bass music: one note every sixteenth, filtered to a growl — the
         // roll IS the track, and the sidechain cuts the holes into it.
         case 'rollingsub':
@@ -660,6 +709,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         const style = styleOf(p['style'], CHORD_STYLES, 'stab');
         // Ambient: a wide, slow pad — the chord IS the space (§31).
         if (style === 'pad') {
+          if (p['deep'] === 'machine') {
+            const notes = stacked.split(',');
+            const root = notes[0]!;
+            return `note("${root} ~ ${root} ${notes[1] ?? root} ~ ${notes[2] ?? root} [${root} ${notes[1] ?? root}] ~").s("pulse").lpf(756).lpq(12).decay(.045).distort(1.78).postgain(.27).gain(.104).mask("${TECHNO_MASK.acid}")`;
+          }
           return `note("[${stacked}]").s("triangle").slow(${slow}).lpf(1300).attack(.8).release(2).room(.9).gain(${gain})`;
         }
         // Jazz: a warm comped chord, pushed slightly late like a real hand.
@@ -687,7 +741,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §71 techno: a dark pad holding under a dissonant stab, with an FM
         // shadow an octave up — three voices, none of them in front.
         if (style === 'darkpad') {
-          return `stack(note("[${stacked}]").s("supersaw").slow(4).lpf(580).attack(.8).release(1.5).room(.3).gain(${(Number(gain) * 0.38).toFixed(3)}), note("<[${stacked}] ~ ~ [${stacked}] ~>").s("square").lpf(720).decay(.12).gain(${gain}), note("[${stacked}]").s("fmpiano").slow(2).lpf(1300).gain(${(Number(gain) * 0.34).toFixed(3)}))`;
+          return `note("<[${stacked}] ~ ~ [${stacked}] ~ ~ ~ ~>").s("supersaw").lpf(1253).lpq(7).decay(.055).distort(.892).postgain(.3).gain(.117).orbit(3).mask("${TECHNO_MASK.stab}")`;
         }
         // §73 bass music: an acid line, not a chord — a resonant saw crawling
         // through the same notes the player found.
@@ -727,7 +781,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §71 techno: sequencers, not a tune — a pulse line, a clavisynth
         // answering it and a casio far above, each on its own clock.
         case 'sequence':
-          return `stack(note("${notes}").s("pulse").lpf(1250).decay(.07).gain(${gain}), note("${notes}").s("clavisynth").slow(${slow * 2}).lpf(1500).delay(.15).gain(${(Number(gain) * 0.71).toFixed(3)}), note("${notes}").s("casio").slow(${slow * 4}).hpf(1000).gain(${(Number(gain) * 0.4).toFixed(3)}))`;
+          {
+            const phrase = notes.split(' ');
+            return `note("${phrase[0]} ~ ~ ${phrase[1] ?? phrase[0]} ~ ${phrase[2] ?? phrase[0]} ~ ${phrase[3] ?? phrase[0]}").s("clavisynth").decay(.035).hpf(850).distort(.588).delay(.1).gain(.058).mask("${TECHNO_MASK.signal}")`;
+          }
         // Techno: not a tune but a dark stab — the hook is the rhythm.
         case 'stab':
           return `note("${notes}").s("square").slow(${slow}).lpf("<500 900 650 1300>")${shaped}.decay(.18).sustain(0).gain(${gain})`;
@@ -782,6 +839,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       switch (style) {
         // Ambient: air. Barely-there ticks drifting in a large room (§31).
         case 'air':
+          if (p['deep'] === 'machine') {
+            return `s("white*16").degradeBy(.58).hpf(8200).gain(.025).mask("${TECHNO_MASK.textureDeep}")`;
+          }
           return samplesLoaded
             ? `s("hh*8")${drumBank}.hpf(9000).slow(4).room(.9).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)}")`
             : `s("white*8").decay(.02).sustain(0).hpf(9000).slow(4).room(.9).gain(${gain})`;
@@ -805,7 +865,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §34 dub/breakbeat: air and tape, the room breathing.
         // §71 techno: the machine room — crushed bytebeat, air, rumble, dust.
         case 'machine':
-          return `stack(s("bytebeat").slow(4).bpf(1100).crush(6).gain(${gain}), s("pink").hpf(5000).room(.5).gain(${(Number(gain) * 0.5).toFixed(3)}), s("brown").slow(8).lpf(250).gain(${gain}), s("crackle").hpf(4500).gain(${(Number(gain) * 0.3).toFixed(3)}))`;
+          return `s("bytebeat").slow(2).bpf(1510).crush(5).distort(1.28).postgain(.3).gain(.023).mask("${TECHNO_MASK.texture}")`;
+        case 'machine-room':
+          return `stack(s("brown").clip(1).lpf(674).gain(.053).room(.75).orbit(3), s("crackle").hpf(5000).gain(.017).room(.35))`;
+        case 'machine-rise':
+          return `s("white").clip(1).hpf(4500).attack(.35).release(.3).room(.45).distort(.37).gain(.075).mask("${TECHNO_MASK.rise}")`;
         // §69 breakbeat: low rumble under everything, felt more than heard.
         case 'rumble':
           return `s("white").slow(4).lpf(400).room(.75).gain(${gain})`;

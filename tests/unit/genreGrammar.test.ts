@@ -137,11 +137,12 @@ describe('§31 grammar rewrites the same layer', () => {
     return buildPatternCode(buildLayerGraph(music, undefined, [], trackWithEverything(genre)));
   };
 
-  it('writes Ambient harmony as a pad and Techno harmony as its dark stack', () => {
+  it('writes Ambient harmony as a pad and Techno harmony as its rave machine', () => {
     expect(codeFor('ambient')).toContain('attack(.8)');
-    // §71: techno's harmony is a pad, a stab and an FM shadow together.
+    // §80: techno's harmony is a dissonant rave stab with an acid pulse.
     expect(codeFor('techno')).toContain('supersaw');
-    expect(codeFor('techno')).toContain('fmpiano');
+    expect(codeFor('techno')).toContain('"pulse"');
+    expect(codeFor('techno')).not.toContain('fmpiano');
   });
 
   it('gives Experimental true polymeter: 7 hats against 5 percussion against 4', () => {
