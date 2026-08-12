@@ -2,6 +2,11 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  test: {
+    // Git worktrees live inside the project, so their tests would otherwise be
+    // collected here — main's suite must never depend on a scratch branch.
+    exclude: ['**/node_modules/**', '**/dist/**', '.worktrees/**'],
+  },
   build: {
     rollupOptions: {
       // §68: the game, plus the genre lab at /genres/ — a bench where every
