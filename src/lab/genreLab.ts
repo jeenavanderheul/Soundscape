@@ -13,6 +13,7 @@ import { createInitialMusicState } from '../music/MusicState';
 import { performanceFrom } from '../music/Performance';
 import { LEVEL_DEEP, createInitialTrackState, type TrackGenre, type TrackState } from '../music/TrackState';
 import type { Section } from '../music/ArrangementEngine';
+import { GENRE_LAB_WORLDS } from './genreLabWorlds';
 
 /**
  * §68 GENRE LAB — a bench, not a game.
@@ -26,11 +27,6 @@ import type { Section } from '../music/ArrangementEngine';
  * It runs the real engine: the same buildLayerGraph, the same templates, the
  * same StrudelEngine. Nothing here is a mock, or it would be worth nothing.
  */
-
-const WORLDS: Exclude<TrackGenre, null>[] = [
-  'techno', 'garage', 'jazz', 'house', 'ambient',
-  'breakbeat', 'bass', 'trap', 'dub', 'experimental',
-];
 
 const SECTIONS: Section[] = ['intro', 'groove', 'build', 'drop', 'break', 'return', 'mutation'];
 
@@ -237,7 +233,7 @@ function stop(): void {
 // --- build the page -------------------------------------------------------
 
 const genreRow = $('genres');
-for (const world of WORLDS) {
+for (const world of GENRE_LAB_WORLDS) {
   const button = document.createElement('button');
   button.type = 'button';
   button.textContent = world;
