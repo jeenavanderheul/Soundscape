@@ -146,6 +146,7 @@ const BREAKBEAT: readonly LadderStep[] = [
 
 export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderStep[]> = {
   techno: TECHNO,
+  'sub-pressure': TECHNO,
   ambient: AMBIENT,
   jazz: JAZZ,
   bass: BASS,

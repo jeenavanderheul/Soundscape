@@ -15,6 +15,7 @@ import { createResonanceEvent } from '../../src/resonance/ResonanceEvent';
 
 const affinity = (partial: Partial<GenreAffinity>): GenreAffinity => ({
   techno: 0,
+  'sub-pressure': 0,
   ambient: 0,
   jazz: 0,
   garage: 0,

@@ -171,6 +171,7 @@ function genreSnapshot(raw: unknown): GenreSnapshot | null {
   const a = raw.affinity;
   const affinity: GenreAffinity = {
     techno: num(a.techno, 0, 0, 1),
+    'sub-pressure': num(a['sub-pressure'], 0, 0, 1),
     garage: num(a.garage, 0, 0, 1),
     house: num(a.house, 0, 0, 1),
     trap: num(a.trap, 0, 0, 1),

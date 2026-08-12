@@ -20,6 +20,7 @@ function ambientState(): MusicState {
 
 const affinity = (ambient: number, techno = 0): GenreAffinity => ({
   techno,
+  'sub-pressure': 0,
   ambient,
   jazz: 0,
   garage: 0,

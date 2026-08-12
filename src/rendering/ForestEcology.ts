@@ -103,6 +103,16 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
     motion: 1,
     mix: { trunk: 2, thin: 4, canopy: 0.3, branch: 0.4 },
   },
+  'sub-pressure': {
+    name: 'PRESSURE FIELD',
+    forms: ['pillar', 'spire'],
+    formBias: 0.72,
+    density: 1.1,
+    heightScale: 1.3,
+    irregularity: 0.22,
+    motion: 0.85,
+    mix: { trunk: 1.6, thin: 3.2, root: 1.4, branch: 0.7 },
+  },
   // Cloud forest: almost no trunks, membranes and spores drifting.
   ambient: {
     name: 'CLOUD FOREST',

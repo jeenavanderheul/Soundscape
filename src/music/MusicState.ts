@@ -34,6 +34,7 @@ export interface MusicState {
  */
 export interface GenreAffinity {
   techno: number;
+  'sub-pressure': number;
   ambient: number;
   jazz: number;
   /** §73: hard rolling bass music — what used to be the drum & bass slot. */
@@ -49,6 +50,7 @@ export interface GenreAffinity {
 /** Every grammar, in one place (§34) — the list all validation reads from. */
 export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = [
   'techno',
+  'sub-pressure',
   'ambient',
   'jazz',
   'bass',

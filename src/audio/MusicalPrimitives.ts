@@ -135,6 +135,7 @@ export interface MusicalAction {
 /** Left and right throw for each grammar, in that grammar's own palette. */
 const THROWS: Record<Exclude<TrackGenre, null> | 'void', readonly [ThrowStyle, ThrowStyle]> = {
   techno: ['echo', 'riser'],
+  'sub-pressure': ['riser', 'impact'],
   house: ['echo', 'sweep'],
   garage: ['echo', 'riser'],
   trap: ['sweep', 'riser'],
@@ -473,6 +474,25 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureGain: 0.02,
     harmonySlow: 2,
     melodySlow: 2,
+  },
+  'sub-pressure': {
+    ...NEUTRAL_GRAMMAR,
+    bpmCentre: 141.3,
+    bpmMin: 138,
+    bpmMax: 145,
+    drive: 0.65,
+    drumBank: 'AkaiMPC60',
+    percBank: 'EmuSP12',
+    deepBank: 'OberheimDMX',
+    sectionStyle: 'driven',
+    energyStyle: 'layers',
+    kickGain: 1,
+    snareGain: 0.8,
+    hatGain: 0.18,
+    bassGain: 0.82,
+    harmonyGain: 0.42,
+    melodyGain: 0.12,
+    textureGain: 0.04,
   },
   // §73 BASS MUSIC, from the reference preset: 150 BPM, a distorted 909 four
   // to the floor, and a sawtooth roll underneath it that never stops. What

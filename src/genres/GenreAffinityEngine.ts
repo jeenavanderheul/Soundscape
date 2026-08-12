@@ -33,6 +33,7 @@ export const GENRE_AFFINITY_CONFIG: GenreAffinityEngineConfig = {
 
 const ZERO_AFFINITY: GenreAffinity = {
   techno: 0,
+  'sub-pressure': 0,
   ambient: 0,
   jazz: 0,
   bass: 0,

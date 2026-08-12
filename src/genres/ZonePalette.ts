@@ -35,6 +35,7 @@ export const NEUTRAL_LOOK: ZoneLook = {
 export const GENRE_LOOKS: Record<keyof GenreAffinity, ZoneLook> = {
   // Machine red: hard, hot, industrial.
   techno: { color: { r: 1.0, g: 0.12, b: 0.1 }, relief: 0.85, haze: 0.2 },
+  'sub-pressure': { color: { r: 0.05, g: 0.9, b: 0.78 }, relief: 0.7, haze: 0.38 },
   // Deep blue space: soft, endless, low horizon.
   ambient: { color: { r: 0.18, g: 0.34, b: 1.0 }, relief: 0.15, haze: 0.85 },
   // Warm amber: human, lit from within.

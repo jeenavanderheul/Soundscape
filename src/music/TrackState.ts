@@ -19,6 +19,7 @@ export const LEVEL_DEEP = 1;
 
 export type TrackGenre =
   | 'techno'
+  | 'sub-pressure'
   | 'ambient'
   | 'jazz'
   | 'bass'

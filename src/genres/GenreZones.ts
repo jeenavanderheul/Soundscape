@@ -85,6 +85,7 @@ export function zoneGenres(): Readonly<typeof assignment> {
 export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreAffinity {
   const affinity: GenreAffinity = {
     techno: 0,
+    'sub-pressure': 0,
     ambient: 0,
     jazz: 0,
     bass: 0,
