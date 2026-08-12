@@ -322,6 +322,8 @@ export class Game {
   private hatSparkleUntil = 0;
   /** §60: the section word waits for the bar where the music turns. */
   private pendingSection: TrackState['form'] | null = null;
+  /** §83: layer words waiting for the bar where their sound arrives. */
+  private readonly pendingLayers: string[] = [];
   /** §33 turn throws: one gesture per turn, never a stream. */
   private turnArmed = true;
   private lastThrowMs = -Infinity;
@@ -425,6 +427,11 @@ export class Game {
     this.events.on('track:section', ({ section }) => {
       if (section !== 'none') this.pendingSection = section;
     });
+    // §83: same rule for a layer. It is earned mid-bar and sounds at the next
+    // bar, so the word waits for the bar it arrives on.
+    this.events.on('track:layer', ({ layer }) => {
+      this.pendingLayers.push(layer.toUpperCase());
+    });
     this.detachStrudelBeat = this.strudelEngine.onBeat((event) => {
       this.events.emit('beat', { atMs: event.atMs });
       // §29.6 layer visuals: kick = terrain shockwave; clap = backbeat flash.
@@ -440,6 +447,10 @@ export class Game {
         if (gesture !== undefined && this.motionLevel > 0.25) {
           this.strudelEngine.schedule({ kind: 'throw', gain: 0.55 * this.motionLevel, style: gesture }, 'beat');
         }
+      } else if (this.pendingLayers.length > 0 && this.beatIndex % 4 === 0) {
+        // §83: one word per bar, and a section outranks a layer — two words on
+        // the same bar would replace each other before either could be read.
+        this.layerCue.announce(this.pendingLayers.shift()!);
       }
       // §63: the layer visuals no longer fire off the beat index — they come
       // from the notes Strudel is about to play, queued below.

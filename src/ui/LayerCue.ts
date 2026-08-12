@@ -28,9 +28,12 @@ export class LayerCue {
     });
     container.appendChild(this.root);
     const offs = [
-      bus.on('track:layer', ({ layer }) => this.show(layer.toUpperCase())),
-      // §29.5/§29.7: entering a region and moving to a new section announce
-      // themselves the same way — one word, then gone.
+      // §83: layers are NOT announced here either. A layer is unlocked in the
+      // middle of a bar but only becomes audible when the graph is applied at
+      // the next bar, so the Game holds the word until then — reading KICK a
+      // beat before the kick exists is the screen lying about the music.
+      // §29.5/§29.7: entering a region announces itself the same way — one
+      // word, then gone.
       bus.on('track:genre', ({ genre }) => {
         if (genre) this.show(genre.toUpperCase());
       }),
