@@ -1,23 +1,21 @@
 import { AudioEngine } from '../audio/AudioEngine';
 import { StrudelEngine } from '../audio/StrudelEngine';
 import {
-  buildLayerGraph,
   genreGrammar,
   regionBpm,
   LAYER_NAMES,
   type LayerName,
   type MusicalLayerGraph,
 } from '../audio/MusicalPrimitives';
+import { buildWorldLayerGraph, worldBankLabel } from '../audio/WorldLayerGraph';
 import type { GenreAffinity } from '../music/MusicState';
 import { createInitialMusicState } from '../music/MusicState';
 import { performanceFrom } from '../music/Performance';
 import { LEVEL_DEEP, createInitialTrackState, type TrackGenre, type TrackState } from '../music/TrackState';
 import type { Section } from '../music/ArrangementEngine';
-import { buildSubPressureGraph, SUB_PRESSURE_BPM } from './SubPressure';
 import {
   GENRE_LAB_PRESETS,
   genreLabPresetLabel,
-  isTrackGenrePreset,
   type GenreLabPreset,
 } from './genreLabWorlds';
 
@@ -160,37 +158,36 @@ function resetKnobs(): void {
 
 /** Everything the sliders say, turned into the graph the engine plays. */
 function currentGraph(): MusicalLayerGraph {
-  const track = isTrackGenrePreset(preset) ? finishedTrack(preset, section) : null;
-  const bpm = track?.bpm ?? SUB_PRESSURE_BPM;
+  // Every world, finished: all seven layers earned AND grown deep. The game
+  // discovers exactly this, rung by rung — same builder, same numbers (§81).
+  const track = finishedTrack(preset, section);
   const music = {
     ...createInitialMusicState(),
-    bpm,
+    bpm: track.bpm,
     tempoConfidence: 0.6,
     dynamics: values.get('energy') ?? 0.7,
     rhythmDensity: 1,
     pitchCenter: 220,
   };
-  const graph = track
-    ? buildLayerGraph(
-        music,
-        affinityFor(track.genre!),
-        [],
-        track,
-        {},
-        values.get('motion') ?? 1,
-        values.get('energy') ?? 0.7,
-      )
-    : buildSubPressureGraph({
-        motion: values.get('motion') ?? 1,
-        mix: Object.fromEntries(
-          LAYER_NAMES.map((layer) => [layer, values.get(`mix-${layer}`) ?? 1]),
-        ),
-      });
-  graph.performance = performanceFrom(music, {
+  const performance = performanceFrom(music, {
     altitude: values.get('altitude') ?? 19,
     amplitude: values.get('amplitude') ?? 0.4,
     velocity: (values.get('energy') ?? 0.7) * 66,
   });
+  const graph = buildWorldLayerGraph({
+    music,
+    affinity: affinityFor(preset),
+    structures: [],
+    track,
+    patterns: {},
+    motion: values.get('motion') ?? 1,
+    energy: values.get('energy') ?? 0.7,
+    performance,
+    mix: Object.fromEntries(
+      LAYER_NAMES.map((layer) => [layer, values.get(`mix-${layer}`) ?? 1]),
+    ),
+  });
+  graph.performance = performance;
   // The lab's own tempo trim, on top of what altitude already does (§58).
   graph.bpm = Math.round(graph.bpm * (values.get('bpm') ?? 1) * graph.performance.tempoRatio);
   // Per-layer trim: the sliders multiply the gains the grammar chose.
@@ -254,15 +251,12 @@ for (const world of GENRE_LAB_PRESETS) {
   button.setAttribute('aria-pressed', String(world === preset));
   button.addEventListener('click', () => {
     preset = world;
-    sectionSelect.disabled = !isTrackGenrePreset(preset);
     for (const other of genreRow.querySelectorAll('button')) {
       other.setAttribute('aria-pressed', String(other.textContent === genreLabPresetLabel(world)));
     }
     apply();
     if (playing) {
-      status.textContent = isTrackGenrePreset(preset)
-        ? `${preset} · ${genreGrammar(preset).bpmCentre} bpm · ${genreGrammar(preset).drumBank}`
-        : `sub pressure · ${Math.round(SUB_PRESSURE_BPM)} bpm · EmuSP12 / AkaiMPC60`;
+      status.textContent = `${genreLabPresetLabel(preset)} · ${genreGrammar(preset).bpmCentre} bpm · ${worldBankLabel(finishedTrack(preset, section))}`;
     }
   });
   genreRow.appendChild(button);

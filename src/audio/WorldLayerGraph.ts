@@ -1,9 +1,11 @@
 import { buildSubPressureGraph } from '../lab/SubPressure';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
+import type { Performance } from '../music/Performance';
 import type { TrackState } from '../music/TrackState';
 import {
   buildLayerGraph,
   genreGrammar,
+  type LayerName,
   type LayerPatterns,
   type MusicalLayerGraph,
   type StructureVoiceSource,
@@ -17,6 +19,14 @@ export interface WorldLayerGraphInput {
   patterns?: LayerPatterns | undefined;
   motion?: number | undefined;
   energy?: number | undefined;
+  /**
+   * §81: how the world is being flown, so a grammar that shapes itself from
+   * height and wind can see it. The caller still assigns it to the finished
+   * graph — this is the copy the builder reads.
+   */
+  performance?: Readonly<Performance> | undefined;
+  /** The genre lab's per-layer trim. The game never sets it. */
+  mix?: Partial<Record<LayerName, number>> | undefined;
 }
 
 export function buildWorldLayerGraph(input: WorldLayerGraphInput): MusicalLayerGraph {
@@ -24,6 +34,9 @@ export function buildWorldLayerGraph(input: WorldLayerGraphInput): MusicalLayerG
     return buildSubPressureGraph({
       track: input.track,
       ...(input.motion === undefined ? {} : { motion: input.motion }),
+      ...(input.energy === undefined ? {} : { energy: input.energy }),
+      ...(input.performance === undefined ? {} : { performance: input.performance }),
+      ...(input.mix === undefined ? {} : { mix: input.mix }),
     });
   }
   return buildLayerGraph(

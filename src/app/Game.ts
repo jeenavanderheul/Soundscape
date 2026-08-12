@@ -852,6 +852,8 @@ export class Game {
       motion: this.motionLevel,
       // §62: movement energy — what each grammar spends its own way.
       energy: Math.min(1, flight.energy * 0.6 + flight.amplitude * 0.4),
+      // §81: height and wind, for the grammars that write themselves from it.
+      performance,
     });
     next.performance = performance;
     // §58: height runs the track like a tape — the clock goes with the pitch.
