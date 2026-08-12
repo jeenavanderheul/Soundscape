@@ -597,6 +597,21 @@ export class TrackBuilder {
     return best;
   }
 
+  /**
+   * §86: a beacon was flown through, so that rung is earned NOW — the player
+   * went and got it. It still has to be the next rung of this world's ladder,
+   * or a world could be assembled out of order (§31.2), and it still respects
+   * the §82 gap so two layers can never land on top of each other.
+   */
+  collectBeacon(layer: TrackLayerName, nowMs: number): boolean {
+    const step = nextStep(this.store.getState(), ladderFor(this.store.getState().genre));
+    if (step === null || step.layer !== layer) return false;
+    if (this.activeMs - this.lastRungMs < this.config.rungGapMs) return false;
+    this.lastRungMs = this.activeMs;
+    this.unlock(layer, nowMs);
+    return true;
+  }
+
   private unlock(layer: TrackLayerName, atMs: number): void {
     this.store.setState((t) => {
       if (layer === 'kick' || layer === 'hats' || layer === 'snare') {

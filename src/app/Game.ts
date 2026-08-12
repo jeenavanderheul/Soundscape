@@ -7,6 +7,7 @@ import { ResonanceAudio } from '../audio/ResonanceAudio';
 import { SpatialAudio } from '../audio/SpatialAudio';
 import { StrudelEngine, type NoteKind } from '../audio/StrudelEngine';
 import { Clock } from '../core/Clock';
+import { createRng } from '../core/rng';
 import { createEventBus, EventBus } from '../core/EventBus';
 import { createStore, Store } from '../core/stores';
 import { InputManager } from '../input/InputManager';
@@ -49,6 +50,13 @@ import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer } from '../rendering/ForestRenderer';
 import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
+import { BeaconMarker } from '../rendering/BeaconMarker';
+import {
+  beaconAt,
+  beaconIsStale,
+  placeBeacon,
+  type LayerBeacon,
+} from '../world/LayerBeacons';
 import { ParticleSystem } from '../rendering/ParticleSystem';
 import { OrbTrail } from '../rendering/OrbTrail';
 import { PlayerOrb } from '../rendering/PlayerOrb';
@@ -228,6 +236,11 @@ export class Game {
   private readonly hud = new HUD();
   private readonly forest = new ForestRenderer(WORLD_SEED);
   private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
+  /** §86: the next layer, standing in the world where you can go and get it. */
+  private readonly beaconMarker = new BeaconMarker();
+  private beacon: LayerBeacon | null = null;
+  private beaconSerial = 0;
+  private readonly beaconRng = createRng(`beacons-${WORLD_SEED}`);
   private readonly melodyTrail = new MelodyTrail();
   private readonly streaks = new SpeedStreaks(WORLD_SEED);
   /** §45: the region the player is physically in — drives everything visual. */
@@ -409,6 +422,7 @@ export class Game {
     this.renderer.scene.add(this.orbTrail.mesh);
     this.renderer.scene.add(this.forest.group);
     this.renderer.scene.add(this.markers.mesh);
+    this.renderer.scene.add(this.beaconMarker.group);
     this.renderer.scene.add(this.melodyTrail.line);
     this.renderer.scene.add(this.harmonyBridges.lines);
     this.renderer.scene.add(this.streaks.lines);
@@ -574,6 +588,8 @@ export class Game {
     this.terrain.dispose();
     this.renderer.scene.remove(this.forest.group);
     this.forest.dispose();
+    this.renderer.scene.remove(this.beaconMarker.group);
+    this.beaconMarker.dispose();
     this.renderer.scene.remove(this.markers.mesh);
     this.markers.dispose();
     this.renderer.scene.remove(this.melodyTrail.line);
@@ -756,6 +772,8 @@ export class Game {
     // §36: speed widens the lens.
     this.renderer.camera.setSpeedFactor(state.energy);
     this.markers.update(elapsedMs / 1000);
+    this.beaconMarker.update(elapsedMs / 1000, this.renderer.camera.instance.position.y);
+    this.updateBeacon(elapsedMs);
     this.melodyTrail.update(state.position, dtSeconds);
     // Bridges connect the sounding things: resonators plus born structures.
     const world = this.worldStore.getState();
@@ -890,6 +908,40 @@ export class Game {
     this.lastGraphGenre = this.trackStore.getState().genre;
     this.lastLayerGraph = next;
     this.strudelEngine.setLayerGraph(next, worldChanged ? 'beat' : 'bar');
+  }
+
+  /**
+   * §86: keep exactly one beacon standing — the next rung of this world's
+   * ladder, somewhere you have to steer to. Fly through it and the layer is
+   * yours on the spot; leave it far enough behind and the world puts the next
+   * one somewhere else.
+   */
+  private updateBeacon(elapsedMs: number): void {
+    const flight = this.frequencyStore.getState();
+    const track = this.trackStore.getState();
+    if (this.beacon !== null) {
+      const hit = beaconAt([this.beacon], flight.position);
+      if (hit !== null) {
+        // The ladder still decides the order, so a beacon that is no longer
+        // next simply disappears instead of granting the wrong layer.
+        this.trackBuilder.collectBeacon(hit.layer, elapsedMs);
+        this.beacon = null;
+      } else if (beaconIsStale(this.beacon, flight.position)) {
+        this.beacon = null;
+      }
+    }
+    if (this.beacon === null) {
+      this.beaconSerial += 1;
+      this.beacon = placeBeacon(
+        track,
+        track.genre,
+        flight.position,
+        Math.atan2(flight.direction.x, -flight.direction.z),
+        this.beaconRng,
+        this.beaconSerial,
+      );
+      this.beaconMarker.show(this.beacon);
+    }
   }
 
   /**
