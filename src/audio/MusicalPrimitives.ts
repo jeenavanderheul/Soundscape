@@ -333,6 +333,12 @@ export interface GenreGrammar {
    * layered — defaults to `percBank`.
    */
   deepBank?: string;
+  /**
+   * §79: the FIGURES a grammar's second voices take. Until now every world
+   * doubled its roles the same way and only the sounds differed; a world that
+   * says so here gets its own shape for the depth as well.
+   */
+  deepStyle?: string;
   /** §32 saturation on kick, bass and stabs. 0 keeps a layer clean and dynamic. */
   drive: number;
   /**
@@ -599,6 +605,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   // §77 UK GARAGE, rebuilt from the reference preset: 135 BPM, one TR909, and
   // a shuffle that runs through every layer.
   garage: {
+    deepStyle: 'skip',
     deepBank: 'RolandTR808',
     ...NEUTRAL_GRAMMAR,
     energyStyle: 'subdivision',
@@ -1052,6 +1059,7 @@ export function buildLayerGraph(
       parameters: {
         cycle: grammar.percCycle,
         style: grammar.percStyle ?? '',
+        deep: grammar.deepStyle ?? '',
         bank: grammar.drumBank,
         percBank: grammar.percBank,
         gain: round2(grammar.hatGain * 0.7 * mix.drums * (0.6 + energy * 0.6)),
@@ -1219,6 +1227,7 @@ export function buildLayerGraph(
             .join(' '),
           sound: 'triangle',
           style: grammar.melodyStyle,
+          deep: grammar.deepStyle ?? '',
           slow: grammar.melodySlow * 2,
           gain: round2(grammar.melodyGain * 0.43 * mix.melody),
         },
@@ -1267,7 +1276,8 @@ export function buildLayerGraph(
         layer: 'texture',
         parameters: {
           style: grammar.textureStyle === 'air' ? 'metallic' : 'air',
-          bank: grammar.drumBank,
+          deep: grammar.deepStyle ?? '',
+          bank: grammar.deepBank ?? grammar.drumBank,
           gain: round2(grammar.textureGain * 0.5 * mix.texture * airBoost),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.texture],

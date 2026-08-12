@@ -63,7 +63,9 @@ function soundsIn(code: string): string[] {
   for (const voice of code.split(/,\n/)) {
     const bank = voice.match(/\.bank\("([^"]+)"\)/)?.[1] ?? null;
     for (const match of voice.matchAll(/(?:^|[^a-zA-Z])s\("([^"]+)"\)/g)) {
-      for (const token of match[1]!.split(/[\s[\]<>*~,|]+/).filter(Boolean)) {
+      // Euclid arguments — `bd(3,8)` — are numbers, not sounds.
+      const pattern = match[1]!.replace(/\([^)]*\)/g, ' ');
+      for (const token of pattern.split(/[\s[\]<>*~,|]+/).filter(Boolean)) {
         if (/^[\d.]+$/.test(token)) continue; // a multiplier, not a sound
         const name = token.toLowerCase();
         found.push(bank && !SYNTH_NAMES.has(name) ? `${bank}_${name}`.toLowerCase() : name);

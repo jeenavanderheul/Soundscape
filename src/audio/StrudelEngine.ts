@@ -541,6 +541,13 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
     // §31: a percussion voice on its own cycle — ghost hits in DnB, a 5
     // against the 4 in Experimental.
     case 'perc': {
+      if (p['deep'] === 'skip' && p['style'] === 'garage') {
+        // §79 garage depth: the kick's second voice is a euclidean tom figure
+        // on its own cycle, so it never lines up with the two-step.
+        return samplesLoaded
+          ? `stack(s("~ ~ rim ~ ~ rim ~ ~")${drumBank}.hpf(2500).every(4, x => x.ply(2)).gain(${gain}), s("<lt ht mt>(5,8)")${drumBank}.slow(1.5).hpf(400).room(.3).gain(${(Number(gain) * 0.94).toFixed(3)}))`
+          : `s("~ ~ white ~ ~ white ~ ~").decay(.03).sustain(0).hpf(2500).gain(${gain})`;
+      }
       if (p['style'] === 'garage') {
         // §77 reference preset: a ghost rim that doubles every fourth cycle,
         // and a swung shaker moving above it.
@@ -722,6 +729,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return `note("${notes}").s("glockenspiel").slow(${slow}).room(.45).gain(${gain})`;
         // §34 garage: the chopped vocal-like hook.
         case 'vocal':
+          // §79 garage depth: the same phrase a fifth up, twice as slow, on a
+          // sine held open — it hangs over the pluck instead of doubling it.
+          if (p['deep'] === 'skip') {
+            return `note("${notes}").s("sine").slow(${slow}).clip(.8).attack(.05).release(.4).room(.7).pan(.25).gain(${gain})`;
+          }
           // §77 reference preset: a short plucked line, mirrored into the
           // other channel and hurried every fourth cycle.
           return `note("${notes}").s("triangle").slow(${slow}).attack(.001).decay(.14).sustain(0).release(.1).clip(.4).delay(".4:.1875:.55").room(.4).jux(rev).every(4, x => x.hurry(2)).gain(${gain})`;
@@ -767,6 +779,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
             ? `s("hh*8")${drumBank}.hpf(9000).slow(4).room(.9).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 0.7).toFixed(3)}")`
             : `s("white*8").decay(.02).sustain(0).hpf(9000).slow(4).room(.9).gain(${gain})`;
         // §34 garage/house: hand percussion keeping the top end alive.
+        // §79 garage depth: a wide pink bed under the riser.
+        case 'metallic':
+          return p['deep'] === 'skip'
+            ? `s("pink").clip(1).lpf(1500).room(.9).gain(${gain})`
+            : `note("c6").s("square").fm("<3 7 5>").slow(3).hpf(3000).delay(.3).room(.4).gain(${gain})`;
         // §72 garage: air and dust, nothing you would call a part.
         case 'dust':
           // §77 reference preset: a riser sweeping the whole spectrum, with
