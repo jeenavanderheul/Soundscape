@@ -666,7 +666,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           // §77 reference preset: short wet stabs OFF the beat, each answered
           // an octave up an eighth later, over a pad that breathes open across
           // sixteen cycles.
-          return `stack(note("[${stacked}]").struct("~ x ~ ~ x ~ ~ x").s("square").detune(.04).clip(.22).lpf(3200).lpq(3).attack(.002).decay(.12).sustain(.15).release(.1).room(.5).off(.125, x => x.add(note(12)).pan(.75)).gain(${gain}), note("[${stacked}]").s("supersaw").attack(.6).release(1.2).lpf(saw.range(500,3000).slow(16)).lpq(2).room(.7).gain(${(Number(gain) * 0.55).toFixed(3)}))`;
+          // §78: the preset puts the stab an octave above the chord it came
+          // from — that register is what makes it a garage stab and not a pad.
+          return `stack(note("[${stacked}]").add(note(12)).struct("~ x ~ ~ x ~ ~ x").s("square").detune(.04).clip(.22).lpf(3200).lpq(3).attack(.002).decay(.12).sustain(.15).release(.1).room(.5).off(.125, x => x.add(note(12)).pan(.75)).gain(${gain}), note("[${stacked}]").s("supersaw").attack(.6).release(1.2).lpf(saw.range(500,3000).slow(16)).lpq(2).room(.7).gain(${(Number(gain) * 0.55).toFixed(3)}))`;
         }
         // §71 techno: a dark pad holding under a dissonant stab, with an FM
         // shadow an octave up — three voices, none of them in front.

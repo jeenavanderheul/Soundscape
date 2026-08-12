@@ -327,6 +327,12 @@ export interface GenreGrammar {
   percCycle: number;
   /** §71/§72: a named percussion figure, or '' for the generic one. */
   percStyle?: string;
+  /**
+   * §78: the machine the DEEP voices grow on. Body and detail from two
+   * different boxes is what makes a doubled role sound produced rather than
+   * layered — defaults to `percBank`.
+   */
+  deepBank?: string;
   /** §32 saturation on kick, bass and stabs. 0 keeps a layer clean and dynamic. */
   drive: number;
   /**
@@ -593,6 +599,7 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   // §77 UK GARAGE, rebuilt from the reference preset: 135 BPM, one TR909, and
   // a shuffle that runs through every layer.
   garage: {
+    deepBank: 'RolandTR808',
     ...NEUTRAL_GRAMMAR,
     energyStyle: 'subdivision',
     sectionStyle: 'driven',
@@ -1027,7 +1034,7 @@ export function buildLayerGraph(
         parameters: {
           style: 'dirt',
           cycle: grammar.hatCycle,
-          bank: grammar.drumBank,
+          bank: grammar.deepBank ?? grammar.percBank,
           gain: round2(grammar.hatGain * 0.35 * mix.drums),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.hat],
@@ -1074,7 +1081,7 @@ export function buildLayerGraph(
         layer: 'drums',
         parameters: {
           style: 'body',
-          bank: grammar.percBank,
+          bank: grammar.deepBank ?? grammar.percBank,
           percBank: grammar.percBank,
           gain: round2(grammar.snareGain * 0.5 * mix.drums),
         },
