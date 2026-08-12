@@ -51,18 +51,24 @@ export interface SectionMix {
 
 const MIXES: Record<Section, SectionMix> = {
   none: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 1 },
-  intro: { drums: 0.8, bass: 0.6, harmony: 0.55, melody: 0, texture: 0.35, atmosphere: 1 },
+  // §76: the parts THEMSELVES arrive and leave. Intro is a kick and the air
+  // around it; the bass has not come in yet.
+  intro: { drums: 0.8, bass: 0, harmony: 0.5, melody: 0, texture: 0, atmosphere: 1 },
   // §60: the sections have to be TOLD APART by ear. Groove is the baseline it
   // all reads against, so it sits deliberately below full.
   groove: { drums: 0.9, bass: 0.85, harmony: 0.7, melody: 0.6, texture: 0.5, atmosphere: 0.7 },
   // A build takes the FLOOR away: the bass all but disappears, the top end
   // pushes, and everything leans forward waiting for the bottom to come back.
-  build: { drums: 0.8, bass: 0.28, harmony: 0.9, melody: 0.85, texture: 1, atmosphere: 0.9 },
+  // A build takes the FLOOR OUT — the bass is gone, not quiet — and everything
+  // left leans forward waiting for it to come back.
+  build: { drums: 0.8, bass: 0, harmony: 0.9, melody: 0.85, texture: 1, atmosphere: 0.9 },
   // And the drop is that floor slamming back in at full, with the air gone.
   drop: { drums: 1, bass: 1, harmony: 0.85, melody: 1, texture: 0.55, atmosphere: 0.25 },
   // The kick steps aside — but a break is not silence: the percussion and
   // the top end carry it, or the track stops sounding like a track (§32).
-  break: { drums: 0.55, bass: 0.5, harmony: 1, melody: 0.8, texture: 0.9, atmosphere: 1 },
+  // And a break drops the drums and the bass entirely: what is left is what
+  // the player built on top, in the open.
+  break: { drums: 0, bass: 0, harmony: 1, melody: 0.8, texture: 0.9, atmosphere: 1 },
   return: { drums: 1, bass: 1, harmony: 0.9, melody: 0.8, texture: 0.7, atmosphere: 0.7 },
   mutation: { drums: 0.8, bass: 0.9, harmony: 0.8, melody: 1, texture: 1, atmosphere: 0.9 },
 };

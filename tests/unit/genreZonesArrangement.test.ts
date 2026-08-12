@@ -1,5 +1,8 @@
+import { buildLayerGraph } from '../../src/audio/MusicalPrimitives';
+import { createInitialMusicState } from '../../src/music/MusicState';
+import { LEVEL_DEEP, createInitialTrackState } from '../../src/music/TrackState';
 import { describe, expect, it } from 'vitest';
-import { ArrangementEngine, sectionMix } from '../../src/music/ArrangementEngine';
+import { type Section, ArrangementEngine, sectionMix } from '../../src/music/ArrangementEngine';
 import { dominantZone, zoneAffinity } from '../../src/genres/GenreZones';
 import { HarmonyEngine, ratioToSemitones } from '../../src/music/HarmonyEngine';
 import { MelodyTracker, snapToScale } from '../../src/music/MelodyTracker';
@@ -102,12 +105,12 @@ describe('ArrangementEngine (§29.7 movement becomes arrangement)', () => {
     expect(run(0.9, 14_000)).toBe('build');
     expect(run(0.9, 9000)).toBe('drop');
     expect(run(0.05, 9000)).toBe('break');
-    // The break steps the kick aside without going silent (§32): the
-    // percussion and the top end still carry it.
-    // The break keeps what the player built harmonically, and drops the kick.
-    expect(sectionMix('break').drums).toBeLessThan(sectionMix('drop').drums);
-    expect(sectionMix('break').drums).toBeGreaterThan(0.4);
+    // §76: the break takes the drums OUT rather than turning them down, and
+    // keeps everything the player built on top of them.
+    expect(sectionMix('break').drums).toBe(0);
+    expect(sectionMix('break').bass).toBe(0);
     expect(sectionMix('break').harmony).toBe(1);
+    expect(sectionMix('break').texture).toBeGreaterThan(0.5);
   });
 });
 
@@ -165,5 +168,59 @@ describe('§64 a drop has to have something to drop', () => {
     push(engine, 20_000, false);
     expect(push(engine, 1000, true, 20_250)).toBe('build');
     expect(push(engine, 12_000, true, 21_500)).toBe('drop');
+  });
+});
+
+describe('§76 sections build themselves by adding and removing parts', () => {
+  const deep = { unlocked: true, level: LEVEL_DEEP };
+  const full = (form: Section) => ({
+    ...createInitialTrackState(),
+    genre: 'techno' as const,
+    form,
+    bpm: 132,
+    drums: { kick: deep, snare: deep, hats: deep },
+    bass: deep,
+    harmony: deep,
+    melody: deep,
+    texture: deep,
+    rootMidi: 45,
+    harmonyIntervals: [0, 3, 7],
+    melodyNotes: [69, 72, 76],
+  });
+  const music = { ...createInitialMusicState(), bpm: 132, tempoConfidence: 0.6, rhythmDensity: 1 };
+  const partsIn = (form: Section) => {
+    const graph = buildLayerGraph(music, undefined, [], full(form));
+    return Object.fromEntries(
+      (['drums', 'bass', 'harmony', 'melody', 'texture'] as const).map((layer) => [
+        layer,
+        graph.layers[layer].primitives.length > 0,
+      ]),
+    );
+  };
+
+  it('an intro is a kick and the air around it — the bass has not arrived', () => {
+    const intro = partsIn('intro');
+    expect(intro.drums).toBe(true);
+    expect(intro.bass).toBe(false);
+    expect(intro.melody).toBe(false);
+  });
+
+  it('a build takes the floor OUT, and the drop puts it back', () => {
+    expect(partsIn('build').bass).toBe(false);
+    expect(partsIn('drop').bass).toBe(true);
+    expect(partsIn('drop').drums).toBe(true);
+  });
+
+  it('a break drops the drums and the bass and keeps what was built on top', () => {
+    const brk = partsIn('break');
+    expect(brk.drums).toBe(false);
+    expect(brk.bass).toBe(false);
+    expect(brk.harmony).toBe(true);
+    expect(brk.melody).toBe(true);
+  });
+
+  it('and the groove has everything the player earned', () => {
+    const groove = partsIn('groove');
+    expect(Object.values(groove).every(Boolean)).toBe(true);
   });
 });

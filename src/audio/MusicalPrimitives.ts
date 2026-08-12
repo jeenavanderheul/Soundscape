@@ -1307,16 +1307,40 @@ export function buildLayerGraph(
       ...graph.layers,
       drums: {
         ...graph.layers.drums,
-        primitives: authored('drums', drums),
+        // §76: a section that sets a layer to zero takes the PART OUT — it does
+        // not play it quietly. A break with the kick gone is a different piece
+        // of music from a break with the kick at 0.55, and the reference
+        // arrangements build themselves by adding and removing parts.
+        primitives: mix.drums === 0 ? [] : authored('drums', drums),
         // §62 mutation: the faster you fly, the less the grid holds.
         density: Math.max(0, density - loose),
         gain: level,
       },
-      bass: { ...graph.layers.bass, primitives: authored('bass', bass), gain: level },
-      harmony: { ...graph.layers.harmony, primitives: authored('harmony', harmony), gain: level },
-      melody: { ...graph.layers.melody, primitives: authored('melody', melody), gain: level },
-      texture: { ...graph.layers.texture, primitives: authored('texture', texture), gain: level },
-      atmosphere: { ...graph.layers.atmosphere, primitives: authored('atmosphere', atmosphere), gain: level },
+      bass: {
+        ...graph.layers.bass,
+        primitives: mix.bass === 0 ? [] : authored('bass', bass),
+        gain: level,
+      },
+      harmony: {
+        ...graph.layers.harmony,
+        primitives: mix.harmony === 0 ? [] : authored('harmony', harmony),
+        gain: level,
+      },
+      melody: {
+        ...graph.layers.melody,
+        primitives: mix.melody === 0 ? [] : authored('melody', melody),
+        gain: level,
+      },
+      texture: {
+        ...graph.layers.texture,
+        primitives: mix.texture === 0 ? [] : authored('texture', texture),
+        gain: level,
+      },
+      atmosphere: {
+        ...graph.layers.atmosphere,
+        primitives: mix.atmosphere === 0 ? [] : authored('atmosphere', atmosphere),
+        gain: level,
+      },
     },
     // §48: the grammar's own aggression decides how hard the mix pumps.
     production: { duck: Math.min(0.7, grammar.drive * 1.7) },
