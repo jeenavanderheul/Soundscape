@@ -158,3 +158,32 @@ describe('in the game you discover it layer by layer', () => {
     expect(trackParts(game)).toHaveLength(14);
   });
 });
+
+describe('§85 DROP II brings something that was impossible before it', () => {
+  const ids = (form: TrackState['form']) =>
+    trackParts(buildSubPressureGraph({ track: finished(form) })).map((p) => p.id);
+
+  it('the finale answers the bass, throws noise and lets the grid mutate', () => {
+    const finale = ids('return');
+    expect(finale).toEqual(expect.arrayContaining([
+      'sub-pressure-finale-response',
+      'sub-pressure-finale-noise',
+      'sub-pressure-finale-mutation',
+    ]));
+  });
+
+  it('and nowhere else — not even in DROP I or DEEP FLIGHT', () => {
+    for (const form of ['drop', 'deep', 'groove', 'break'] as const) {
+      expect(ids(form).filter((id) => id.includes('finale'))).toEqual([]);
+    }
+  });
+
+  it('a sketch gets no finale: the bass has to have grown deep first', () => {
+    const shallow: TrackState = {
+      ...finished('return'),
+      bass: { unlocked: true, level: LEVEL_EARNED },
+    };
+    const parts = trackParts(buildSubPressureGraph({ track: shallow })).map((p) => p.id);
+    expect(parts.filter((id) => id.includes('finale'))).toEqual([]);
+  });
+});

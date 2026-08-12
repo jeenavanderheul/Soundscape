@@ -182,6 +182,14 @@ const LABELS: Record<Section, string> = {
   mutation: 'MUTATION',
 };
 
+/**
+ * §85: DROP II is the only phase where parts arrive that were impossible
+ * before it. Everything else is the same material, mixed differently.
+ */
+export function isFinale(section: Section): boolean {
+  return section === 'return';
+}
+
 export function sectionLabel(section: Section): string {
   return LABELS[section];
 }

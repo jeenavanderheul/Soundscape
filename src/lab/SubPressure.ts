@@ -7,7 +7,7 @@ import {
   type MusicalPrimitive,
   type PrimitiveKind,
 } from '../audio/MusicalPrimitives';
-import { sectionMix } from '../music/ArrangementEngine';
+import { isFinale, sectionMix } from '../music/ArrangementEngine';
 import type { Performance } from '../music/Performance';
 import { LEVEL_DEEP, type TrackState } from '../music/TrackState';
 
@@ -174,6 +174,28 @@ export function buildSubPressureGraph(
       code: (g) => `s("bytebeat").slow(2).bpf(1300).crush(5).distort(1.15).postgain(.3).gain(${g}).orbit(3)`,
     },
   ];
+
+  // §85: DROP II is the only place these exist. Not a louder mix — parts that
+  // were impossible before the flight had been all the way through.
+  if (isFinale(track?.form ?? 'none') && reveals(track, 'bass', true)) {
+    parts.push(
+      {
+        id: 'sub-pressure-finale-response', kind: 'response', layer: 'bass', role: 'bass', deep: true,
+        gain: 0.3 + wind * 0.1,
+        code: (g) => `note("~ ~ c1 ~ ~ c1 ~ [c1 bb0]").s("sine").lpf(96).decay(.3).sustain(.2).distort(.4).gain(${g}).orbit(2)`,
+      },
+      {
+        id: 'sub-pressure-finale-noise', kind: 'noise', layer: 'texture', role: 'texture', deep: true,
+        gain: 0.08 + edge * 0.05,
+        code: (g) => `s("white").clip(1).hpf(4200).attack(.45).release(.35).room(.5).distort(1.2).gain(${g}).mask("<1 0!7>")`,
+      },
+      {
+        id: 'sub-pressure-finale-mutation', kind: 'perc', layer: 'drums', role: 'hats', deep: true,
+        gain: 0.06 + edge * 0.06,
+        code: (g) => `s("hh*16").bank("AkaiMPC60").degradeBy(${formatGain(0.7 - edge * 0.3)}).speed("<1 1.5 .75 2>").hpf(6000).gain(${g})`,
+      },
+    );
+  }
 
   for (const part of parts) {
     if (!reveals(track, part.role, part.deep)) continue;

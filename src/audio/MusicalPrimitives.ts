@@ -10,7 +10,7 @@
  * The same earned kick becomes four-on-the-floor in Techno, a break in DnB
  * and a distant heartbeat in Ambient.
  */
-import { sectionMix, type SectionStyle } from '../music/ArrangementEngine';
+import { isFinale, sectionMix, type SectionStyle } from '../music/ArrangementEngine';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { Performance } from '../music/Performance';
 import type { LayerVariations } from '../music/Variation';
@@ -188,6 +188,13 @@ export function createEmptyLayerGraph(bpm = 0): MusicalLayerGraph {
       events: emptyLayer(),
     },
   };
+}
+
+/** §85: has this track actually been grown, or is it still a sketch? */
+function trackIsDeep(track?: TrackState): boolean {
+  if (!track) return false;
+  return [track.drums.kick, track.drums.snare, track.bass, track.harmony]
+    .every((layer) => layer.unlocked && layer.level >= LEVEL_DEEP);
 }
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
@@ -1375,6 +1382,42 @@ export function buildLayerGraph(
   // every frame, which §11 forbids. Eight steps is inaudible as stepping and
   // keeps the graph diff-stable.
   const level = Math.round(clamp01(motion) * 8) / 8;
+
+  /**
+   * §85 DROP II is the payoff, so something has to arrive there that was not
+   * possible anywhere else — a louder mix is not a reward. Only in the finale,
+   * and only once the track has actually grown deep, does the world answer the
+   * bass, throw noise across the top and let the grid mutate.
+   */
+  if (isFinale(track?.form ?? 'none') && trackIsDeep(track)) {
+    const key = NOTE_NAMES[(((track?.rootMidi ?? 45) % 12) + 12) % 12];
+    bass.push({
+      id: 'finale-response',
+      kind: 'bass',
+      layer: 'bass',
+      parameters: {
+        code:
+          `note("~ ~ ${key}1 ~ ~ ${key}1 ~ [${key}1 ${key}1]")` +
+          `.s("${grammar.bassVoice}").lpf(${Math.round(180 + grammar.drive * 260)})` +
+          `.lpq(9).distort(${round2(0.8 + grammar.drive).toFixed(2)}).postgain(.28)` +
+          `.gain(${round2(grammar.bassGain * 0.55 * mix.bass)})`,
+      },
+      allowedTransforms: [],
+    });
+    texture.push({
+      id: 'finale-noise',
+      kind: 'texture',
+      layer: 'texture',
+      parameters: {
+        code:
+          `s("white").clip(1).hpf(${Math.round(3200 + grammar.drive * 3000)})` +
+          `.attack(.45).release(.35).room(.5).distort(${round2(0.3 + grammar.drive).toFixed(2)})` +
+          `.gain(${round2(0.09 + grammar.drive * 0.06)}).mask("<1 0!7>")`,
+      },
+      allowedTransforms: [],
+    });
+  }
+
   return {
     ...graph,
     layers: {
