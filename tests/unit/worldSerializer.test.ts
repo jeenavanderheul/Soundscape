@@ -135,6 +135,52 @@ describe('serialize', () => {
 });
 
 describe('validate', () => {
+  it('round-trips SUB PRESSURE tracks and snapshots', () => {
+    const world = sampleWorld();
+    world.trackState.genre = 'sub-pressure';
+    world.genreHistory = [{
+      atMs: 100,
+      affinity: {
+        techno: 0,
+        'sub-pressure': 0.9,
+        ambient: 0,
+        jazz: 0,
+        bass: 0,
+        garage: 0,
+        house: 0,
+        trap: 0,
+        breakbeat: 0,
+        dub: 0,
+        experimental: 0,
+      },
+      dominant: 'sub-pressure',
+      confidence: 0.8,
+    }];
+    const result = validate(serialize(world, 100));
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.save.trackState.genre).toBe('sub-pressure');
+      expect(result.save.genreHistory[0]!.dominant).toBe('sub-pressure');
+    }
+  });
+
+  it('normalizes dormant saved genres so they cannot reactivate a world', () => {
+    const save = serialize(sampleWorld(), 0) as unknown as Record<string, unknown>;
+    save.trackState = { ...createInitialTrackState(), genre: 'ambient' };
+    save.genreHistory = [{
+      atMs: 1,
+      affinity: { ambient: 1 },
+      dominant: 'ambient',
+      confidence: 1,
+    }];
+    const result = validate(save);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.save.trackState.genre).toBeNull();
+      expect(result.save.genreHistory[0]!.dominant).toBeNull();
+    }
+  });
+
   it('rejects non-object input without throwing', () => {
     for (const raw of [null, undefined, 7, 'nope', [], true]) {
       const result = validate(raw);

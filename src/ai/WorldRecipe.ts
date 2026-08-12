@@ -1,5 +1,5 @@
-import type { GenreAffinity } from '../music/MusicState';
 import type { LayerName } from '../audio/MusicalPrimitives';
+import { ACTIVE_WORLD_GENRES, type ActiveWorldGenre } from '../genres/ActiveWorlds';
 import { guardPatternMap } from './PatternGuard';
 
 /**
@@ -11,7 +11,7 @@ import { guardPatternMap } from './PatternGuard';
 
 export type RecipeWaveform = 'sine' | 'triangle' | 'square' | 'saw' | 'noise';
 /** §57: all ten worlds sit on the compass, so any of them can be placed. */
-export type RecipeGenre = keyof GenreAffinity;
+export type RecipeGenre = ActiveWorldGenre;
 
 export interface RecipeResonator {
   /** Compass bearing in degrees; 0 = north, 90 = east. */
@@ -52,16 +52,7 @@ export const RECIPE_LIMITS = {
 } as const;
 
 const WAVEFORMS: readonly RecipeWaveform[] = ['sine', 'triangle', 'square', 'saw', 'noise'];
-const GENRES: readonly RecipeGenre[] = [
-  'techno',
-  'ambient',
-  'jazz',
-  'bass',
-  'garage',
-  'house',
-  'trap',
-  'breakbeat',
-];
+const GENRES: readonly RecipeGenre[] = ACTIVE_WORLD_GENRES;
 const LAYERS: readonly LayerName[] = ['drums', 'bass', 'harmony', 'melody', 'texture', 'atmosphere'];
 
 /** The JSON Schema handed to the model, so the response is structurally valid. */
@@ -193,15 +184,15 @@ export function validateRecipe(raw: unknown): RecipeValidation {
       name: name === '' ? 'unnamed world' : name,
       zones: {
         north: oneOf(zonesRaw.north, GENRES, 'techno'),
-        southSouthEast: oneOf(zonesRaw.southSouthEast, GENRES, 'experimental'),
-        westNorthWest: oneOf(zonesRaw.westNorthWest, GENRES, 'dub'),
-        northNorthEast: oneOf(zonesRaw.northNorthEast, GENRES, 'garage'),
-        eastNorthEast: oneOf(zonesRaw.eastNorthEast, GENRES, 'jazz'),
-        eastSouthEast: oneOf(zonesRaw.eastSouthEast, GENRES, 'house'),
-        south: oneOf(zonesRaw.south, GENRES, 'ambient'),
-        southSouthWest: oneOf(zonesRaw.southSouthWest, GENRES, 'breakbeat'),
-        westSouthWest: oneOf(zonesRaw.westSouthWest, GENRES, 'bass'),
-        northNorthWest: oneOf(zonesRaw.northNorthWest, GENRES, 'trap'),
+        southSouthEast: oneOf(zonesRaw.southSouthEast, GENRES, 'sub-pressure'),
+        westNorthWest: oneOf(zonesRaw.westNorthWest, GENRES, 'techno'),
+        northNorthEast: oneOf(zonesRaw.northNorthEast, GENRES, 'techno'),
+        eastNorthEast: oneOf(zonesRaw.eastNorthEast, GENRES, 'techno'),
+        eastSouthEast: oneOf(zonesRaw.eastSouthEast, GENRES, 'sub-pressure'),
+        south: oneOf(zonesRaw.south, GENRES, 'sub-pressure'),
+        southSouthWest: oneOf(zonesRaw.southSouthWest, GENRES, 'sub-pressure'),
+        westSouthWest: oneOf(zonesRaw.westSouthWest, GENRES, 'sub-pressure'),
+        northNorthWest: oneOf(zonesRaw.northNorthWest, GENRES, 'techno'),
       },
       // A world with no resonators would be silent; fall back to the seeded set.
       resonators,

@@ -16,6 +16,14 @@ import { createInitialTrackState } from '../../src/music/TrackState';
 const SEED = 12345;
 
 describe('§36 the forest is the score', () => {
+  it('gives SUB PRESSURE a heavy pillar, root and shard ecology', () => {
+    const pressure = ECOLOGIES['sub-pressure'];
+    expect(pressure.name).toBe('SUB PRESSURE FOREST');
+    expect(pressure.forms).toEqual(['pillar', 'shard']);
+    expect(pressure.mix.root).toBeGreaterThan(1);
+    expect(pressure.mix.trunk).toBeGreaterThan(1);
+  });
+
   it('grows the same forest for the same cell, every time', () => {
     const a = growthsInCell(SEED, 4, -2, ECOLOGIES.techno, undefined);
     const b = growthsInCell(SEED, 4, -2, ECOLOGIES.techno, undefined);

@@ -13,6 +13,13 @@ import type { GenreAffinity } from '../../src/music/MusicState';
 const NONE: GenreAffinity = { techno: 0, 'sub-pressure': 0, ambient: 0, jazz: 0, bass: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
 
 describe('§33 zone palette — every direction is a place you can see', () => {
+  it('gives SUB PRESSURE a dark, high-relief identity distinct from Techno', () => {
+    const pressure = GENRE_LOOKS['sub-pressure'];
+    expect(pressure.relief).toBeGreaterThan(0.7);
+    expect(pressure.color.r + pressure.color.g + pressure.color.b).toBeLessThan(1);
+    expect(pressure).not.toEqual(GENRE_LOOKS.techno);
+  });
+
   it('leaves the void neutral', () => {
     expect(lookFor(NONE)).toEqual(NEUTRAL_LOOK);
   });

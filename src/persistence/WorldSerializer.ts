@@ -1,5 +1,6 @@
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import { createInitialMusicState, GENRE_NAMES } from '../music/MusicState';
+import { isActiveWorldGenre } from '../genres/ActiveWorlds';
 import type { FrequencyState, Vec3Data, Waveform } from '../player/FrequencyState';
 import type { ResonatorData } from '../world/Resonator';
 import { HZ_SCALE_RANGE, type StructureData } from '../world/StructureData';
@@ -182,11 +183,10 @@ function genreSnapshot(raw: unknown): GenreSnapshot | null {
     bass: num(a.bass, 0, 0, 1),
     experimental: num(a.experimental, 0, 0, 1),
   };
-  const dominant = (GENRE_NAMES as readonly string[]).includes(
-    raw.dominant as string,
-  )
-    ? (raw.dominant as keyof GenreAffinity)
-    : null;
+  for (const genre of GENRE_NAMES) {
+    if (!isActiveWorldGenre(genre)) affinity[genre] = 0;
+  }
+  const dominant = isActiveWorldGenre(raw.dominant) ? raw.dominant : null;
   return {
     atMs: num(raw.atMs, 0, 0, Number.MAX_SAFE_INTEGER),
     affinity,
@@ -229,7 +229,6 @@ function validateTrackState(raw: unknown): TrackState {
           .map((v) => Math.min(max, Math.max(min, Math.round(v))))
           .slice(0, 8)
       : [];
-  const GENRES: readonly string[] = GENRE_NAMES;
   const FORMS = ['none', 'intro', 'groove', 'build', 'drop', 'break', 'return', 'mutation'];
   return {
     ...base,
@@ -242,7 +241,7 @@ function validateTrackState(raw: unknown): TrackState {
       ? numbers(r.harmonyIntervals, 0, 24)
       : base.harmonyIntervals,
     melodyNotes: numbers(r.melodyNotes, 12, 107),
-    genre: typeof r.genre === 'string' && GENRES.includes(r.genre) ? (r.genre as TrackState['genre']) : null,
+    genre: isActiveWorldGenre(r.genre) ? r.genre : null,
     form: typeof r.form === 'string' && FORMS.includes(r.form) ? (r.form as TrackState['form']) : 'none',
     drums: {
       kick: pattern(drums.kick),

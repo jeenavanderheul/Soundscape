@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { guardPattern, guardPatternMap } from '../../src/ai/PatternGuard';
-import { RECIPE_LIMITS, validateRecipe } from '../../src/ai/WorldRecipe';
+import { RECIPE_LIMITS, RECIPE_SCHEMA, validateRecipe } from '../../src/ai/WorldRecipe';
+import { SYSTEM_PROMPT } from '../../src/ai/WorldPromptClient';
 
 describe('PatternGuard (§30: generated code is pattern language or nothing)', () => {
   it('accepts real Strudel patterns', () => {
@@ -43,6 +44,45 @@ describe('PatternGuard (§30: generated code is pattern language or nothing)', (
 });
 
 describe('validateRecipe (§30: unknown model output becomes trusted data)', () => {
+  it('exposes only Techno and SUB PRESSURE to generated worlds', () => {
+    expect(RECIPE_SCHEMA.properties.zones.properties.north.enum).toEqual([
+      'techno',
+      'sub-pressure',
+    ]);
+    expect(SYSTEM_PROMPT).toContain('techno — repetition');
+    expect(SYSTEM_PROMPT).toContain('sub-pressure — seismic UK bass');
+    expect(SYSTEM_PROMPT).not.toContain('ambient — space');
+  });
+
+  it('falls dormant and invalid recipe zones back by hemisphere', () => {
+    const { zones } = validateRecipe({
+      zones: {
+        north: 'ambient',
+        northNorthEast: 'jazz',
+        eastNorthEast: 'nonsense',
+        eastSouthEast: 'house',
+        southSouthEast: 'trap',
+        south: 'bass',
+        southSouthWest: 'dub',
+        westSouthWest: 'breakbeat',
+        westNorthWest: 'garage',
+        northNorthWest: 'experimental',
+      },
+    }).recipe;
+    expect(zones).toEqual({
+      north: 'techno',
+      northNorthEast: 'techno',
+      eastNorthEast: 'techno',
+      eastSouthEast: 'sub-pressure',
+      southSouthEast: 'sub-pressure',
+      south: 'sub-pressure',
+      southSouthWest: 'sub-pressure',
+      westSouthWest: 'sub-pressure',
+      westNorthWest: 'techno',
+      northNorthWest: 'techno',
+    });
+  });
+
   it('clamps every field and drops unsafe patterns', () => {
     const { recipe, rejected } = validateRecipe({
       name: 'x'.repeat(200),
@@ -57,7 +97,7 @@ describe('validateRecipe (§30: unknown model output becomes trusted data)', () 
       patterns: { drums: 's("bd*4")', bass: 'window.alert(1)' },
     });
     expect(recipe.name.length).toBeLessThanOrEqual(RECIPE_LIMITS.maxNameLength);
-    expect(recipe.zones.eastNorthEast).toBe('jazz'); // unknown genre falls back
+    expect(recipe.zones.eastNorthEast).toBe('techno');
     expect(recipe.resonators).toHaveLength(RECIPE_LIMITS.maxResonators);
     expect(recipe.resonators[0]!.angleDeg).toBe(90); // 450° wraps
     expect(recipe.resonators[0]!.distance).toBe(RECIPE_LIMITS.maxDistance);
