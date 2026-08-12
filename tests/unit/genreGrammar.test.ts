@@ -227,7 +227,7 @@ describe('§49 every world has its own voices', () => {
 describe('§50 the reference presets are the tempo and the mix', () => {
   it('every region sits at the tempo its preset was written at', () => {
     const at = (genre: Exclude<TrackGenre, null>) => regionBpm(genreGrammar(genre));
-    expect(at('techno')).toBe(132);
+    expect(at('techno')).toBe(134); // §80
     expect(at('garage')).toBe(135);
     expect(at('jazz')).toBe(110);
     expect(at('house')).toBe(124);

@@ -119,7 +119,7 @@ describe('buildLayerGraph M7 layers', () => {
     expect(style(affinity({ jazz: 0.8 }))).toBe('swing');
     expect(style(affinity({ ambient: 0.8 }))).toBe('sparse');
     expect(style(affinity({ experimental: 0.8 }))).toBe('irregular');
-    expect(style(affinity({ techno: 0.8 }))).toBe('four');
+    expect(style(affinity({ techno: 0.8 }))).toBe('machine') // §80;
   });
 
   it('stays neutral below the attractor threshold', () => {

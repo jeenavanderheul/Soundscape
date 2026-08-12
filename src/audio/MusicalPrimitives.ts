@@ -233,7 +233,9 @@ export type DrumStyle =
   /** §69 breakbeat: a kick that lands broken — never on all four. */
   | 'broken'
   /** §73 bass music: four to the floor, distorted and clipped. */
-  | 'hardgroove';
+  | 'hardgroove'
+  /** §80 techno: four to the floor, driven and then held down by postgain. */
+  | 'machine';
 export type HatStyle =
   | 'offbeat'
   | 'sixteenth'
@@ -432,34 +434,38 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
   // §71 TECHNO, from the reference preset: 132 BPM, a 909 four-to-the-floor
   // with a second machine underneath, and everything else quiet enough that
   // the kick and the sub carry the whole thing.
+  // §80 TECHNO / MACHINE PRESSURE, from the reference preset: 134 BPM, a 909
+  // doubled by an 808 and an OberheimDMX, and everything driven hard and then
+  // pulled back with postgain so the weight is pressure, not volume.
   techno: {
-    percStyle: 'toms',
     ...NEUTRAL_GRAMMAR,
-    bpmCentre: 132,
+    bpmCentre: 134,
     bpmMin: 125,
     bpmMax: 145,
-    drive: 0.32,
+    drive: 0.42,
     drumBank: 'RolandTR909',
-    percBank: 'RolandTR808',
-    kickStyle: 'four',
+    percBank: 'OberheimDMX',
+    deepBank: 'RolandTR808',
+    kickStyle: 'machine',
     hatStyle: 'techno',
-    snareStyle: 'hard',
+    snareStyle: 'clap',
     bassStyle: 'deep',
     chordStyle: 'darkpad',
     melodyStyle: 'sequence',
     textureStyle: 'machine',
+    percStyle: 'machine',
     bassVoice: 'sawtooth',
-    chordVoice: 'square',
-    leadVoice: 'pulse',
+    chordVoice: 'supersaw',
+    leadVoice: 'clavisynth',
     percCycle: 4,
-    kickGain: 0.95,
-    snareGain: 0.42,
-    hatGain: 0.085,
-    bassGain: 0.72,
-    harmonyGain: 0.065,
-    melodyGain: 0.035,
-    textureGain: 0.006,
-    harmonySlow: 4,
+    kickGain: 1,
+    snareGain: 0.6,
+    hatGain: 0.22,
+    bassGain: 0.5,
+    harmonyGain: 0.1,
+    melodyGain: 0.06,
+    textureGain: 0.02,
+    harmonySlow: 2,
     melodySlow: 2,
   },
   // §73 BASS MUSIC, from the reference preset: 150 BPM, a distorted 909 four

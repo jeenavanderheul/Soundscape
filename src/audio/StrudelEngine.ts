@@ -276,7 +276,7 @@ function styleOf<T extends string>(value: unknown, allowed: readonly T[], fallba
 
 const KICK_STYLES = [
   'four', 'break', 'sparse', 'swing', 'irregular', 'twostep', 'halftime', 'echo', 'timpani',
-  'broken', 'hardgroove',
+  'broken', 'hardgroove', 'machine',
 ] as const;
 const HAT_STYLES = [
   'offbeat', 'sixteenth', 'swing', 'sparse', 'dirt', 'shuffle', 'roll', 'dark', 'muffled',
@@ -483,7 +483,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       // §32: the second hat voice — 32nds of dirt at the very top.
       if (style === 'dirt') {
         return samplesLoaded
-          ? `s("hh*32")${drumBank}.hpf(9500).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 1.2).toFixed(3)}")`
+          ? `s("hh*32")${drumBank}.degradeBy(.55).hpf(9500).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${(Number(gain) * 1.2).toFixed(3)}")`
           : `s("white*32").decay(.015).sustain(0).hpf(9500).gain(${gain})`;
       }
       switch (style) {
@@ -554,6 +554,13 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         return samplesLoaded
           ? `stack(s("~ ~ rim ~ ~ rim ~ ~")${drumBank}.hpf(2500).every(4, x => x.ply(2)).gain(${gain}), s("white*8").decay(.02).sustain(0).hpf(9000).swingBy(1/3, 8).gain(${(Number(gain) * 0.47).toFixed(3)}))`
           : `s("~ ~ white ~ ~ white ~ ~").decay(.03).sustain(0).hpf(2500).gain(${gain})`;
+      }
+      if (p['style'] === 'machine') {
+        // §80 techno depth: one syncopated kick off another machine, filtered
+        // down so it lands under the four rather than beside it.
+        return samplesLoaded
+          ? `s("~ ~ bd ~ ~ bd ~ ~")${percBank}.lpf(1800).gain(${gain})`
+          : `s("~ ~ sbd ~ ~ sbd ~ ~").lpf(1800).gain(${gain})`;
       }
       if (p['style'] === 'toms') {
         // §71 techno: toms walking across the bar, rim ghosts on the other machine.
