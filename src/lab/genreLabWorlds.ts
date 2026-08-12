@@ -8,3 +8,7 @@ export const GENRE_LAB_PRESETS = [
 export function genreLabPresetLabel(preset: GenreLabPreset): string {
   return preset === 'sub-pressure' ? 'sub pressure' : preset;
 }
+
+export function isTrackGenrePreset(preset: GenreLabPreset): preset is 'techno' {
+  return preset === 'techno';
+}

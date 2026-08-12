@@ -13,7 +13,13 @@ import { createInitialMusicState } from '../music/MusicState';
 import { performanceFrom } from '../music/Performance';
 import { LEVEL_DEEP, createInitialTrackState, type TrackGenre, type TrackState } from '../music/TrackState';
 import type { Section } from '../music/ArrangementEngine';
-import { GENRE_LAB_WORLDS } from './genreLabWorlds';
+import { buildSubPressureGraph, SUB_PRESSURE_BPM } from './SubPressure';
+import {
+  GENRE_LAB_PRESETS,
+  genreLabPresetLabel,
+  isTrackGenrePreset,
+  type GenreLabPreset,
+} from './genreLabWorlds';
 
 /**
  * §68 GENRE LAB — a bench, not a game.
@@ -93,7 +99,7 @@ const inputs = new Map<string, HTMLInputElement>();
 /** What the grammar itself says, before anything on this page touched it. */
 const DEFAULT_SECTION: Section = 'drop';
 
-let genre: Exclude<TrackGenre, null> = 'techno';
+let preset: GenreLabPreset = 'techno';
 let section: Section = 'drop';
 let playing = false;
 const sectionSelect = document.createElement('select');
@@ -154,24 +160,32 @@ function resetKnobs(): void {
 
 /** Everything the sliders say, turned into the graph the engine plays. */
 function currentGraph(): MusicalLayerGraph {
-  const track = finishedTrack(genre, section);
+  const track = isTrackGenrePreset(preset) ? finishedTrack(preset, section) : null;
+  const bpm = track?.bpm ?? SUB_PRESSURE_BPM;
   const music = {
     ...createInitialMusicState(),
-    bpm: track.bpm,
+    bpm,
     tempoConfidence: 0.6,
     dynamics: values.get('energy') ?? 0.7,
     rhythmDensity: 1,
     pitchCenter: 220,
   };
-  const graph = buildLayerGraph(
-    music,
-    affinityFor(genre),
-    [],
-    track,
-    {},
-    values.get('motion') ?? 1,
-    values.get('energy') ?? 0.7,
-  );
+  const graph = track
+    ? buildLayerGraph(
+        music,
+        affinityFor(track.genre!),
+        [],
+        track,
+        {},
+        values.get('motion') ?? 1,
+        values.get('energy') ?? 0.7,
+      )
+    : buildSubPressureGraph({
+        motion: values.get('motion') ?? 1,
+        mix: Object.fromEntries(
+          LAYER_NAMES.map((layer) => [layer, values.get(`mix-${layer}`) ?? 1]),
+        ),
+      });
   graph.performance = performanceFrom(music, {
     altitude: values.get('altitude') ?? 19,
     amplitude: values.get('amplitude') ?? 0.4,
@@ -210,7 +224,7 @@ async function start(): Promise<void> {
   playing = true;
   apply();
   const info = strudel.status;
-  status.textContent = `${info.local ? 'local kit' : info.samples ? 'remote kit' : 'SYNTH FALLBACK'} · ${genre} · ${graphBpm()} bpm`;
+  status.textContent = `${info.local ? 'local kit' : info.samples ? 'remote kit' : 'SYNTH FALLBACK'} · ${genreLabPresetLabel(preset)} · ${graphBpm()} bpm`;
   window.setInterval(() => {
     if (!playing) return;
     codeBox.textContent = strudel.code;
@@ -233,18 +247,23 @@ function stop(): void {
 // --- build the page -------------------------------------------------------
 
 const genreRow = $('genres');
-for (const world of GENRE_LAB_WORLDS) {
+for (const world of GENRE_LAB_PRESETS) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.textContent = world;
-  button.setAttribute('aria-pressed', String(world === genre));
+  button.textContent = genreLabPresetLabel(world);
+  button.setAttribute('aria-pressed', String(world === preset));
   button.addEventListener('click', () => {
-    genre = world;
+    preset = world;
+    sectionSelect.disabled = !isTrackGenrePreset(preset);
     for (const other of genreRow.querySelectorAll('button')) {
-      other.setAttribute('aria-pressed', String(other.textContent === world));
+      other.setAttribute('aria-pressed', String(other.textContent === genreLabPresetLabel(world)));
     }
     apply();
-    if (playing) status.textContent = `${genre} · ${genreGrammar(genre).bpmCentre} bpm · ${genreGrammar(genre).drumBank}`;
+    if (playing) {
+      status.textContent = isTrackGenrePreset(preset)
+        ? `${preset} · ${genreGrammar(preset).bpmCentre} bpm · ${genreGrammar(preset).drumBank}`
+        : `sub pressure · ${Math.round(SUB_PRESSURE_BPM)} bpm · EmuSP12 / AkaiMPC60`;
+    }
   });
   genreRow.appendChild(button);
 }
@@ -288,6 +307,8 @@ $('bare').addEventListener('click', () => {
 });
 $('reset').addEventListener('click', () => {
   resetKnobs();
-  status.textContent = playing ? `back to defaults · ${genre}` : 'back to defaults';
+  status.textContent = playing
+    ? `back to defaults · ${genreLabPresetLabel(preset)}`
+    : 'back to defaults';
 });
 apply();
