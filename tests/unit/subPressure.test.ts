@@ -51,7 +51,7 @@ describe('SUB PRESSURE, finished — what the genre lab plays', () => {
   it('applies motion and layer mix before rendering', () => {
     expect(buildPatternCode(buildSubPressureGraph({ motion: 0 }))).toBe('');
     expect(buildPatternCode(buildSubPressureGraph({ mix: { bass: 0.5 } })))
-      .toContain('.gain(0.4865)');
+      .toContain('.gain(0.486)');
   });
 
   /**

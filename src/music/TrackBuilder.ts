@@ -59,6 +59,8 @@ export interface TrackBuilderConfig {
    * multiple of the ladder time for the world to offer it anyway.
    */
   patienceFactor: number;
+  /** §82: paced time a rung must settle before the next layer may arrive. */
+  rungGapMs: number;
   /** Altitude below which the orb is skimming the ground — that is the low register. */
   groundAltitude: number;
   /** Altitude above which the orb is in open air. */
@@ -110,6 +112,13 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // Behaviour still earns a layer instantly; this is only how long the world
   // waits for a player who is doing nothing in particular.
   patienceFactor: 1.6,
+  // §82: ONE thing at a time. Both the patience clock and behaviour could fire
+  // on consecutive ticks, so a fast flight unlocked three or four rungs inside
+  // a second — heard as a burst of snares and bass rather than a track being
+  // built. A rung now has to settle before the next one may land. The gap is
+  // on the PACED clock, so speed still decides how fast a track is discovered
+  // (§46): at full speed this is ~2.5s of real time, at a crawl ~11s.
+  rungGapMs: 6000,
   groundAltitude: 8,
   airAltitude: 30,
   groundMs: 3500,
@@ -172,6 +181,8 @@ export class TrackBuilder {
   private groundMs = 0;
   private airMs = 0;
   private lastDeepenMs = 0;
+  /** §82: paced time the last rung (or depth) landed. */
+  private lastRungMs = Number.NEGATIVE_INFINITY;
   private lastTickMs: number | null = null;
   private paceClockMs = 0;
   /** Paced time the current track was born at, for §54's minimum life. */
@@ -228,6 +239,8 @@ export class TrackBuilder {
     this.groundMs = 0;
     this.airMs = 0;
     this.lastDeepenMs = 0;
+    // Nothing has landed yet, so the first rung is never made to wait (§82).
+    this.lastRungMs = Number.NEGATIVE_INFINITY;
     this.lastTickMs = null;
     this.conversation.reset();
     this.harmony.reset();
@@ -298,6 +311,7 @@ export class TrackBuilder {
     }
     this.activeMs = 0;
     this.lastDeepenMs = 0;
+    this.lastRungMs = this.activeMs;
     this.lowRegisterMs = 0;
     this.groundMs = 0;
     this.airMs = 0;
@@ -490,7 +504,12 @@ export class TrackBuilder {
     const patienceFactor =
       this.trackNumberValue === 1 ? config.patienceFactor : config.patienceFactor / 2;
     const patience = step === null ? 0 : step.atMs * patienceFactor;
-    if (step !== null && (this.intent(step.layer) || this.activeMs >= patience)) {
+    // §82: whatever earns it, a layer only lands once the previous one has had
+    // room to be heard. Without this, patience and behaviour fired on
+    // consecutive ticks and the track arrived in a lump.
+    const settled = this.activeMs - this.lastRungMs >= config.rungGapMs;
+    if (step !== null && settled && (this.intent(step.layer) || this.activeMs >= patience)) {
+      this.lastRungMs = this.activeMs;
       this.unlock(step.layer, nowMs);
       return;
     }
@@ -499,7 +518,10 @@ export class TrackBuilder {
     // the world stacks a second voice onto a layer you already earned — the
     // 808 body under the clap, the dirty saw under the sub — so a flight ends
     // on a produced track instead of a sketch.
-    if (this.activeMs - this.lastDeepenMs >= config.deepenIntervalMs) {
+    // §82: a second voice never lands on top of a new layer — but it keeps its
+    // OWN interval and does not consume the rung slot, or depth would starve
+    // width and a track would stop growing.
+    if (settled && this.activeMs - this.lastDeepenMs >= config.deepenIntervalMs) {
       const shallow = ladder.find(
         (candidate) =>
           layerUnlocked(current, candidate.layer) &&

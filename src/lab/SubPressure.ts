@@ -47,7 +47,14 @@ export const SUB_PRESSURE_BPM = regionBpm(genreGrammar('sub-pressure'));
 type Role = 'texture' | 'hats' | 'kick' | 'snare' | 'bass' | 'harmony' | 'melody';
 
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
-const formatGain = (value: number): string => String(Number(value.toFixed(5)));
+const formatGain = (value: number): string => String(Number(value.toFixed(3)));
+/**
+ * §11: a continuously drifting number re-evaluates the pattern every frame,
+ * which is heard as stuttering — a snare or a bass note retriggering over and
+ * over instead of playing. Everything the flight feeds in lands on eight steps
+ * first, exactly like Performance already does with its own values.
+ */
+const step8 = (value: number): number => Math.round(clamp01(value) * 8) / 8;
 
 function voice(
   id: string,
@@ -81,15 +88,15 @@ export function buildSubPressureGraph(
 ): MusicalLayerGraph {
   const graph = createEmptyLayerGraph(SUB_PRESSURE_BPM);
   const track = controls.track;
-  const motion = clamp01(controls.motion ?? 1);
+  const motion = step8(controls.motion ?? 1);
   const performance = controls.performance;
   // §3.1: `weight` is 1 skimming the ground and 0 in the air, so its inverse
   // is the height this world is flown at. The frozen 0.55 is gone.
-  const alt = performance ? clamp01(1 - performance.weight) : 0.55;
+  const alt = performance ? step8(1 - performance.weight) : 0.55;
   // §3.2: the wind in your hand. `push` runs 0.75..1.20, so it normalizes back.
-  const wind = performance ? clamp01((performance.push - 0.75) / 0.45) : 0.85;
+  const wind = performance ? step8((performance.push - 0.75) / 0.45) : 0.85;
   // §62: movement energy is what turns into edge — distortion and dust.
-  const edge = clamp01(controls.energy ?? 0.65);
+  const edge = step8(controls.energy ?? 0.65);
   // §76: the section decides which parts are even here. 'driven' is this
   // world's style: the bottom leaves in the build and comes back in the drop.
   const mix = sectionMix(track?.form ?? 'none', 'driven');

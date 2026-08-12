@@ -36,14 +36,25 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     builder.tick(1600, music, STILL);
     expect(store.getState().drums.kick.unlocked).toBe(true);
     expect(unlocked).toEqual(['kick']);
+    // §82: intent still earns the layer, but a rung has to be HEARD before the
+    // next one lands — otherwise a run of actions arrives as one lump.
     for (let i = 0; i < 3; i++) {
       builder.onAction({ atMs: 2000 + i * 400, hz: 900, amplitude: 0.5, release: false });
     }
     builder.tick(3300, music, STILL);
+    expect(store.getState().drums.hats.unlocked).toBe(false);
+    for (let t = 3800; t <= 14_000; t += 500) builder.tick(t, music, STILL);
+    for (let i = 0; i < 3; i++) {
+      builder.onAction({ atMs: 14_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
+    }
+    builder.tick(15_300, music, STILL);
     expect(store.getState().drums.hats.unlocked).toBe(true);
-    builder.onAction({ atMs: 4000, hz: 400, amplitude: 0.8, release: true });
-    builder.onAction({ atMs: 4500, hz: 400, amplitude: 0.9, release: true });
-    builder.tick(4600, music, STILL);
+    // A layer growing its second voice is also a thing arriving, so it takes
+    // its turn in the same queue — which is why the snare waits this long.
+    for (let t = 15_800; t <= 33_000; t += 500) builder.tick(t, music, STILL);
+    builder.onAction({ atMs: 33_000, hz: 400, amplitude: 0.8, release: true });
+    builder.onAction({ atMs: 33_500, hz: 400, amplitude: 0.9, release: true });
+    builder.tick(33_600, music, STILL);
     expect(store.getState().drums.snare.unlocked).toBe(true);
     expect(unlocked.slice(0, 3)).toEqual(['kick', 'hats', 'snare']);
   });
