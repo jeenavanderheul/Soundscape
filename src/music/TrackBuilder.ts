@@ -450,7 +450,17 @@ export class TrackBuilder {
       track.bass.unlocked &&
       earned >= ARRANGEMENT_CONFIG.peakMinLayers &&
       this.paceClockMs - this.trackStartedMs >= ARRANGEMENT_CONFIG.peakMinTrackMs;
-    const section = this.arrangement.tick(this.paceClockMs, paced, flight.energy, readyToPeak);
+    // §84: the arc walks in CYCLES of one bar at the track's own tempo, and
+    // each world flies its own order through the eight phases (§61).
+    this.arrangement.setStyle(genreGrammar(genre).sectionStyle);
+    const barMs = nextBpm > 0 ? (4 * 60_000) / nextBpm : 1800;
+    const section = this.arrangement.tick(
+      this.paceClockMs,
+      paced,
+      flight.energy,
+      readyToPeak,
+      barMs,
+    );
 
     if (
       nextBpm !== track.bpm ||

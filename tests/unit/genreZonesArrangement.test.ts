@@ -2,7 +2,7 @@ import { buildLayerGraph } from '../../src/audio/MusicalPrimitives';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { LEVEL_DEEP, createInitialTrackState } from '../../src/music/TrackState';
 import { describe, expect, it } from 'vitest';
-import { type Section, ArrangementEngine, sectionMix } from '../../src/music/ArrangementEngine';
+import { type Section, ArrangementEngine, sectionLabel, sectionMix } from '../../src/music/ArrangementEngine';
 import { dominantZone, zoneAffinity } from '../../src/genres/GenreZones';
 import { HarmonyEngine, ratioToSemitones } from '../../src/music/HarmonyEngine';
 import { MelodyTracker, snapToScale } from '../../src/music/MelodyTracker';
@@ -86,28 +86,118 @@ describe('MelodyTracker (§29.2 fase 5)', () => {
   });
 });
 
-describe('ArrangementEngine (§29.7 movement becomes arrangement)', () => {
-  it('walks intro → groove → build → drop and breaks down when the player floats', () => {
+describe('§84 the FLIGHT ARC — thirty-two cycles that are the flight', () => {
+  const BAR = 1800;
+  /** Fly `cycles` bars into the arc and report where that lands. */
+  function flyTo(cycles: number, engine = new ArrangementEngine(), ready = true) {
+    engine.tick(0, 0, 0.5, ready, BAR);
+    for (let c = 0; c < cycles; c += 1) engine.tick(0, BAR, 0.5, ready, BAR);
+    return engine;
+  }
+
+  it('walks the eight phases in order, four cycles each', () => {
+    const expected = [
+      [0, 'intro'], [3, 'intro'],
+      [4, 'groove'], [7, 'groove'],
+      [8, 'discovery'], [11, 'discovery'],
+      [12, 'build'], [15, 'build'],
+      [16, 'drop'], [19, 'drop'],
+      [20, 'deep'], [23, 'deep'],
+      [24, 'break'], [27, 'break'],
+      [28, 'return'], [31, 'return'],
+    ] as const;
+    for (const [cycle, phase] of expected) {
+      expect(`${cycle}:${flyTo(cycle).current}`).toBe(`${cycle}:${phase}`);
+    }
+  });
+
+  it('is the same shape every time — energy no longer rewrites the form', () => {
+    const pushing = new ArrangementEngine();
+    const floating = new ArrangementEngine();
+    pushing.tick(0, 0, 1, true, BAR);
+    floating.tick(0, 0, 0, true, BAR);
+    for (let c = 0; c < 18; c += 1) {
+      pushing.tick(0, BAR, 1, true, BAR);
+      floating.tick(0, BAR, 0, true, BAR);
+    }
+    expect(pushing.current).toBe('drop');
+    expect(floating.current).toBe(pushing.current);
+  });
+
+  it('§46 speed decides how fast you fly through it, not what it is', () => {
+    const slow = new ArrangementEngine();
+    const fast = new ArrangementEngine();
+    slow.tick(0, 0, 0.5, true, BAR);
+    fast.tick(0, 0, 0.5, true, BAR);
+    // The same real time, but one flight is paced twice as hard.
+    for (let i = 0; i < 12; i += 1) {
+      slow.tick(0, BAR, 0.5, true, BAR);
+      fast.tick(0, BAR * 2, 0.5, true, BAR);
+    }
+    // Same wall-clock, twice the flight: one is still under pressure while the
+    // other is already through the void.
+    expect(slow.cycle).toBe(12);
+    expect(slow.current).toBe('build');
+    expect(fast.cycle).toBe(24);
+    expect(fast.current).toBe('break');
+  });
+
+  it('§64 holds at the end of PRESSURE until there is a floor to drop', () => {
+    const engine = flyTo(24, new ArrangementEngine(), false);
+    expect(engine.current).toBe('build');
+    // Give it a floor and the very next cycle pays off.
+    engine.tick(0, BAR, 0.5, true, BAR);
+    expect(engine.current).toBe('drop');
+  });
+
+  it('throws the riser on the cycle BEFORE a drop lands, twice a lap', () => {
     const engine = new ArrangementEngine();
-    // §58: the form comes from how hard you fly and how long you keep it up.
-    expect(engine.tick(0, 0, 0.5)).toBe('intro');
-    let t = 100;
-    const run = (energy: number, ms: number) => {
-      const end = t + ms;
-      let section = engine.current;
-      for (; t <= end; t += 500) section = engine.tick(t, 500, energy);
-      return section;
-    };
-    expect(run(0.5, 9000)).toBe('groove');
-    expect(run(0.9, 14_000)).toBe('build');
-    expect(run(0.9, 9000)).toBe('drop');
-    expect(run(0.05, 9000)).toBe('break');
-    // §76: the break takes the drums OUT rather than turning them down, and
-    // keeps everything the player built on top of them.
+    engine.tick(0, 0, 0.5, true, BAR);
+    const risers: number[] = [];
+    for (let c = 0; c < 32; c += 1) {
+      engine.tick(0, BAR, 0.5, true, BAR);
+      if (engine.takeRiser()) risers.push(engine.cycle);
+    }
+    expect(risers).toEqual([15, 27]);
+  });
+
+  it('a second lap starts at DISCOVERY I — the biome is already entered', () => {
+    const engine = flyTo(32);
+    expect(engine.current).toBe('groove');
+    expect(engine.cycle).toBe(4);
+  });
+
+  it('VOID takes the drums and the bass OUT, and keeps what was built on top', () => {
     expect(sectionMix('break').drums).toBe(0);
     expect(sectionMix('break').bass).toBe(0);
     expect(sectionMix('break').harmony).toBe(1);
     expect(sectionMix('break').texture).toBeGreaterThan(0.5);
+  });
+
+  it('DROP II is the loudest the track ever gets', () => {
+    const drop2 = sectionMix('return');
+    const drop1 = sectionMix('drop');
+    const total = (m: typeof drop1) => m.drums + m.bass + m.harmony + m.melody + m.texture;
+    expect(total(drop2)).toBeGreaterThan(total(drop1));
+  });
+
+  it('§61 a world may fly its own order — ambient voids before it peaks', () => {
+    const swell = new ArrangementEngine();
+    swell.setStyle('swell');
+    swell.tick(0, 0, 0.5, true, BAR);
+    for (let c = 0; c < 12; c += 1) swell.tick(0, BAR, 0.5, true, BAR);
+    expect(swell.current).toBe('break');
+  });
+
+  it('the word on screen is the phase you are in', () => {
+    expect(sectionLabel('intro')).toBe('ENTER BIOME');
+    expect(sectionLabel('groove')).toBe('DISCOVERY I');
+    expect(sectionLabel('discovery')).toBe('DISCOVERY II');
+    expect(sectionLabel('build')).toBe('PRESSURE');
+    expect(sectionLabel('drop')).toBe('DROP I');
+    expect(sectionLabel('deep')).toBe('DEEP FLIGHT');
+    expect(sectionLabel('break')).toBe('VOID');
+    expect(sectionLabel('return')).toBe('DROP II');
   });
 });
 
@@ -154,18 +244,17 @@ describe('§64 a drop has to have something to drop', () => {
     return section;
   }
 
-  it('never builds while the track has no floor yet', () => {
+  it('never reaches the peak while the track has no floor yet', () => {
     const engine = new ArrangementEngine();
-    // Full energy for a minute and a half: it grooves, and that is correct —
-    // a build takes the bass away, and there is no bass.
-    expect(push(engine, 90_000, false)).toBe('groove');
+    // Full energy for a minute and a half: it discovers, and that is correct —
+    // the peak takes the bass away, and there is no bass.
+    expect(push(engine, 90_000, false)).toBe('build');
   });
 
-  it('and builds — then drops — the moment the track is ready', () => {
+  it('and pays off the moment the track is ready', () => {
     const engine = new ArrangementEngine();
-    push(engine, 20_000, false);
-    expect(push(engine, 1000, true, 20_250)).toBe('build');
-    expect(push(engine, 12_000, true, 21_500)).toBe('drop');
+    push(engine, 90_000, false);
+    expect(push(engine, 2000, true)).toBe('drop');
   });
 });
 

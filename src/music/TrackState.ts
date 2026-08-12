@@ -54,7 +54,24 @@ export interface TrackState {
   /** Grammar currently rewriting the track (§29.5); null = neutral. */
   genre: TrackGenre;
   /** §29.7 arrangement section. */
-  form: 'none' | 'intro' | 'groove' | 'build' | 'drop' | 'break' | 'return' | 'mutation';
+  /**
+   * §84: the eight phases of the FLIGHT arc, in the order they are flown.
+   * The names are the old ones because they are what the mixes and the genre
+   * styles are written against; `sectionLabel()` gives the word the player
+   * reads. intro=ENTER BIOME, groove=DISCOVERY I, discovery=DISCOVERY II,
+   * build=PRESSURE, drop=DROP I, deep=DEEP FLIGHT, break=VOID, return=DROP II.
+   */
+  form:
+    | 'none'
+    | 'intro'
+    | 'groove'
+    | 'discovery'
+    | 'build'
+    | 'drop'
+    | 'deep'
+    | 'break'
+    | 'return'
+    | 'mutation';
 }
 
 const locked = (): PatternState => ({ unlocked: false, level: 0 });

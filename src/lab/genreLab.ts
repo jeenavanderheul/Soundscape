@@ -12,7 +12,7 @@ import type { GenreAffinity } from '../music/MusicState';
 import { createInitialMusicState } from '../music/MusicState';
 import { performanceFrom } from '../music/Performance';
 import { LEVEL_DEEP, createInitialTrackState, type TrackGenre, type TrackState } from '../music/TrackState';
-import type { Section } from '../music/ArrangementEngine';
+import { sectionLabel as phaseLabel, type Section } from '../music/ArrangementEngine';
 import {
   GENRE_LAB_PRESETS,
   genreLabPresetLabel,
@@ -32,7 +32,10 @@ import {
  * same StrudelEngine. Nothing here is a mock, or it would be worth nothing.
  */
 
-const SECTIONS: Section[] = ['intro', 'groove', 'build', 'drop', 'break', 'return', 'mutation'];
+// §84: the eight phases of the FLIGHT arc, in the order they are flown.
+const SECTIONS: Section[] = [
+  'intro', 'groove', 'discovery', 'build', 'drop', 'deep', 'break', 'return',
+];
 
 /** A track with everything on it: what a flight ends up with (§32). */
 function finishedTrack(genre: Exclude<TrackGenre, null>, section: Section): TrackState {
@@ -272,7 +275,7 @@ sectionName.textContent = 'section';
 for (const name of SECTIONS) {
   const option = document.createElement('option');
   option.value = name;
-  option.textContent = name;
+  option.textContent = phaseLabel(name);
   option.selected = name === section;
   sectionSelect.appendChild(option);
 }

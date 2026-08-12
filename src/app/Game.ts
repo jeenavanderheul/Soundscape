@@ -19,7 +19,7 @@ import {
 } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph, ThrowStyle } from '../audio/MusicalPrimitives';
 import { buildWorldLayerGraph, worldBankLabel } from '../audio/WorldLayerGraph';
-import type { SectionStyle } from '../music/ArrangementEngine';
+import { sectionLabel, type SectionStyle } from '../music/ArrangementEngine';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
 import { dominantZone, setZoneGenres, zoneAffinity } from '../genres/GenreZones';
 import { headingLabel, lookFor, placeName, NEUTRAL_LOOK } from '../genres/ZonePalette';
@@ -118,14 +118,15 @@ const TURN_THROW_GAP_MS = 1200;
  * on an impact, a break exhales — so the word on screen has something under it.
  */
 const SECTION_GESTURE: Record<SectionStyle, Partial<Record<TrackState['form'], ThrowStyle>>> = {
-  driven: { build: 'riser', drop: 'impact', break: 'sweep' },
+  // §84: DROP II is the payoff, so it hits harder than DROP I.
+  driven: { build: 'riser', drop: 'impact', deep: 'sweep', break: 'sweep', return: 'impact' },
   // A swell announces itself with a bell, not with a slam.
-  swell: { build: 'bell', drop: 'bell', break: 'sweep' },
+  swell: { build: 'bell', drop: 'bell', deep: 'bell', break: 'sweep', return: 'bell' },
   // Jazz: a cymbal-ish shimmer going in, the band hitting on the drop.
-  dynamic: { build: 'sweep', drop: 'impact', break: 'bell' },
+  dynamic: { build: 'sweep', drop: 'impact', deep: 'sweep', break: 'bell', return: 'impact' },
   // Dub answers everything with echo.
-  echo: { build: 'echo', drop: 'echo', break: 'sweep' },
-  mutant: { build: 'riser', drop: 'sweep', break: 'echo' },
+  echo: { build: 'echo', drop: 'echo', deep: 'echo', break: 'sweep', return: 'echo' },
+  mutant: { build: 'riser', drop: 'sweep', deep: 'impact', break: 'echo', return: 'sweep' },
 };
 
 /** How much of the track exists, for the HUD (§46). */
@@ -441,11 +442,21 @@ export class Game {
       if (this.pendingSection !== null && this.beatIndex % 4 === 0) {
         const section = this.pendingSection;
         this.pendingSection = null;
-        this.layerCue.announce(section.toUpperCase());
+        // §84: the player reads the PHASE — ENTER BIOME, PRESSURE, DROP II.
+        this.layerCue.announce(sectionLabel(section));
         const style = genreGrammar(this.trackStore.getState().genre).sectionStyle;
         const gesture = SECTION_GESTURE[style][section];
         if (gesture !== undefined && this.motionLevel > 0.25) {
           this.strudelEngine.schedule({ kind: 'throw', gain: 0.55 * this.motionLevel, style: gesture }, 'beat');
+        }
+      } else if (this.beatIndex % 4 === 0 && this.trackBuilder.arrangement.takeRiser()) {
+        // §84: cycles 15 and 27 — the lift belongs to the cycle BEFORE the
+        // floor lands, or the drop arrives with nothing leading into it.
+        if (this.motionLevel > 0.25) {
+          this.strudelEngine.schedule(
+            { kind: 'throw', gain: 0.7 * this.motionLevel, style: 'riser' },
+            'beat',
+          );
         }
       } else if (this.pendingLayers.length > 0 && this.beatIndex % 4 === 0) {
         // §83: one word per bar, and a section outranks a layer — two words on
