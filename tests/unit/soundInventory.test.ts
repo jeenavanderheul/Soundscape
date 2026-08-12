@@ -46,6 +46,16 @@ function codeFor(genre: Exclude<TrackGenre, null>, samplesLoaded: boolean): stri
   return buildPatternCode(buildLayerGraph(music, undefined, [], fullTrack(genre)));
 }
 
+/**
+ * §77: the built-in synth voices are never in a kit, so a `.bank()` elsewhere
+ * in the same stack must not be pinned onto them — `rolandtr909_white` does
+ * not exist and is not asked for.
+ */
+const SYNTH_NAMES = new Set([
+  'white', 'pink', 'brown', 'crackle', 'sbd', 'pulse', 'supersaw', 'sine',
+  'triangle', 'square', 'sawtooth', 'fmpiano', 'clavisynth', 'casio', 'bytebeat',
+]);
+
 /** Every sound name in the code, with the bank it is played on. */
 function soundsIn(code: string): string[] {
   const found: string[] = [];
@@ -55,7 +65,8 @@ function soundsIn(code: string): string[] {
     for (const match of voice.matchAll(/(?:^|[^a-zA-Z])s\("([^"]+)"\)/g)) {
       for (const token of match[1]!.split(/[\s[\]<>*~,|]+/).filter(Boolean)) {
         if (/^[\d.]+$/.test(token)) continue; // a multiplier, not a sound
-        found.push(bank ? `${bank}_${token}`.toLowerCase() : token.toLowerCase());
+        const name = token.toLowerCase();
+        found.push(bank && !SYNTH_NAMES.has(name) ? `${bank}_${name}`.toLowerCase() : name);
       }
     }
     for (const match of voice.matchAll(/\.s\("([^"]+)"\)/g)) {

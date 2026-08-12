@@ -387,10 +387,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §34 garage: TWO-STEP. The second beat is left empty on purpose —
         // that hole is what the whole groove leans into.
         case 'twostep':
-          // §66b reference preset, to the letter: bd ~ ~ bd ~ ~ ~ bd, plain kit.
+          // §77 reference preset: bd ~ ~ [~ bd] ~ ~ bd ~ — the second kick
+          // lands LATE inside its step. That push is the whole two-step.
           return samplesLoaded
-            ? `s("bd ~ ~ bd ~ ~ ~ bd")${drumBank}${shaped}.gain(${gain})`
-            : `s("sbd ~ ~ sbd ~ ~ ~ sbd").gain(${gain})`;
+            ? `s("bd ~ ~ [~ bd] ~ ~ bd ~")${drumBank}${shaped}.gain(${gain})`
+            : `s("sbd ~ ~ [~ sbd] ~ ~ sbd ~").gain(${gain})`;
         // §34 trap: half-time, and the 808 is allowed to ring.
         case 'halftime':
           // §50 reference preset: bd ~ ~ bd ~ ~ bd ~, and the 808 rings.
@@ -488,10 +489,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       switch (style) {
         // §34 garage: skippy shuffled sixteenths — the displacement itself.
         case 'shuffle':
-          // §72 reference preset: ~ hh ~ [hh hh] ~ hh ~ [hh hh], high-passed.
-          // The figure itself is the shuffle; nothing is layered over it.
+          // §77 reference preset: sixteenths SWUNG by a third, accented in
+          // pairs, with an open hat slipping in one time in eight and the
+          // whole thing drifting across the stereo field.
           return samplesLoaded
-            ? `s("~ hh ~ [hh hh] ~ hh ~ [hh hh]")${drumBank}.hpf(3500).gain(${gain})`
+            ? `s("hh*16")${drumBank}.swingBy(1/3, 8).gain("[${gain} ${(Number(gain) * 0.51).toFixed(3)}]*8").sometimesBy(.12, x => x.s("oh")).hpf(7500).pan(sine.range(.35,.65).slow(3))`
             : `s("~ white ~ [white white] ~ white ~ white").decay(.03).sustain(0).hpf(7000).gain(${gain})`;
         // §34 trap: rolls that subdivide the bar under your feet.
         case 'roll':
@@ -540,10 +542,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
     // against the 4 in Experimental.
     case 'perc': {
       if (p['style'] === 'garage') {
-        // §72 reference preset: shaker, rim, perc and toms, two machines deep.
+        // §77 reference preset: a ghost rim that doubles every fourth cycle,
+        // and a swung shaker moving above it.
         return samplesLoaded
-          ? `stack(s("~ sh ~ ~ sh ~ [sh sh] ~")${drumBank}.gain(${gain}), s("~ rim ~ ~ ~ rim ~ rim")${percBank}.gain(${(Number(gain) * 1.0).toFixed(3)}), s("~ ~ perc ~ perc ~ ~ perc ~")${drumBank}.gain(${(Number(gain) * 0.82).toFixed(3)}), s("~ lt ~ ~ ~ mt ~ ~ lt")${percBank}.gain(${(Number(gain) * 0.64).toFixed(3)}))`
-          : `s("~ white ~ ~ white ~ [white white] ~").decay(.03).sustain(0).hpf(6000).gain(${gain})`;
+          ? `stack(s("~ ~ rim ~ ~ rim ~ ~")${drumBank}.hpf(2500).every(4, x => x.ply(2)).gain(${gain}), s("white*8").decay(.02).sustain(0).hpf(9000).swingBy(1/3, 8).gain(${(Number(gain) * 0.47).toFixed(3)}))`
+          : `s("~ ~ white ~ ~ white ~ ~").decay(.03).sustain(0).hpf(2500).gain(${gain})`;
       }
       if (p['style'] === 'toms') {
         // §71 techno: toms walking across the bar, rim ghosts on the other machine.
@@ -594,9 +597,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           // §66 reference preset: `f2 ~ ~ ab2 ~ c3 ~ eb2` — eight steps, all
           // holes and offbeats. That syncopation IS two-step; a rolling
           // sub-figure reads as house however you filter it.
-          // §72 reference preset: a triangle body and a square edge over the
-          // sub, all of them full of holes.
-          return `stack(note("${notes[0] ?? root} ~ ${notes[0] ?? root} ~ ${notes[1] ?? root} ~ ${notes[2] ?? root} ${notes[3] ?? root}").s("triangle").lpf(290).gain(${gain}), note("~ ${notes[2] ?? root} ~ ${notes[1] ?? root} ~ ${notes[0] ?? root} ~ ${notes[3] ?? root}").s("square").lpf(380).gain(${(Number(gain) * 0.24).toFixed(3)}))`;
+          // §77 reference preset: a PURE sub carrying the root — no filter at
+          // all — and a detuned, filtered, distorted reese doing the moving.
+          return `stack(note("<${notes[0] ?? root} ${notes[0] ?? root} ${notes[1] ?? root} ${notes[2] ?? root}>").struct("x ~ ~ x ~ ~ x ~").s("sine").attack(.005).decay(.3).sustain(.35).release(.12).gain(${gain}), note("<[${notes[0] ?? root} ${notes[0] ?? root} ${notes[2] ?? root} ${notes[0] ?? root}] [${notes[0] ?? root} ${notes[0] ?? root} ${notes[1] ?? root} ${notes[3] ?? root}]>").struct("~ x ~ x ~ x ~ [x x]").s("sawtooth").detune(.12).lpf(sine.range(350,1600).slow(8)).lpq(9).lpenv(3).lpa(.005).lpd(.14).lps(.2).decay(.18).sustain(.15).release(.08).distort("1.6:.45").gain(${(Number(gain) * 0.75).toFixed(3)}))`;
         // §34 trap: the 808 that slides between its notes.
         case 'slide':
           // §34 trap: the 808 IS the low end, so it has to be heard on a
@@ -660,9 +663,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §66 garage: the chord lands OFF the beat and stops immediately —
         // that displacement is what makes two-step sound like two-step.
         if (style === 'skip') {
-          // §72 reference preset: an organ pad holding, an FM stab on top of
-          // it and a supersaw shadow behind — warm, and full of holes.
-          return `stack(note("[${stacked}]").s("organ_full").slow(4).lpf(950).room(.2).gain(${(Number(gain) * 0.53).toFixed(3)}), note("<[${stacked}] ~ [${stacked}] ~>").s("fmpiano").lpf(1300).decay(.14).gain(${gain}), note("[${stacked}]").s("supersaw").slow(4).lpf(800).gain(${(Number(gain) * 0.24).toFixed(3)}))`;
+          // §77 reference preset: short wet stabs OFF the beat, each answered
+          // an octave up an eighth later, over a pad that breathes open across
+          // sixteen cycles.
+          return `stack(note("[${stacked}]").struct("~ x ~ ~ x ~ ~ x").s("square").detune(.04).clip(.22).lpf(3200).lpq(3).attack(.002).decay(.12).sustain(.15).release(.1).room(.5).off(.125, x => x.add(note(12)).pan(.75)).gain(${gain}), note("[${stacked}]").s("supersaw").attack(.6).release(1.2).lpf(saw.range(500,3000).slow(16)).lpq(2).room(.7).gain(${(Number(gain) * 0.55).toFixed(3)}))`;
         }
         // §71 techno: a dark pad holding under a dissonant stab, with an FM
         // shadow an octave up — three voices, none of them in front.
@@ -716,9 +720,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return `note("${notes}").s("glockenspiel").slow(${slow}).room(.45).gain(${gain})`;
         // §34 garage: the chopped vocal-like hook.
         case 'vocal':
-          // §72 reference preset: a vibraphone hook with a casio, a clavisynth
-          // and a triangle answering it, each on its own clock.
-          return `stack(note("${notes}").s("vibraphone").slow(${slow}).room(.3).delay(.14).gain(${gain}), note("${notes}").s("casio").slow(${slow * 1.5}).gain(${(Number(gain) * 0.45).toFixed(3)}), note("${notes}").s("clavisynth").slow(${slow}).lpf(1600).gain(${(Number(gain) * 0.45).toFixed(3)}), note("${notes}").s("triangle").slow(${slow * 2}).gain(${(Number(gain) * 0.33).toFixed(3)}))`;
+          // §77 reference preset: a short plucked line, mirrored into the
+          // other channel and hurried every fourth cycle.
+          return `note("${notes}").s("triangle").slow(${slow}).attack(.001).decay(.14).sustain(0).release(.1).clip(.4).delay(".4:.1875:.55").room(.4).jux(rev).every(4, x => x.hurry(2)).gain(${gain})`;
         // §34 dub: the melodica line, always one echo behind.
         case 'melodica':
           return `note("${notes}").s("harmonica").slow(${slow}).delay(.6).delayfeedback(.65).room(.5).gain(${gain})`;
@@ -763,7 +767,9 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §34 garage/house: hand percussion keeping the top end alive.
         // §72 garage: air and dust, nothing you would call a part.
         case 'dust':
-          return `stack(s("pink").hpf(3000).room(.35).gain(${gain}), s("crackle").hpf(4500).gain(${(Number(gain) * 0.5).toFixed(3)}))`;
+          // §77 reference preset: a riser sweeping the whole spectrum, with
+          // dust behind it.
+          return `stack(s("white").clip(1).hpf(saw.range(200,9000)).lpf(12000).attack(.4).release(.3).room(.6).gain(${gain}), s("crackle").hpf(4500).gain(${(Number(gain) * 0.2).toFixed(3)}))`;
         case 'shaker':
           // §66b reference preset: sh*8, even. `sh` is not in the maps we load,
           // and an absent name is silence (§38) — shaker_small is the real one.

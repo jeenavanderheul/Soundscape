@@ -228,7 +228,7 @@ describe('§50 the reference presets are the tempo and the mix', () => {
   it('every region sits at the tempo its preset was written at', () => {
     const at = (genre: Exclude<TrackGenre, null>) => regionBpm(genreGrammar(genre));
     expect(at('techno')).toBe(132);
-    expect(at('garage')).toBe(134);
+    expect(at('garage')).toBe(135);
     expect(at('jazz')).toBe(110);
     expect(at('house')).toBe(124);
     expect(at('ambient')).toBe(70);
@@ -437,30 +437,28 @@ describe('§66 UK garage sounds like UK garage', () => {
     expect(g.bassStyle).toBe('skip');      // all holes and offbeats
     expect(g.chordStyle).toBe('skip');     // stabs OFF the grid
     expect(g.textureStyle).toBe('dust'); // §72: the shaker moved into the percussion
-    expect(g.bpmCentre).toBe(134);
+    expect(g.bpmCentre).toBe(135); // §77
   });
 
   it('plays its chords and hook on the preset’s own voices', () => {
     const g = genreGrammar('garage');
     expect(g.bassVoice).toBe('sine');
-    expect(g.chordVoice).toBe('fmpiano');
-    expect(g.leadVoice).toBe('vibraphone');
-    // §72: two machines, so the clap is never the same box as the kick.
-    expect(g.drumBank).toBe('AkaiXR10');
-    expect(g.percBank).toBe('AkaiMPC60');
+    // §77: one 909, and the shuffle is what carries the genre.
+    expect(g.chordVoice).toBe('square');
+    expect(g.leadVoice).toBe('triangle');
+    expect(g.drumBank).toBe('RolandTR909');
   });
 
-  it('its chord lands, then a whole bar of air (the reference preset)', () => {
+  it('its chord lands off the beat and is answered an octave up (§77)', () => {
     const track = createInitialTrackState();
     track.bpm = 134;
     track.harmony = { unlocked: true, level: 1 };
     track.harmonyIntervals = [0, 3, 7];
     const music = { ...createInitialMusicState(), bpm: 134, tempoConfidence: 0.6 };
     const code = buildPatternCode(buildLayerGraph(music, affinityOf('garage'), [], track));
-    // §72: an organ pad, an FM stab full of holes, a supersaw behind it.
-    const chord = code.split('\n').find((line) => line.includes('fmpiano'))!;
-    expect(chord).toContain('organ_full');
-    expect(chord).toContain('supersaw');
-    expect(chord).toContain('] ~ [');
+    // §77: offbeat stabs answered an octave up, over an opening supersaw pad.
+    const chord = code.split('\n').find((line) => line.includes('supersaw'))!;
+    expect(chord).toContain('struct("~ x ~ ~ x ~ ~ x")');
+    expect(chord).toContain('off(.125');
   });
 });
