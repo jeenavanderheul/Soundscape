@@ -46,6 +46,12 @@ function flyThrough(genre: Exclude<TrackGenre, null>, seconds: number): string[]
 }
 
 describe('§31 genre ladders — every grammar builds a track in its own order', () => {
+  it('builds SUB PRESSURE from atmosphere to signal', () => {
+    expect(GENRE_LADDERS['sub-pressure'].map((step) => step.layer)).toEqual([
+      'texture', 'hats', 'kick', 'snare', 'bass', 'harmony', 'melody',
+    ]);
+  });
+
   it('covers all seven layers exactly once per genre', () => {
     for (const [genre, ladder] of Object.entries(GENRE_LADDERS)) {
       const layers = ladder.map((step) => step.layer);

@@ -32,6 +32,16 @@ const TECHNO: readonly LadderStep[] = [
   { layer: 'texture', atMs: 40_000 },
 ];
 
+const SUB_PRESSURE: readonly LadderStep[] = [
+  { layer: 'texture', atMs: 3000 },
+  { layer: 'hats', atMs: 7000 },
+  { layer: 'kick', atMs: 11_000 },
+  { layer: 'snare', atMs: 15_000 },
+  { layer: 'bass', atMs: 20_000 },
+  { layer: 'harmony', atMs: 27_000 },
+  { layer: 'melody', atMs: 35_000 },
+];
+
 /**
  * Ambient: space becomes music. Texture and harmony open the world; drums are
  * the last thing to arrive and stay distant, so the region reads as air rather
@@ -146,7 +156,7 @@ const BREAKBEAT: readonly LadderStep[] = [
 
 export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderStep[]> = {
   techno: TECHNO,
-  'sub-pressure': TECHNO,
+  'sub-pressure': SUB_PRESSURE,
   ambient: AMBIENT,
   jazz: JAZZ,
   bass: BASS,

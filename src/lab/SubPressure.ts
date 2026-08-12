@@ -5,10 +5,12 @@ import {
   type MusicalPrimitive,
   type PrimitiveKind,
 } from '../audio/MusicalPrimitives';
+import type { TrackState } from '../music/TrackState';
 
 export interface SubPressureControls {
   motion?: number;
   mix?: Partial<Record<LayerName, number>>;
+  track?: Readonly<TrackState>;
 }
 
 const ALT = 0.55;
@@ -138,6 +140,24 @@ export function buildSubPressureGraph(
       `s("bytebeat").slow(2).bpf(1300).crush(5).distort(1.15).postgain(.3).gain(${gain('texture', 0.018 + EDGE * 0.015)}).mask("<0!8 1!16 0!4 1!4>")`,
     ),
   ];
+
+  const track = controls.track;
+  if (track) {
+    if (!track.texture.unlocked) {
+      graph.layers.atmosphere.primitives = [];
+      graph.layers.texture.primitives = [];
+    }
+    graph.layers.drums.primitives = graph.layers.drums.primitives.filter((primitive) => {
+      if (primitive.kind === 'hat') return track.drums.hats.unlocked;
+      if (primitive.kind === 'kick') return track.drums.kick.unlocked;
+      return track.drums.snare.unlocked;
+    });
+    graph.layers.bass.primitives = graph.layers.bass.primitives.filter((primitive) =>
+      primitive.id === 'sub-pressure-sub' ? track.bass.unlocked : track.harmony.unlocked,
+    );
+    if (!track.harmony.unlocked) graph.layers.harmony.primitives = [];
+    if (!track.melody.unlocked) graph.layers.melody.primitives = [];
+  }
 
   return graph;
 }
