@@ -14,29 +14,26 @@ describe('GenreZones — every direction is a genre (§29.5)', () => {
     expect(Math.max(...Object.values(near))).toBeLessThan(0.05);
   });
 
-  it('§57 maps each of the TEN points to its own grammar', () => {
+  it('maps the ten readable points onto the two active world halves', () => {
     const step = (Math.PI * 2) / 10;
     const out = { x: 0, y: 10, z: -200 }; // far enough out for full influence
     const at = (index: number) => dominantZone(zoneAffinity(out, step * index));
     expect(at(0)).toBe('techno');
-    expect(at(1)).toBe('garage');
-    expect(at(2)).toBe('jazz');
-    expect(at(3)).toBe('house');
-    expect(at(4)).toBe('experimental');
-    expect(at(5)).toBe('ambient');
-    expect(at(6)).toBe('breakbeat');
-    expect(at(7)).toBe('bass');
-    expect(at(8)).toBe('dub');
-    expect(at(9)).toBe('trap');
+    expect(at(1)).toBe('techno');
+    expect(at(2)).toBe('techno');
+    expect(at(3)).toBe('sub-pressure');
+    expect(at(4)).toBe('sub-pressure');
+    expect(at(5)).toBe('sub-pressure');
+    expect(at(6)).toBe('sub-pressure');
+    expect(at(7)).toBe('sub-pressure');
+    expect(at(8)).toBe('techno');
+    expect(at(9)).toBe('techno');
   });
 
   it('blends neighbouring directions into a hybrid, and ignores the far side', () => {
-    const step = (Math.PI * 2) / 10;
-    const between = zoneAffinity({ x: 0, y: 10, z: -200 }, step * 0.5);
-    // Half way between two worlds you hear both of them.
+    const between = zoneAffinity({ x: 0, y: 10, z: -200 }, Math.PI / 2);
     expect(between.techno).toBeGreaterThan(0.4);
-    expect(between.garage).toBeGreaterThan(0.4);
-    // The far side of the compass has no say here.
+    expect(between['sub-pressure']).toBeGreaterThan(0.4);
     expect(between.ambient).toBe(0);
     expect(between.breakbeat).toBe(0);
   });
@@ -117,14 +114,15 @@ describe('ArrangementEngine (§29.7 movement becomes arrangement)', () => {
 describe('§53 turning towards a world takes you there', () => {
   const step = (Math.PI * 2) / 10;
 
-  it('flying north-west out of the techno region arrives in trap', () => {
+  it('keeps north-west in Techno and reaches SUB PRESSURE by turning south', () => {
     const outNorth = { x: 0, y: 10, z: -90 };
     expect(dominantZone(zoneAffinity(outNorth, 0))).toBe('techno');
-    expect(dominantZone(zoneAffinity(outNorth, -step))).toBe('trap');
+    expect(dominantZone(zoneAffinity(outNorth, -step))).toBe('techno');
+    expect(dominantZone(zoneAffinity(outNorth, Math.PI))).toBe('sub-pressure');
   });
 
   it('and standing still still reads the way the orb is pointing', () => {
-    expect(dominantZone(zoneAffinity({ x: 110, y: 0, z: 110 }, step * 3))).toBe('house');
+    expect(dominantZone(zoneAffinity({ x: 110, y: 0, z: 110 }, step * 3))).toBe('sub-pressure');
   });
 });
 
