@@ -12,13 +12,13 @@ import { createStore, Store } from '../core/stores';
 import { InputManager } from '../input/InputManager';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
 import {
-  buildLayerGraph,
   createEmptyLayerGraph,
   diffLayerGraph,
   genreGrammar,
   throwStyleFor,
 } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph, ThrowStyle } from '../audio/MusicalPrimitives';
+import { buildWorldLayerGraph, worldBankLabel } from '../audio/WorldLayerGraph';
 import type { SectionStyle } from '../music/ArrangementEngine';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
 import { dominantZone, setZoneGenres, zoneAffinity } from '../genres/GenreZones';
@@ -685,7 +685,7 @@ export class Game {
       const playing = this.trackStore.getState();
       this.codeOverlay.setStatus(
         `${info.samples ? (info.local ? 'local kit' : 'remote kit') : 'SYNTH FALLBACK — samples failed'} · ` +
-          `${playing.genre ?? 'void'} · ${genreGrammar(playing.genre).drumBank} · ` +
+          `${playing.genre ?? 'void'} · ${worldBankLabel(playing)} · ` +
           `${Math.round(playing.bpm)} bpm`,
       );
       // Context hints: whispered at the teachable moment, once each.
@@ -841,18 +841,18 @@ export class Game {
       amplitude: flight.amplitude,
       velocity: flight.velocity,
     });
-    const next = buildLayerGraph(
-      this.musicStore.getState(),
-      this.genreEngine.current?.affinity,
-      this.worldStore.getState().structures,
-      this.trackStore.getState(),
-      this.worldPatterns,
+    const next = buildWorldLayerGraph({
+      music: this.musicStore.getState(),
+      affinity: this.genreEngine.current?.affinity,
+      structures: this.worldStore.getState().structures,
+      track: this.trackStore.getState(),
+      patterns: this.worldPatterns,
       // §42: no movement, no music. The gate ramps up quickly and decays over
       // ~1.5s, so stopping fades the world out rather than switching it off.
-      this.motionLevel,
+      motion: this.motionLevel,
       // §62: movement energy — what each grammar spends its own way.
-      Math.min(1, flight.energy * 0.6 + flight.amplitude * 0.4),
-    );
+      energy: Math.min(1, flight.energy * 0.6 + flight.amplitude * 0.4),
+    });
     next.performance = performance;
     // §58: height runs the track like a tape — the clock goes with the pitch.
     if (next.bpm > 0) next.bpm = Math.round(next.bpm * performance.tempoRatio);
