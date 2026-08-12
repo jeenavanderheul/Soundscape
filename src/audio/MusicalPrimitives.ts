@@ -119,7 +119,7 @@ export type ThrowStyle = 'echo' | 'riser' | 'sweep' | 'bell' | 'impact';
 export type EnergyStyle =
   | 'layers'      // techno, house: more voices, more fills
   | 'subdivision' // trap, garage: the hats divide the bar further
-  | 'breaks'      // dnb: the break gets busier, ghosts appear
+  | 'breaks'      // bass: the break gets busier, ghosts appear
   | 'texture'     // ambient, breakbeat: more air, more harmonic layers
   | 'improv'      // jazz: more interplay, busier ride
   | 'echo'        // dub: more skank and more delay
@@ -138,7 +138,7 @@ const THROWS: Record<Exclude<TrackGenre, null> | 'void', readonly [ThrowStyle, T
   house: ['echo', 'sweep'],
   garage: ['echo', 'riser'],
   trap: ['sweep', 'riser'],
-  dnb: ['riser', 'sweep'],
+  bass: ['riser', 'sweep'],
   jazz: ['bell', 'sweep'],
   ambient: ['bell', 'sweep'],
   breakbeat: ['bell', 'sweep'],
@@ -231,7 +231,9 @@ export type DrumStyle =
   /** §34 breakbeat: a timpani, not a machine. */
   | 'timpani'
   /** §69 breakbeat: a kick that lands broken — never on all four. */
-  | 'broken';
+  | 'broken'
+  /** §73 bass music: four to the floor, distorted and clipped. */
+  | 'hardgroove';
 export type HatStyle =
   | 'offbeat'
   | 'sixteenth'
@@ -245,8 +247,12 @@ export type HatStyle =
   /** §69 breakbeat: minimal, dark, four hits and gone. */
   | 'dark'
   /** §71 techno: eighths, an offbeat open hat and a second machine under it. */
-  | 'techno';
-export type SnareStyle = 'backbeat' | 'ghost' | 'break' | 'body' | 'rim' | 'clap'
+  | 'techno'
+  /** §73 bass music: hard sixteenths with an open hat above them. */
+  | 'pressure'
+  /** §73 bass music: hard sixteenths with an open hat above them. */
+  | 'pressure';
+export type SnareStyle = 'backbeat' | 'ghost' | 'break' | 'body' | 'rim' | 'clap' | 'hardclap'
   /** §69 breakbeat: one hard hit on 3 and 7, driven. */
   | 'hard';
 export type BassStyle =
@@ -265,6 +271,8 @@ export type BassStyle =
   | 'pressure'
   /** §71 techno: body, edge and a low pulse over the sub. */
   | 'deep'
+  /** §73 bass music: one note every sixteenth, filtered to a growl. */
+  | 'rollingsub'
   | 'arco';
 /** §31: harmony behaves differently per grammar — a stab is not a pad. */
 export type ChordStyle =
@@ -274,10 +282,14 @@ export type ChordStyle =
   /** §69 breakbeat: a stab so sparse it reads as a warning light. */
   | 'dark'
   /** §71 techno: a pad, a stab and an FM shadow, none of them in front. */
-  | 'darkpad';
+  | 'darkpad'
+  /** §73 bass music: an acid line where a chord would be. */
+  | 'acid';
 export type MelodyStyle =
   /** §71 techno: sequencer lines, not a tune. */
   | 'sequence'
+  /** §73 bass music: a supersaw hook with a high twin answering it. */
+  | 'hook2'
   | 'motif'
   | 'stab'
   | 'long'
@@ -293,7 +305,9 @@ export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic' | 'shaker' | 't
   /** §71 techno: the machine room — bytebeat, air, rumble and dust. */
   | 'machine'
   /** §72 garage: air and dust, nothing you would call a part. */
-  | 'dust';
+  | 'dust'
+  /** §73 bass music: one long detuned note in a huge room. */
+  | 'foghorn';
 
 export interface GenreGrammar {
   kickStyle: DrumStyle;
@@ -436,39 +450,40 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     harmonySlow: 4,
     melodySlow: 2,
   },
-  dnb: {
+  // §73 BASS MUSIC, from the reference preset: 150 BPM, a distorted 909 four
+  // to the floor, and a sawtooth roll underneath it that never stops. What
+  // used to be Drum & Bass is now the hard rolling-bass world.
+  bass: {
+    ...NEUTRAL_GRAMMAR,
     energyStyle: 'breaks',
     sectionStyle: 'driven',
-    // §50 mix and tempo from the reference preset.
-    bpmCentre: 174,
-    kickGain: 0.95,
-    hatGain: 0.2,
-    snareGain: 0.55,
-    bassGain: 0.9,
-    harmonyGain: 0.18,
-    melodyGain: 0.12,
-    textureGain: 0.03,
-    // §49 the sound of this world: sawtooth bass, square chords, sine lead.
+    bpmCentre: 150,
+    bpmMin: 140,
+    bpmMax: 160,
+    drumBank: 'RolandTR909',
+    percBank: 'RolandTR909',
+    kickStyle: 'hardgroove',
+    hatStyle: 'pressure',
+    snareStyle: 'hardclap',
+    bassStyle: 'rollingsub',
+    chordStyle: 'acid',
+    melodyStyle: 'hook2',
+    textureStyle: 'foghorn',
     bassVoice: 'sawtooth',
-    chordVoice: 'square',
-    leadVoice: 'sine',
-    kickStyle: 'break',
-    hatStyle: 'sixteenth',
-    snareStyle: 'break',
-    bassStyle: 'sub',
-    chordStyle: 'stab',
-    melodyStyle: 'hook',
-    textureStyle: 'noise',
+    chordVoice: 'sawtooth',
+    leadVoice: 'supersaw',
     hatCycle: 4,
-    // Ghost percussion against the break — the near-misses in the flight.
-    percCycle: 3,
-    drumBank: 'EmuSP12',
-    percBank: 'AkaiMPC60',
-    bpmMin: 160,
-    bpmMax: 180,
-    drive: 0.35,
-    harmonySlow: 4,
-    melodySlow: 1,
+    percCycle: 0,
+    drive: 0.4,
+    kickGain: 1,
+    snareGain: 0.34,
+    hatGain: 0.13,
+    bassGain: 0.24,
+    harmonyGain: 0.28,
+    melodyGain: 0.22,
+    textureGain: 0.16,
+    harmonySlow: 2,
+    melodySlow: 2,
   },
   ambient: {
     energyStyle: 'texture',

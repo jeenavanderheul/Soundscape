@@ -22,7 +22,7 @@ describe('GenreZones — every direction is a genre (§29.5)', () => {
     expect(at(4)).toBe('experimental');
     expect(at(5)).toBe('ambient');
     expect(at(6)).toBe('breakbeat');
-    expect(at(7)).toBe('dnb');
+    expect(at(7)).toBe('bass');
     expect(at(8)).toBe('dub');
     expect(at(9)).toBe('trap');
   });

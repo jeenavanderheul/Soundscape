@@ -243,20 +243,23 @@ function styleOf<T extends string>(value: unknown, allowed: readonly T[], fallba
 
 const KICK_STYLES = [
   'four', 'break', 'sparse', 'swing', 'irregular', 'twostep', 'halftime', 'echo', 'timpani',
-  'broken',
+  'broken', 'hardgroove',
 ] as const;
-const HAT_STYLES = ['offbeat', 'sixteenth', 'swing', 'sparse', 'dirt', 'shuffle', 'roll', 'dark', 'techno'] as const;
-const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body', 'rim', 'clap', 'hard'] as const;
+const HAT_STYLES = [
+  'offbeat', 'sixteenth', 'swing', 'sparse', 'dirt', 'shuffle', 'roll', 'dark', 'muffled',
+  'techno', 'pressure',
+] as const;
+const SNARE_STYLES = ['backbeat', 'ghost', 'break', 'body', 'rim', 'clap', 'hard', 'hardclap'] as const;
 const BASS_STYLES = [
   'repetitive', 'sub', 'walking', 'rolling', 'skip', 'slide', 'dubwise', 'arco', 'pressure',
-  'deep',
+  'deep', 'rollingsub',
 ] as const;
-const CHORD_STYLES = ['stab', 'pad', 'jazz', 'piano', 'organ', 'skank', 'skip', 'dark', 'darkpad'] as const;
+const CHORD_STYLES = ['stab', 'pad', 'jazz', 'piano', 'organ', 'skank', 'skip', 'dark', 'darkpad', 'acid'] as const;
 const MELODY_STYLES = [
   'motif', 'stab', 'long', 'improv', 'hook', 'fragment', 'bell', 'vocal', 'melodica',
-  'sequence',
+  'sequence', 'hook2',
 ] as const;
-const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic', 'shaker', 'tape', 'rumble', 'machine', 'dust'] as const;
+const TEXTURE_STYLES = ['hats', 'air', 'noise', 'metallic', 'shaker', 'tape', 'rumble', 'machine', 'dust', 'foghorn'] as const;
 
 /**
  * Whitelisted template library (spec §11, §29.5): primitive kind + genre
@@ -331,6 +334,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `s("bd ~ ~ bd ~ ~ [bd ~] ~")${drumBank}${shaped}.gain(${gain})`
             : `s("sbd ~ ~ sbd ~ ~ [sbd ~] ~").gain(${gain})`;
+        // §73 bass music: four to the floor, distorted and clipped, and loud
+        // enough that the sidechain under it is the whole groove.
+        case 'hardgroove':
+          return samplesLoaded
+            ? `s("bd*4")${drumBank}.distort("1.8:.25").clip(.85).gain(${gain})`
+            : `s("sbd*4").distort("1.8:.25").clip(.85).gain(${gain})`;
         // §9.2 space: a distant heartbeat, one hit per bar.
         case 'sparse':
           return samplesLoaded
@@ -467,6 +476,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `stack(s("hh*8")${drumBank}.hpf(4000).gain(${gain}), s("~ oh ~ ~ ~ oh ~ ~")${drumBank}.hpf(3200).gain(${(Number(gain) * 0.76).toFixed(3)}), s("~ hh ~ [hh hh] ~ hh ~ hh")${percBank}.hpf(5000).gain(${(Number(gain) * 0.41).toFixed(3)}))`
             : `stack(s("white*8").decay(.02).sustain(0).hpf(4000).gain(${gain}), s("~ white ~ ~ ~ white ~ ~").decay(.08).sustain(0).hpf(3200).gain(${(Number(gain) * 0.76).toFixed(3)}))`;
+        // §73 bass music: sixteenths with a hard accent pattern, and an open
+        // hat on the offbeat above them.
+        case 'pressure':
+          return samplesLoaded
+            ? `stack(s("hh*16")${drumBank}.hpf(6500).gain("[${(Number(gain) * 0.27).toFixed(3)} ${gain} ${(Number(gain) * 0.35).toFixed(3)} ${(Number(gain) * 1.0).toFixed(3)}]*4"), s("oh*4")${drumBank}.struct("~ x ~ x").hpf(5200).room(.25).gain(${(Number(gain) * 0.77).toFixed(3)}))`
+            : `stack(s("white*16").decay(.02).sustain(0).hpf(6500).gain(${gain}), s("white*4").struct("~ x ~ x").decay(.08).sustain(0).hpf(5200).room(.25).gain(${(Number(gain) * 0.77).toFixed(3)}))`;
         case 'sixteenth':
           return samplesLoaded
             ? `stack(s("hh*16")${drumBank}.hpf(6500).gain("${(Number(gain) * 0.5).toFixed(2)} ${gain} ${(Number(gain) * 0.4).toFixed(2)} ${(Number(gain) * 1.1).toFixed(2)}"), s("~ oh ~ oh")${drumBank}.hpf(5000).gain(${(Number(gain) * 0.8).toFixed(3)}))`
@@ -566,6 +581,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // it and a slow pulse under everything. The sub is its own voice (§32).
         case 'deep':
           return `stack(note("${notes[0] ?? root} ~ ${notes[0] ?? root} ${notes[0] ?? root} ~ ${notes[1] ?? root} ~ ${notes[2] ?? root}").s("sawtooth").lpf(260).distort(.18).gain(${gain}), note("~ ${notes[0] ?? root} ~ ~ ${notes[1] ?? root} ~ ${notes[2] ?? root} ~").s("square").hpf(130).lpf(430).gain(${(Number(gain) * 0.29).toFixed(3)}), note("${notes[0] ?? root} ~ ~ ~ ${notes[0] ?? root} ~ ~ ~").s("pulse").lpf(330).gain(${(Number(gain) * 0.17).toFixed(3)}))`;
+        // §73 bass music: one note every sixteenth, filtered to a growl — the
+        // roll IS the track, and the sidechain cuts the holes into it.
+        case 'rollingsub':
+          return `note("<${notes[0] ?? root} ${notes[1] ?? root} ${notes[0] ?? root} ${notes[2] ?? root}>/2").struct("x*8").s("sawtooth").clip(.65).lpf(160).distort(.45).gain(${gain})`;
         case 'dubwise':
           return `note("<${root} ~ ~ [${notes[1] ?? root} ~] ~ ~ ${notes[2] ?? root} ~>").s("sine").decay(.5).sustain(.2).room(.3).gain(${gain})`;
         // §34 breakbeat: the left hand, bowed and sustained.
@@ -617,6 +636,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         if (style === 'darkpad') {
           return `stack(note("[${stacked}]").s("supersaw").slow(4).lpf(580).attack(.8).release(1.5).room(.3).gain(${(Number(gain) * 0.38).toFixed(3)}), note("<[${stacked}] ~ ~ [${stacked}] ~>").s("square").lpf(720).decay(.12).gain(${gain}), note("[${stacked}]").s("fmpiano").slow(2).lpf(1300).gain(${(Number(gain) * 0.34).toFixed(3)}))`;
         }
+        // §73 bass music: an acid line, not a chord — a resonant saw crawling
+        // through the same notes the player found.
+        if (style === 'acid') {
+          return `note("[${stacked}]*4").s("sawtooth").lpf(sine.slow(6).range(180, 900)).lpq(11).distort("1.6:.25").gain(${gain})`;
+        }
         // §69 breakbeat: one dark stab every other bar, and nothing else.
         if (style === 'dark') {
           return `note("<[${stacked}] ~ ~ ~>").s("square").slow(${slow}).lpf(550).gain(${gain})`;
@@ -643,6 +667,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'triangle';
       const style = styleOf(p['style'], MELODY_STYLES, 'motif');
       switch (style) {
+        // §73 bass music: the hook — a supersaw run with a detuned twin, its
+        // filter breathing, and a high triangle answering it.
+        case 'hook2':
+          return `stack(note("${notes}").s("supersaw").legato(.28).distort(.32).lpf(sine.slow(8).range(450, 2400)).room(.55).delay(.125).gain(${gain}), note("${notes}").s("triangle").slow(${slow * 2}).legato(.22).lpf(2600).room(.75).delay(.1875).gain(${(Number(gain) * 0.59).toFixed(3)}))`;
         // §71 techno: sequencers, not a tune — a pulse line, a clavisynth
         // answering it and a casio far above, each on its own clock.
         case 'sequence':
@@ -716,6 +744,10 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §69 breakbeat: low rumble under everything, felt more than heard.
         case 'rumble':
           return `s("white").slow(4).lpf(400).room(.75).gain(${gain})`;
+        // §73 bass music: the foghorn — one long detuned note every other bar,
+        // drowned in a huge room.
+        case 'foghorn':
+          return `s("supersaw").detune(.7).release(4).slow(2).fm(1.5).fmh(2.02).lpf(700).room(.9).roomsize(5).gain(${gain})`;
         case 'tape':
           return `s("brown").slow(6).lpf(900).room(.7).gain(${gain})`;
         // DnB: high-frequency noise riding over the break.

@@ -46,7 +46,7 @@ describe('validateRecipe (§30: unknown model output becomes trusted data)', () 
   it('clamps every field and drops unsafe patterns', () => {
     const { recipe, rejected } = validateRecipe({
       name: 'x'.repeat(200),
-      zones: { north: 'ambient', eastNorthEast: 'nonsense', south: 'dnb', westSouthWest: 'techno' },
+      zones: { north: 'ambient', eastNorthEast: 'nonsense', south: 'bass', westSouthWest: 'techno' },
       resonators: [
         { angleDeg: 450, distance: 99999, hz: 999999, waveform: 'bogus' },
         ...Array.from({ length: 20 }, () => ({ angleDeg: 0, distance: 80, hz: 220, waveform: 'sine' })),

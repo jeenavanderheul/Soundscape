@@ -60,7 +60,7 @@ const EXPECTED = {
   SSE: 'experimental',
   S: 'ambient',
   SSW: 'breakbeat',
-  WSW: 'dnb',
+  WSW: 'bass',
   WNW: 'dub',
   NNW: 'trap',
 } as const;

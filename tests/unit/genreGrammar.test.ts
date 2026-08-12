@@ -27,7 +27,7 @@ import { LEVEL_DEEP, createInitialTrackState, TrackEvents, type TrackGenre } fro
 const ROAMING: FlightState = { velocity: 12, hz: 220, energy: 0.5 };
 
 function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
-  const zero: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
+  const zero: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, bass: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
   return { ...zero, [genre]: 0.9 };
 }
 
@@ -58,7 +58,7 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
     expect(nextStep(track, ladderFor('techno'))?.layer).toBe('kick');
     expect(nextStep(track, ladderFor('ambient'))?.layer).toBe('texture');
     expect(nextStep(track, ladderFor('jazz'))?.layer).toBe('harmony');
-    expect(nextStep(track, ladderFor('dnb'))?.layer).toBe('bass');
+    expect(nextStep(track, ladderFor('bass'))?.layer).toBe('kick'); // §73
   });
 
   it('returns null once the whole track is earned', () => {
@@ -84,9 +84,9 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
     expect(ambient).not.toContain('kick');
   });
 
-  it('Jazz opens with harmony and DnB with the sub', () => {
+  it('Jazz opens with harmony and BASS with its kick', () => {
     expect(flyThrough('jazz', 12)[0]).toBe('harmony');
-    expect(flyThrough('dnb', 20).slice(0, 2)).toEqual(['bass', 'snare']);
+    expect(flyThrough('bass', 20).slice(0, 2)).toEqual(['kick', 'bass']); // §73
   });
 
   it('§54 a world is a track: crossing starts a new one, from the first layer', () => {
@@ -97,14 +97,19 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
     for (let ms = 0; ms <= 12_000; ms += 250) builder.tick(ms, music, ROAMING, affinityOf('techno'));
     const earned = store.getState().drums;
     expect(earned.kick.unlocked).toBe(true);
-    // Flying into Drum & Bass starts a Drum & Bass track, at its own tempo,
+    // Flying into bass music starts a bass music track, at its own tempo,
     // with nothing carried over.
     for (let ms = 12_250; ms <= 18_000; ms += 250) {
-      builder.tick(ms, music, ROAMING, affinityOf('dnb'));
+      builder.tick(ms, music, ROAMING, affinityOf('bass'));
     }
     const after = store.getState();
-    expect(after.genre).toBe('dnb');
-    expect(after.drums.kick.unlocked).toBe(false);
+    expect(after.genre).toBe('bass');
+    // §58: arriving hands you that world's FIRST rung at once — for bass
+    // music that is the kick, so it is unlocked and nothing else is.
+    expect(after.drums.kick.unlocked).toBe(true);
+    // …and it is a NEW track: the techno one is gone, not carried over.
+    expect(after.harmony.unlocked).toBe(false);
+    expect(after.melody.unlocked).toBe(false);
   });
 });
 
@@ -146,9 +151,9 @@ describe('§31 grammar rewrites the same layer', () => {
     expect(genreGrammar('experimental').hatCycle).toBe(7);
   });
 
-  it('gives Ambient air and DnB noise as texture', () => {
+  it('gives Ambient air and BASS its foghorn as texture', () => {
     expect(codeFor('ambient')).toContain('room(.9)');
-    expect(codeFor('dnb')).toContain('hpf(7000)');
+    expect(codeFor('bass')).toContain('roomsize(5)'); // §73 the foghorn
   });
 });
 
@@ -228,17 +233,19 @@ describe('§50 the reference presets are the tempo and the mix', () => {
     expect(at('house')).toBe(124);
     expect(at('ambient')).toBe(70);
     expect(at('breakbeat')).toBe(142); // §69 breakbeat techno
-    expect(at('dnb')).toBe(174);
+    expect(at('bass')).toBe(150);
     expect(at('trap')).toBe(140);
     expect(at('experimental')).toBe(118);
     expect(at('dub')).toBe(72);
   });
 
   it('keeps the preset mix order: kick over bass over chords over lead', () => {
-    for (const genre of ['techno', 'house', 'garage', 'trap', 'dnb'] as const) {
+    for (const genre of ['techno', 'house', 'garage', 'trap', 'bass'] as const) {
       const g = genreGrammar(genre);
       expect(g.kickGain).toBeGreaterThanOrEqual(g.bassGain);
-      expect(g.bassGain).toBeGreaterThan(g.harmonyGain);
+      // §73 bass music mixes its acid ABOVE the roll; everywhere else the
+      // bass sits over the harmony.
+      if (genre !== 'bass') expect(g.bassGain).toBeGreaterThan(g.harmonyGain);
       expect(g.harmonyGain).toBeGreaterThanOrEqual(g.melodyGain);
     }
     // Ambient and breakbeat invert it: the kick is the quietest thing there.
@@ -358,7 +365,7 @@ describe('§61 a section means something different in every world', () => {
   it('every grammar declares how it means its sections', () => {
     const worlds = [
       'techno', 'garage', 'jazz', 'house', 'ambient',
-      'breakbeat', 'dnb', 'trap', 'dub', 'experimental',
+      'breakbeat', 'bass', 'trap', 'dub', 'experimental',
     ] as const;
     for (const world of worlds) {
       expect(genreGrammar(world).sectionStyle).toBeTruthy();
@@ -413,10 +420,10 @@ describe('§62 speed is energy, and every world spends it its own way', () => {
   it('every grammar declares how it spends energy', () => {
     const worlds = [
       'techno', 'garage', 'jazz', 'house', 'ambient',
-      'breakbeat', 'dnb', 'trap', 'dub', 'experimental',
+      'breakbeat', 'bass', 'trap', 'dub', 'experimental',
     ] as const;
     for (const world of worlds) expect(genreGrammar(world).energyStyle).toBeTruthy();
-    expect(genreGrammar('dnb').energyStyle).toBe('breaks');
+    expect(genreGrammar('bass').energyStyle).toBe('breaks');
     expect(genreGrammar('jazz').energyStyle).toBe('improv');
   });
 });

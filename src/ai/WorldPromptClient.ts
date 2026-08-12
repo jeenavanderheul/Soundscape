@@ -49,7 +49,7 @@ The grammars, and what they do to a layer:
 - techno — repetition. Hypnotic and mechanical, 4/4, minimal harmonic movement, short motif.
 - ambient — space. Sparse or drumless, long sustained tones, wide reverb; what you leave out is the composition.
 - jazz — conversation. Swing and syncopation, rich chords, phrases that vary rather than repeat.
-- dnb — velocity. Broken breakbeats, heavy sub, sharp transients, short hooks.
+- bass — velocity. Broken breakbeats, heavy sub, sharp transients, short hooks.
 - garage — displacement. Two-step kick leaving beat two empty, shuffled skippy hats, short syncopated sub.
 - house — warmth. Four to the floor, offbeat open hat, clap on 2 and 4, piano or organ chords.
 - trap — weight. Half-time 808 kick that rings, hi-hat rolls that subdivide, sliding sub, bright bells.

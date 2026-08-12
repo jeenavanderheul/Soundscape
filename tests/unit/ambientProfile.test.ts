@@ -27,7 +27,7 @@ const affinity = (ambient: number, techno = 0): GenreAffinity => ({
   trap: 0,
   breakbeat: 0,
   dub: 0,
-  dnb: 0,
+  bass: 0,
   experimental: 0,
 });
 

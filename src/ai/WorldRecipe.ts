@@ -56,7 +56,7 @@ const GENRES: readonly RecipeGenre[] = [
   'techno',
   'ambient',
   'jazz',
-  'dnb',
+  'bass',
   'garage',
   'house',
   'trap',
@@ -200,7 +200,7 @@ export function validateRecipe(raw: unknown): RecipeValidation {
         eastSouthEast: oneOf(zonesRaw.eastSouthEast, GENRES, 'house'),
         south: oneOf(zonesRaw.south, GENRES, 'ambient'),
         southSouthWest: oneOf(zonesRaw.southSouthWest, GENRES, 'breakbeat'),
-        westSouthWest: oneOf(zonesRaw.westSouthWest, GENRES, 'dnb'),
+        westSouthWest: oneOf(zonesRaw.westSouthWest, GENRES, 'bass'),
         northNorthWest: oneOf(zonesRaw.northNorthWest, GENRES, 'trap'),
       },
       // A world with no resonators would be silent; fall back to the seeded set.

@@ -36,7 +36,8 @@ export interface GenreAffinity {
   techno: number;
   ambient: number;
   jazz: number;
-  dnb: number;
+  /** §73: hard rolling bass music — what used to be the drum & bass slot. */
+  bass: number;
   garage: number;
   house: number;
   trap: number;
@@ -50,7 +51,7 @@ export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = [
   'techno',
   'ambient',
   'jazz',
-  'dnb',
+  'bass',
   'garage',
   'house',
   'trap',

@@ -59,14 +59,15 @@ const JAZZ: readonly LadderStep[] = [
 ];
 
 /** Drum & Bass: velocity becomes rhythm — the sub and the break lead. */
-const DNB: readonly LadderStep[] = [
-  { layer: 'bass', atMs: 3000 },
-  { layer: 'snare', atMs: 7000 },
-  { layer: 'kick', atMs: 10_000 },
-  { layer: 'hats', atMs: 14_000 },
-  { layer: 'texture', atMs: 22_000 },
-  { layer: 'harmony', atMs: 30_000 },
-  { layer: 'melody', atMs: 38_000 },
+const BASS: readonly LadderStep[] = [
+  // §73: the kick, then the roll under it — everything else is decoration.
+  { layer: 'kick', atMs: 3000 },
+  { layer: 'bass', atMs: 6000 },
+  { layer: 'snare', atMs: 10_000 },
+  { layer: 'hats', atMs: 13_000 },
+  { layer: 'melody', atMs: 20_000 },
+  { layer: 'harmony', atMs: 27_000 },
+  { layer: 'texture', atMs: 34_000 },
 ];
 
 /** Experimental: mutation — an irregular pulse against texture, harmony last. */
@@ -147,7 +148,7 @@ export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderSte
   techno: TECHNO,
   ambient: AMBIENT,
   jazz: JAZZ,
-  dnb: DNB,
+  bass: BASS,
   experimental: EXPERIMENTAL,
   garage: GARAGE,
   house: HOUSE,

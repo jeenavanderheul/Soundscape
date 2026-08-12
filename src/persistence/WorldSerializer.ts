@@ -178,7 +178,7 @@ function genreSnapshot(raw: unknown): GenreSnapshot | null {
     dub: num(a.dub, 0, 0, 1),
     ambient: num(a.ambient, 0, 0, 1),
     jazz: num(a.jazz, 0, 0, 1),
-    dnb: num(a.dnb, 0, 0, 1),
+    bass: num(a.bass, 0, 0, 1),
     experimental: num(a.experimental, 0, 0, 1),
   };
   const dominant = (GENRE_NAMES as readonly string[]).includes(

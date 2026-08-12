@@ -121,7 +121,7 @@ describe('§46 the region carries the tempo, the flight does not', () => {
   it('every grammar sits in the middle of its own range', () => {
     expect(regionBpm(genreGrammar('techno'))).toBeGreaterThanOrEqual(115);
     expect(regionBpm(genreGrammar('ambient'))).toBeLessThan(100);
-    expect(regionBpm(genreGrammar('dnb'))).toBeGreaterThan(160);
+    expect(regionBpm(genreGrammar('bass'))).toBeGreaterThan(140);
   });
 
   it('flying faster does not move the clock, and your own rhythm still wins', () => {

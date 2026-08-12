@@ -65,7 +65,7 @@ let assignment: Record<Compass, GroundGenre> = {
   southSouthEast: 'experimental',
   south: 'ambient',
   southSouthWest: 'breakbeat',
-  westSouthWest: 'dnb',
+  westSouthWest: 'bass',
   westNorthWest: 'dub',
   northNorthWest: 'trap',
 };
@@ -87,7 +87,7 @@ export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreA
     techno: 0,
     ambient: 0,
     jazz: 0,
-    dnb: 0,
+    bass: 0,
     garage: 0,
     house: 0,
     trap: 0,

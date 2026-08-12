@@ -21,7 +21,7 @@ export type TrackGenre =
   | 'techno'
   | 'ambient'
   | 'jazz'
-  | 'dnb'
+  | 'bass'
   | 'garage'
   | 'house'
   | 'trap'

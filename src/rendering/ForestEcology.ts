@@ -126,8 +126,8 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
     mix: { branch: 4, trunk: 1, canopy: 1.6, thin: 1.2 },
   },
   // Velocity forest: sharp vertical shards, canyons, things that flash past.
-  dnb: {
-    name: 'VELOCITY FOREST',
+  bass: {
+    name: 'PRESSURE FOREST',
     forms: ['shard', 'pillar'],
     formBias: 0.85,
     density: 1.3,

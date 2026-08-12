@@ -92,7 +92,7 @@ describe('§36 the forest is the score', () => {
 describe('§55 every world has its own shape language', () => {
   const WORLDS = [
     'techno', 'garage', 'jazz', 'house', 'ambient',
-    'breakbeat', 'dnb', 'trap', 'dub', 'experimental',
+    'breakbeat', 'bass', 'trap', 'dub', 'experimental',
   ] as const;
 
   it('no two worlds are built from the same pair of forms', () => {
@@ -110,7 +110,7 @@ describe('§55 every world has its own shape language', () => {
   it('keeps the machine straight and the cloud soft', () => {
     expect(ecologyFor('techno').forms[0]).toBe('pillar');
     expect(ecologyFor('ambient').forms[0]).toBe('membrane');
-    expect(ecologyFor('dnb').forms[0]).toBe('shard');
+    expect(ecologyFor('bass').forms[0]).toBe('shard');
     expect(ecologyFor('trap').forms[0]).toBe('monolith');
     expect(ecologyFor('breakbeat').forms[0]).toBe('monolith');
   });

@@ -11,7 +11,7 @@ import { placeName,
 } from '../../src/genres/ZonePalette';
 import type { GenreAffinity } from '../../src/music/MusicState';
 
-const NONE: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
+const NONE: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, bass: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
 
 describe('§33 zone palette — every direction is a place you can see', () => {
   it('leaves the void neutral', () => {
@@ -26,10 +26,10 @@ describe('§33 zone palette — every direction is a place you can see', () => {
 
   it('blends an even mix, but lets the dominant region dominate', () => {
     const red = GENRE_LOOKS.techno.color;
-    const green = GENRE_LOOKS.dnb.color;
+    const green = GENRE_LOOKS.bass.color;
     // Halfway between two compass points both regions pull hard (cos³ of
     // 22.5° ≈ 0.79), and there the look really is the midpoint.
-    const between = lookFor({ ...NONE, techno: 0.79, dnb: 0.79 });
+    const between = lookFor({ ...NONE, techno: 0.79, bass: 0.79 });
     expect(between.color.r).toBeCloseTo((red.r + green.r) / 2, 1);
     expect(between.color).not.toEqual(red);
     // A weak pull leaves the world mostly void, as it should.
@@ -38,7 +38,7 @@ describe('§33 zone palette — every direction is a place you can see', () => {
     // §45: at a compass point both neighbours sit at about a third. Weighted
     // linearly that turned every region into the same blend, so the leader
     // has to carry far more than its share.
-    const atPoint = lookFor({ ...NONE, techno: 1, dnb: 0.35, garage: 0.35 });
+    const atPoint = lookFor({ ...NONE, techno: 1, bass: 0.35, garage: 0.35 });
     expect(Math.abs(atPoint.color.r - red.r)).toBeLessThan(0.12);
     expect(Math.abs(atPoint.color.g - red.g)).toBeLessThan(0.12);
   });
@@ -73,19 +73,19 @@ describe('§33 compass', () => {
       north: 'techno',
       eastNorthEast: 'jazz',
       south: 'ambient',
-      westSouthWest: 'dnb',
+      westSouthWest: 'bass',
       northNorthWest: 'trap',
     });
     expect(headingLabel(0)).toBe('N · techno');
     expect(headingLabel(step * 2)).toBe('ENE · jazz');
     expect(headingLabel(Math.PI)).toBe('S · ambient');
-    expect(headingLabel(-step * 3)).toBe('WSW · dnb');
+    expect(headingLabel(-step * 3)).toBe('WSW · bass');
     expect(headingLabel(-step)).toBe('NNW · trap');
   });
 
   it('follows a world that reassigned its directions (§30)', () => {
-    setZoneGenres({ north: 'dnb' });
-    expect(headingLabel(0)).toBe('N · dnb');
+    setZoneGenres({ north: 'bass' });
+    expect(headingLabel(0)).toBe('N · bass');
     setZoneGenres({ north: 'techno' });
   });
 });
@@ -102,7 +102,7 @@ describe('§57 a place is its music', () => {
 describe('§59 ten worlds you can tell apart at a glance', () => {
   const WORLDS = [
     'techno', 'garage', 'jazz', 'house', 'ambient',
-    'breakbeat', 'dnb', 'trap', 'dub', 'experimental',
+    'breakbeat', 'bass', 'trap', 'dub', 'experimental',
   ] as const;
 
   /** Hue in degrees — what "a different colour" actually means to an eye. */

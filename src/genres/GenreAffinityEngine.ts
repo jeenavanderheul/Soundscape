@@ -2,7 +2,7 @@ import type { EventBus } from '../core/EventBus';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { GenreSnapshot } from '../persistence/WorldSerializer';
 import { scoreAmbient } from './AmbientProfile';
-import { scoreDnb } from './DnbProfile';
+import { scoreBass } from './BassProfile';
 import { scoreExperimental } from './ExperimentalProfile';
 import { scoreJazz } from './JazzProfile';
 import { scoreTechno } from './TechnoProfile';
@@ -35,7 +35,7 @@ const ZERO_AFFINITY: GenreAffinity = {
   techno: 0,
   ambient: 0,
   jazz: 0,
-  dnb: 0,
+  bass: 0,
   garage: 0,
   house: 0,
   trap: 0,
@@ -53,7 +53,7 @@ const BEHAVIOURAL: ReadonlySet<keyof GenreAffinity> = new Set([
   'techno',
   'ambient',
   'jazz',
-  'dnb',
+  'bass',
   'experimental',
 ]);
 
@@ -93,7 +93,7 @@ export class GenreAffinityEngine {
       techno: scoreTechno(music),
       ambient: scoreAmbient(music),
       jazz: scoreJazz(music),
-      dnb: scoreDnb(music),
+      bass: scoreBass(music),
     };
     const behaviour: GenreAffinity = {
       ...ZERO_AFFINITY,

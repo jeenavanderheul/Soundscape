@@ -165,7 +165,7 @@ describe('§33 a turn throws one gesture, in the grammar you are in', () => {
   });
 
   it('renders to a real one-shot voice for every style', () => {
-    for (const genre of ['techno', 'dub', 'breakbeat', 'dnb', null] as const) {
+    for (const genre of ['techno', 'dub', 'breakbeat', 'bass', null] as const) {
       for (const side of ['left', 'right'] as const) {
         const code = buildPatternCode(createEmptyLayerGraph(120), [
           { kind: 'throw', gain: 0.5, style: throwStyleFor(genre, side) },

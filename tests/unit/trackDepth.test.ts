@@ -24,7 +24,7 @@ import {
 const ROAMING: FlightState = { velocity: 12, hz: 220, energy: 0.5 };
 
 function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
-  const zero: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, dnb: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
+  const zero: GenreAffinity = { techno: 0, ambient: 0, jazz: 0, bass: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
   return { ...zero, [genre]: 0.9 };
 }
 
@@ -101,14 +101,15 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
   });
 
   it('reaches at least nine voices in every genre', () => {
-    for (const genre of ['techno', 'ambient', 'jazz', 'dnb', 'experimental'] as const) {
+    for (const genre of ['techno', 'ambient', 'jazz', 'bass', 'experimental'] as const) {
       expect(trackParts(graphOf(genre)).length, genre).toBeGreaterThanOrEqual(9);
     }
   });
 
-  it('drives techno and dnb but leaves ambient and jazz clean', () => {
+  it('drives techno and bass but leaves ambient and jazz clean', () => {
     expect(buildPatternCode(graphOf('techno'))).toContain('shape(');
-    expect(buildPatternCode(graphOf('dnb'))).toContain('shape(');
+    // §73 bass music is driven with distort, not shape.
+    expect(buildPatternCode(graphOf('bass'))).toContain('distort(');
     expect(buildPatternCode(graphOf('ambient'))).not.toContain('shape(');
     expect(buildPatternCode(graphOf('jazz'))).not.toContain('shape(');
   });
@@ -116,7 +117,7 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
   // §37: a genre is not only a pattern — it is the box the pattern came out of.
   it('plays every grammar on its own drum machine', () => {
     const banks = new Map<string, string>();
-    for (const genre of ['techno', 'ambient', 'jazz', 'dnb', 'garage', 'house', 'trap', 'dub'] as const) {
+    for (const genre of ['techno', 'ambient', 'jazz', 'bass', 'garage', 'house', 'trap', 'dub'] as const) {
       const code = buildPatternCode(graphOf(genre));
       const match = code.match(/bank\("([A-Za-z0-9]+)"\)/);
       expect(match, genre).not.toBeNull();
@@ -125,7 +126,7 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
     expect(banks.get('techno')).toBe('RolandTR909');
     expect(banks.get('house')).toBe('RolandTR707');
     expect(banks.get('trap')).toBe('RolandTR808');
-    expect(banks.get('dnb')).toBe('EmuSP12');
+    expect(banks.get('bass')).toBe('RolandTR909'); // §73
     // At least six distinct machines across the eight regions.
     expect(new Set(banks.values()).size).toBeGreaterThanOrEqual(6);
   });
@@ -150,7 +151,7 @@ describe('§32 export — the flight handed back as source', () => {
   });
 
   it('names every voice rather than leaking primitive ids', () => {
-    const code = exportTrack({ graph: graphOf('dnb'), genre: 'dnb', flownSeconds: 60 });
+    const code = exportTrack({ graph: graphOf('bass'), genre: 'bass', flownSeconds: 60 });
     expect(code).not.toContain('track-');
   });
 

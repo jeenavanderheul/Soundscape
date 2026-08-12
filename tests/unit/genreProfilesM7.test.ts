@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildLayerGraph } from '../../src/audio/MusicalPrimitives';
-import { dnbTempoTendency, scoreDnb } from '../../src/genres/DnbProfile';
+import { bassTempoTendency, scoreBass } from '../../src/genres/BassProfile';
 import { affinityConflict, scoreExperimental } from '../../src/genres/ExperimentalProfile';
 import { scoreJazz } from '../../src/genres/JazzProfile';
 import { createInitialMusicState, GenreAffinity, MusicState } from '../../src/music/MusicState';
@@ -22,7 +22,7 @@ const affinity = (partial: Partial<GenreAffinity>): GenreAffinity => ({
   trap: 0,
   breakbeat: 0,
   dub: 0,
-  dnb: 0,
+  bass: 0,
   experimental: 0,
   ...partial,
 });
@@ -52,7 +52,7 @@ describe('scoreJazz (§9.3)', () => {
   });
 });
 
-describe('scoreDnb (§9.4)', () => {
+describe('scoreBass (§9.4)', () => {
   it('rewards fast movement, transients, sub energy at ~172 BPM', () => {
     const state: MusicState = {
       ...createInitialMusicState(),
@@ -62,7 +62,7 @@ describe('scoreDnb (§9.4)', () => {
       bpm: 170,
       tempoConfidence: 0.8,
     };
-    expect(scoreDnb(state)).toBeGreaterThan(0.5);
+    expect(scoreBass(state)).toBeGreaterThan(0.5);
   });
 
   it('gates on velocity: a still player never drifts into DnB', () => {
@@ -74,13 +74,13 @@ describe('scoreDnb (§9.4)', () => {
       bpm: 172,
       tempoConfidence: 0.9,
     };
-    expect(scoreDnb(state)).toBe(0);
+    expect(scoreBass(state)).toBe(0);
   });
 
   it('tempo tendency peaks near 172 and honors octave folding', () => {
-    expect(dnbTempoTendency(172)).toBeGreaterThan(dnbTempoTendency(130));
-    expect(dnbTempoTendency(86)).toBeGreaterThan(0);
-    expect(dnbTempoTendency(0)).toBe(0);
+    expect(bassTempoTendency(172)).toBeGreaterThan(bassTempoTendency(130));
+    expect(bassTempoTendency(86)).toBeGreaterThan(0);
+    expect(bassTempoTendency(0)).toBe(0);
   });
 });
 
@@ -93,8 +93,8 @@ describe('scoreExperimental (§9.5)', () => {
       timbreNoise: 0.4,
       dynamics: 0.5,
     };
-    const conflicted = { techno: 0.5, ambient: 0.48, jazz: 0.1, dnb: 0.1 };
-    const clean = { techno: 0.9, ambient: 0.05, jazz: 0.02, dnb: 0.02 };
+    const conflicted = { techno: 0.5, ambient: 0.48, jazz: 0.1, bass: 0.1 };
+    const clean = { techno: 0.9, ambient: 0.05, jazz: 0.02, bass: 0.02 };
     expect(scoreExperimental(state, conflicted)).toBeGreaterThan(
       scoreExperimental(state, clean),
     );
@@ -115,7 +115,7 @@ describe('buildLayerGraph M7 layers', () => {
     const style = (a: Parameters<typeof buildLayerGraph>[1]) =>
       buildLayerGraph(pulsed, a).layers.drums.primitives.find((p) => p.id === 'pulse')!
         .parameters['style'];
-    expect(style(affinity({ dnb: 0.8 }))).toBe('break');
+    expect(style(affinity({ bass: 0.8 }))).toBe('hardgroove'); // §73
     expect(style(affinity({ jazz: 0.8 }))).toBe('swing');
     expect(style(affinity({ ambient: 0.8 }))).toBe('sparse');
     expect(style(affinity({ experimental: 0.8 }))).toBe('irregular');
@@ -123,7 +123,7 @@ describe('buildLayerGraph M7 layers', () => {
   });
 
   it('stays neutral below the attractor threshold', () => {
-    const graph = buildLayerGraph(pulsed, affinity({ dnb: 0.3, jazz: 0.3, experimental: 0.3 }));
+    const graph = buildLayerGraph(pulsed, affinity({ bass: 0.3, jazz: 0.3, experimental: 0.3 }));
     expect(graph.layers.drums.primitives.find((p) => p.id === 'pulse')!.parameters['style']).toBe(
       'four',
     );

@@ -40,7 +40,7 @@ export const GENRE_LOOKS: Record<keyof GenreAffinity, ZoneLook> = {
   // Warm amber: human, lit from within.
   jazz: { color: { r: 1.0, g: 0.84, b: 0.18 }, relief: 0.4, haze: 0.35 },
   // Acid green: fast, sharp, jagged.
-  dnb: { color: { r: 0.6, g: 1.0, b: 0.05 }, relief: 0.7, haze: 0.3 },
+  bass: { color: { r: 0.6, g: 1.0, b: 0.05 }, relief: 0.7, haze: 0.3 },
   // Violet mutation: the sky above everything.
   experimental: { color: { r: 0.62, g: 0.2, b: 1.0 }, relief: 0.55, haze: 0.5 },
   // Cool cyan, rolling and skippy — the ground never quite settles.
