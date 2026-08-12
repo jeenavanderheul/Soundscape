@@ -54,3 +54,14 @@ declare module '@strudel/web' {
   /** Load a sample map (strudel.cc/learn/samples). Network-backed. */
   export function samples(source: string): Promise<void>;
 }
+
+/**
+ * §75 `@strudel/soundfonts@1.3.0` — General MIDI instruments. Only the one
+ * function we call is declared; the package ships no types.
+ */
+declare module '@strudel/soundfonts' {
+  /** Registers every `gm_*` instrument with superdough. Network-backed. */
+  export function registerSoundfonts(): void;
+  /** The GM registry itself: name → sample list. */
+  export const gm: Record<string, unknown>;
+}

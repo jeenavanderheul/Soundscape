@@ -120,6 +120,39 @@ const GAIN_RAMP_SECONDS = 0.03;
 
 /** Real drum samples replace the synth fallbacks once the bank has loaded. */
 let samplesLoaded = false;
+
+/**
+ * §75 GENERAL MIDI SOUNDFONTS. `@strudel/soundfonts` registers ~180 `gm_*`
+ * instruments — piano, strings, guitars, brass, woodwinds — the whole family
+ * our sample maps do not have. It is network-backed, so every template that
+ * names one must have a fallback, exactly like the drum machines (§30.5): an
+ * instrument that did not load is SILENCE, not an error (§38).
+ */
+let soundfontsLoaded = false;
+export function setSoundfontsLoaded(value: boolean): void {
+  soundfontsLoaded = value;
+}
+export function areSoundfontsLoaded(): boolean {
+  return soundfontsLoaded;
+}
+
+/**
+ * The GM voices a grammar may name. Deliberately a short list: these are the
+ * instruments our worlds actually need, and every one of them is checked
+ * against the registry the package ships (see soundfonts.test.ts).
+ */
+export const SOUNDFONT_VOICES: ReadonlySet<string> = new Set([
+  'gm_piano', 'gm_epiano1', 'gm_harpsichord', 'gm_celesta',
+  'gm_violin', 'gm_cello', 'gm_string_ensemble_1', 'gm_synth_strings_1',
+  'gm_pizzicato_strings', 'gm_orchestral_harp', 'gm_choir_aahs',
+  'gm_acoustic_bass', 'gm_electric_bass_finger', 'gm_fretless_bass',
+  'gm_electric_guitar_jazz', 'gm_electric_guitar_clean', 'gm_overdriven_guitar',
+  'gm_trumpet', 'gm_trombone', 'gm_french_horn', 'gm_brass_section',
+  'gm_soprano_sax', 'gm_tenor_sax', 'gm_flute', 'gm_clarinet', 'gm_oboe',
+  'gm_church_organ', 'gm_drawbar_organ', 'gm_accordion',
+  'gm_lead_1_square', 'gm_lead_2_sawtooth', 'gm_pad_warm', 'gm_pad_choir', 'gm_pad_halo',
+  'gm_fx_brightness', 'gm_marimba', 'gm_vibraphone', 'gm_kalimba',
+]);
 export function setSamplesLoaded(value: boolean): void {
   samplesLoaded = value;
 }
@@ -1074,6 +1107,18 @@ export class StrudelEngine implements StrudelEnginePort {
       .then(() => {
         this.samplesReady = true;
         setSamplesLoaded(true);
+        // §75: the GM instruments come after, lazily imported so they stay out
+        // of the main bundle. They must never hold up the drums, and a failure
+        // costs those voices and nothing else.
+        void import('@strudel/soundfonts')
+          .then(({ registerSoundfonts }) => {
+            registerSoundfonts();
+            this.soundfontsReady = true;
+            setSoundfontsLoaded(true);
+          })
+          .catch((error: unknown) => {
+            console.warn('StrudelEngine: soundfonts unavailable', error);
+          });
         if (this.localSamples) return; // everything is already in-house
         for (const map of SAMPLE_MAPS.slice(1)) {
           void Promise.resolve()
@@ -1322,6 +1367,8 @@ export class StrudelEngine implements StrudelEnginePort {
   /** True once the sample bank finished loading; templates upgrade to real
    * drums when it does (§30). */
   private samplesReady = false;
+  /** §75: true once the GM instruments are registered. */
+  private soundfontsReady = false;
 
   /** The pattern source the world last wrote — shown read-only in the UI
    * overlay (§11: never an editable REPL). */
@@ -1337,6 +1384,7 @@ export class StrudelEngine implements StrudelEnginePort {
     bpm: number;
     evaluations: number;
     samples: boolean;
+    soundfonts: boolean;
     local: boolean;
     degraded: boolean;
   } {
@@ -1345,6 +1393,7 @@ export class StrudelEngine implements StrudelEnginePort {
       bpm: this.appliedGraph.bpm,
       evaluations: this.evaluations,
       samples: this.samplesReady,
+      soundfonts: this.soundfontsReady,
       local: this.localSamples,
       degraded: this.degraded,
     };

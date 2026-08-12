@@ -166,6 +166,7 @@ interface FrequencyDebug {
     bpm: number;
     evaluations: number;
     samples: boolean;
+    soundfonts: boolean;
     local: boolean;
     degraded: boolean;
   };

@@ -54,6 +54,27 @@ These are the `VOICE_SOUNDS` allowlist: what `bassVoice`, `chordVoice` and
     piano organ_full glockenspiel vibraphone marimba harp
     harmonica sax timpani tubularbells
 
+## General MIDI instruments (§75) — `@strudel/soundfonts`
+
+The families the sample maps do not have. Registered at start-up, network-backed,
+so like the drum machines every template that names one keeps a fallback.
+
+    gm_piano gm_epiano1 gm_harpsichord gm_celesta
+    gm_violin gm_cello gm_string_ensemble_1 gm_synth_strings_1
+    gm_pizzicato_strings gm_orchestral_harp gm_choir_aahs
+    gm_acoustic_bass gm_electric_bass_finger gm_fretless_bass
+    gm_electric_guitar_jazz gm_electric_guitar_clean gm_overdriven_guitar
+    gm_trumpet gm_trombone gm_french_horn gm_brass_section
+    gm_soprano_sax gm_tenor_sax gm_flute gm_clarinet gm_oboe
+    gm_church_organ gm_drawbar_organ gm_accordion
+    gm_lead_1_square gm_lead_2_sawtooth gm_pad_warm gm_pad_choir gm_pad_halo
+    gm_fx_brightness gm_marimba gm_vibraphone gm_kalimba
+
+The package registers ~129 of these; the list above is the deliberate subset a
+grammar may name, and `tests/unit/soundfonts.test.ts` checks every one against
+the registry the package actually ships. Two names in my first draft
+(`gm_pad_2_warm`, `gm_pad_4_choir`) did not exist — that test caught them.
+
 ## More instruments in the maps (not yet on the allowlist)
 
 Available as samples, but a grammar cannot name them until they are added to
