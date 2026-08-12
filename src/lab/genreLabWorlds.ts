@@ -1,3 +1,10 @@
-import type { TrackGenre } from '../music/TrackState';
+export type GenreLabPreset = 'techno' | 'sub-pressure';
 
-export const GENRE_LAB_WORLDS = ['techno'] as const satisfies readonly Exclude<TrackGenre, null>[];
+export const GENRE_LAB_PRESETS = [
+  'techno',
+  'sub-pressure',
+] as const satisfies readonly GenreLabPreset[];
+
+export function genreLabPresetLabel(preset: GenreLabPreset): string {
+  return preset === 'sub-pressure' ? 'sub pressure' : preset;
+}
