@@ -6,6 +6,7 @@ import { scoreBass } from './BassProfile';
 import { scoreExperimental } from './ExperimentalProfile';
 import { scoreJazz } from './JazzProfile';
 import { scoreTechno } from './TechnoProfile';
+import { ACTIVE_WORLD_GENRES, isActiveWorldGenre } from './ActiveWorlds';
 
 export type GenreEvents = {
   'genre:snapshot': GenreSnapshot;
@@ -116,12 +117,17 @@ export class GenreAffinityEngine {
         );
       }
     }
+    for (const key of Object.keys(raw) as (keyof GenreAffinity)[]) {
+      if (!isActiveWorldGenre(key)) raw[key] = 0;
+    }
     const blend = 1 - Math.exp(-this.config.smoothingRate * deltaSec);
     for (const key of Object.keys(this.affinity) as (keyof GenreAffinity)[]) {
-      this.affinity[key] += (raw[key] - this.affinity[key]) * blend;
+      this.affinity[key] = isActiveWorldGenre(key)
+        ? this.affinity[key] + (raw[key] - this.affinity[key]) * blend
+        : 0;
     }
 
-    const entries = Object.entries(this.affinity) as [keyof GenreAffinity, number][];
+    const entries = ACTIVE_WORLD_GENRES.map((genre) => [genre, this.affinity[genre]] as const);
     const [topGenre, topValue] = entries.reduce((a, b) => (b[1] > a[1] ? b : a));
     const second = Math.max(...entries.filter(([g]) => g !== topGenre).map(([, v]) => v));
     const dominant = topValue >= this.config.dominantThreshold ? topGenre : null;

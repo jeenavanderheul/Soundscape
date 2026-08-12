@@ -36,7 +36,7 @@ function regionFlying(position: { x: number; z: number }, direction: { x: number
   return dominantZone(zoneAffinity({ ...position, y: 6 }, headingOf(direction)), 0.4);
 }
 
-/** §57: ten points, 36° apart, one per world. */
+/** Ten readable compass labels mapped onto two world halves. */
 const STEP = (Math.PI * 2) / 10;
 const dirAt = (index: number) => ({ x: Math.sin(STEP * index), z: -Math.cos(STEP * index) });
 const COMPASS = {
@@ -54,15 +54,15 @@ const COMPASS = {
 
 const EXPECTED = {
   N: 'techno',
-  NNE: 'garage',
-  ENE: 'jazz',
-  ESE: 'house',
-  SSE: 'experimental',
-  S: 'ambient',
-  SSW: 'breakbeat',
-  WSW: 'bass',
-  WNW: 'dub',
-  NNW: 'trap',
+  NNE: 'techno',
+  ENE: 'techno',
+  ESE: 'sub-pressure',
+  SSE: 'sub-pressure',
+  S: 'sub-pressure',
+  SSW: 'sub-pressure',
+  WSW: 'sub-pressure',
+  WNW: 'techno',
+  NNW: 'techno',
 } as const;
 
 describe('the journey: neutral start → a direction → that world', () => {
@@ -71,7 +71,7 @@ describe('the journey: neutral start → a direction → that world', () => {
     expect(placeName(null)).toBe('the void');
   });
 
-  it('every compass direction leads to its own world', () => {
+  it('every compass direction leads to one of the two world halves', () => {
     for (const [point, direction] of Object.entries(COMPASS)) {
       // Far enough out of the neutral middle that a direction counts (§34).
       const region = regionFlying({ x: 0, z: 70 }, direction);
@@ -82,20 +82,28 @@ describe('the journey: neutral start → a direction → that world', () => {
   it('turning from one world towards another arrives in the new one', () => {
     const deepInTechno = { x: 0, z: -120 };
     expect(regionFlying(deepInTechno, COMPASS.N)).toBe('techno');
-    expect(regionFlying(deepInTechno, COMPASS.NNW)).toBe('trap');
-    expect(regionFlying(deepInTechno, COMPASS.NNE)).toBe('garage');
+    expect(regionFlying(deepInTechno, COMPASS.NNW)).toBe('techno');
+    expect(regionFlying(deepInTechno, COMPASS.NNE)).toBe('techno');
+    expect(regionFlying(deepInTechno, COMPASS.S)).toBe('sub-pressure');
   });
 
   it('§56 what the HUD says you are flying into is what you are in', () => {
-    // Deep in Breakbeat, heading east: `flying: E · jazz` must mean jazz.
-    const inBreakbeat = { x: -200, z: 200 };
-    expect(regionFlying(inBreakbeat, COMPASS.ENE)).toBe('jazz');
-    expect(regionFlying(inBreakbeat, COMPASS.N)).toBe('techno');
+    const inSouth = { x: -200, z: 200 };
+    expect(regionFlying(inSouth, COMPASS.S)).toBe('sub-pressure');
+    expect(regionFlying(inSouth, COMPASS.N)).toBe('techno');
+  });
+
+  it('blends softly at the east/west border and never activates dormant genres', () => {
+    const border = zoneAffinity({ x: 120, y: 6, z: 0 }, Math.PI / 2);
+    expect(border.techno).toBeGreaterThan(0);
+    expect(border['sub-pressure']).toBeGreaterThan(0);
+    expect(border.ambient).toBe(0);
+    expect(border.bass).toBe(0);
   });
 });
 
 describe('arriving somewhere new starts a track in that world', () => {
-  function fly(region: 'techno' | 'trap', seconds: number, builder: TrackBuilder, from: number) {
+  function fly(region: 'techno' | 'sub-pressure', seconds: number, builder: TrackBuilder, from: number) {
     // No tapped rhythm: the region decides the tempo (§46). With a confident
     // player tempo the player would win, which is the whole point of §3.4.
     const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.6 };
@@ -118,21 +126,16 @@ describe('arriving somewhere new starts a track in that world', () => {
     const technoTrack = store.getState();
     expect(technoTrack.drums.kick.unlocked).toBe(true);
 
-    // Head north-west and stay: within a couple of seconds this is a trap
-    // track, carrying what was already earned.
-    t = fly('trap', 8, builder, t + 250);
-    expect(born).toEqual(['trap']);
-    const trapTrack = store.getState();
-    expect(trapTrack.genre).toBe('trap');
-    // Earned from nothing again, in trap's own order and at trap's own tempo.
-    expect(trapTrack.bpm).toBe(genreGrammar('trap').bpmCentre);
+    t = fly('sub-pressure', 8, builder, t + 250);
+    expect(born).toEqual(['sub-pressure']);
+    const pressureTrack = store.getState();
+    expect(pressureTrack.genre).toBe('sub-pressure');
+    expect(pressureTrack.bpm).toBe(Math.round(genreGrammar('sub-pressure').bpmCentre));
     expect(builder.trackNumber).toBe(2);
     // §58: you land on 1/7 of the new world, never on nothing — its first
     // rung is given the moment you arrive, so the crossing announces itself.
-    const first = ladderFor('trap')[0]!.layer;
-    expect(layerUnlocked(trapTrack, first)).toBe(true);
-    // §65: trap opens on the 808 boom — the thing you can actually hear.
-    expect(first).toBe('kick');
+    const first = ladderFor('sub-pressure')[0]!.layer;
+    expect(layerUnlocked(pressureTrack, first)).toBe(true);
   });
 
   it('§58 height is a tape: up is faster and higher, down is slower and deeper', () => {
@@ -147,12 +150,10 @@ describe('arriving somewhere new starts a track in that world', () => {
   });
 
   it('and the sounds of that world come with it', () => {
-    const trap = genreGrammar('trap');
+    const pressure = genreGrammar('sub-pressure');
     const techno = genreGrammar('techno');
-    expect(trap.drumBank).not.toBe(techno.drumBank);
-    expect(trap.kickStyle).not.toBe(techno.kickStyle);
-    expect(trap.leadVoice).not.toBe(techno.leadVoice);
-    expect(trap.bpmCentre).not.toBe(techno.bpmCentre);
+    expect(pressure.drumBank).not.toBe(techno.drumBank);
+    expect(pressure.bpmCentre).not.toBe(techno.bpmCentre);
   });
 });
 

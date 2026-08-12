@@ -1,7 +1,6 @@
 import { bandOffset, guideLines, inBand, trueAltitudeBand } from '../../src/ui/Guide';
 import { describe, expect, it } from 'vitest';
 
-import { setZoneGenres } from '../../src/genres/GenreZones';
 import { placeName,
   compassPoint,
   GENRE_LOOKS,
@@ -69,24 +68,11 @@ describe('§33 compass', () => {
 
   it('names the region the player is flying into', () => {
     const step = (Math.PI * 2) / 10;
-    setZoneGenres({
-      north: 'techno',
-      eastNorthEast: 'jazz',
-      south: 'ambient',
-      westSouthWest: 'bass',
-      northNorthWest: 'trap',
-    });
     expect(headingLabel(0)).toBe('N · techno');
-    expect(headingLabel(step * 2)).toBe('ENE · jazz');
-    expect(headingLabel(Math.PI)).toBe('S · ambient');
-    expect(headingLabel(-step * 3)).toBe('WSW · bass');
-    expect(headingLabel(-step)).toBe('NNW · trap');
-  });
-
-  it('follows a world that reassigned its directions (§30)', () => {
-    setZoneGenres({ north: 'bass' });
-    expect(headingLabel(0)).toBe('N · bass');
-    setZoneGenres({ north: 'techno' });
+    expect(headingLabel(step * 2)).toBe('ENE · techno');
+    expect(headingLabel(Math.PI)).toBe('S · sub-pressure');
+    expect(headingLabel(-step * 3)).toBe('WSW · sub-pressure');
+    expect(headingLabel(-step)).toBe('NNW · techno');
   });
 });
 
@@ -166,8 +152,8 @@ describe('§67 the guide tells you where and how high, and nothing else', () => 
   });
 
   it('sends you home when you are heading out of your own world', () => {
-    const away = guideLines({ altitude: 18, genre: 'dub', heading: 'N · techno', energy: 0.9 });
-    expect(away[1]).toContain('turn to WNW');
+    const away = guideLines({ altitude: 18, genre: 'sub-pressure', heading: 'N · techno', energy: 0.9 });
+    expect(away[1]).toContain('turn to ESE');
     expect(away[1]).toContain('leaving ends this track');
   });
 

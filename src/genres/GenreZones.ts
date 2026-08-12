@@ -1,5 +1,6 @@
 import type { GenreAffinity } from '../music/MusicState';
 import type { Vec3Data } from '../player/FrequencyState';
+import { isActiveWorldGenre, type ActiveWorldGenre } from './ActiveWorlds';
 
 /**
  * §29.5 genre grammar, spatial layer (user decision): every direction of the
@@ -22,12 +23,6 @@ export const ZONE_CONFIG = {
 } as const;
 
 const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
-
-/** Shortest angular distance between two headings, in radians. */
-function angleDelta(a: number, b: number): number {
-  const d = Math.abs(a - b) % (Math.PI * 2);
-  return d > Math.PI ? Math.PI * 2 - d : d;
-}
 
 /**
  * §57 (supersedes §34's eight points plus two altitude bands): TEN worlds on
@@ -54,24 +49,26 @@ const BEARINGS = {
 } as const;
 
 type Compass = keyof typeof BEARINGS;
-export type GroundGenre = Exclude<keyof GenreAffinity, never>;
+export type GroundGenre = ActiveWorldGenre;
 
 /** Which genre lies in each direction; a world recipe may reassign it (§30). */
 let assignment: Record<Compass, GroundGenre> = {
   north: 'techno',
-  northNorthEast: 'garage',
-  eastNorthEast: 'jazz',
-  eastSouthEast: 'house',
-  southSouthEast: 'experimental',
-  south: 'ambient',
-  southSouthWest: 'breakbeat',
-  westSouthWest: 'bass',
-  westNorthWest: 'dub',
-  northNorthWest: 'trap',
+  northNorthEast: 'techno',
+  eastNorthEast: 'techno',
+  eastSouthEast: 'sub-pressure',
+  southSouthEast: 'sub-pressure',
+  south: 'sub-pressure',
+  southSouthWest: 'sub-pressure',
+  westSouthWest: 'sub-pressure',
+  westNorthWest: 'techno',
+  northNorthWest: 'techno',
 };
 
-export function setZoneGenres(next: Partial<typeof assignment>): void {
-  assignment = { ...assignment, ...next };
+export function setZoneGenres(next: Partial<Record<Compass, keyof GenreAffinity>>): void {
+  for (const [compass, genre] of Object.entries(next) as [Compass, keyof GenreAffinity][]) {
+    if (isActiveWorldGenre(genre)) assignment[compass] = genre;
+  }
 }
 
 export function zoneGenres(): Readonly<typeof assignment> {
@@ -107,19 +104,11 @@ export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreA
     // player. Distance from spawn still gates it, so the start is neutral.
     // atan2(x, -z): 0 points north, +π/2 east — matches HEADINGS.
     const heading = flightHeading ?? Math.atan2(position.x, -position.z);
-    for (const [compass, target] of Object.entries(BEARINGS) as [Compass, number][]) {
-      // Cosine lobe, sharpened for eight points: full at the compass point,
-      // about a third at the 45° neighbour, zero at 90° and beyond. Narrowing
-      // it by doubling the angle instead would make the OPPOSITE direction
-      // come back to full strength.
-      // Ten points sit 36° apart, so the lobe is sharpened one power further
-      // than the eight-point version: full at the point, about a third at the
-      // neighbour, nothing at 90°.
-      const cosine = Math.max(0, Math.cos(angleDelta(heading, target)));
-      const lobe = cosine * cosine * cosine * cosine * cosine;
-      const genre = assignment[compass];
-      affinity[genre] = Math.max(affinity[genre], influence * lobe);
-    }
+    const northness = Math.cos(heading);
+    const blendWidth = 0.25;
+    const techno = clamp01((northness + blendWidth) / (blendWidth * 2));
+    affinity.techno = influence * techno;
+    affinity['sub-pressure'] = influence * (1 - techno);
   }
   return affinity;
 }
