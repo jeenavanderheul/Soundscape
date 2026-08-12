@@ -1146,6 +1146,20 @@ export class StrudelEngine implements StrudelEnginePort {
     return notes;
   }
 
+  /**
+   * §74: play the parts BARE — no performance shaping, no variations, no
+   * production. The bench needs it, because three coats applied to every
+   * grammar alike are exactly what makes ten worlds sound like family.
+   */
+  setBare(bare: boolean): void {
+    if (this.bare === bare) return;
+    this.bare = bare;
+    this.baseCode = buildPatternCode(this.appliedGraph, [], this.bare);
+    if (this.repl && this.started) this.evaluate(this.repl, this.baseCode);
+  }
+
+  private bare = false;
+
   setLayerGraph(graph: MusicalLayerGraph, boundary: 'beat' | 'bar' = 'bar'): void {
     this.requireRepl();
     // Coalesce: only the latest pending graph is applied at the next boundary.
@@ -1277,7 +1291,7 @@ export class StrudelEngine implements StrudelEnginePort {
         repl.setCps(bpmToCps(next.bpm));
       }
       this.appliedGraph = next;
-      this.baseCode = buildPatternCode(next);
+      this.baseCode = buildPatternCode(next, [], this.bare);
       dirty = true;
     }
     if (actions.length > 0) {
@@ -1286,7 +1300,7 @@ export class StrudelEngine implements StrudelEnginePort {
     if (!dirty) return;
 
     const code =
-      actions.length > 0 ? buildPatternCode(this.appliedGraph, actions) : this.baseCode;
+      actions.length > 0 ? buildPatternCode(this.appliedGraph, actions, this.bare) : this.baseCode;
     if (code === '') {
       if (this.playing) {
         repl.stop();

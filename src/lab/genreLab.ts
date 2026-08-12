@@ -279,6 +279,17 @@ for (const knob of MIX) mixPanel.appendChild(knobRow(knob, apply));
 
 $('play').addEventListener('click', () => void start());
 $('stop').addEventListener('click', stop);
+// §74: A/B the three coats the engine puts over every grammar — the
+// performance shaping, the variations and the production. In the REPL a
+// preset has none of them, which is why the same patterns sound different
+// there.
+let bare = false;
+$('bare').addEventListener('click', () => {
+  bare = !bare;
+  $('bare').setAttribute('aria-pressed', String(bare));
+  strudel.setBare(bare);
+  status.textContent = bare ? 'BARE — the parts alone, as a preset would play them' : 'coated — performance, variations and production on top';
+});
 $('reset').addEventListener('click', () => {
   resetKnobs();
   status.textContent = playing ? `back to defaults · ${genre}` : 'back to defaults';
