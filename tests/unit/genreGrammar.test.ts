@@ -132,9 +132,11 @@ describe('§31 grammar rewrites the same layer', () => {
     return buildPatternCode(buildLayerGraph(music, undefined, [], trackWithEverything(genre)));
   };
 
-  it('writes Ambient harmony as a pad and Techno harmony as a stab', () => {
+  it('writes Ambient harmony as a pad and Techno harmony as its dark stack', () => {
     expect(codeFor('ambient')).toContain('attack(.8)');
-    expect(codeFor('techno')).toContain('lpf("<900 1600 1100 2200>")');
+    // §71: techno's harmony is a pad, a stab and an FM shadow together.
+    expect(codeFor('techno')).toContain('supersaw');
+    expect(codeFor('techno')).toContain('fmpiano');
   });
 
   it('gives Experimental true polymeter: 7 hats against 5 percussion against 4', () => {
@@ -427,15 +429,18 @@ describe('§66 UK garage sounds like UK garage', () => {
     expect(g.snareStyle).toBe('clap');     // ~ ~ cp ~ ~ ~ cp ~
     expect(g.bassStyle).toBe('skip');      // all holes and offbeats
     expect(g.chordStyle).toBe('skip');     // stabs OFF the grid
-    expect(g.textureStyle).toBe('shaker');
+    expect(g.textureStyle).toBe('dust'); // §72: the shaker moved into the percussion
     expect(g.bpmCentre).toBe(134);
   });
 
-  it('plays its chords and hook on the preset’s own voices, not on samples', () => {
+  it('plays its chords and hook on the preset’s own voices', () => {
     const g = genreGrammar('garage');
     expect(g.bassVoice).toBe('sine');
-    expect(g.chordVoice).toBe('triangle');
-    expect(g.leadVoice).toBe('sine');
+    expect(g.chordVoice).toBe('fmpiano');
+    expect(g.leadVoice).toBe('vibraphone');
+    // §72: two machines, so the clap is never the same box as the kick.
+    expect(g.drumBank).toBe('AkaiXR10');
+    expect(g.percBank).toBe('AkaiMPC60');
   });
 
   it('its chord lands, then a whole bar of air (the reference preset)', () => {
@@ -445,8 +450,10 @@ describe('§66 UK garage sounds like UK garage', () => {
     track.harmonyIntervals = [0, 3, 7];
     const music = { ...createInitialMusicState(), bpm: 134, tempoConfidence: 0.6 };
     const code = buildPatternCode(buildLayerGraph(music, affinityOf('garage'), [], track));
-    const chord = code.split('\n').find((line) => line.includes('"triangle"'))!;
-    expect(chord).toContain('<[');
-    expect(chord).toContain('] ~>');
+    // §72: an organ pad, an FM stab full of holes, a supersaw behind it.
+    const chord = code.split('\n').find((line) => line.includes('fmpiano'))!;
+    expect(chord).toContain('organ_full');
+    expect(chord).toContain('supersaw');
+    expect(chord).toContain('] ~ [');
   });
 });

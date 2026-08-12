@@ -118,11 +118,6 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
     const banks = new Map<string, string>();
     for (const genre of ['techno', 'ambient', 'jazz', 'dnb', 'garage', 'house', 'trap', 'dub'] as const) {
       const code = buildPatternCode(graphOf(genre));
-      // §66b: garage asks for the plain kit — no machine name at all.
-      if (genre === 'garage') {
-        expect(code).not.toContain('.bank(');
-        continue;
-      }
       const match = code.match(/bank\("([A-Za-z0-9]+)"\)/);
       expect(match, genre).not.toBeNull();
       banks.set(genre, match![1]!);
@@ -135,8 +130,11 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
     expect(new Set(banks.values()).size).toBeGreaterThanOrEqual(6);
   });
 
-  it('writes the techno lead as a dark stab, not a tune', () => {
-    expect(buildPatternCode(graphOf('techno'))).toContain('lpf("<500 900 650 1300>")');
+  it('writes the techno lead as sequencer lines, not a tune (§71)', () => {
+    // §71: the techno lead is sequencer lines — a pulse, a clavisynth and a
+    // casio, none of them singing.
+    expect(buildPatternCode(graphOf('techno'))).toContain('"pulse"');
+    expect(buildPatternCode(graphOf('techno'))).toContain('"casio"');
   });
 });
 

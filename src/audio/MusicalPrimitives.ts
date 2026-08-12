@@ -243,7 +243,9 @@ export type HatStyle =
   /** §34 trap: rolls that subdivide. */
   | 'roll'
   /** §69 breakbeat: minimal, dark, four hits and gone. */
-  | 'dark';
+  | 'dark'
+  /** §71 techno: eighths, an offbeat open hat and a second machine under it. */
+  | 'techno';
 export type SnareStyle = 'backbeat' | 'ghost' | 'break' | 'body' | 'rim' | 'clap'
   /** §69 breakbeat: one hard hit on 3 and 7, driven. */
   | 'hard';
@@ -261,6 +263,8 @@ export type BassStyle =
   /** §34 breakbeat: the left hand. */
   /** §69 breakbeat: the pressure under the sub — saw, filtered, driven. */
   | 'pressure'
+  /** §71 techno: body, edge and a low pulse over the sub. */
+  | 'deep'
   | 'arco';
 /** §31: harmony behaves differently per grammar — a stab is not a pad. */
 export type ChordStyle =
@@ -268,8 +272,12 @@ export type ChordStyle =
   | 'skip'
   | 'stab' | 'pad' | 'jazz' | 'piano' | 'organ' | 'skank'
   /** §69 breakbeat: a stab so sparse it reads as a warning light. */
-  | 'dark';
+  | 'dark'
+  /** §71 techno: a pad, a stab and an FM shadow, none of them in front. */
+  | 'darkpad';
 export type MelodyStyle =
+  /** §71 techno: sequencer lines, not a tune. */
+  | 'sequence'
   | 'motif'
   | 'stab'
   | 'long'
@@ -281,7 +289,11 @@ export type MelodyStyle =
   | 'melodica';
 export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic' | 'shaker' | 'tape'
   /** §69 breakbeat: low atmospheric rumble under everything. */
-  | 'rumble';
+  | 'rumble'
+  /** §71 techno: the machine room — bytebeat, air, rumble and dust. */
+  | 'machine'
+  /** §72 garage: air and dust, nothing you would call a part. */
+  | 'dust';
 
 export interface GenreGrammar {
   kickStyle: DrumStyle;
@@ -299,6 +311,8 @@ export interface GenreGrammar {
   hatCycle: number;
   /** 0 = this grammar has no separate percussion voice. */
   percCycle: number;
+  /** §71/§72: a named percussion figure, or '' for the generic one. */
+  percStyle?: string;
   /** §32 saturation on kick, bass and stabs. 0 keeps a layer clean and dynamic. */
   drive: number;
   /**
@@ -389,7 +403,39 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
 };
 
 const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
-  techno: { ...NEUTRAL_GRAMMAR },
+  // §71 TECHNO, from the reference preset: 132 BPM, a 909 four-to-the-floor
+  // with a second machine underneath, and everything else quiet enough that
+  // the kick and the sub carry the whole thing.
+  techno: {
+    percStyle: 'toms',
+    ...NEUTRAL_GRAMMAR,
+    bpmCentre: 132,
+    bpmMin: 125,
+    bpmMax: 145,
+    drive: 0.32,
+    drumBank: 'RolandTR909',
+    percBank: 'RolandTR808',
+    kickStyle: 'four',
+    hatStyle: 'techno',
+    snareStyle: 'hard',
+    bassStyle: 'deep',
+    chordStyle: 'darkpad',
+    melodyStyle: 'sequence',
+    textureStyle: 'machine',
+    bassVoice: 'sawtooth',
+    chordVoice: 'square',
+    leadVoice: 'pulse',
+    percCycle: 4,
+    kickGain: 0.95,
+    snareGain: 0.42,
+    hatGain: 0.085,
+    bassGain: 0.72,
+    harmonyGain: 0.065,
+    melodyGain: 0.035,
+    textureGain: 0.006,
+    harmonySlow: 4,
+    melodySlow: 2,
+  },
   dnb: {
     energyStyle: 'breaks',
     sectionStyle: 'driven',
@@ -526,36 +572,39 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     melodySlow: 2,
   },
   // §34 UK GARAGE — displacement: the grid slides off its own centre.
+  // §72 UK GARAGE, from the reference preset: 134 BPM across an AkaiXR10 and
+  // an MPC60, and everything above the bass kept under 0.12 so the two-step
+  // itself is what you hear.
   garage: {
+    percStyle: 'garage',
+    ...NEUTRAL_GRAMMAR,
     energyStyle: 'subdivision',
     sectionStyle: 'driven',
-    // §50 mix and tempo from the reference preset.
     bpmCentre: 134,
-    kickGain: 1.0,
-    hatGain: 0.3,
-    snareGain: 0.7,
-    bassGain: 0.8,
-    harmonyGain: 0.25,
-    melodyGain: 0.18,
-    textureGain: 0.15,
-    // §49 the sound of this world: sine bass, organ_full chords, vibraphone lead.
-    bassVoice: 'sine',
-    chordVoice: 'triangle',
-    leadVoice: 'sine',
+    bpmMin: 128,
+    bpmMax: 140,
+    drumBank: 'AkaiXR10',
+    percBank: 'AkaiMPC60',
     kickStyle: 'twostep',
     hatStyle: 'shuffle',
     snareStyle: 'clap',
     bassStyle: 'skip',
     chordStyle: 'skip',
     melodyStyle: 'vocal',
-    textureStyle: 'shaker',
+    textureStyle: 'dust',
+    bassVoice: 'sine',
+    chordVoice: 'fmpiano',
+    leadVoice: 'vibraphone',
     hatCycle: 4,
     percCycle: 4,
-    drumBank: 'none',
-    percBank: 'none',
-    bpmMin: 128,
-    bpmMax: 138,
-    drive: 0.12,
+    drive: 0,
+    kickGain: 0.9,
+    snareGain: 0.55,
+    hatGain: 0.11,
+    bassGain: 0.76,
+    harmonyGain: 0.075,
+    melodyGain: 0.055,
+    textureGain: 0.003,
     harmonySlow: 2,
     melodySlow: 2,
   },
@@ -978,7 +1027,9 @@ export function buildLayerGraph(
       layer: 'drums',
       parameters: {
         cycle: grammar.percCycle,
-        bank: grammar.percBank,
+        style: grammar.percStyle ?? '',
+        bank: grammar.drumBank,
+        percBank: grammar.percBank,
         gain: round2(grammar.hatGain * 0.7 * mix.drums * (0.6 + energy * 0.6)),
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.perc],
