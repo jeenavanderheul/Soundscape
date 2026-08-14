@@ -1264,7 +1264,16 @@ export class StrudelEngine implements StrudelEnginePort {
           .catch((error: unknown) => {
             console.warn('StrudelEngine: soundfonts unavailable', error);
           });
-        if (this.localSamples) return; // everything is already in-house
+        // §113: "vendored" is NOT "complete". The local map holds the drum
+        // machines and nothing else — 761 bank names, no instruments — so
+        // returning here left every sample-based VOICE silent: clavisynth in
+        // four worlds, marimba and tubularbells in PERCUSSION RIOT, organ_full
+        // in VOID CRUSHER. The kit was there and the instruments were not, in
+        // exactly the checkout where everything looked fine.
+        //
+        // The extra maps are JSON only and their audio is fetched lazily on
+        // first hit, so loading them always costs a few hundred KB and buys
+        // back every voice.
         for (const map of SAMPLE_MAPS.slice(1)) {
           void Promise.resolve()
             .then(() => samples(map))
