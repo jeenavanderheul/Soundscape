@@ -133,7 +133,14 @@ export function directionFromLook(yaw: number, pitch: number): Vec3Data {
  * you cross the world — never which tempo the music is in.
  */
 export const CRUISE_SPEED = 13;
-export const FULL_SPEED = 66;
+/**
+ * §119 (user decision): twice as fast at the top. The MUSIC does not follow —
+ * `TrackBuilder.pace()` saturates at its own `fullSpeed` of 66, so everything
+ * above that is pure travel: reaching a beacon, crossing into another world,
+ * covering ground. §87 set the arc at ~90 seconds deliberately after it was
+ * finishing a whole production in 24, and that stays exactly where it is.
+ */
+export const FULL_SPEED = 132;
 /**
  * §51 (user decision): the throttle is NOTCHED. Five blocks of four quarters,
  * twenty notches in all. A tap gives you a notch straight away and letting go
