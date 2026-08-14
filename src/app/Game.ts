@@ -821,16 +821,6 @@ export class Game {
     // §52: the shape of the orb is how it is being flown.
     this.orb.setFlight(this.controller.yawRate, this.controller.climbRate, dtSeconds);
     this.orb.update(state, this.audioAnalyser?.snapshot.rms ?? 0, dtSeconds, elapsedMs / 1000);
-    this.orbTrail.update(
-      state.position,
-      {
-        x: state.direction.x * state.velocity,
-        y: state.direction.y * state.velocity,
-        z: state.direction.z * state.velocity,
-      },
-      this.controller.throttleLevel,
-      growth,
-    );
     // §35: what the orb clears grows with the orb — a small orb hugs the land.
     this.controller.setOrbRadius(this.orb.radius + 0.35);
     // §33: streaks rushing past the orb are what makes speed legible.
@@ -894,6 +884,19 @@ export class Game {
       position.x + direction.x * CAMERA_LOOK_AHEAD,
       position.y + direction.y * CAMERA_LOOK_AHEAD + CAMERA_LOOK_LIFT + this.orb.radius * 0.3,
       position.z + direction.z * CAMERA_LOOK_AHEAD,
+    );
+    // §131: after the camera has been placed, because the trail closes to
+    // nothing where it passes the lens and needs this frame's camera to do it.
+    this.orbTrail.update(
+      state.position,
+      {
+        x: state.direction.x * state.velocity,
+        y: state.direction.y * state.velocity,
+        z: state.direction.z * state.velocity,
+      },
+      this.controller.throttleLevel,
+      growth,
+      camera.position,
     );
     this.renderer.render();
   };

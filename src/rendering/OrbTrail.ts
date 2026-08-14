@@ -20,6 +20,22 @@ const SAMPLES = 64;
 const SAMPLE_STEP = 0.6;
 /** Half-width at the head, in world units, before speed and growth scale it. */
 const HALF_WIDTH = 0.5;
+/**
+ * §131: the ribbon runs BEHIND the orb and the chase camera sits behind the
+ * orb too, so the tail runs straight through the lens — 38 units of trail
+ * against a camera 7 units back. A ribbon two units wide passing half a unit
+ * from the camera is not a trail, it is a wedge across the whole viewport, and
+ * the quad that straddles the near plane smears over everything. So the width
+ * closes with the distance to the camera: constant angular thickness, nothing
+ * at all at the lens, and the samples behind it collapse to zero area.
+ */
+const CAMERA_FADE = 8;
+
+/** Half-width of one rib, `age01` 0 at the head and 1 at the tail (§131). */
+export function trailHalfWidth(headHalfWidth: number, age01: number, cameraDistance: number): number {
+  const near = Math.min(1, Math.max(0, cameraDistance / CAMERA_FADE));
+  return headHalfWidth * (1 - age01) * near;
+}
 
 const VERTEX = /* glsl */ `
 attribute float aAge;   // 0 at the head, 1 at the tail
@@ -86,7 +102,13 @@ export class OrbTrail {
    * `speed01` is 0..1 of full throttle and `growth` 0..1 of the track: a full
    * track at full speed leaves the longest, widest trail.
    */
-  update(position: Vec3Data, velocity: Vec3Data, speed01: number, growth: number): void {
+  update(
+    position: Vec3Data,
+    velocity: Vec3Data,
+    speed01: number,
+    growth: number,
+    cameraPosition: Vec3Data,
+  ): void {
     const moved = Math.hypot(position.x - this.last.x, position.y - this.last.y, position.z - this.last.z);
     if (this.history.length === 0 || moved >= SAMPLE_STEP) {
       this.history.unshift({ ...position });
@@ -104,7 +126,12 @@ export class OrbTrail {
     const halfWidth = HALF_WIDTH * (0.5 + speed01 * 1.2) * (1 + growth);
     for (let i = 0; i < SAMPLES; i++) {
       const point = this.history[Math.min(i, this.history.length - 1)] ?? position;
-      const taper = halfWidth * (1 - i / SAMPLES);
+      const cameraDistance = Math.hypot(
+        point.x - cameraPosition.x,
+        point.y - cameraPosition.y,
+        point.z - cameraPosition.z,
+      );
+      const taper = trailHalfWidth(halfWidth, i / SAMPLES, cameraDistance);
       const o = i * 6;
       this.positions[o] = point.x + side.x * taper;
       this.positions[o + 1] = point.y + side.y * taper;
