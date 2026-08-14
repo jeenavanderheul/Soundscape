@@ -45,6 +45,13 @@ export interface TrackExportInfo {
   genre: TrackGenre;
   /** Flight time in seconds, for the header. */
   flownSeconds: number;
+  /**
+   * §128: the journey this was flown on, and the shape that journey drew for
+   * this track. The code is what makes a good flight findable again — paste it
+   * back and the same worlds write the same tracks (user decision: shareable).
+   */
+  journey?: string;
+  shape?: string;
 }
 
 /**
@@ -77,7 +84,7 @@ function flatten(code: string): string[] {
   return parts.filter((part) => part !== '');
 }
 
-export function exportTrack({ graph, genre, flownSeconds }: TrackExportInfo): string {
+export function exportTrack({ graph, genre, flownSeconds, journey, shape }: TrackExportInfo): string {
   const parts = trackParts(graph).flatMap((part) => {
     const voices = flatten(part.code);
     return voices.map((code, index) => ({
@@ -91,6 +98,7 @@ export function exportTrack({ graph, genre, flownSeconds }: TrackExportInfo): st
   const header = [
     '// FREQUENCY — this track was flown, not written.',
     `// ${genre === null ? 'no region' : genre} · ${graph.bpm} bpm · ${minutes}m${String(seconds).padStart(2, '0')}s of flight`,
+    ...(journey === undefined ? [] : [`// journey ${journey}${shape === undefined ? '' : ` · ${shape}`}`]),
     '',
   ];
   if (parts.length === 0) {

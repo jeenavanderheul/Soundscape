@@ -7,7 +7,6 @@ vi.mock('@strudel/web', () => ({
 }));
 
 import { genreGrammar } from '../../src/audio/MusicalPrimitives';
-import { ladderFor, layerUnlocked } from '../../src/music/GenreLadder';
 import { performanceFrom } from '../../src/music/Performance';
 import { dominantZone, zoneAffinity } from '../../src/genres/GenreZones';
 import { placeName } from '../../src/genres/ZonePalette';
@@ -98,7 +97,10 @@ describe('arriving somewhere new starts a track in that world', () => {
     let t = fly('techno', 20, builder, 0);
     expect(store.getState().genre).toBe('techno');
     const technoTrack = store.getState();
-    expect(technoTrack.drums.kick.unlocked).toBe(true);
+    // §128: the OPENING rung is drawn per track (user decision), so what has
+    // to hold is that the world gave you something to hear — a track never
+    // opens on silence — not that it is always the kick.
+    expect(unlockedLayers(technoTrack).length).toBeGreaterThan(0);
 
     t = fly('sub-pressure', 8, builder, t + 250);
     expect(born).toEqual(['sub-pressure']);
@@ -106,10 +108,10 @@ describe('arriving somewhere new starts a track in that world', () => {
     expect(pressureTrack.genre).toBe('sub-pressure');
     expect(pressureTrack.bpm).toBe(Math.round(genreGrammar('sub-pressure').bpmCentre));
     expect(builder.trackNumber).toBe(2);
-    // §58: you land on 1/7 of the new world, never on nothing — its first
-    // rung is given the moment you arrive, so the crossing announces itself.
-    const first = ladderFor('sub-pressure')[0]!.layer;
-    expect(layerUnlocked(pressureTrack, first)).toBe(true);
+    // §58/§128: you land on 1/7 of the new world, never on nothing — a rung is
+    // given the moment you arrive, so the crossing announces itself. WHICH rung
+    // is drawn for that track, so sound arriving is the promise, not its name.
+    expect(unlockedLayers(pressureTrack).length).toBeGreaterThan(0);
   });
 
   it('§91 height is colour, not a tape: the track stays in tune and in time', () => {
@@ -169,3 +171,12 @@ describe('staying is the trip: deeper into one world, endlessly', () => {
     expect(variations.length).toBeGreaterThan(6);
   });
 });
+
+/** §128: which layers stand — the opening rung is drawn, so never name one. */
+function unlockedLayers(track: { drums: Record<string, { unlocked: boolean }> } & Record<string, unknown>): string[] {
+  const names = ['kick', 'snare', 'hats', 'bass', 'harmony', 'melody', 'texture'];
+  return names.filter((n) =>
+    n === 'kick' || n === 'snare' || n === 'hats'
+      ? track.drums[n]!.unlocked
+      : (track[n] as { unlocked: boolean }).unlocked);
+}

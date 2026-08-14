@@ -96,10 +96,10 @@ describe('the endless journey (user decision)', () => {
     flyThroughADrop(builder, 0);
     unsubscribe();
 
-    // §100: every track opens on its world's first rung — techno's is the
-    // kick, so the next track starts with a beat, not with silence.
-    expect(after.drums.kick.unlocked).toBe(true);
-    expect(after.texture.unlocked).toBe(false);
+    // §100/§128: every track opens on its first rung at once, so the next
+    // track starts with sound rather than silence. WHICH rung that is is drawn
+    // per track now, so the invariant is "exactly one, immediately".
+    expect(unlockedLayers(after)).toHaveLength(1);
     expect(after.rootMidi).not.toBe(before.rootMidi); // a related key, not the same
     // §91: the clock belongs to the WORLD, so the next track inherits the one
     // the last track was actually running on — not the tempo the player had
@@ -162,3 +162,12 @@ describe('variation keeps a finished track moving', () => {
     expect(varied).toContain('sbd'); // still the player's kick
   });
 });
+
+/** §128: which layers stand — the opening rung is drawn, so never name one. */
+function unlockedLayers(track: { drums: Record<string, { unlocked: boolean }> } & Record<string, unknown>): string[] {
+  const names = ['kick', 'snare', 'hats', 'bass', 'harmony', 'melody', 'texture'];
+  return names.filter((n) =>
+    n === 'kick' || n === 'snare' || n === 'hats'
+      ? track.drums[n]!.unlocked
+      : (track[n] as { unlocked: boolean }).unlocked);
+}

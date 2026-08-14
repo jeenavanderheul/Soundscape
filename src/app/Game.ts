@@ -1161,6 +1161,8 @@ export class Game {
       graph: this.lastLayerGraph ?? createEmptyLayerGraph(),
       genre: this.trackStore.getState().genre,
       flownSeconds: this.flightMs / 1000,
+      journey: WORLD_SEED,
+      shape: this.trackBuilder.shape,
     });
   }
 

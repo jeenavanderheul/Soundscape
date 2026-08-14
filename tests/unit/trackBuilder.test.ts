@@ -12,6 +12,8 @@ import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { zoneAffinity } from '../../src/genres/GenreZones';
+import { layerUnlocked } from '../../src/music/GenreLadder';
+import { TRACK_LAYERS as LAYER_NAMES } from '../../src/music/TrackForm';
 import { genreGrammar, regionBpm } from '../../src/audio/MusicalPrimitives';
 import { TrackBuilder, type FlightState } from '../../src/music/TrackBuilder';
 import { createInitialTrackState, TrackEvents } from '../../src/music/TrackState';
@@ -38,29 +40,37 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
     const tick = (t: number) =>
       builder.tick(t, music, { velocity: 10, hz: 220, energy: 0.4 }, region);
-    // §100: arriving in a world gives you its first rung at once — techno
-    // opens on the kick, so there is a beat from the first bar.
+    // §100/§128: arriving in a world gives you a rung at once, so there is
+    // sound from the first bar. WHICH rung is drawn per track now, so this
+    // asks for the promise — exactly one, immediately — not for its name.
     tick(250);
-    expect(store.getState().drums.kick.unlocked).toBe(true);
-    expect(unlocked).toEqual(['kick']);
+    expect(unlocked).toHaveLength(1);
+    const opener = unlocked[0]!;
     // §102: DISCOVERY I is the SECOND rung — the opener came with the world,
     // so this phase has to bring something of its own or it is a dead step.
     for (let t = 500; t <= 15_000; t += 250) tick(t);
-    expect(store.getState().drums.hats.unlocked).toBe(false); // still ENTER BIOME
+    expect(unlocked).toHaveLength(1); // still ENTER BIOME — nothing new yet
     for (let t = 15_250; t <= 22_000; t += 250) tick(t);
+    // §128: three high excitations ask for the HATS. If the draw did not put
+    // them next, asking pulls them forward — deliberate play still earns the
+    // layer you are playing for, which is the whole point of intent (§29.3).
     for (let i = 0; i < 3; i++) {
       builder.onAction({ atMs: 22_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
     }
     tick(23_300);
-    expect(store.getState().drums.hats.unlocked).toBe(true);
+    if (opener !== 'hats') expect(store.getState().drums.hats.unlocked).toBe(true);
     // A layer growing its second voice is also a thing arriving, so it takes
     // its turn in the same queue — which is why the snare waits this long.
     for (let t = 46_800; t <= 75_000; t += 500) tick(t);
     builder.onAction({ atMs: 75_000, hz: 400, amplitude: 0.8, release: true });
     builder.onAction({ atMs: 75_500, hz: 400, amplitude: 0.9, release: true });
     tick(75_600);
+    // …and two hard releases ask for the SNARE, the same way.
     expect(store.getState().drums.snare.unlocked).toBe(true);
-    expect(unlocked.slice(0, 3)).toEqual(['kick', 'hats', 'snare']);
+    // Nothing arrived that was not asked for or drawn: no duplicates, and the
+    // opener still stands where it landed.
+    expect(new Set(unlocked).size).toBe(unlocked.length);
+    expect(unlocked[0]).toBe(opener);
   });
 
   it('does not unlock hats or snare before the kick (ladder order §29.2)', () => {
@@ -113,10 +123,14 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
     for (let t = 25_100; t <= 70_000; t += 100) {
       builder.tick(t, roamingMusic, { ...ROAMING, altitude: 50 });
     }
+    // §128: "without skipping the ladder" is now the real invariant, because
+    // the ladder is drawn rather than written: whatever stands must be an
+    // unbroken PREFIX of this track's order. Nothing is ever reached over.
     const track = store.getState();
-    expect(track.drums.hats.unlocked).toBe(true);
-    // Texture is the last rung: flying high cannot jump the queue (§31.2).
-    expect(track.texture.unlocked).toBe(false);
+    const order = builder.order;
+    const standing = order.filter((layer) => layerUnlocked(track, layer));
+    expect(standing).toEqual(order.slice(0, standing.length));
+    expect(standing.length).toBeGreaterThan(1);
   });
 
   it('still offers the ladder to a player who does nothing in particular', () => {
@@ -124,10 +138,14 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
     // §46 means a slow flight develops the track more slowly.
     // §92: the arc gates it now — before DISCOVERY I opens, nobody gets a
     // kick, however patient or however deliberate.
-    // §100: the opening rung comes with the world itself.
-    expect(flyAt(19, 2000).drums.kick.unlocked).toBe(true);
-    // …and the sub is PRESSURE's, four phases in.
-    expect(flyAt(19, 150_000).bass.unlocked).toBe(true);
+    // §100/§128: the opening rung comes with the world itself, whichever the
+    // draw chose — a patient player is never left in silence.
+    const opening = flyAt(19, 2000);
+    expect(LAYER_NAMES.filter((l) => layerUnlocked(opening, l))).toHaveLength(1);
+    // …and by four phases in, a flight that did nothing in particular is most
+    // of the way up its ladder anyway.
+    const later = flyAt(19, 150_000);
+    expect(LAYER_NAMES.filter((l) => layerUnlocked(later, l)).length).toBeGreaterThanOrEqual(5);
   });
 
   it('does not accumulate during stillness', () => {

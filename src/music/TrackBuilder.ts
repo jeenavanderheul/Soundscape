@@ -5,7 +5,8 @@ import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { ArrangementEngine, CYCLES_PER_PHASE, rungsDueAt } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
-import { ladderFor, layerUnlocked, nextStep } from './GenreLadder';
+import { ladderFor, layerUnlocked, nextStep, type LadderStep } from './GenreLadder';
+import { formFor, isPlayableOrder, TRACK_LAYERS, type TrackForm } from './TrackForm';
 import { HarmonyEngine } from './HarmonyEngine';
 import { MelodyTracker } from './MelodyTracker';
 import type { MusicState } from './MusicState';
@@ -221,6 +222,12 @@ export class TrackBuilder {
   private paceClockMs = 0;
   /** Paced time the current track was born at, for §54's minimum life. */
   private trackStartedMs = 0;
+  /** §128: the shape THIS track was drawn with — order and pacing. */
+  private form: TrackForm | null = null;
+  private formKey = '';
+
+
+
   private lastRegion: TrackGenre = null;
   /** Paced time spent inside a region that is not this track's own (§53). */
   private awayMs = 0;
@@ -367,7 +374,7 @@ export class TrackBuilder {
     // once. Waiting for the arc to reach DISCOVERY I meant eleven seconds of
     // air at full speed and twenty at cruise before there was a beat — long
     // enough that a player cannot tell whether anything is coming.
-    const first = ladderFor(bornIn)[0];
+    const first = this.ladder(bornIn)[0];
     if (first) this.unlock(first.layer, nowMs);
     this.activeMs = 0;
     this.lastDeepenMs = 0;
@@ -512,7 +519,7 @@ export class TrackBuilder {
       track.drums.kick, track.drums.snare, track.drums.hats,
       track.bass, track.harmony, track.melody, track.texture,
     ].filter((layer) => layer.unlocked).length;
-    const readyToPeak = earned >= rungsDueAt('build', ladderFor(genre));
+    const readyToPeak = earned >= rungsDueAt('build', this.ladder(genre));
     // §84: the arc walks in CYCLES of one bar at the track's own tempo, and
     // each world flies its own order through the eight phases (§61).
     this.arrangement.setStyle(genreGrammar(genre).sectionStyle);
@@ -550,7 +557,7 @@ export class TrackBuilder {
         // startNextTrack — the genre simply resolves — so it would have been
         // the one track that opened on silence. Arriving in a world always
         // gives you that world's first rung, at once.
-        const opening = ladderFor(genre)[0];
+        const opening = this.ladder(genre)[0];
         if (genre !== null && opening && !layerUnlocked(this.store.getState(), opening.layer)) {
           this.lastRungMs = this.activeMs;
           this.unlock(opening.layer, nowMs);
@@ -577,7 +584,12 @@ export class TrackBuilder {
     // track always emerges layer by layer in its own grammar.
     if (!tempoExists) return;
     const current = this.store.getState();
-    const ladder = ladderFor(genre);
+    // §128: the drawn order is where a track STARTS, not what it must be. Fly
+    // low and the kick comes forward; travel the register and the air does.
+    // This is the authorship the build kept promising: your flying shapes the
+    // form, not only how fast you climb someone else's.
+    this.pullIntentForward(current, genre);
+    const ladder = this.ladder(genre);
     const step = nextStep(current, ladder);
     // §92: the ARC decides how many rungs exist by now, so the build-up has
     // the same shape every flight. Two clocks used to run at once — the arc
@@ -611,13 +623,18 @@ export class TrackBuilder {
     // receive. The window is now most of the phase: you have three gaps to go
     // and get it, and only if you do nothing at all does the world hand it
     // over near the end.
+    // §128: a patient form waits further into its phase before the world
+    // gives a rung away; an urgent one hands it over early. Clamped under the
+    // phase, or the gift would land after the phase it belongs to.
+    const formPace = this.formOf(genre).paceScale;
     const offeredFreelyAt =
-      (this.dueSinceMs ?? this.activeMs) + barMs * CYCLES_PER_PHASE * config.patienceOfPhase;
+      (this.dueSinceMs ?? this.activeMs)
+      + barMs * CYCLES_PER_PHASE * Math.min(0.9, config.patienceOfPhase * formPace);
     const patience = step === null ? 0 : Math.max(step.atMs * patienceFactor, offeredFreelyAt);
     // §82: whatever earns it, a layer only lands once the previous one has had
     // room to be heard. Without this, patience and behaviour fired on
     // consecutive ticks and the track arrived in a lump.
-    const settled = this.activeMs - this.lastRungMs >= config.rungGapMs;
+    const settled = this.activeMs - this.lastRungMs >= config.rungGapMs * formPace;
     if (rungDue && step !== null && settled && (this.intent(step.layer) || this.activeMs >= patience)) {
       this.lastRungMs = this.activeMs;
       this.unlock(step.layer, nowMs);
@@ -631,7 +648,13 @@ export class TrackBuilder {
     // §82: a second voice never lands on top of a new layer — but it keeps its
     // OWN interval and does not consume the rung slot, or depth would starve
     // width and a track would stop growing.
-    if (settled && this.activeMs - this.lastDeepenMs >= config.deepenIntervalMs) {
+    // §128: the FORM paces the build, never the depth. Letting a patient form
+    // stretch this gate too cost slow worlds their last second voices — the
+    // very content §127 had just made reachable. Depth keeps its own steady
+    // cadence and only waits for the §82 rule that two things never land at
+    // once, measured on the unstretched gap.
+    const roomForDepth = this.activeMs - this.lastRungMs >= config.rungGapMs;
+    if (roomForDepth && this.activeMs - this.lastDeepenMs >= config.deepenIntervalMs) {
       const shallow = ladder.find(
         (candidate) =>
           layerUnlocked(current, candidate.layer) &&
@@ -642,6 +665,42 @@ export class TrackBuilder {
         this.deepen(shallow.layer, nowMs);
       }
     }
+  }
+
+
+  /**
+   * §128: the rungs of the CURRENT track, in the order this journey drew for
+   * it. The written ladder (GenreLadder) is still the base CURVE — how much
+   * patience each successive rung gets — but which layer sits on which rung is
+   * drawn per track, and the whole curve is stretched by the form's pace.
+   */
+  private ladder(genre: TrackGenre): readonly LadderStep[] {
+    const form = this.formOf(genre);
+    const written = ladderFor(genre);
+    return form.order.map((layer, index) => ({
+      layer,
+      atMs: Math.round((written[index]?.atMs ?? 40_000) * form.paceScale),
+    }));
+  }
+
+  /** Redrawn whenever the world or the track number changes, never per tick. */
+  private formOf(genre: TrackGenre): TrackForm {
+    const key = `${genre ?? 'void'}|${this.trackNumberValue}`;
+    if (key !== this.formKey || this.form === null) {
+      this.formKey = key;
+      this.form = formFor(this.seed, genre, this.trackNumberValue);
+    }
+    return this.form;
+  }
+
+  /** The current track's shape, for the strip and the export. */
+  get shape(): string {
+    return this.form?.shape ?? 'even';
+  }
+
+  /** §128: the order this track is actually climbing, after any pull-forward. */
+  get order(): readonly TrackLayerName[] {
+    return this.form?.order ?? TRACK_LAYERS;
   }
 
   private deepen(layer: TrackLayerName, atMs: number): void {
@@ -655,6 +714,28 @@ export class TrackBuilder {
       return { ...t, [layer]: { unlocked: true, level: LEVEL_DEEP } };
     });
     this.bus.emit('track:depth', { layer, atMs });
+  }
+
+
+  /**
+   * §128: a layer you are clearly asking for jumps the queue — but only if the
+   * build still reads as a build afterwards. The rules that make a drawn order
+   * playable are the same ones that decide whether you may bend it, so no
+   * amount of deliberate flying can assemble a pile.
+   */
+  private pullIntentForward(track: Readonly<TrackState>, genre: TrackGenre): void {
+    const form = this.formOf(genre);
+    const next = form.order.find((layer) => !layerUnlocked(track, layer));
+    if (next === undefined) return;
+    const wanted = form.order.find(
+      (layer) => layer !== next && !layerUnlocked(track, layer) && this.intent(layer),
+    );
+    if (wanted === undefined) return;
+    const rest = form.order.filter((layer) => layer !== wanted);
+    const at = rest.indexOf(next);
+    const reordered = [...rest.slice(0, at), wanted, ...rest.slice(at)];
+    if (!isPlayableOrder(reordered)) return;
+    this.form = { ...form, order: reordered };
   }
 
   /** Deliberate play that earns a layer ahead of the clock (§29.3). */
@@ -712,7 +793,7 @@ export class TrackBuilder {
    */
   offeredLayer(): TrackLayerName | null {
     const track = this.store.getState();
-    const ladder = ladderFor(track.genre);
+    const ladder = this.ladder(track.genre);
     const step = nextStep(track, ladder);
     if (step === null) return null;
     const earned = ladder.filter((rung) => layerUnlocked(track, rung.layer)).length;
@@ -727,7 +808,8 @@ export class TrackBuilder {
    */
   collectBeacon(layer: TrackLayerName, nowMs: number): boolean {
     if (this.offeredLayer() !== layer) return false;
-    if (this.activeMs - this.lastRungMs < this.config.rungGapMs) return false;
+    const gap = this.config.rungGapMs * this.formOf(this.store.getState().genre).paceScale;
+    if (this.activeMs - this.lastRungMs < gap) return false;
     this.lastRungMs = this.activeMs;
     this.unlock(layer, nowMs);
     return true;
