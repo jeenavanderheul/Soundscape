@@ -1,12 +1,8 @@
 import type { EventBus } from '../core/EventBus';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { GenreSnapshot } from '../persistence/WorldSerializer';
-import { scoreAmbient } from './AmbientProfile';
-import { scoreBass } from './BassProfile';
-import { scoreExperimental } from './ExperimentalProfile';
-import { scoreJazz } from './JazzProfile';
 import { scoreTechno } from './TechnoProfile';
-import { ACTIVE_WORLD_GENRES, isActiveWorldGenre } from './ActiveWorlds';
+import { ACTIVE_WORLD_GENRES } from './ActiveWorlds';
 
 export type GenreEvents = {
   'genre:snapshot': GenreSnapshot;
@@ -35,29 +31,15 @@ export const GENRE_AFFINITY_CONFIG: GenreAffinityEngineConfig = {
 const ZERO_AFFINITY: GenreAffinity = {
   techno: 0,
   'sub-pressure': 0,
-  ambient: 0,
-  jazz: 0,
-  bass: 0,
-  garage: 0,
-  house: 0,
-  trap: 0,
-  breakbeat: 0,
-  dub: 0,
-  experimental: 0,
 };
 
 /**
- * §34: these four are scored from what the player PLAYS (§9). The regions
- * added later are places you travel to — their pull is spatial, so blending
- * them with a behaviour score of zero would halve them unfairly.
+ * §34: scored from what the player PLAYS (§9). The regions are places you
+ * travel to — their pull is spatial, so blending them with a behaviour score
+ * of zero would halve them unfairly. §103 left two worlds; SUB PRESSURE is
+ * purely a place, techno is also something you can play your way into.
  */
-const BEHAVIOURAL: ReadonlySet<keyof GenreAffinity> = new Set([
-  'techno',
-  'ambient',
-  'jazz',
-  'bass',
-  'experimental',
-]);
+const BEHAVIOURAL: ReadonlySet<keyof GenreAffinity> = new Set(['techno']);
 
 /**
  * Genres emerge from MusicState (spec §9). M5 activates only the Techno
@@ -93,15 +75,10 @@ export class GenreAffinityEngine {
 
     const base = {
       techno: scoreTechno(music),
-      ambient: scoreAmbient(music),
-      jazz: scoreJazz(music),
-      bass: scoreBass(music),
     };
     const behaviour: GenreAffinity = {
       ...ZERO_AFFINITY,
       ...base,
-      // §9.5: experimental feeds on conflict between the other attractors.
-      experimental: scoreExperimental(music, base),
     };
     // Silence has no genre: the world only colours music that is playing.
     const audible = Math.min(1, Math.max(music.dynamics * 2, music.bpm > 0 ? 1 : 0));
@@ -117,14 +94,9 @@ export class GenreAffinityEngine {
         );
       }
     }
-    for (const key of Object.keys(raw) as (keyof GenreAffinity)[]) {
-      if (!isActiveWorldGenre(key)) raw[key] = 0;
-    }
     const blend = 1 - Math.exp(-this.config.smoothingRate * deltaSec);
     for (const key of Object.keys(this.affinity) as (keyof GenreAffinity)[]) {
-      this.affinity[key] = isActiveWorldGenre(key)
-        ? this.affinity[key] + (raw[key] - this.affinity[key]) * blend
-        : 0;
+      this.affinity[key] += (raw[key] - this.affinity[key]) * blend;
     }
 
     const entries = ACTIVE_WORLD_GENRES.map((genre) => [genre, this.affinity[genre]] as const);

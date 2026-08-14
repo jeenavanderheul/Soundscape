@@ -1,6 +1,6 @@
-import type { GenreAffinity, MusicState } from '../music/MusicState';
-import { createInitialMusicState, GENRE_NAMES } from '../music/MusicState';
 import { isActiveWorldGenre } from '../genres/ActiveWorlds';
+import type { GenreAffinity, MusicState } from '../music/MusicState';
+import { createInitialMusicState } from '../music/MusicState';
 import type { FrequencyState, Vec3Data, Waveform } from '../player/FrequencyState';
 import type { ResonatorData } from '../world/Resonator';
 import { HZ_SCALE_RANGE, type StructureData } from '../world/StructureData';
@@ -173,19 +173,7 @@ function genreSnapshot(raw: unknown): GenreSnapshot | null {
   const affinity: GenreAffinity = {
     techno: num(a.techno, 0, 0, 1),
     'sub-pressure': num(a['sub-pressure'], 0, 0, 1),
-    garage: num(a.garage, 0, 0, 1),
-    house: num(a.house, 0, 0, 1),
-    trap: num(a.trap, 0, 0, 1),
-    breakbeat: num(a.breakbeat, 0, 0, 1),
-    dub: num(a.dub, 0, 0, 1),
-    ambient: num(a.ambient, 0, 0, 1),
-    jazz: num(a.jazz, 0, 0, 1),
-    bass: num(a.bass, 0, 0, 1),
-    experimental: num(a.experimental, 0, 0, 1),
   };
-  for (const genre of GENRE_NAMES) {
-    if (!isActiveWorldGenre(genre)) affinity[genre] = 0;
-  }
   const dominant = isActiveWorldGenre(raw.dominant) ? raw.dominant : null;
   return {
     atMs: num(raw.atMs, 0, 0, Number.MAX_SAFE_INTEGER),
@@ -248,7 +236,6 @@ function validateTrackState(raw: unknown): TrackState {
       snare: pattern(drums.snare),
       hats: pattern(drums.hats),
     },
-    bass: pattern(r.bass),
     harmony: pattern(r.harmony),
     melody: pattern(r.melody),
     texture: pattern(r.texture),

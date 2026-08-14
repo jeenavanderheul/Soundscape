@@ -1,8 +1,7 @@
 import { beaconOffset, guideLines, onTarget } from '../../src/ui/Guide';
 import { describe, expect, it } from 'vitest';
 
-import { placeName,
-  compassPoint,
+import { compassPoint,
   GENRE_LOOKS,
   headingLabel,
   lookFor,
@@ -10,7 +9,7 @@ import { placeName,
 } from '../../src/genres/ZonePalette';
 import type { GenreAffinity } from '../../src/music/MusicState';
 
-const NONE: GenreAffinity = { techno: 0, 'sub-pressure': 0, ambient: 0, jazz: 0, bass: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
+const NONE: GenreAffinity = { techno: 0, 'sub-pressure': 0 };
 
 describe('§33 zone palette — every direction is a place you can see', () => {
   it('gives SUB PRESSURE a dark, high-relief identity distinct from Techno', () => {
@@ -32,10 +31,10 @@ describe('§33 zone palette — every direction is a place you can see', () => {
 
   it('blends an even mix, but lets the dominant region dominate', () => {
     const red = GENRE_LOOKS.techno.color;
-    const green = GENRE_LOOKS.bass.color;
+    const green = GENRE_LOOKS['sub-pressure'].color;
     // Halfway between two compass points both regions pull hard (cos³ of
     // 22.5° ≈ 0.79), and there the look really is the midpoint.
-    const between = lookFor({ ...NONE, techno: 0.79, bass: 0.79 });
+    const between = lookFor({ ...NONE, techno: 0.79, 'sub-pressure': 0.79 });
     expect(between.color.r).toBeCloseTo((red.r + green.r) / 2, 1);
     expect(between.color).not.toEqual(red);
     // A weak pull leaves the world mostly void, as it should.
@@ -44,7 +43,7 @@ describe('§33 zone palette — every direction is a place you can see', () => {
     // §45: at a compass point both neighbours sit at about a third. Weighted
     // linearly that turned every region into the same blend, so the leader
     // has to carry far more than its share.
-    const atPoint = lookFor({ ...NONE, techno: 1, bass: 0.35, garage: 0.35 });
+    const atPoint = lookFor({ ...NONE, techno: 1, 'sub-pressure': 0.35 });
     expect(Math.abs(atPoint.color.r - red.r)).toBeLessThan(0.12);
     expect(Math.abs(atPoint.color.g - red.g)).toBeLessThan(0.12);
   });
@@ -83,71 +82,9 @@ describe('§33 compass', () => {
   });
 });
 
-describe('§57 a place is its music', () => {
-  it('names every region after its grammar; only the middle is neutral', () => {
-    expect(placeName('techno')).toBe('techno');
-    expect(placeName('experimental')).toBe('experimental');
-    expect(placeName('dub')).toBe('dub');
-    expect(placeName(null)).toBe('the void');
-  });
-});
-
-describe('§59 ten worlds you can tell apart at a glance', () => {
-  const WORLDS = [
-    'techno', 'garage', 'jazz', 'house', 'ambient',
-    'breakbeat', 'bass', 'trap', 'dub', 'experimental',
-  ] as const;
-
-  /** Hue in degrees — what "a different colour" actually means to an eye. */
-  function hue(world: keyof typeof GENRE_LOOKS): number {
-    const { r, g, b } = GENRE_LOOKS[world].color;
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    if (max === min) return 0;
-    const d = max - min;
-    const h =
-      max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-    return ((h * 60) % 360 + 360) % 360;
-  }
-
-  it('no two worlds sit on the same hue', () => {
-    // Breakbeat is deliberately the one without a hue: near-white ivory.
-    const hued = WORLDS.filter((w) => w !== 'breakbeat');
-    for (const a of hued) {
-      for (const b of hued) {
-        if (a === b) continue;
-        const apart = Math.abs(hue(a) - hue(b));
-        const shortest = Math.min(apart, 360 - apart);
-        expect(`${a}/${b}:${shortest >= 15}`).toBe(`${a}/${b}:true`);
-      }
-    }
-  });
-
-  it('and every world is a colour, not a grey', () => {
-    for (const world of WORLDS) {
-      const { r, g, b } = GENRE_LOOKS[world].color;
-      const spread = Math.max(r, g, b) - Math.min(r, g, b);
-      // Breakbeat is deliberately near-white; everything else is a hue.
-      if (world !== 'breakbeat') expect(`${world}:${spread > 0.3}`).toBe(`${world}:true`);
-      expect(Math.max(r, g, b)).toBeGreaterThan(0.79);
-    }
-  });
-});
-
 describe('§91 the guide points at the layer standing out there', () => {
   const at = (bearing: number, rise: number, distance = 120) =>
     ({ layer: 'bass' as const, bearing, rise, distance });
-
-  it('names the layer, which way to turn and how far', () => {
-    const right = guideLines({
-      genre: 'techno', heading: 'N · techno', energy: 0.8, beacon: at(0.9, 0, 140),
-    });
-    expect(right[0]).toContain('bass');
-    expect(right[0]).toContain('to your right');
-    expect(right[0]).toContain('140m');
-    expect(right[1]).toContain('stay on N');
-    expect(right[2]).toContain('pushing');
-  });
 
   it('says climb or dive only when the height really differs', () => {
     const base = { genre: 'techno' as const, heading: 'N · techno', energy: 0.2 };

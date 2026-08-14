@@ -6,7 +6,7 @@ vi.mock('@strudel/web', () => ({
   samples: vi.fn(async () => undefined),
 }));
 
-import { buildLayerGraph, regionBpm, genreGrammar } from '../../src/audio/MusicalPrimitives';
+import { buildLayerGraph } from '../../src/audio/MusicalPrimitives';
 import { buildPatternCode } from '../../src/audio/StrudelEngine';
 import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
@@ -138,12 +138,6 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
 });
 
 describe('§46 the region carries the tempo, the flight does not', () => {
-  it('every grammar sits in the middle of its own range', () => {
-    expect(regionBpm(genreGrammar('techno'))).toBeGreaterThanOrEqual(115);
-    expect(regionBpm(genreGrammar('ambient'))).toBeLessThan(100);
-    expect(regionBpm(genreGrammar('bass'))).toBeGreaterThan(140);
-  });
-
   it('§91 nothing but the world moves the clock', () => {
     const { store, builder } = setup();
     const noRhythm = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
@@ -243,22 +237,4 @@ describe('graph from TrackState (§29.3 ghost → kick → clap)', () => {
     expect(buildPatternCode(graph)).toContain('~ ~ white ~ ~ ~ white ~'); // §66b clap on 3 and 7
   });
 
-  it('renders bass, harmony and melody once they are earned (§29.2 fase 3-5)', () => {
-    const track = createInitialTrackState();
-    track.bpm = 128;
-    track.drums.kick = { unlocked: true, level: 1 };
-    track.bass = { unlocked: true, level: 1 };
-    track.harmony = { unlocked: true, level: 1 };
-    track.melody = { unlocked: true, level: 1 };
-    track.harmonyIntervals = [0, 7];
-    track.melodyNotes = [69, 72, 76, 72];
-    const graph = buildLayerGraph(music, undefined, [], track);
-    expect(graph.layers.bass.primitives[0]!.kind).toBe('bass');
-    expect(graph.layers.harmony.primitives[0]!.id).toBe('track-harmony');
-    expect(graph.layers.melody.primitives[0]!.kind).toBe('melody');
-    const code = buildPatternCode(graph);
-    expect(code).toContain('sawtooth'); // bassline
-    expect(code).toMatch(/note\("\[[a-g#0-9,]+\]"\)/); // stacked chord
-    expect(code).toContain('a4'); // melody note from midi 69
-  });
 });

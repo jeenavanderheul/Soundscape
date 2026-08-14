@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createEventBus } from '../../src/core/EventBus';
 import { GenreAffinityEngine, GenreEvents } from '../../src/genres/GenreAffinityEngine';
 import { scoreTechno, tempoTendency } from '../../src/genres/TechnoProfile';
-import { createInitialMusicState, type GenreAffinity, MusicState } from '../../src/music/MusicState';
+import { createInitialMusicState, type MusicState } from '../../src/music/MusicState';
 
 function technoState(): MusicState {
   return {
@@ -48,33 +48,6 @@ describe('scoreTechno (§9.1)', () => {
 });
 
 describe('GenreAffinityEngine (§9)', () => {
-  it('never lets a dormant genre become active or dominant', () => {
-    const engine = new GenreAffinityEngine(createEventBus<GenreEvents>(), {
-      intervalMs: 100,
-      smoothingRate: 20,
-      dominantThreshold: 0.4,
-      historyLimit: 4,
-    });
-    const zone: GenreAffinity = {
-      techno: 0,
-      'sub-pressure': 0,
-      ambient: 1,
-      jazz: 0,
-      bass: 0,
-      garage: 0,
-      house: 0,
-      trap: 0,
-      breakbeat: 0,
-      dub: 0,
-      experimental: 0,
-    };
-    const music = { ...createInitialMusicState(), bpm: 120, dynamics: 1 };
-    for (let t = 0; t <= 1000; t += 100) engine.update(t, music, zone);
-
-    expect(engine.current!.affinity.ambient).toBe(0);
-    expect(engine.current!.dominant).not.toBe('ambient');
-  });
-
   it('smooths toward the profile score, throttles to the interval, freezes snapshots and bounds history', () => {
     const bus = createEventBus<GenreEvents>();
     const engine = new GenreAffinityEngine(bus, {

@@ -24,10 +24,7 @@ import { LEVEL_DEEP, createInitialTrackState, type TrackGenre } from '../../src/
  * suite — so the counting is the suite now.
  */
 const PHASES: Section[] = ['intro', 'groove', 'discovery', 'build', 'drop', 'deep', 'break', 'return'];
-const WORLDS: Exclude<TrackGenre, null>[] = [
-  'techno', 'sub-pressure', 'garage', 'house', 'trap',
-  'bass', 'dub', 'jazz', 'ambient', 'breakbeat', 'experimental',
-];
+const WORLDS: Exclude<TrackGenre, null>[] = ['techno', 'sub-pressure'];
 
 /** How many voices this world renders at that point in the arc. */
 function voicesAt(genre: Exclude<TrackGenre, null>, form: Section): number {

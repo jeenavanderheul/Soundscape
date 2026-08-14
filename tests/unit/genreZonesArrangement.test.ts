@@ -34,8 +34,8 @@ describe('GenreZones — every direction is a genre (§29.5)', () => {
     const between = zoneAffinity({ x: 0, y: 10, z: -200 }, Math.PI / 2);
     expect(between.techno).toBeGreaterThan(0.4);
     expect(between['sub-pressure']).toBeGreaterThan(0.4);
-    expect(between.ambient).toBe(0);
-    expect(between.breakbeat).toBe(0);
+    // §103: two worlds, so a blend is only ever between these two.
+    expect(between.techno + between['sub-pressure']).toBeGreaterThan(0.8);
   });
 
   it('§57 altitude is expression, never a place', () => {
@@ -227,27 +227,6 @@ describe('§53 turning towards a world takes you there', () => {
 });
 
 describe('§60 the sections can be told apart by ear', () => {
-  it('§92 the phases build UP: nothing is taken away before the void', () => {
-    const enter = sectionMix('intro');
-    const groove = sectionMix('groove');
-    const build = sectionMix('build');
-    const drop = sectionMix('drop');
-    // PRESSURE is where the sub ARRIVES, so it is already at full there — it
-    // used to be removed here and handed back two phases later, which is what
-    // made a build-up sound like parts coming and going at random.
-    expect(build.bass).toBe(1);
-    expect(drop.bass).toBe(1);
-    // Every phase from DISCOVERY I on keeps what the one before it had.
-    for (const layer of ['drums', 'bass'] as const) {
-      expect(groove[layer]).toBeGreaterThan(enter[layer]);
-      expect(build[layer]).toBeGreaterThanOrEqual(groove[layer]);
-      expect(drop[layer]).toBeGreaterThanOrEqual(build[layer]);
-    }
-    // And the groove still reads as the baseline it all measures against.
-    expect(groove.drums).toBeLessThan(drop.drums);
-    expect(groove.texture).toBeLessThan(build.texture);
-  });
-
   it('a break steps the bottom aside without going silent (§32)', () => {
     const brk = sectionMix('break');
     expect(brk.drums).toBeLessThan(sectionMix('groove').drums);

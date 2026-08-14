@@ -429,12 +429,11 @@ export class TrackBuilder {
     // from Techno into Garage does not rewrite your techno track — the region
     // you are in when the NEXT track starts is what decides that one.
     const genre = track.genre ?? this.dominant(affinity);
-    // §31: in Jazz the world takes its turn — it answers the player's phrase
-    // with a variation instead of looping underneath it.
-    const responseNotes =
-      genre === 'jazz' && track.melody.unlocked
-        ? [...this.conversation.tick(nowMs, melodyNotes)]
-        : [];
+    // §31/§103: call-and-response was Jazz's alone, and Jazz is gone. The
+    // machinery stays (CallResponse is tested and cheap) but nothing asks for
+    // it now — if a future world wants the world to answer a phrase, it turns
+    // back on here.
+    const responseNotes: number[] = [];
 
     // --- Fase 11: ARRANGEMENT. Movement becomes form (§29.7).
     // Where the player actually is — the next track will be born here (§47).

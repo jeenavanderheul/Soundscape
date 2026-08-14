@@ -32,35 +32,14 @@ export interface MusicState {
  * §34: ten grammars. Eight lie on the compass, two on the vertical axis —
  * experimental above (mutation), dub below (echo).
  */
+/** §103: two worlds — see TrackGenre. */
 export interface GenreAffinity {
   techno: number;
   'sub-pressure': number;
-  ambient: number;
-  jazz: number;
-  /** §73: hard rolling bass music — what used to be the drum & bass slot. */
-  bass: number;
-  garage: number;
-  house: number;
-  trap: number;
-  breakbeat: number;
-  dub: number;
-  experimental: number;
 }
 
 /** Every grammar, in one place (§34) — the list all validation reads from. */
-export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = [
-  'techno',
-  'sub-pressure',
-  'ambient',
-  'jazz',
-  'bass',
-  'garage',
-  'house',
-  'trap',
-  'breakbeat',
-  'dub',
-  'experimental',
-];
+export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = ['techno', 'sub-pressure'];
 
 export function createInitialMusicState(): MusicState {
   return {

@@ -24,7 +24,7 @@ import {
 const ROAMING: FlightState = { velocity: 12, hz: 220, energy: 0.5 };
 
 function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
-  const zero: GenreAffinity = { techno: 0, 'sub-pressure': 0, ambient: 0, jazz: 0, bass: 0, garage: 0, house: 0, trap: 0, breakbeat: 0, dub: 0, experimental: 0 };
+  const zero: GenreAffinity = { techno: 0, 'sub-pressure': 0 };
   return { ...zero, [genre]: 0.9 };
 }
 
@@ -76,16 +76,6 @@ describe('§32 depth — a layer grows a second voice by staying with it', () =>
     expect(late.deepened.length).toBeGreaterThan(0);
   });
 
-  it('deepens in the grammar order, oldest layer first', () => {
-    expect(fly('techno', 180).deepened[0]).toBe('kick');
-    expect(fly('ambient', 180).deepened[0]).toBe('texture');
-  });
-
-  it('never deepens a layer that was not earned', () => {
-    const { track } = fly('ambient', 110);
-    expect(track.drums.kick.unlocked).toBe(false);
-    expect(track.drums.kick.level).toBe(0);
-  });
 });
 
 describe('§32 a finished flight is a produced track, in every grammar', () => {
@@ -102,37 +92,7 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
     expect(ids).toContain('track-sub');
   });
 
-  it('reaches at least nine voices in every genre', () => {
-    for (const genre of ['techno', 'ambient', 'jazz', 'bass', 'experimental'] as const) {
-      expect(trackParts(graphOf(genre)).length, genre).toBeGreaterThanOrEqual(9);
-    }
-  });
-
-  it('drives techno and bass but leaves ambient and jazz clean', () => {
-    expect(buildPatternCode(graphOf('techno'))).toContain('shape(');
-    // §73 bass music is driven with distort, not shape.
-    expect(buildPatternCode(graphOf('bass'))).toContain('distort(');
-    expect(buildPatternCode(graphOf('ambient'))).not.toContain('shape(');
-    expect(buildPatternCode(graphOf('jazz'))).not.toContain('shape(');
-  });
-
   // §37: a genre is not only a pattern — it is the box the pattern came out of.
-  it('plays every grammar on its own drum machine', () => {
-    const banks = new Map<string, string>();
-    for (const genre of ['techno', 'ambient', 'jazz', 'bass', 'garage', 'house', 'trap', 'dub'] as const) {
-      const code = buildPatternCode(graphOf(genre));
-      const match = code.match(/bank\("([A-Za-z0-9]+)"\)/);
-      expect(match, genre).not.toBeNull();
-      banks.set(genre, match![1]!);
-    }
-    expect(banks.get('techno')).toBe('RolandTR909');
-    expect(banks.get('house')).toBe('RolandTR707');
-    expect(banks.get('trap')).toBe('RolandTR808');
-    expect(banks.get('bass')).toBe('RolandTR909'); // §73
-    // At least six distinct machines across the eight regions.
-    expect(new Set(banks.values()).size).toBeGreaterThanOrEqual(6);
-  });
-
   it('writes the techno lead as a short machine signal, not a tune (§80)', () => {
     const code = buildPatternCode(graphOf('techno'));
     expect(code).toContain('"clavisynth"');
@@ -162,11 +122,6 @@ describe('§32 export — the flight handed back as source', () => {
     expect(code).toContain('SUB');
     expect(code).toContain('2m34s of flight');
     expect(code.trimEnd().endsWith(')')).toBe(true);
-  });
-
-  it('names every voice rather than leaking primitive ids', () => {
-    const code = exportTrack({ graph: graphOf('bass'), genre: 'bass', flownSeconds: 60 });
-    expect(code).not.toContain('track-');
   });
 
   it('says so honestly when nothing was earned yet', () => {

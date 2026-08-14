@@ -83,15 +83,6 @@ export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreA
   const affinity: GenreAffinity = {
     techno: 0,
     'sub-pressure': 0,
-    ambient: 0,
-    jazz: 0,
-    bass: 0,
-    garage: 0,
-    house: 0,
-    trap: 0,
-    breakbeat: 0,
-    dub: 0,
-    experimental: 0,
   };
   const distance = Math.hypot(position.x, position.z);
   const span = ZONE_CONFIG.fullInfluenceDistance - ZONE_CONFIG.neutralRadius;

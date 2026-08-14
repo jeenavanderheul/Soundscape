@@ -37,7 +37,7 @@ describe('§36 the forest is the score', () => {
   });
 
   it('places growths inside their own cell', () => {
-    for (const growth of growthsInCell(SEED, 3, 7, ECOLOGIES.jazz, undefined)) {
+    for (const growth of growthsInCell(SEED, 3, 7, ECOLOGIES['sub-pressure'], undefined)) {
       expect(growth.x).toBeGreaterThanOrEqual(3 * FOREST_GRID.cellSize);
       expect(growth.x).toBeLessThan(4 * FOREST_GRID.cellSize);
       expect(growth.z).toBeGreaterThanOrEqual(7 * FOREST_GRID.cellSize);
@@ -48,10 +48,10 @@ describe('§36 the forest is the score', () => {
   it('gives every grammar its own ecosystem name and shape', () => {
     const names = Object.values(ECOLOGIES).map((e) => e.name);
     expect(new Set(names).size).toBe(names.length);
-    // The machine forest stands straight; the mutation forest does not.
-    expect(ECOLOGIES.techno.irregularity).toBeLessThan(ECOLOGIES.experimental.irregularity);
-    // Trap is the heaviest, ambient the lightest.
-    expect(ECOLOGIES.trap.heightScale).toBeGreaterThan(ECOLOGIES.ambient.heightScale);
+    // §103: two worlds, and they still have to be told apart by eye — the
+    // machine forest stands straight, SUB PRESSURE's grows heavier and rougher.
+    expect(ECOLOGIES.techno.irregularity).not.toBe(ECOLOGIES['sub-pressure'].irregularity);
+    expect(ECOLOGIES.techno.heightScale).not.toBe(ECOLOGIES['sub-pressure'].heightScale);
     expect(ecologyFor(null)).toBe(NEUTRAL_ECOLOGY);
   });
 
@@ -62,9 +62,12 @@ describe('§36 the forest is the score', () => {
       for (let i = 0; i < draws; i++) if (roleFor(ecology, i / draws) === role) n++;
       return n;
     };
-    // Dub is roots and canopy; techno is trunks and needles.
-    expect(count(ECOLOGIES.dub, 'root')).toBeGreaterThan(count(ECOLOGIES.techno, 'root'));
-    expect(count(ECOLOGIES.techno, 'thin')).toBeGreaterThan(count(ECOLOGIES.dub, 'thin'));
+    // The two worlds favour different growths, or the land would read the same.
+    const roles: GrowthRole[] = ['root', 'trunk', 'thin', 'canopy'];
+    const differs = roles.some(
+      (role) => count(ECOLOGIES.techno, role) !== count(ECOLOGIES['sub-pressure'], role),
+    );
+    expect(differs).toBe(true);
   });
 
   it('marks growths earned only once their layer is unlocked', () => {
@@ -80,7 +83,7 @@ describe('§36 the forest is the score', () => {
   it('makes only the largest formations solid', () => {
     const growths = [];
     for (let cx = 0; cx < 30; cx++) {
-      growths.push(...growthsInCell(SEED, cx, 0, ECOLOGIES.trap, undefined));
+      growths.push(...growthsInCell(SEED, cx, 0, ECOLOGIES['sub-pressure'], undefined));
     }
     const solid = growths.filter((g) => g.solid);
     expect(solid.length).toBeGreaterThan(0);
@@ -98,10 +101,7 @@ describe('§36 the forest is the score', () => {
 });
 
 describe('§55 every world has its own shape language', () => {
-  const WORLDS = [
-    'techno', 'garage', 'jazz', 'house', 'ambient',
-    'breakbeat', 'bass', 'trap', 'dub', 'experimental',
-  ] as const;
+  const WORLDS = ['techno', 'sub-pressure'] as const;
 
   it('no two worlds are built from the same pair of forms', () => {
     const pairs = WORLDS.map((genre) => ecologyFor(genre).forms.join('+'));
@@ -115,11 +115,4 @@ describe('§55 every world has its own shape language', () => {
     }
   });
 
-  it('keeps the machine straight and the cloud soft', () => {
-    expect(ecologyFor('techno').forms[0]).toBe('pillar');
-    expect(ecologyFor('ambient').forms[0]).toBe('membrane');
-    expect(ecologyFor('bass').forms[0]).toBe('shard');
-    expect(ecologyFor('trap').forms[0]).toBe('monolith');
-    expect(ecologyFor('breakbeat').forms[0]).toBe('monolith');
-  });
 });

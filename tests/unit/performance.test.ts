@@ -15,7 +15,6 @@ import {
   createEmptyLayerGraph,
   diffLayerGraph,
   type MusicalLayerGraph,
-  throwStyleFor,
   type MusicalPrimitive,
 } from '../../src/audio/MusicalPrimitives';
 
@@ -52,26 +51,6 @@ describe('§3 the flight plays the track', () => {
     const shape = Object.keys(perf({}, { ...flying, altitude: 30 }));
     expect(shape).not.toContain('transpose');
     expect(shape).not.toContain('tempoRatio');
-  });
-
-  it('and the bass really hears it: ground level pushes it far harder', () => {
-    const kick: MusicalPrimitive = {
-      id: 'k', kind: 'kick', layer: 'drums',
-      parameters: { style: 'four', gain: 0.8 }, allowedTransforms: [],
-    };
-    const bassVoice: MusicalPrimitive = {
-      id: 'b', kind: 'bass', layer: 'bass',
-      parameters: { style: 'repetitive', notes: 'a1 c2 e2 a2', gain: 0.6 }, allowedTransforms: [],
-    };
-    const graph = createEmptyLayerGraph(128);
-    graph.layers.drums.primitives.push(kick);
-    graph.layers.bass.primitives.push(bassVoice);
-    const at = (altitude: number) => {
-      const code = buildPatternCode({ ...graph, performance: perf({}, { ...flying, altitude }) });
-      const line = code.split('\n').find((l) => l.includes('note('))!;
-      return Number(/\.postgain\(([\d.]+)\)/.exec(line)![1]);
-    };
-    expect(at(2)).toBeGreaterThan(at(60) * 1.5);
   });
 
   it('§3.2 the wind you hold is the force of the whole track', () => {
@@ -162,28 +141,6 @@ describe('§3 performance reaches the rendered pattern', () => {
 function count(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
 }
-
-describe('§33 a turn throws one gesture, in the grammar you are in', () => {
-  it('left and right differ, and each grammar has its own pair', () => {
-    expect(throwStyleFor('techno', 'left')).not.toBe(throwStyleFor('techno', 'right'));
-    // A region built on echo throws echo; a drumless one throws a bell.
-    expect(throwStyleFor('dub', 'left')).toBe('echo');
-    expect(throwStyleFor('breakbeat', 'left')).toBe('bell');
-    expect(throwStyleFor(null, 'left')).toBeTruthy();
-  });
-
-  it('renders to a real one-shot voice for every style', () => {
-    for (const genre of ['techno', 'dub', 'breakbeat', 'bass', null] as const) {
-      for (const side of ['left', 'right'] as const) {
-        const code = buildPatternCode(createEmptyLayerGraph(120), [
-          { kind: 'throw', gain: 0.5, style: throwStyleFor(genre, side) },
-        ]);
-        expect(code).toContain('gain(');
-        expect(code.length).toBeGreaterThan(20);
-      }
-    }
-  });
-});
 
 describe('§48 production: the grammar decides how hard the mix works', () => {
   const kick: MusicalPrimitive = {

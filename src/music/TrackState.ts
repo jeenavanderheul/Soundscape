@@ -17,19 +17,13 @@ export const LEVEL_EARNED = 0.5;
 /** A layer grown into a produced part: body + detail stacked (§32). */
 export const LEVEL_DEEP = 1;
 
-export type TrackGenre =
-  | 'techno'
-  | 'sub-pressure'
-  | 'ambient'
-  | 'jazz'
-  | 'bass'
-  | 'garage'
-  | 'house'
-  | 'trap'
-  | 'breakbeat'
-  | 'dub'
-  | 'experimental'
-  | null;
+/**
+ * §103 (user decision): TWO worlds. The compass has carried only techno and
+ * SUB PRESSURE since §81, so the other nine grammars were unreachable code
+ * that still had to be maintained, audited and kept green. They are in git at
+ * tag `soundopbouw-14aug` if they are ever wanted back.
+ */
+export type TrackGenre = 'techno' | 'sub-pressure' | null;
 
 export interface TrackState {
   bpm: number;

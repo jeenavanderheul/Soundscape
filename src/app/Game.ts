@@ -707,8 +707,9 @@ export class Game {
       this.harmonyBridges.setLevel(track.harmony.unlocked ? 1 : 0);
       // §9.1 world tendency: repetition organizes structures onto the grid.
       this.structures.setOrganization(genre?.affinity.techno ?? 0);
-      // §9.2 world tendency: sustained space thickens the fog.
-      this.renderer.setAtmosphere(genre?.affinity.ambient ?? 0);
+      // §9.2 world tendency: sustained space thickens the fog. §103 left two
+      // worlds, so what thickens it is distance from the driven one.
+      this.renderer.setAtmosphere(1 - (genre?.affinity.techno ?? 0));
       // §33: EVERY DIRECTION IS A PLACE. Colour, horizon and haze come from
       // the same affinities as the music, eased so crossing a border is a
       // journey rather than a switch.
@@ -720,8 +721,9 @@ export class Game {
       // neutral middle, so spawn already read as Techno. 0.4 means you are
       // genuinely inside one before the world says so.
       this.placeGenre = dominantZone(zone, 0.4);
-      // §9.5 world tendency: mutation destabilizes existing form.
-      this.structures.setMutation(genre?.affinity.experimental ?? 0);
+      // §9.5 world tendency: mutation destabilizes existing form. SUB PRESSURE
+      // is the rougher of the two worlds, so it is the one that unsettles it.
+      this.structures.setMutation(genre?.affinity['sub-pressure'] ?? 0);
       // §97: the same score, grouped by role — it grows a section at a time.
       this.codeOverlay.update(
         this.strudelEngine.code,
