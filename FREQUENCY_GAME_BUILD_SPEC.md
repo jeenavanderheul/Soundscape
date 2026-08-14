@@ -1615,3 +1615,47 @@ Where this amendment meets what is already built, the user has ruled:
   grain, clipping and channel displacement (§136.8, §136.17).
 - **First slice: line quality as state** (§136.6) on the terrain, driven by the
   music.
+
+---
+
+## 138. The terrain has a horizon (v15 amendment)
+
+The field used to be one 360-unit patch: past 180 units the world simply
+stopped, which is why flying felt like carrying a rug rather than crossing a
+country. The terrain is now drawn in four concentric rings around the player,
+each one coarser than the one inside it, reaching ~1440 units in every
+direction.
+
+### 138.1 Rings, not a quadtree
+Nothing in this field is occluded and nothing is streamed, so the only thing a
+patch's level could depend on is its distance from the player — which is what a
+ring already is. Rings are one geometry built once at startup: no pooling, no
+rebuild when a boundary is crossed, one draw call. A quadtree would buy
+directional refinement the art direction does not ask for, at the price of
+per-frame patch churn.
+
+### 138.2 Every level shares one snap
+Each ring's lattice step is a whole multiple of the finest cell, and all rings
+ride on the same snapped origin (§13's world-fixed lines, in the FINEST cell).
+A coarse lattice is therefore a strict subset of the fine one, so a line that
+changes level is replaced by a line in the same world position and only the
+lines BETWEEN it appear or disappear. Detail arrives; nothing slides.
+
+### 138.3 The height function does not change (§35)
+LOD may only change WHERE the field is sampled for drawing. `terrainField.ts`
+and `groundHeightAt` are untouched, and the collision keeps reading the
+continuous field — never the drawn lattice. A coarse line cuts a chord across a
+hill it samples too sparsely; that is a DRAWING approximation far from the
+player, and the moment it would matter the player is inside the finest ring,
+where the sampling is what it always was.
+
+### 138.4 Distance still costs information, not haze
+The far rings must not be hidden with fog (§136.13). Depth feeds the signal
+states instead: at the edge of the reach it costs more signal than the loudest
+world can supply, so the horizon is black with occasional traces rather than a
+dimmed but complete wireframe.
+
+### 138.5 Budget
+No more than ~1.5× the old vertex count. Today: 45 984 → 62 592 (1.36×), of
+which the innermost ring is the old field, unchanged. `__FREQUENCY_DEBUG__
+.terrainVertexCount()` reports it.
