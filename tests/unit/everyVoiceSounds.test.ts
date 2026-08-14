@@ -222,3 +222,52 @@ describe('§116 the bench can scrub through the thirty-two cycles', () => {
     expect(at(20)).toBe(at(0));
   });
 });
+
+describe('§117 no two worlds share a machine or a voice', () => {
+  const WORLDS: Exclude<TrackGenre, null>[] = [
+    'techno', 'sub-pressure', 'heavy-signal',
+    'broken-machine', 'percussion-riot', 'void-crusher',
+  ];
+  const rendered = (genre: Exclude<TrackGenre, null>) => {
+    setSamplesLoaded(true);
+    const deep = { unlocked: true, level: LEVEL_DEEP };
+    const track = {
+      ...createInitialTrackState(),
+      genre, form: 'return' as const, bpm: regionBpm(genreGrammar(genre)),
+      drums: { kick: deep, snare: deep, hats: deep },
+      bass: deep, harmony: deep, melody: deep, texture: deep,
+      rootMidi: 45, harmonyIntervals: [0, 3, 7, 10], melodyNotes: [69, 72, 76],
+    } as ReturnType<typeof createInitialTrackState>;
+    const music = { ...createInitialMusicState(), bpm: track.bpm, tempoConfidence: 0.6, dynamics: 0.5 };
+    return buildPatternCode(
+      buildWorldLayerGraph({ music, structures: [], track, patterns: {}, motion: 1, energy: 0.6 }),
+      [],
+    );
+  };
+
+  it('every world has its own drum machines', () => {
+    const owner = new Map<string, string[]>();
+    for (const genre of WORLDS) {
+      for (const m of new Set([...rendered(genre).matchAll(/\.bank\("([A-Za-z0-9]+)"\)/g)].map((x) => x[1]!))) {
+        owner.set(m, [...(owner.get(m) ?? []), genre]);
+      }
+    }
+    const shared = [...owner].filter(([, gs]) => gs.length > 1);
+    expect(shared.map(([m, gs]) => `${m}: ${gs.join(', ')}`)).toEqual([]);
+  });
+
+  it('and its own instrument — the oscillators are shared, the voices are not', () => {
+    // sine/square/saw are the raw material every electronic world is made of;
+    // an INSTRUMENT is what gives a world a face.
+    const OSCILLATORS = new Set(['sine', 'square', 'sawtooth', 'supersaw', 'pulse', 'triangle']);
+    const owner = new Map<string, string[]>();
+    for (const genre of WORLDS) {
+      for (const v of new Set([...rendered(genre).matchAll(/\.s\("([a-z_0-9]+)"\)/g)].map((x) => x[1]!))) {
+        if (OSCILLATORS.has(v)) continue;
+        owner.set(v, [...(owner.get(v) ?? []), genre]);
+      }
+    }
+    const shared = [...owner].filter(([, gs]) => gs.length > 1);
+    expect(shared.map(([v, gs]) => `${v}: ${gs.join(', ')}`)).toEqual([]);
+  });
+});

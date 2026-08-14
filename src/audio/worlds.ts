@@ -34,43 +34,43 @@ export const HEAVY_SIGNAL: PresetWorld = {
       id: 'break-engine', kind: 'hat', layer: 'drums', role: 'hats', deep: false,
       section: '1. BREAK ENGINE',
       gain: () => 0.13,
-      code: (_v, g) => `s("hh ~ hh [hh hh] ~ hh [hh hh] hh").bank("AkaiMPC60").hpf(6800).gain(${g}).mask("<1!24 0!4 1!4>")`,
+      code: (_v, g) => `s("hh ~ hh [hh hh] ~ hh [hh hh] hh").bank("RolandTR707").hpf(6800).gain(${g}).mask("<1!24 0!4 1!4>")`,
     },
     {
       id: 'micro-pressure', kind: 'hat', layer: 'drums', role: 'hats', deep: true,
       section: 'DEEP — MICRO PRESSURE',
       gain: () => 0.04,
-      code: (v, g) => `s("hh*32").bank("EmuSP12").degradeBy(${g3(0.45 + (1 - v.WIND) * 0.2)}).hpf(10000).gain(${g}).mask("<0!8 1!16 0!4 1!4>")`,
+      code: (v, g) => `s("hh*32").bank("AlesisHR16").degradeBy(${g3(0.45 + (1 - v.WIND) * 0.2)}).hpf(10000).gain(${g}).mask("<0!8 1!16 0!4 1!4>")`,
     },
     {
       id: 'broken-perc', kind: 'perc', layer: 'drums', role: 'hats', deep: true,
       section: 'BROKEN PERCUSSION',
       gain: () => 0.13,
-      code: (_v, g) => `s("~ rim ~ [rim rim] ~ rim ~ [rim rim]").bank("OberheimDMX").hpf(2200).gain(${g}).mask("<0!8 1!16 0!4 1!4>")`,
+      code: (_v, g) => `s("~ rim ~ [rim rim] ~ rim ~ [rim rim]").bank("AlesisHR16").hpf(2200).gain(${g}).mask("<0!8 1!16 0!4 1!4>")`,
     },
     {
       id: 'kick-wall', kind: 'kick', layer: 'drums', role: 'kick', deep: false,
       section: '2. KICK WALL',
       gain: () => 1.06,
-      code: (v, g) => `s("bd ~ bd ~ ~ bd [bd ~] bd").bank("EmuSP12").shape(${g3(0.32 + v.EDGE * 0.2)}).distort(${g3(0.35 + v.EDGE * 0.55)}).postgain(.64).gain(${g}).mask("<0!4 1!20 0!4 1!4>")`,
+      code: (v, g) => `s("bd ~ bd ~ ~ bd [bd ~] bd").bank("RolandTR707").shape(${g3(0.32 + v.EDGE * 0.2)}).distort(${g3(0.35 + v.EDGE * 0.55)}).postgain(.64).gain(${g}).mask("<0!4 1!20 0!4 1!4>")`,
     },
     {
       id: 'kick-second', kind: 'kick', layer: 'drums', role: 'kick', deep: true,
       section: 'DEEP — SECOND MACHINE',
       gain: () => 0.23,
-      code: (_v, g) => `s("~ ~ ~ bd ~ ~ bd ~").bank("AkaiMPC60").lpf(1800).shape(.35).gain(${g}).mask("<0!12 1!12 0!4 1!4>")`,
+      code: (_v, g) => `s("~ ~ ~ bd ~ ~ bd ~").bank("AlesisHR16").lpf(1800).shape(.35).gain(${g}).mask("<0!12 1!12 0!4 1!4>")`,
     },
     {
       id: 'snare-wall', kind: 'snare', layer: 'drums', role: 'snare', deep: false,
       section: '3. SNARE WALL',
       gain: () => 0.86,
-      code: (_v, g) => `s("~ ~ sd ~ ~ ~ sd ~").bank("EmuSP12").shape(.4).distort(.5).gain(${g}).mask("<0!8 1!16 0!4 1!4>")`,
+      code: (_v, g) => `s("~ ~ sd ~ ~ ~ sd ~").bank("RolandTR707").shape(.4).distort(.5).gain(${g}).mask("<0!8 1!16 0!4 1!4>")`,
     },
     {
       id: 'snare-body', kind: 'snare', layer: 'drums', role: 'snare', deep: true,
       section: 'DEEP — BODY FROM ANOTHER MACHINE',
       gain: () => 0.21,
-      code: (_v, g) => `s("~ ~ sd ~ ~ ~ sd ~").bank("OberheimDMX").late(.012).hpf(1200).gain(${g}).mask("<0!12 1!12 0!4 1!4>")`,
+      code: (_v, g) => `s("~ ~ sd ~ ~ ~ sd ~").bank("AlesisHR16").late(.012).hpf(1200).gain(${g}).mask("<0!12 1!12 0!4 1!4>")`,
     },
     {
       id: 'sub', kind: 'sub', layer: 'bass', role: 'bass', deep: false,
@@ -112,7 +112,7 @@ export const HEAVY_SIGNAL: PresetWorld = {
       id: 'signal', kind: 'melody', layer: 'melody', role: 'melody', deep: false,
       section: 'SIGNAL',
       gain: () => 0.065,
-      code: (_v, g) => `note("c5 ~ ~ eb5 ~ db5 [g4 db5] ~").s("clavisynth").decay(.035).hpf(800).distort(.6).delay(.1).gain(${g}).mask("<0!20 1!4 0!4 1!4>")`,
+      code: (_v, g) => `note("c5 ~ ~ eb5 ~ db5 [g4 db5] ~").s("sax").decay(.035).hpf(800).distort(.6).delay(.1).gain(${g}).mask("<0!20 1!4 0!4 1!4>")`,
     },
     {
       id: 'destruction', kind: 'texture', layer: 'texture', role: 'texture', deep: false,
@@ -161,7 +161,7 @@ export const BROKEN_MACHINE: PresetWorld = {
       id: 'broken-kick', kind: 'kick', layer: 'drums', role: 'kick', deep: false,
       section: '2. BROKEN KICK',
       gain: () => 1.04,
-      code: (v, g) => `s("bd ~ bd ~ ~ [bd ~] bd ~").bank("OberheimDMX").shape(${g3(0.3 + v.EDGE * 0.2)}).distort(${g3(0.35 + v.EDGE * 0.5)}).postgain(.65).gain(${g}).mask("<0!4 1!20 0!4 1!4>")`,
+      code: (v, g) => `s("bd ~ bd ~ ~ [bd ~] bd ~").bank("KorgDDM110").shape(${g3(0.3 + v.EDGE * 0.2)}).distort(${g3(0.35 + v.EDGE * 0.5)}).postgain(.65).gain(${g}).mask("<0!4 1!20 0!4 1!4>")`,
     },
     {
       id: 'ghost-kick', kind: 'kick', layer: 'drums', role: 'kick', deep: true,
@@ -179,7 +179,7 @@ export const BROKEN_MACHINE: PresetWorld = {
       id: 'rim', kind: 'perc', layer: 'drums', role: 'snare', deep: true,
       section: 'DEEP — RIM',
       gain: () => 0.13,
-      code: (_v, g) => `s("~ rim ~ [rim rim] ~ rim [~ rim] ~").bank("OberheimDMX").hpf(2100).gain(${g}).mask("<0!12 1!12 0!4 1!4>")`,
+      code: (_v, g) => `s("~ rim ~ [rim rim] ~ rim [~ rim] ~").bank("KorgDDM110").hpf(2100).gain(${g}).mask("<0!12 1!12 0!4 1!4>")`,
     },
     {
       id: 'sub', kind: 'sub', layer: 'bass', role: 'bass', deep: false,
@@ -209,7 +209,7 @@ export const BROKEN_MACHINE: PresetWorld = {
       id: 'signal', kind: 'melody', layer: 'melody', role: 'melody', deep: false,
       section: '7. SIGNAL',
       gain: () => 0.065,
-      code: (v, g) => `note("c5 ~ eb5 ~ db5 [g4 db5] ~ ~").s("clavisynth").decay(.035).hpf(800).distort(${g3(0.4 + v.EDGE * 0.4)}).delay(.1).gain(${g}).mask("<0!20 1!4 0!4 1!4>")`,
+      code: (v, g) => `note("c5 ~ eb5 ~ db5 [g4 db5] ~ ~").s("vibraphone").decay(.035).hpf(800).distort(${g3(0.4 + v.EDGE * 0.4)}).delay(.1).gain(${g}).mask("<0!20 1!4 0!4 1!4>")`,
     },
     {
       // §111: this world has no bytebeat, so its micro-detail IS the texture
@@ -248,7 +248,7 @@ export const PERCUSSION_RIOT: PresetWorld = {
       id: 'rim-grid', kind: 'perc', layer: 'drums', role: 'hats', deep: false,
       section: '1. RIM GRID',
       gain: () => 0.14,
-      code: (_v, g) => `s("rim ~ ~ rim [~ rim] ~ rim [rim ~]").bank("SakataDPM48").hpf(1900).gain(${g}).mask("<1!24 0!4 1!4>")`,
+      code: (_v, g) => `s("rim ~ ~ rim [~ rim] ~ rim [rim ~]").bank("LinnLM1").hpf(1900).gain(${g}).mask("<1!24 0!4 1!4>")`,
     },
     {
       id: 'percussion', kind: 'perc', layer: 'drums', role: 'snare', deep: false,
@@ -266,13 +266,15 @@ export const PERCUSSION_RIOT: PresetWorld = {
       id: 'kick', kind: 'kick', layer: 'drums', role: 'kick', deep: false,
       section: '3. KICK',
       gain: () => 1.02,
-      code: (v, g) => `s("bd ~ ~ bd ~ [bd ~] ~ bd").bank("SakataDPM48").shape(${g3(0.28 + v.EDGE * 0.2)}).distort(${g3(0.25 + v.EDGE * 0.55)}).postgain(.68).gain(${g}).mask("<0!8 1!16 0!4 1!4>")`,
+      code: (v, g) => `s("bd ~ ~ bd ~ [bd ~] ~ bd").bank("LinnLM1").shape(${g3(0.28 + v.EDGE * 0.2)}).distort(${g3(0.25 + v.EDGE * 0.55)}).postgain(.68).gain(${g}).mask("<0!8 1!16 0!4 1!4>")`,
     },
     {
       id: 'toms', kind: 'perc', layer: 'drums', role: 'snare', deep: true,
       section: '4. TOMS',
       gain: () => 0.18,
-      code: (v, g) => `s("lt ~ mt [ht mt] ~ lt ~ [mt ht]").bank("OberheimDMX").hpf(300).distort(${g3(0.4 + v.EDGE * 0.5)}).gain(${g}).mask("<0!12 1!12 0!4 1!4>")`,
+      // §117: LinnLM1 has no mid tom, so the toms stay on this world's own
+      // YamahaRY30 rather than reaching for a machine another world owns.
+      code: (v, g) => `s("lt ~ mt [ht mt] ~ lt ~ [mt ht]").bank("YamahaRY30").hpf(300).distort(${g3(0.4 + v.EDGE * 0.5)}).gain(${g}).mask("<0!12 1!12 0!4 1!4>")`,
     },
     {
       id: 'snare', kind: 'snare', layer: 'drums', role: 'snare', deep: false,
@@ -302,7 +304,7 @@ export const PERCUSSION_RIOT: PresetWorld = {
       id: 'metallic', kind: 'melody', layer: 'melody', role: 'melody', deep: true,
       section: 'DEEP — METALLIC RESPONSE',
       gain: () => 0.04,
-      code: (_v, g) => `note("~ g4 ~ db5 ~ ~ eb5 ~").s("tubularbells").hpf(1000).decay(.08).room(.35).gain(${g}).mask("<0!20 1!4 0!4 1!4>")`,
+      code: (_v, g) => `note("~ g4 ~ db5 ~ ~ eb5 ~").s("timpani").hpf(1000).decay(.08).room(.35).gain(${g}).mask("<0!20 1!4 0!4 1!4>")`,
     },
     {
       id: 'damage', kind: 'texture', layer: 'texture', role: 'texture', deep: false,
@@ -351,7 +353,7 @@ export const VOID_CRUSHER: PresetWorld = {
       id: 'kick-deep', kind: 'kick', layer: 'drums', role: 'kick', deep: true,
       section: 'DEEP KICK',
       gain: () => 0.2,
-      code: (_v, g) => `s("~ ~ ~ ~ bd ~ ~ bd").bank("OberheimDMX").lpf(1700).gain(${g}).mask("<0!16 1!8 0!4 1!4>")`,
+      code: (_v, g) => `s("~ ~ ~ ~ bd ~ ~ bd").bank("RolandR8").lpf(1700).gain(${g}).mask("<0!16 1!8 0!4 1!4>")`,
     },
     {
       id: 'snare', kind: 'snare', layer: 'drums', role: 'snare', deep: false,
@@ -393,7 +395,7 @@ export const VOID_CRUSHER: PresetWorld = {
       id: 'alarm', kind: 'chord', layer: 'harmony', role: 'harmony', deep: true,
       section: 'DEEP — ALARM',
       gain: () => 0.035,
-      code: (_v, g) => `note("~ ~ ~ db5 ~ ~ g5 ~").s("tubularbells").hpf(1200).room(.6).gain(${g}).mask("<0!20 1!4 0!4 1!4>")`,
+      code: (_v, g) => `note("~ ~ ~ db5 ~ ~ g5 ~").s("harp").hpf(1200).room(.6).gain(${g}).mask("<0!20 1!4 0!4 1!4>")`,
     },
     {
       id: 'damage', kind: 'texture', layer: 'texture', role: 'texture', deep: false,

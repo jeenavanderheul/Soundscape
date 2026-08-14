@@ -152,7 +152,7 @@ export function buildTechnoGraph(controls: TechnoPresetControls = {}): MusicalLa
     {
       id: 'snare-body', kind: 'snare', layer: 'drums', role: 'snare', deep: true,
       section: 'DEEP SNARE BODY', gain: 0.16 + EDGE * 0.05,
-      code: (g) => `s("~ ~ sd ~ ~ ~ sd ~").bank("EmuSP12").late(.012).hpf(1200).shape(${g3(0.2 + EDGE * 0.12)}).gain(${g}).mask("${MASKS.snareDeep}")`,
+      code: (g) => `s("~ ~ sd ~ ~ ~ sd ~").bank("RolandTR909").late(.012).hpf(1200).shape(${g3(0.2 + EDGE * 0.12)}).gain(${g}).mask("${MASKS.snareDeep}")`,
     },
     {
       id: 'sub', kind: 'sub', layer: 'bass', role: 'bass', deep: false,

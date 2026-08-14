@@ -132,7 +132,7 @@ export function buildSubPressureGraph(
     {
       id: 'sub-pressure-kick-deep', section: 'DEEP / SYNCOPATED KICK', kind: 'kick', layer: 'drums', role: 'kick', deep: true,
       gain: 0.16 + edge * 0.1,
-      code: (g) => `s("~ ~ ~ bd ~ ~ ~ bd").bank("OberheimDMX").lpf(1900).gain(${g})`,
+      code: (g) => `s("~ ~ ~ bd ~ ~ ~ bd").bank("LinnDrum").lpf(1900).gain(${g})`,
     },
     {
       id: 'sub-pressure-snare', section: '3 — CLAP / SNARE', kind: 'snare', layer: 'drums', role: 'snare', deep: false,
@@ -171,7 +171,7 @@ export function buildSubPressureGraph(
     {
       id: 'sub-pressure-signal', section: '7 — MACHINE SIGNAL', kind: 'melody', layer: 'melody', role: 'melody', deep: false,
       gain: 0.045 + edge * 0.025,
-      code: (g) => `note("~ c5 ~ ~ db5 ~ g4 ~").s("clavisynth").decay(.04).hpf(850).distort(.625).delay(.3).dfb(.35).dt(60/141).gain(${g})`,
+      code: (g) => `note("~ c5 ~ ~ db5 ~ g4 ~").s("glockenspiel").decay(.04).hpf(850).distort(.625).delay(.3).dfb(.35).dt(60/141).gain(${g})`,
     },
     {
       // §94: this world OPENS on texture, so the rung has to bring a voice of
