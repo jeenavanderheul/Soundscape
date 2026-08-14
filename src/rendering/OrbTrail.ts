@@ -21,20 +21,25 @@ const SAMPLE_STEP = 0.6;
 /** Half-width at the head, in world units, before speed and growth scale it. */
 const HALF_WIDTH = 0.5;
 /**
- * §131: the ribbon runs BEHIND the orb and the chase camera sits behind the
- * orb too, so the tail runs straight through the lens — 38 units of trail
- * against a camera 7 units back. A ribbon two units wide passing half a unit
- * from the camera is not a trail, it is a wedge across the whole viewport, and
- * the quad that straddles the near plane smears over everything. So the width
- * closes with the distance to the camera: constant angular thickness, nothing
- * at all at the lens, and the samples behind it collapse to zero area.
+ * §133: the trail may never take over the frame.
+ *
+ * §131 tied the width to the distance from the camera, which stopped the ribbon
+ * exploding at the lens but left it with a CONSTANT angular thickness — and the
+ * constant it settled on was a quarter radian, a band hundreds of pixels wide
+ * straight up the screen whenever the flight path crosses the view. Climb hard
+ * and the whole viewport goes pink.
+ *
+ * So the rule is angular and absolute: however close a rib passes, it may never
+ * subtend more than this half-angle. At a 1.05 rad field of view that is ~3% of
+ * the screen per side — a jet you see, never a wall you look through. It still
+ * collapses to nothing at the lens itself, because the cap scales with distance.
  */
-const CAMERA_FADE = 8;
+const MAX_ANGULAR_HALF_WIDTH = 0.03;
 
-/** Half-width of one rib, `age01` 0 at the head and 1 at the tail (§131). */
+/** Half-width of one rib, `age01` 0 at the head and 1 at the tail (§131, §133). */
 export function trailHalfWidth(headHalfWidth: number, age01: number, cameraDistance: number): number {
-  const near = Math.min(1, Math.max(0, cameraDistance / CAMERA_FADE));
-  return headHalfWidth * (1 - age01) * near;
+  const taper = headHalfWidth * (1 - age01);
+  return Math.min(taper, MAX_ANGULAR_HALF_WIDTH * cameraDistance);
 }
 
 const VERTEX = /* glsl */ `
