@@ -317,7 +317,13 @@ export class TrackBuilder {
     const layers: TrackLayerName[] = [
       'kick', 'snare', 'hats', 'bass', 'harmony', 'melody', 'texture',
     ];
-    return layers.every((layer) => layerUnlocked(track, layer) && levelOf(track, layer) >= LEVEL_DEEP);
+    // §123: seven of seven means seven of seven. The screen counts UNLOCKED
+    // layers, so a player reads 7/7 as "this track is done" — but this used
+    // to also demand every layer had grown DEEP, which lands a minute and a
+    // half later, and then still waited for DROP II. Two and a half minutes
+    // after the strip said finished. Depth still happens; it is no longer
+    // what decides that a track is over.
+    return layers.every((layer) => layerUnlocked(track, layer));
   }
 
   private startNextTrack(nowMs: number, reason: 'completed' | 'travelled' = 'completed'): void {

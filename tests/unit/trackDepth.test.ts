@@ -77,7 +77,9 @@ describe('§32 depth — a layer grows a second voice by staying with it', () =>
     // rung has only just landed and has not had time to double yet.
     const early = fly('techno', 55).track;
     expect(early.drums.hats.level).toBe(LEVEL_EARNED);
-    const late = fly('techno', 180);
+    // §123: a track hands over once its seven layers are EARNED, so depth is
+    // checked inside one track's own life rather than after several.
+    const late = fly('techno', 100);
     expect(late.track.drums.kick.level).toBe(LEVEL_DEEP);
     expect(late.deepened.length).toBeGreaterThan(0);
   });
