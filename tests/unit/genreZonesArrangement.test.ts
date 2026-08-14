@@ -217,15 +217,23 @@ describe('§53 turning towards a world takes you there', () => {
 });
 
 describe('§60 the sections can be told apart by ear', () => {
-  it('a build takes the floor away and the drop slams it back', () => {
+  it('§92 the phases build UP: nothing is taken away before the void', () => {
+    const enter = sectionMix('intro');
+    const groove = sectionMix('groove');
     const build = sectionMix('build');
     const drop = sectionMix('drop');
-    const groove = sectionMix('groove');
-    // The bass is what makes a drop a drop: nearly gone, then full.
-    expect(build.bass).toBeLessThan(0.4);
+    // PRESSURE is where the sub ARRIVES, so it is already at full there — it
+    // used to be removed here and handed back two phases later, which is what
+    // made a build-up sound like parts coming and going at random.
+    expect(build.bass).toBe(1);
     expect(drop.bass).toBe(1);
-    expect(drop.bass - build.bass).toBeGreaterThan(0.6);
-    // And neither of them is the groove: it sits below both, as the baseline.
+    // Every phase from DISCOVERY I on keeps what the one before it had.
+    for (const layer of ['drums', 'bass'] as const) {
+      expect(groove[layer]).toBeGreaterThan(enter[layer]);
+      expect(build[layer]).toBeGreaterThanOrEqual(groove[layer]);
+      expect(drop[layer]).toBeGreaterThanOrEqual(build[layer]);
+    }
+    // And the groove still reads as the baseline it all measures against.
     expect(groove.drums).toBeLessThan(drop.drums);
     expect(groove.texture).toBeLessThan(build.texture);
   });
@@ -285,15 +293,17 @@ describe('§76 sections build themselves by adding and removing parts', () => {
     );
   };
 
-  it('an intro is a kick and the air around it — the bass has not arrived', () => {
+  it('§92 ENTER BIOME is the air of the world and nothing else', () => {
     const intro = partsIn('intro');
-    expect(intro.drums).toBe(true);
+    expect(intro.drums).toBe(false);
     expect(intro.bass).toBe(false);
     expect(intro.melody).toBe(false);
+    // …so the first rhythm on cycle 4 is an event, not a fade-in.
+    expect(partsIn('groove').drums).toBe(true);
   });
 
-  it('a build takes the floor OUT, and the drop puts it back', () => {
-    expect(partsIn('build').bass).toBe(false);
+  it('§92 PRESSURE brings the sub IN — nothing is taken away before the void', () => {
+    expect(partsIn('build').bass).toBe(true);
     expect(partsIn('drop').bass).toBe(true);
     expect(partsIn('drop').drums).toBe(true);
   });

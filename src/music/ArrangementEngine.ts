@@ -19,9 +19,10 @@ export interface ArrangementConfig {
   /** Time at high energy before the track drops. */
   buildMs: number;
   /**
-   * §64: a drop needs something to drop. Below this many earned layers — and
-   * below `peakMinTrackMs` of track — the arrangement stays in intro, groove
-   * and break, because a build takes the FLOOR away and there is no floor yet.
+   * §64: a drop needs something to drop. §92 moved that guarantee into the arc
+   * itself — it hands out the rungs, so by PRESSURE there is a floor by
+   * construction — and these are kept only as the documented thresholds the
+   * arc's own `rungsDueAt('build')` has to stay at or above.
    */
   peakMinLayers: number;
   peakMinTrackMs: number;
@@ -51,39 +52,57 @@ export interface SectionMix {
 
 const MIXES: Record<Section, SectionMix> = {
   none: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 1 },
-  // §76: the parts THEMSELVES arrive and leave. Intro is a kick and the air
-  // around it; the bass has not come in yet.
-  intro: { drums: 0.8, bass: 0, harmony: 0.5, melody: 0, texture: 0, atmosphere: 1 },
-  // §60: the sections have to be TOLD APART by ear. Groove is the baseline it
-  // all reads against, so it sits deliberately below full.
-  // DISCOVERY I: the first rhythmic layer, still bare. This is the baseline
-  // everything else reads against, so it sits deliberately below full.
-  groove: { drums: 0.9, bass: 0.85, harmony: 0.7, melody: 0.6, texture: 0.5, atmosphere: 0.7 },
-  // §84 DISCOVERY II: the kit fills out — kick, snare and percussion together
-  // — while the bottom is still being held back for PRESSURE.
-  discovery: { drums: 1, bass: 0.45, harmony: 0.7, melody: 0.5, texture: 0.6, atmosphere: 0.6 },
-  // A build takes the FLOOR away: the bass all but disappears, the top end
-  // pushes, and everything leans forward waiting for the bottom to come back.
-  // A build takes the FLOOR OUT — the bass is gone, not quiet — and everything
-  // left leans forward waiting for it to come back.
-  build: { drums: 0.8, bass: 0, harmony: 0.9, melody: 0.85, texture: 1, atmosphere: 0.9 },
-  // And the drop is that floor slamming back in at full, with the air gone.
-  drop: { drums: 1, bass: 1, harmony: 0.85, melody: 1, texture: 0.55, atmosphere: 0.25 },
-  // The kick steps aside — but a break is not silence: the percussion and
-  // the top end carry it, or the track stops sounding like a track (§32).
-  // And a break drops the drums and the bass entirely: what is left is what
-  // the player built on top, in the open.
-  // §84 DEEP FLIGHT: the first evolution at its fullest — the Reese, the acid,
-  // the signal. Everything the track has, pushed, with the air pulled back.
+  // §92 ENTER BIOME: the air of the world and nothing else. When the first
+  // rhythm arrives on cycle 4 it has to be an EVENT, and it cannot be one if
+  // a kick was already playing underneath it.
+  intro: { drums: 0, bass: 0, harmony: 0, melody: 0, texture: 0, atmosphere: 1 },
+  // DISCOVERY I: the first rhythmic layer, alone with the air.
+  groove: { drums: 0.85, bass: 0.9, harmony: 0.7, melody: 0.7, texture: 0.6, atmosphere: 0.7 },
+  // DISCOVERY II: the kit fills out — kick, snare and percussion together.
+  discovery: { drums: 1, bass: 0.9, harmony: 0.75, melody: 0.7, texture: 0.7, atmosphere: 0.6 },
+  // §92 PRESSURE: the SUB ARRIVES. This used to be a classic build that took
+  // the floor away — which meant the bass you had just earned disappeared and
+  // came back two phases later, and the whole thing read as a mess rather
+  // than as one track being assembled. Nothing leaves here any more.
+  build: { drums: 0.95, bass: 1, harmony: 0.8, melody: 0.8, texture: 0.8, atmosphere: 0.8 },
+  // DROP I: the body, the drums and the musical identity, with the air gone.
+  drop: { drums: 1, bass: 1, harmony: 0.9, melody: 1, texture: 0.7, atmosphere: 0.3 },
+  // DEEP FLIGHT: the first evolution at its fullest.
   deep: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 0.9, atmosphere: 0.35 },
-  // VOID: the drums and the bass are gone entirely. What is left is what the
-  // player built on top of them, in the open.
+  // §92 VOID is the ONE place anything is taken away, which is what makes it
+  // land. Drums and bass gone; what is left is what you built on top of them.
   break: { drums: 0, bass: 0, harmony: 1, melody: 0.8, texture: 0.9, atmosphere: 1 },
-  // §84 DROP II: everything comes back at once, and this is the loudest the
-  // track ever gets — the moment the flight is meant to pay off.
+  // DROP II: everything back, and the loudest the track ever gets.
   return: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 0.9, atmosphere: 0.5 },
   mutation: { drums: 0.8, bass: 0.9, harmony: 0.8, melody: 1, texture: 1, atmosphere: 0.9 },
 };
+
+/**
+ * §92: how many rungs of the world's ladder are DUE by each phase — the
+ * cumulative count, so the build-up is the same shape every flight.
+ *
+ * The ladder used to run on its own clock while the arc ran on another, so a
+ * bass could arrive during DISCOVERY and a kick during PRESSURE: two systems
+ * deciding what plays, neither aware of the other. The arc decides now. What
+ * behaviour and beacons still do is let you take a rung the MOMENT its phase
+ * opens instead of waiting out the phase — they buy time, never order.
+ */
+const RUNGS_DUE: Record<Section, number> = {
+  none: 0,
+  intro: 0,      // ENTER BIOME — the air only
+  groove: 1,     // DISCOVERY I — the first rhythmic layer
+  discovery: 3,  // DISCOVERY II — the kit fills out
+  build: 4,      // PRESSURE — the sub arrives
+  drop: 6,       // DROP I — the body and the identity
+  deep: 7,       // DEEP FLIGHT — everything the track has
+  break: 7,
+  return: 7,
+  mutation: 7,
+};
+
+export function rungsDueAt(section: Section): number {
+  return RUNGS_DUE[section];
+}
 
 /**
  * §61: a section means something different in each grammar. Techno drops by
@@ -98,26 +117,26 @@ const STYLE_OVERRIDES: Record<SectionStyle, Partial<Record<Section, Partial<Sect
   driven: {},
   // Ambient and Breakbeat: nothing is taken away, everything is opened up.
   swell: {
-    build: { drums: 0.5, bass: 0.75, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
+    build: { drums: 0.7, bass: 1, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
     drop: { drums: 0.7, bass: 0.9, harmony: 1, melody: 1, texture: 0.9, atmosphere: 0.9 },
     break: { drums: 0.2, bass: 0.5, harmony: 1, melody: 0.6, texture: 1, atmosphere: 1 },
   },
   // Jazz: the band plays louder and busier, it does not filter itself.
   dynamic: {
-    build: { drums: 0.9, bass: 0.8, harmony: 1, melody: 1, texture: 0.7, atmosphere: 0.5 },
+    build: { drums: 0.9, bass: 1, harmony: 1, melody: 1, texture: 0.7, atmosphere: 0.5 },
     drop: { drums: 1, bass: 0.95, harmony: 1, melody: 1, texture: 0.5, atmosphere: 0.3 },
     break: { drums: 0.4, bass: 0.7, harmony: 0.9, melody: 0.5, texture: 0.6, atmosphere: 0.8 },
   },
   // Dub: the build empties the room, the drop is the bass and the skank
   // walking back in while the echo is still talking.
   echo: {
-    build: { drums: 0.35, bass: 0.2, harmony: 0.8, melody: 0.7, texture: 0.9, atmosphere: 1 },
+    build: { drums: 0.6, bass: 1, harmony: 0.8, melody: 0.7, texture: 0.9, atmosphere: 1 },
     drop: { drums: 0.9, bass: 1, harmony: 0.9, melody: 0.6, texture: 0.7, atmosphere: 0.7 },
     break: { drums: 0.25, bass: 0.35, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
   },
   // Experimental: it drops by removing what you expected to stay.
   mutant: {
-    build: { drums: 1, bass: 0.5, harmony: 0.6, melody: 0.9, texture: 1, atmosphere: 0.8 },
+    build: { drums: 1, bass: 1, harmony: 0.6, melody: 0.9, texture: 1, atmosphere: 0.8 },
     drop: { drums: 0.8, bass: 1, harmony: 0.4, melody: 1, texture: 1, atmosphere: 0.2 },
     break: { drums: 0.6, bass: 0.3, harmony: 1, melody: 0.4, texture: 1, atmosphere: 0.9 },
   },

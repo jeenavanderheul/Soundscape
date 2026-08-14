@@ -84,15 +84,17 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
   });
 
   it('Techno opens with the pulse; Ambient opens with space, not a kick', () => {
-    expect(flyThrough('techno', 12)[0]).toBe('kick');
-    const ambient = flyThrough('ambient', 20);
+    // §92: a rung arrives when its PHASE opens, so these flights have to be
+    // long enough for the arc to reach DISCOVERY I and II.
+    expect(flyThrough('techno', 30)[0]).toBe('kick');
+    const ambient = flyThrough('ambient', 40);
     expect(ambient[0]).toBe('texture');
     expect(ambient).not.toContain('kick');
   });
 
   it('Jazz opens with harmony and BASS with its kick', () => {
-    expect(flyThrough('jazz', 12)[0]).toBe('harmony');
-    expect(flyThrough('bass', 20).slice(0, 2)).toEqual(['kick', 'bass']); // §73
+    expect(flyThrough('jazz', 30)[0]).toBe('harmony');
+    expect(flyThrough('bass', 55).slice(0, 2)).toEqual(['kick', 'bass']); // §73
   });
 
   it('§54 a world is a track: crossing starts a new one, from the first layer', () => {
@@ -100,12 +102,12 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
     const bus = createEventBus<TrackEvents>();
     const builder = new TrackBuilder(store, bus);
     const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, dynamics: 0.5 };
-    for (let ms = 0; ms <= 12_000; ms += 250) builder.tick(ms, music, ROAMING, affinityOf('techno'));
+    for (let ms = 0; ms <= 30_000; ms += 250) builder.tick(ms, music, ROAMING, affinityOf('techno'));
     const earned = store.getState().drums;
     expect(earned.kick.unlocked).toBe(true);
     // Flying into bass music starts a bass music track, at its own tempo,
     // with nothing carried over.
-    for (let ms = 12_250; ms <= 18_000; ms += 250) {
+    for (let ms = 30_250; ms <= 40_000; ms += 250) {
       builder.tick(ms, music, ROAMING, affinityOf('bass'));
     }
     const after = store.getState();
@@ -345,10 +347,10 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
 });
 
 describe('§61 a section means something different in every world', () => {
-  it('techno drops by slamming the floor back in', () => {
+  it('§92 techno builds pressure by ADDING the sub, never by removing it', () => {
     const build = sectionMix('build', genreGrammar('techno').sectionStyle);
     const drop = sectionMix('drop', genreGrammar('techno').sectionStyle);
-    expect(build.bass).toBeLessThan(0.4);
+    expect(build.bass).toBe(1);
     expect(drop.bass).toBe(1);
   });
 

@@ -3,7 +3,7 @@ import type { GenreAffinity } from './MusicState';
 import type { EventBus } from '../core/EventBus';
 import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
-import { ARRANGEMENT_CONFIG, ArrangementEngine } from './ArrangementEngine';
+import { ArrangementEngine, rungsDueAt } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
 import { ladderFor, layerUnlocked, nextStep } from './GenreLadder';
 import { HarmonyEngine } from './HarmonyEngine';
@@ -454,16 +454,17 @@ export class TrackBuilder {
     }
     // The arrangement runs on the paced clock too: sections arrive sooner when
     // the player is moving through the world quickly.
-    // §64: a peak has to be earned twice over — enough of the track to have a
-    // floor, and enough time in it to have meant something.
+    // §64/§92: a peak still needs a floor to take away — but the arc is now
+    // what guarantees one, because it hands out the rungs itself. The old
+    // guard also demanded sixty seconds of PACED track, which is longer than
+    // the arc takes to reach DROP I: every flight would have stalled at the
+    // end of PRESSURE for most of a second lap. What is left is the honest
+    // question — have the rungs this phase promised actually landed.
     const earned = [
       track.drums.kick, track.drums.snare, track.drums.hats,
       track.bass, track.harmony, track.melody, track.texture,
     ].filter((layer) => layer.unlocked).length;
-    const readyToPeak =
-      track.bass.unlocked &&
-      earned >= ARRANGEMENT_CONFIG.peakMinLayers &&
-      this.paceClockMs - this.trackStartedMs >= ARRANGEMENT_CONFIG.peakMinTrackMs;
+    const readyToPeak = earned >= rungsDueAt('build');
     // §84: the arc walks in CYCLES of one bar at the track's own tempo, and
     // each world flies its own order through the eight phases (§61).
     this.arrangement.setStyle(genreGrammar(genre).sectionStyle);
@@ -519,6 +520,16 @@ export class TrackBuilder {
     const current = this.store.getState();
     const ladder = ladderFor(genre);
     const step = nextStep(current, ladder);
+    // §92: the ARC decides how many rungs exist by now, so the build-up has
+    // the same shape every flight. Two clocks used to run at once — the arc
+    // on cycles, the ladder on patience — so a bass could land in DISCOVERY
+    // and a kick in PRESSURE, which is not a track being assembled, it is a
+    // mess. Behaviour and beacons still let you take a rung the moment its
+    // phase opens; what they can no longer do is take it out of turn.
+    const earnedRungs = ladder.filter((rung) => layerUnlocked(current, rung.layer)).length;
+    // Only WIDTH is gated. Depth has to keep going once the arc has handed out
+    // everything it owes, or a track stops growing the moment it is wide.
+    const rungDue = earnedRungs < rungsDueAt(section);
     // Behaviour earns the layer. The ladder time is only the world's patience
     // with a player who is doing nothing in particular (§29.3) — it must never
     // be the mechanism, or the track becomes a progress bar instead of a
@@ -532,7 +543,7 @@ export class TrackBuilder {
     // room to be heard. Without this, patience and behaviour fired on
     // consecutive ticks and the track arrived in a lump.
     const settled = this.activeMs - this.lastRungMs >= config.rungGapMs;
-    if (step !== null && settled && (this.intent(step.layer) || this.activeMs >= patience)) {
+    if (rungDue && step !== null && settled && (this.intent(step.layer) || this.activeMs >= patience)) {
       this.lastRungMs = this.activeMs;
       this.unlock(step.layer, nowMs);
       return;

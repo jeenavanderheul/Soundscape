@@ -100,8 +100,9 @@ describe('SUB PRESSURE is arranged by its section, not by a baked loop', () => {
   const parts = (form: TrackState['form']) =>
     ids(buildSubPressureGraph({ track: finished(form) }));
 
-  it('§76 the build takes the bottom away and the drop brings it back', () => {
-    expect(parts('build')).not.toContain('sub-pressure-sub');
+  it('§92 PRESSURE brings the sub in and DROP I keeps it', () => {
+    expect(parts('intro')).not.toContain('sub-pressure-sub');
+    expect(parts('build')).toContain('sub-pressure-sub');
     expect(parts('drop')).toContain('sub-pressure-sub');
   });
 

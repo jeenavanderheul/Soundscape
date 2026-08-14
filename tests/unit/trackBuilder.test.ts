@@ -37,31 +37,37 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
     const tick = (t: number) =>
       builder.tick(t, music, { velocity: 10, hz: 220, energy: 0.4 }, region);
+    // §92: a rung cannot arrive before its PHASE opens. DISCOVERY I is cycle
+    // four, so intent buys you the kick the moment that phase starts — not
+    // sooner. Fly there first, then play for it.
+    for (let t = 0; t <= 15_000; t += 250) tick(t);
+    expect(store.getState().drums.kick.unlocked).toBe(false); // still ENTER BIOME
+    for (let t = 15_250; t <= 21_000; t += 250) tick(t);
     for (let i = 0; i < 3; i++) {
-      builder.onAction({ atMs: i * 500, hz: 110, amplitude: 0.6, release: false });
+      builder.onAction({ atMs: 21_000 + i * 500, hz: 110, amplitude: 0.6, release: false });
     }
-    tick(1600);
+    tick(22_600);
     expect(store.getState().drums.kick.unlocked).toBe(true);
     expect(unlocked).toEqual(['kick']);
     // §82: intent still earns the layer, but a rung has to be HEARD before the
     // next one lands — otherwise a run of actions arrives as one lump.
     for (let i = 0; i < 3; i++) {
-      builder.onAction({ atMs: 2000 + i * 400, hz: 900, amplitude: 0.5, release: false });
+      builder.onAction({ atMs: 23_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
     }
-    tick(3300);
+    tick(24_300);
     expect(store.getState().drums.hats.unlocked).toBe(false);
-    for (let t = 3800; t <= 30_000; t += 500) tick(t);
+    for (let t = 24_800; t <= 45_000; t += 500) tick(t);
     for (let i = 0; i < 3; i++) {
-      builder.onAction({ atMs: 30_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
+      builder.onAction({ atMs: 45_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
     }
-    tick(31_300);
+    tick(46_300);
     expect(store.getState().drums.hats.unlocked).toBe(true);
     // A layer growing its second voice is also a thing arriving, so it takes
     // its turn in the same queue — which is why the snare waits this long.
-    for (let t = 31_800; t <= 60_000; t += 500) tick(t);
-    builder.onAction({ atMs: 60_000, hz: 400, amplitude: 0.8, release: true });
-    builder.onAction({ atMs: 60_500, hz: 400, amplitude: 0.9, release: true });
-    tick(60_600);
+    for (let t = 46_800; t <= 75_000; t += 500) tick(t);
+    builder.onAction({ atMs: 75_000, hz: 400, amplitude: 0.8, release: true });
+    builder.onAction({ atMs: 75_500, hz: 400, amplitude: 0.9, release: true });
+    tick(75_600);
     expect(store.getState().drums.snare.unlocked).toBe(true);
     expect(unlocked.slice(0, 3)).toEqual(['kick', 'hats', 'snare']);
   });
@@ -101,16 +107,16 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
   }
 
   it('§3.1 skimming the ground earns the kick — that is where the mass is', () => {
-    expect(flyAt(3, 4000).drums.kick.unlocked).toBe(true);
+    expect(flyAt(3, 25_000).drums.kick.unlocked).toBe(true);
     // Same four seconds at a neutral height earns nothing yet.
-    expect(flyAt(19, 4000).drums.kick.unlocked).toBe(false);
+    expect(flyAt(19, 12_000).drums.kick.unlocked).toBe(false);
   });
 
   it('§3.1 climbing into the air earns the hats, without skipping the ladder', () => {
     const { store, builder } = setup();
     // Down first for the kick, then up: the ladder still cannot be skipped.
-    for (let t = 0; t <= 4000; t += 100) builder.tick(t, roamingMusic, { ...ROAMING, altitude: 3 });
-    for (let t = 4100; t <= 30_000; t += 100) {
+    for (let t = 0; t <= 25_000; t += 100) builder.tick(t, roamingMusic, { ...ROAMING, altitude: 3 });
+    for (let t = 25_100; t <= 70_000; t += 100) {
       builder.tick(t, roamingMusic, { ...ROAMING, altitude: 50 });
     }
     const track = store.getState();
@@ -122,9 +128,12 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
   it('still offers the ladder to a player who does nothing in particular', () => {
     // Patience, not a schedule: it arrives, but later than flying for it — and
     // §46 means a slow flight develops the track more slowly.
-    expect(flyAt(19, 4000).drums.kick.unlocked).toBe(false);
-    expect(flyAt(19, 9000).drums.kick.unlocked).toBe(true);
-    expect(flyAt(19, 45_000).bass.unlocked).toBe(true);
+    // §92: the arc gates it now — before DISCOVERY I opens, nobody gets a
+    // kick, however patient or however deliberate.
+    expect(flyAt(19, 12_000).drums.kick.unlocked).toBe(false);
+    expect(flyAt(19, 30_000).drums.kick.unlocked).toBe(true);
+    // …and the sub is PRESSURE's, four phases in.
+    expect(flyAt(19, 110_000).bass.unlocked).toBe(true);
   });
 
   it('does not accumulate during stillness', () => {
