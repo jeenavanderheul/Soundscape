@@ -95,7 +95,10 @@ const MIXES: Record<Section, SectionMix> = {
 const RUNGS_DUE: Record<Section, number> = {
   none: 0,
   intro: 1,      // §100 ENTER BIOME — the air and the world's first rung
-  groove: 1,     // DISCOVERY I — the first rhythmic layer
+  // §102: was 1, the same as intro — so DISCOVERY I added NOTHING. §100 gave
+  // the opening rung away at arrival and this was never moved to follow it,
+  // leaving the second phase of every track as a dead step.
+  groove: 2,     // DISCOVERY I — the second element joins the opener
   discovery: 3,  // DISCOVERY II — the kit fills out
   build: 4,      // PRESSURE — the sub arrives
   drop: 6,       // DROP I — the body and the identity

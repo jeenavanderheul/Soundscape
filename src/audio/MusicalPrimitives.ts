@@ -1401,20 +1401,52 @@ export function buildLayerGraph(
             allowedTransforms: [...ALLOWED_TRANSFORMS.texture],
           },
         ]
-      : ambientAffinity >= GENRE_LAYER_THRESHOLD
-      ? [
+      : [
+          // §102: EVERY world has air. This used to be techno-only plus an
+          // ambient drone, so eight of the eleven grammars had nothing at all
+          // in the atmosphere layer — ENTER BIOME, which is meant to be the
+          // sound of arriving somewhere, was silent in most of the game, and
+          // in Ambient the entire opening phase rendered zero voices.
           {
-            id: 'ambient-drone',
-            kind: 'drone',
+            id: 'world-air',
+            kind: 'texture',
             layer: 'atmosphere',
             parameters: {
-              note: subNoteFromHz(music.pitchCenter),
-              gain: round2((ambientAffinity >= GENRE_LAYER_STRONG ? 0.3 : 0.2) * mix.atmosphere),
+              code:
+                `s("brown").clip(1).lpf(${Math.round(420 + grammar.drive * 420)})` +
+                `.gain(${round2((0.04 + ambientAffinity * 0.04) * mix.atmosphere)})` +
+                `.room(${(0.6 + grammar.drive * 0.2).toFixed(2)}).orbit(3)`,
             },
-            allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
+            allowedTransforms: [],
           },
-        ]
-      : [];
+          {
+            id: 'world-shimmer',
+            kind: 'texture',
+            layer: 'atmosphere',
+            parameters: {
+              code:
+                `s("crackle").hpf(${Math.round(4200 + grammar.drive * 2600)})` +
+                `.gain(${round2((0.012 + grammar.drive * 0.012) * mix.atmosphere)}).room(.35)`,
+            },
+            allowedTransforms: [],
+          },
+          ...(ambientAffinity >= GENRE_LAYER_THRESHOLD
+            ? [
+                {
+                  id: 'ambient-drone',
+                  kind: 'drone' as const,
+                  layer: 'atmosphere' as const,
+                  parameters: {
+                    note: subNoteFromHz(music.pitchCenter),
+                    gain: round2(
+                      (ambientAffinity >= GENRE_LAYER_STRONG ? 0.3 : 0.2) * mix.atmosphere,
+                    ),
+                  },
+                  allowedTransforms: [...ALLOWED_TRANSFORMS.drone],
+                },
+              ]
+            : []),
+        ];
 
   // §30: an authored pattern replaces the template for its layer; the ladder
   // still decides WHEN the layer is audible.

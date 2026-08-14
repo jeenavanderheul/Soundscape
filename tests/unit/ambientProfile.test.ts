@@ -80,7 +80,7 @@ describe('buildLayerGraph ambient drone (§9.2, §11)', () => {
   it('keeps the drone alongside a confident techno pulse (genres overlap, §9)', () => {
     const state: MusicState = { ...ambientState(), bpm: 126, tempoConfidence: 0.9, rhythmDensity: 1 };
     const graph = buildLayerGraph(state, affinity(0.6, 0.6));
-    expect(graph.layers.atmosphere.primitives).toHaveLength(1);
+    expect(graph.layers.atmosphere.primitives.filter((p) => p.id === 'ambient-drone')).toHaveLength(1);
     expect(graph.layers.drums.primitives.length).toBeGreaterThan(0);
   });
 });

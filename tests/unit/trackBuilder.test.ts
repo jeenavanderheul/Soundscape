@@ -42,19 +42,15 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     tick(250);
     expect(store.getState().drums.kick.unlocked).toBe(true);
     expect(unlocked).toEqual(['kick']);
-    for (let t = 500; t <= 21_000; t += 250) tick(t);
-    // §82: intent still earns the layer, but a rung has to be HEARD before the
-    // next one lands — otherwise a run of actions arrives as one lump.
+    // §102: DISCOVERY I is the SECOND rung — the opener came with the world,
+    // so this phase has to bring something of its own or it is a dead step.
+    for (let t = 500; t <= 15_000; t += 250) tick(t);
+    expect(store.getState().drums.hats.unlocked).toBe(false); // still ENTER BIOME
+    for (let t = 15_250; t <= 22_000; t += 250) tick(t);
     for (let i = 0; i < 3; i++) {
-      builder.onAction({ atMs: 23_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
+      builder.onAction({ atMs: 22_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
     }
-    tick(24_300);
-    expect(store.getState().drums.hats.unlocked).toBe(false);
-    for (let t = 24_800; t <= 45_000; t += 500) tick(t);
-    for (let i = 0; i < 3; i++) {
-      builder.onAction({ atMs: 45_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
-    }
-    tick(46_300);
+    tick(23_300);
     expect(store.getState().drums.hats.unlocked).toBe(true);
     // A layer growing its second voice is also a thing arriving, so it takes
     // its turn in the same queue — which is why the snare waits this long.

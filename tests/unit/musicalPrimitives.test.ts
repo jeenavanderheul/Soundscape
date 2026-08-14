@@ -84,9 +84,16 @@ describe('buildLayerGraph', () => {
   });
 
   it('only whitelists transforms from ALLOWED_TRANSFORMS', () => {
+    // §102: voices that carry their own pattern text (the world's air, the
+    // tension engine, the finale) declare no transforms — the code IS the
+    // primitive, so there is nothing for the engine to transform.
     const graph = buildLayerGraph(confidentState());
     for (const name of LAYER_NAMES) {
       for (const p of graph.layers[name].primitives) {
+        if ('code' in p.parameters) {
+          expect(p.allowedTransforms).toEqual([]);
+          continue;
+        }
         expect(p.allowedTransforms).toEqual(ALLOWED_TRANSFORMS[p.kind]);
       }
     }
@@ -108,14 +115,15 @@ describe('diffLayerGraph', () => {
 
   it('detects added primitives', () => {
     const changes = diffLayerGraph(createEmptyLayerGraph(), base());
+    // §102: the pulse plus the world's air (brown + crackle).
     const adds = changes.filter((c) => c.type === 'add');
-    expect(adds).toHaveLength(1);
+    expect(adds).toHaveLength(3);
   });
 
   it('detects removed primitives', () => {
     const changes = diffLayerGraph(base(), createEmptyLayerGraph(120));
     const removes = changes.filter((c) => c.type === 'remove');
-    expect(removes).toHaveLength(1);
+    expect(removes).toHaveLength(3);
   });
 
   it('detects layer-gain-only changes', () => {

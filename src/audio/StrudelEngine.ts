@@ -1027,10 +1027,23 @@ const DUCKED: Partial<Record<LayerName, number>> = {
   texture: 0.4,
 };
 
-/** The last bar of every eight turns around — this is what makes a loop a song. */
+/**
+ * §102: the last bar of every eight turns around — this is what makes a loop a
+ * song. But a fill is a FIGURE, never a tempo change.
+ *
+ * `fast(2)` on the drums doubled the whole kit every eighth bar, so a steady
+ * four-to-the-floor became eight-to-the-floor for a bar and then dropped back.
+ * That reads as the machine slipping, not as a fill, and it is the single
+ * least smooth thing in the whole track. The clock belongs to the world (§91)
+ * and nothing at this level may touch it.
+ *
+ * What is left only ever ADDS or shades: the drums gain a ghost hit on the way
+ * out of the phrase, the bass thins, the harmony leans late. All of it inside
+ * the bar, none of it changing the grid.
+ */
 const FILLS: Partial<Record<LayerName, string>> = {
-  drums: '.lastOf(8, x => x.fast(2))',
-  bass: '.lastOf(8, x => x.degradeBy(.3))',
+  drums: '.lastOf(8, x => x.echo(2, .125, .5))',
+  bass: '.lastOf(8, x => x.degradeBy(.2))',
   harmony: '.lastOf(8, x => x.late(.02))',
 };
 
