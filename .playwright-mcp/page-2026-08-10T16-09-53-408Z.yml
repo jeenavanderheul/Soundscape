@@ -1,7 +1,0 @@
-- generic [ref=f75e1]:
-  - dialog [ref=f75e4]:
-    - heading "FREQUENCY" [level=1] [ref=f75e5]
-    - button "Enter — headphones recommended" [active] [ref=f75e6] [cursor=pointer]
-  - status
-  - status
-  - paragraph

@@ -1,8 +1,0 @@
-[     462ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5211/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
-[     491ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5211/:0
-[   23166ms] [LOG] %c[superdough] AudioWorklets loaded background-color: black;color:white;border-radius:15px @ http://localhost:5211/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
-[   23166ms] [LOG] %c[superdough] ready background-color: black;color:white;border-radius:15px @ http://localhost:5211/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
-[   38319ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5211/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
-[   38338ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5211/:0
-[   67360ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5211/node_modules/.vite/deps/@strudel_web.js?v=271342c3:10
-[   67412ms] [VERBOSE] [DOM] Password field is not contained in a form: (More info: https://goo.gl/9p2vKq) %o @ http://localhost:5211/:0

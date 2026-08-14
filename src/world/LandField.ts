@@ -45,6 +45,52 @@ export interface LandManifest {
   waterFraction: number;
 }
 
+/**
+ * How the baked square is laid over the world.
+ *
+ * `unitsPerMetre` 0.5 makes a world unit two metres, so the 20 km square is
+ * 10 000 units across — a long flight, not an afternoon. `verticalScale` 0.25
+ * turns AHN's 143 m of relief into ~36 units, which fits under the flight
+ * ceiling (`FLIGHT_CONFIG.maxY` 70) and sits in the same order as the §33
+ * region relief (26) instead of dwarfing it.
+ */
+export const LAND_CONFIG = {
+  region: 'amsterdam',
+  unitsPerMetre: 0.5,
+  verticalScale: 0.25,
+} as const;
+
+/**
+ * Reads the baked square. Returns null when it is not there — the void is a
+ * valid world and the game must still start without the data.
+ *
+ * The manifest is parsed, not probed: the dev server answers a missing file
+ * with index.html and status 200, so "ok" proves nothing (§43 lesson).
+ */
+export async function loadLandField(
+  region: string = LAND_CONFIG.region,
+  base = '/land',
+): Promise<LandField | null> {
+  try {
+    const manifest = (await (await fetch(`${base}/${region}.json`)).json()) as LandManifest;
+    const [heightBuffer, waterBuffer] = await Promise.all([
+      fetch(`${base}/${region}.height.bin`).then((r) => r.arrayBuffer()),
+      fetch(`${base}/${region}.water.bin`).then((r) => r.arrayBuffer()),
+    ]);
+    const samples = manifest.size * manifest.size;
+    if (heightBuffer.byteLength !== samples * 4 || waterBuffer.byteLength !== samples) return null;
+    return landFieldFrom(
+      manifest,
+      new Float32Array(heightBuffer),
+      new Uint8Array(waterBuffer),
+      LAND_CONFIG.unitsPerMetre,
+      LAND_CONFIG.verticalScale,
+    );
+  } catch {
+    return null;
+  }
+}
+
 /** Clamped so flying past the edge of the data holds the border height. */
 const clampIndex = (value: number, size: number): number =>
   value < 0 ? 0 : value > size - 1 ? size - 1 : value;

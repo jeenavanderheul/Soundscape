@@ -1,9 +1,0 @@
-[      81ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
-[    8411ms] [LOG] %c[superdough] AudioWorklets loaded background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
-[    8411ms] [LOG] %c[superdough] ready background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
-[   11131ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
-[   11131ms] [LOG] %c[cyclist] start background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
-[   15194ms] [LOG] %c[eval] code updated background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
-[   33688ms] [LOG] [vite] server connection lost. Polling for restart... @ http://localhost:5199/@vite/client:998
-[  351190ms] [LOG] %c[cyclist] stop background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10
-[ 9247235ms] [LOG] %c🌀 @strudel/core loaded 🌀 background-color: black;color:white;border-radius:15px @ http://localhost:5199/node_modules/.vite/deps/@strudel_web.js?v=a3df4357:10

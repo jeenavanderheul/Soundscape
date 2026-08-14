@@ -2,10 +2,15 @@ import {
   AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
+  DataTexture,
+  FloatType,
   LineSegments,
+  NearestFilter,
+  RedFormat,
   ShaderMaterial,
 } from 'three';
 import type { Vec3Data } from '../player/FrequencyState';
+import { LAND_FIELD_GLSL, sampleLand, type LandField } from '../world/LandField';
 import {
   createNoiseTable,
   TERRAIN_FIELD,
@@ -71,6 +76,7 @@ varying vec3 vZone;
 varying float vRidge;
 
 ${TERRAIN_FIELD_GLSL}
+${LAND_FIELD_GLSL}
 
 vec3 zoneColor(float hzn) {
   // poster palette: low = red mass, high = green detail, mid = purple harmonics
@@ -93,6 +99,10 @@ void main() {
   float fromSpawn = clamp((length(world) - 20.0) / 120.0, 0.0, 1.0);
   float relief = terrainRelief(world, uRelief);
   h += relief;
+  // §132: the real ground of a real place, added to the standing shape. The
+  // collision adds exactly this line on the CPU, in groundHeightAt; one of the
+  // two without the other is the §35 bug all over again.
+  h += sampleLand(world) * uLandPresent;
   vRidge = relief;
   float glow = uBass * 0.25;
   vec3 zone = vec3(0.0);
@@ -146,6 +156,10 @@ void main() {
 }
 `;
 
+/** Stand-in so the sampler is always bound; `uLandPresent` 0 ignores it. */
+const EMPTY_LAND_TEXTURE = new DataTexture(new Float32Array(1), 1, 1, RedFormat, FloatType);
+EMPTY_LAND_TEXTURE.needsUpdate = true;
+
 export class WaveTerrain {
   readonly lines: LineSegments;
   /** Shared with the collision: one table, one landscape (§35). */
@@ -156,6 +170,9 @@ export class WaveTerrain {
   private readonly sources: TerrainSource[] = [];
   private readonly sourceArray: Float32Array;
   private pulse = 0;
+  /** §132: the real ground, once it has loaded. Null is a valid world. */
+  private land: LandField | null = null;
+  private landTexture: DataTexture | null = null;
 
   constructor(seed = 'frequency') {
     this.noise = createNoiseTable(seed);
@@ -178,6 +195,13 @@ export class WaveTerrain {
         uZoneColor: { value: [0.16, 0.2, 0.24] },
         uRelief: { value: 0.12 },
         uNoise: { value: Array.from(this.noise) },
+        uLand: { value: EMPTY_LAND_TEXTURE },
+        uLandSize: { value: 1 },
+        uLandUnitsPerSample: { value: 1 },
+        uLandOrigin: { value: [0, 0] },
+        uLandSeaLevel: { value: 0 },
+        uLandVerticalScale: { value: 0 },
+        uLandPresent: { value: 0 },
       },
     });
     this.lines = new LineSegments(geometry, this.material);
@@ -214,8 +238,35 @@ export class WaveTerrain {
     return (
       TERRAIN_CONFIG.planeY +
       terrainHeight(this.noise, x, z, this.elapsedSeconds, this.relief) +
+      (this.land ? sampleLand(this.land, x, z) : 0) +
       terrainMotion(x, z, this.elapsedSeconds, this.bassLevel, this.pulse, this.sources)
     );
+  }
+
+  /**
+   * §132: hang the baked square under the grid. NEAREST is not a preference —
+   * `LAND_FIELD_GLSL` does the bilinear blend itself, and a second, hardware
+   * blend on top of it would make the drawn ground and the solid ground
+   * disagree by exactly the amount you fall through.
+   */
+  setLand(land: LandField): void {
+    this.land = land;
+    this.landTexture?.dispose();
+    const texture = new DataTexture(land.height, land.size, land.size, RedFormat, FloatType);
+    texture.magFilter = NearestFilter;
+    texture.minFilter = NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+    this.landTexture = texture;
+    const u = this.material.uniforms;
+    u['uLand']!.value = texture;
+    u['uLandSize']!.value = land.size;
+    u['uLandUnitsPerSample']!.value = land.unitsPerSample;
+    (u['uLandOrigin']!.value as number[])[0] = land.originX;
+    (u['uLandOrigin']!.value as number[])[1] = land.originZ;
+    u['uLandSeaLevel']!.value = land.seaLevel;
+    u['uLandVerticalScale']!.value = land.verticalScale;
+    u['uLandPresent']!.value = 1;
   }
 
   /** §29.6: bassline level — the terrain grows moving ridges. */
@@ -292,6 +343,7 @@ export class WaveTerrain {
   dispose(): void {
     this.lines.geometry.dispose();
     this.material.dispose();
+    this.landTexture?.dispose();
   }
 }
 

@@ -86,6 +86,7 @@ import { HUD } from '../ui/HUD';
 import { attachIntroHint } from '../ui/Intro';
 import { PauseOverlay } from '../ui/PauseOverlay';
 import { FormEmergence } from '../world/FormEmergence';
+import { loadLandField } from '../world/LandField';
 import type { StructureEvents } from '../world/FormEmergence';
 import { createWorldStore, WorldState } from '../world/WorldState';
 import { AUTOSAVE_DEBOUNCE_MS, AUTOSAVE_INTERVAL_MS, LOGIC_STEP_MS, WORLD_SEED } from './Config';
@@ -353,6 +354,7 @@ export class Game {
   private resonanceAudio: ResonanceAudio | null = null;
   private unlocked = false;
   private paused = false;
+  private disposed = false;
 
   constructor(private readonly elements: GameElements) {
     this.renderer = new Renderer(elements.container);
@@ -367,6 +369,11 @@ export class Game {
     // §36: giants are solid too — you fly around them, never through them.
     this.controller.setObstacleSource(() => this.forest.solidObstacles());
     this.forest.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
+    // §132: the real ground arrives a moment after the void does. Until it
+    // lands the world is the generated field; nothing waits on it.
+    void loadLandField().then((land) => {
+      if (land && !this.disposed) this.terrain.setLand(land);
+    });
     this.particles = new ParticleSystem(WORLD_SEED);
     this.renderer.scene.add(this.particles.points);
     this.detachIntroHint = attachIntroHint(this.events);
@@ -558,6 +565,7 @@ export class Game {
   }
 
   async dispose(): Promise<void> {
+    this.disposed = true;
     this.elements.container.removeEventListener('click', this.onContainerClick);
     this.elements.unlockButton.removeEventListener('click', this.onUnlockClick);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
