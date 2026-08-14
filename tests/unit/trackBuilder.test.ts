@@ -43,18 +43,18 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     }
     builder.tick(3300, music, STILL);
     expect(store.getState().drums.hats.unlocked).toBe(false);
-    for (let t = 3800; t <= 14_000; t += 500) builder.tick(t, music, STILL);
+    for (let t = 3800; t <= 30_000; t += 500) builder.tick(t, music, STILL);
     for (let i = 0; i < 3; i++) {
-      builder.onAction({ atMs: 14_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
+      builder.onAction({ atMs: 30_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
     }
-    builder.tick(15_300, music, STILL);
+    builder.tick(31_300, music, STILL);
     expect(store.getState().drums.hats.unlocked).toBe(true);
     // A layer growing its second voice is also a thing arriving, so it takes
     // its turn in the same queue — which is why the snare waits this long.
-    for (let t = 15_800; t <= 33_000; t += 500) builder.tick(t, music, STILL);
-    builder.onAction({ atMs: 33_000, hz: 400, amplitude: 0.8, release: true });
-    builder.onAction({ atMs: 33_500, hz: 400, amplitude: 0.9, release: true });
-    builder.tick(33_600, music, STILL);
+    for (let t = 31_800; t <= 60_000; t += 500) builder.tick(t, music, STILL);
+    builder.onAction({ atMs: 60_000, hz: 400, amplitude: 0.8, release: true });
+    builder.onAction({ atMs: 60_500, hz: 400, amplitude: 0.9, release: true });
+    builder.tick(60_600, music, STILL);
     expect(store.getState().drums.snare.unlocked).toBe(true);
     expect(unlocked.slice(0, 3)).toEqual(['kick', 'hats', 'snare']);
   });
@@ -169,7 +169,9 @@ describe('§46 the region carries the tempo, the flight does not', () => {
 
   it('§46 flying faster develops the track faster', () => {
     const { builder } = setup();
-    expect(builder.pace(66)).toBeGreaterThan(builder.pace(0) * 3);
+    // §87 repaced this: a whole 32-cycle arc is ~90s of flight at full speed
+    // and ~3 minutes at a crawl, so the RATIO is what matters, not the number.
+    expect(builder.pace(66)).toBeGreaterThan(builder.pace(0) * 2);
   });
 });
 

@@ -110,28 +110,40 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // §65: 2.5 turned a three-second rung into eight and a seven-second rung
   // into twenty — long enough that a track read as "nothing is happening".
   // Behaviour still earns a layer instantly; this is only how long the world
-  // waits for a player who is doing nothing in particular.
-  patienceFactor: 1.6,
+  // waits for a player who is doing nothing in particular. §87 slowed the
+  // clock underneath it by nearly four, so the multiplier comes back to 1 —
+  // otherwise a passive player would still be missing layers at DROP II.
+  patienceFactor: 1.0,
   // §82: ONE thing at a time. Both the patience clock and behaviour could fire
   // on consecutive ticks, so a fast flight unlocked three or four rungs inside
   // a second — heard as a burst of snares and bass rather than a track being
   // built. A rung now has to settle before the next one may land. The gap is
   // on the PACED clock, so speed still decides how fast a track is discovered
-  // (§46): at full speed this is ~2.5s of real time, at a crawl ~11s.
-  rungGapMs: 6000,
+  // (§46): ~5.5s of real time at full speed, ~12s at a crawl. Seven layers
+  // then stand complete around cycle 14, just before DROP I pays them off.
+  rungGapMs: 3500,
   groundAltitude: 8,
   airAltitude: 30,
   groundMs: 3500,
   airMs: 3500,
   bpmSlewPerSecond: 9,
   fullSpeed: 66,
-  paceAtRest: 0.55,
-  paceAtFullSpeed: 2.4,
+  // §87: these decide how long a track TAKES. At 134 bpm a bar is 1.79s, so
+  // the 32-cycle arc is 57s of musical time; the pace divides into that.
+  // 0.64 gives ~90s of flight for a whole arc at full speed and ~3 minutes at
+  // a crawl. The old 2.4 finished the entire production in 24 seconds, which
+  // is why the phases went by without being heard.
+  paceAtRest: 0.3,
+  paceAtFullSpeed: 0.64,
   // Arriving in a world IS hearing it: the switch fires as soon as the region
   // reads as the new one, and lands on the next bar (§11). What stops a sweep
   // of the mouse from wiping your track is minTrackLifeMs, not a delay here.
-  regionSwitchMs: 250,
-  minTrackLifeMs: 8000,
+  // §87: both of these are REAL-WORLD protections that happen to be measured
+  // on the paced clock, so slowing that clock by nearly four silently made
+  // them four times longer — a crossing would have taken up to 27 seconds to
+  // be heard, breaking §53's promise of three. Scaled back to where they were.
+  regionSwitchMs: 70,
+  minTrackLifeMs: 3200,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -264,11 +276,14 @@ export class TrackBuilder {
   private advanceJourney(nowMs: number, section: TrackState['form']): void {
     const track = this.store.getState();
     if (!this.handingOver) {
-      if (!this.isComplete(track) || section !== 'drop') return;
+      // §87: hand over after DROP II, not after DROP I. A finished track used
+      // to end at cycle 20, so DEEP FLIGHT, VOID and the finale never happened
+      // for exactly the tracks that had earned them.
+      if (!this.isComplete(track) || section !== 'return') return;
       this.handingOver = true;
       return;
     }
-    if (section === 'drop') return; // still in it — let the drop land
+    if (section === 'return') return; // still in it — let the finale land
     this.startNextTrack(nowMs);
   }
 

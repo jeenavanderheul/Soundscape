@@ -56,8 +56,10 @@ function flyThroughADrop(builder: TrackBuilder, fromMs: number): number {
   let t = fromMs;
   // §64: a peak has to be earned — a minute of track before a build is even
   // possible, so the flight that reaches a drop is not a short one.
-  for (; t < fromMs + 110_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.9 });
-  for (; t < fromMs + 140_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.1 });
+  // §87: the arc decides the form, not energy — so this simply flies far
+  // enough to walk the whole thirty-two cycles and come out the other side of
+  // DROP II, which is where a finished track now hands over.
+  for (; t < fromMs + 260_000; t += 250) builder.tick(t, music, { ...FLYING, energy: 0.9 });
   return t;
 }
 

@@ -68,14 +68,30 @@ export const AIR_ALTITUDE = 45;
  */
 export const PITCH_STEPS: readonly number[] = [-5, -3, -2, 0, 2, 3, 7, 12];
 
+/** The band flown at neutral height, where the track runs at its own tempo. */
+const NEUTRAL_BAND = 3;
+/** §87: how far height may pull the clock, either way. A DJ's pitch fader. */
+export const TEMPO_SWING = 0.08;
+
+/**
+ * Height as a tempo trim: 0.92× skimming the ground, 1.00× at the neutral
+ * band, 1.08× in open air. Derived from the same discrete band the pitch uses,
+ * so the two always move together and neither can churn the graph (§11).
+ */
+export function tempoAt(band: number): number {
+  const span = band >= NEUTRAL_BAND ? PITCH_STEPS.length - 1 - NEUTRAL_BAND : NEUTRAL_BAND;
+  const ratio = 1 + ((band - NEUTRAL_BAND) / span) * TEMPO_SWING;
+  return Math.round(ratio * 1000) / 1000;
+}
+
 export function performanceFrom(music: MusicState, flight: FlightPose): Performance {
   const air = clamp01(flight.altitude / AIR_ALTITUDE);
   const ground = 1 - air;
   // §3.1 + §3.7: register and timbre brightness, pulled down by flying low.
   const tone = clamp01(0.35 * music.timbreBrightness + 0.35 * pitchNorm(music.pitchCenter) + 0.3 * air);
   const weight = step(ground * ground, 8);
-  const semitones =
-    PITCH_STEPS[Math.min(PITCH_STEPS.length - 1, Math.floor(air * PITCH_STEPS.length))]!;
+  const band = Math.min(PITCH_STEPS.length - 1, Math.floor(air * PITCH_STEPS.length));
+  const semitones = PITCH_STEPS[band]!;
   return {
     // Skimming the ground closes the filter down hard: low is dark and heavy.
     brightHz: quantizeLog((300 + tone * 8700) * (1 - 0.45 * weight), 300, 9000),
@@ -91,9 +107,13 @@ export function performanceFrom(music: MusicState, flight: FlightPose): Performa
     weight,
     // Climbing lifts the whole track, in steps of its own key.
     transpose: semitones,
-    // …and carries the tempo with it, the way a tape does. The bands are
-    // already discrete, so this is diff-stable without further quantizing.
-    tempoRatio: Math.round(clamp(Math.pow(2, semitones / 12), 0.75, 1.6) * 1000) / 1000,
+    // …and carries the tempo with it, the way a tape does — but only just.
+    // §87: a true tape ratio ran 0.75×–1.6×, which on techno is 100 to 214
+    // bpm. That is not the same track played faster, it is a different genre,
+    // and it made a fast flight sound hurried. ±8% is what a DJ's pitch fader
+    // does: unmistakable as heavier or lighter, still the same record. The
+    // band index is already discrete, so this stays diff-stable (§11).
+    tempoRatio: tempoAt(band),
   };
 }
 

@@ -89,6 +89,8 @@ import { GameLoop, LogicInterval } from './GameLoop';
 
 const WORLD_UP = { x: 0, y: 1, z: 0 } as const;
 
+const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
+
 /**
  * How far behind and above the orb the chase camera sits (§52). Close in:
  * the orb is a small body at a single tone and grows to five times that, so
@@ -684,7 +686,7 @@ export class Game {
         {
           velocity: state.velocity,
           hz: state.hz,
-          energy: Math.min(1, state.energy * 0.6 + state.amplitude * 0.4),
+          energy: clamp01(state.amplitude),
           altitude: state.position.y - this.terrain.groundHeightAt(state.position.x, state.position.z),
           // Climbing builds the track, diving out of the build is the drop.
           climb: this.controller.climbRate,
@@ -819,7 +821,7 @@ export class Game {
       altitude: state.position.y - this.terrain.groundHeightAt(state.position.x, state.position.z),
       genre: this.trackStore.getState().genre,
       heading: headingLabel(this.flightHeading(state)),
-      energy: Math.min(1, state.energy * 0.6 + state.amplitude * 0.4),
+      energy: clamp01(state.amplitude),
     });
     this.hud.update(state, {
       heading: headingLabel(this.flightHeading(state)),
@@ -890,8 +892,12 @@ export class Game {
       // §42: no movement, no music. The gate ramps up quickly and decays over
       // ~1.5s, so stopping fades the world out rather than switching it off.
       motion: this.motionLevel,
-      // §62: movement energy — what each grammar spends its own way.
-      energy: Math.min(1, flight.energy * 0.6 + flight.amplitude * 0.4),
+      // §87: energy is the WIND YOU ARE HOLDING, not how fast you are going.
+      // Speed used to feed this, so flying hard subdivided the hats on top of
+      // everything else speed already did — three accelerations stacked, and
+      // the track sounded hurried. Speed now only decides how far into the
+      // arc you get; what you do with your hand is what is heard.
+      energy: clamp01(flight.amplitude),
       // §81: height and wind, for the grammars that write themselves from it.
       performance,
     });
