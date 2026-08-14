@@ -3,7 +3,7 @@ import type { GenreAffinity } from './MusicState';
 import type { EventBus } from '../core/EventBus';
 import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
-import { ArrangementEngine, rungsDueAt } from './ArrangementEngine';
+import { ArrangementEngine, CYCLES_PER_PHASE, rungsDueAt } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
 import { ladderFor, layerUnlocked, nextStep } from './GenreLadder';
 import { HarmonyEngine } from './HarmonyEngine';
@@ -62,10 +62,12 @@ export interface TrackBuilderConfig {
   /** §82: paced time a rung must settle before the next layer may arrive. */
   rungGapMs: number;
   /**
-   * §107: how many of those gaps the world waits before giving a rung away.
-   * This is the size of the window in which YOUR flying is what earns it.
+   * §107/§108: how far into a rung's own PHASE the world gives it away, as a
+   * fraction. This is the window in which your flying is what earns it — and
+   * because it scales with the phase it stays the same shape at any tempo,
+   * where a fixed number of gaps overshot the phase at higher bpm.
    */
-  patienceGaps: number;
+  patienceOfPhase: number;
   /** Altitude below which the orb is skimming the ground — that is the low register. */
   groundAltitude: number;
   /** Altitude above which the orb is in open air. */
@@ -125,12 +127,11 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // (§46): ~5.5s of real time at full speed, ~12s at a crawl. Seven layers
   // then stand complete around cycle 14, just before DROP I pays them off.
   rungGapMs: 3500,
-  // §107: TWO gaps ≈ 7000 paced, just under one phase (7164). The window in
-  // which your flying earns the rung is therefore the whole phase, and a
-  // player who does nothing still gets it before that phase is over. Three
-  // gaps pushed it into the NEXT phase — the export showed DISCOVERY I and II
-  // both arriving empty, which is worse than the problem it was fixing.
-  patienceGaps: 2,
+  // §108 (user decision): the opening may come up twice as fast, so the gift
+  // lands near the MIDDLE of its phase rather than at the end. You still have
+  // most of the first half to go and earn it yourself, and a passive flight
+  // fills up in half the time it did.
+  patienceOfPhase: 0.45,
   groundAltitude: 8,
   airAltitude: 30,
   groundMs: 3500,
@@ -573,7 +574,7 @@ export class TrackBuilder {
     // and get it, and only if you do nothing at all does the world hand it
     // over near the end.
     const offeredFreelyAt =
-      (this.dueSinceMs ?? this.activeMs) + config.rungGapMs * config.patienceGaps;
+      (this.dueSinceMs ?? this.activeMs) + barMs * CYCLES_PER_PHASE * config.patienceOfPhase;
     const patience = step === null ? 0 : Math.max(step.atMs * patienceFactor, offeredFreelyAt);
     // §82: whatever earns it, a layer only lands once the previous one has had
     // room to be heard. Without this, patience and behaviour fired on

@@ -32,14 +32,25 @@ const TECHNO: readonly LadderStep[] = [
   { layer: 'texture', atMs: 40_000 },
 ];
 
+/**
+ * §108: this world OPENS ON HATS, not on texture.
+ *
+ * Its preset lists atmosphere first, and that was taken literally — the first
+ * rung was `texture`. But §94 made the air of a world free, so that rung spent
+ * itself on the bytebeat and arriving gave you no RHYTHM at all: the first
+ * beat waited for rung two, most of a minute in. A world has to sound like
+ * something the moment you get there (§100), and for this one that is the
+ * shuffle. Texture moves to the end, where it is the last thing that finishes
+ * the track rather than the first thing that fails to start it.
+ */
 const SUB_PRESSURE: readonly LadderStep[] = [
-  { layer: 'texture', atMs: 3000 },
-  { layer: 'hats', atMs: 7000 },
-  { layer: 'kick', atMs: 11_000 },
-  { layer: 'snare', atMs: 15_000 },
-  { layer: 'bass', atMs: 20_000 },
-  { layer: 'harmony', atMs: 27_000 },
-  { layer: 'melody', atMs: 35_000 },
+  { layer: 'hats', atMs: 3000 },
+  { layer: 'kick', atMs: 7000 },
+  { layer: 'snare', atMs: 11_000 },
+  { layer: 'bass', atMs: 15_000 },
+  { layer: 'harmony', atMs: 20_000 },
+  { layer: 'melody', atMs: 27_000 },
+  { layer: 'texture', atMs: 35_000 },
 ];
 export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderStep[]> = {
   techno: TECHNO,
