@@ -50,6 +50,11 @@
       <button id="stop" type="button">stop</button>
       <button id="reset" type="button">reset</button>
       <button id="bare" type="button" aria-pressed="false">bare parts</button>
+      <label id="scrub-row" style="display:inline-flex;align-items:center;gap:.5rem">
+        <span>cycle</span>
+        <input id="scrub" type="range" min="0" max="31" step="1" value="0" />
+        <output id="scrub-out">00 · ENTER BIOME</output>
+      </label>
       <button id="flight" type="button" title="Simulate a flight and write the Strudel it produces, phase by phase">export flight</button>
       <span id="status">audio starts on the first click</span>
     </div>

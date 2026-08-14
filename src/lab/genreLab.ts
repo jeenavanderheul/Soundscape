@@ -13,7 +13,7 @@ import type { GenreAffinity } from '../music/MusicState';
 import { createInitialMusicState } from '../music/MusicState';
 import { performanceFrom } from '../music/Performance';
 import { LEVEL_DEEP, createInitialTrackState, type TrackGenre, type TrackState } from '../music/TrackState';
-import { sectionLabel as phaseLabel, type Section } from '../music/ArrangementEngine';
+import { arcFor, sectionLabel as phaseLabel, type Section } from '../music/ArrangementEngine';
 import {
   GENRE_LAB_PRESETS,
   genreLabPresetLabel,
@@ -112,6 +112,8 @@ const DEFAULT_SECTION: Section = 'drop';
 
 let preset: GenreLabPreset = 'techno';
 let section: Section = 'drop';
+/** §116: the cycle the bench is parked on — 0..31, scrubbed by hand. */
+let scrubCycle = 0;
 let playing = false;
 const sectionSelect = document.createElement('select');
 
@@ -201,6 +203,8 @@ function currentGraph(): MusicalLayerGraph {
     ),
   });
   graph.performance = performance;
+  // §116: where in the thirty-two cycles the bench is listening.
+  graph.cycleOffset = scrubCycle;
   // The lab's own tempo trim, on top of what altitude already does (§58).
   graph.bpm = Math.round(graph.bpm * (values.get('bpm') ?? 1));
   // Per-layer trim: the sliders multiply the gains the grammar chose. Worlds
@@ -332,6 +336,23 @@ $('bare').addEventListener('click', () => {
  * this track so far was found by ear and only then confirmed in code; this is
  * how the confirming stops needing the flying.
  */
+/**
+ * §116 SCRUB — the bench is a PLAYER, not the game. These worlds arrange
+ * themselves over thirty-two cycles, so without this you would have to sit
+ * through two minutes to hear the drop. The slider shifts the whole stack, so
+ * cycle 20 sounds exactly as it will when a flight gets there.
+ */
+const scrub = $<HTMLInputElement>('scrub');
+const scrubOut = $('scrub-out');
+scrub.addEventListener('input', () => {
+  scrubCycle = Number(scrub.value);
+  const phase = phaseLabel(
+    arcFor(genreGrammar(preset).sectionStyle)[Math.floor(scrubCycle / 4) % 8] ?? 'groove',
+  );
+  scrubOut.textContent = `${String(scrubCycle).padStart(2, '0')} · ${phase}`;
+  apply();
+});
+
 $('flight').addEventListener('click', () => {
   const text = formatFlight({
     genre: preset,

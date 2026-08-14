@@ -1160,7 +1160,12 @@ export function buildPatternCode(
     parts.push(renderAction(action));
   }
   if (parts.length === 0) return '';
-  return `stack(\n  ${parts.join(',\n  ')}\n)`;
+  const stack = `stack(\n  ${parts.join(',\n  ')}\n)`;
+  // §116: scrubbing. A document arranges itself with masks that read the cycle
+  // number, so reaching cycle 20 means playing the whole stack twenty cycles
+  // early. Nothing else can jump to a phase without waiting for it.
+  const offset = Math.round(graph.cycleOffset ?? 0);
+  return offset > 0 ? `${stack}.early(${offset})` : stack;
 }
 
 /** Every voice in the track, in playing order — the parts of the score (§32). */

@@ -59,6 +59,13 @@ export interface MusicalLayerGraph {
    * while ambient, jazz and breakbeat stay clean and dynamic (user decision).
    */
   production?: { duck: number };
+  /**
+   * §116: scrub position, in cycles. A document arranges itself with masks
+   * that read the CYCLE NUMBER, so hearing cycle 20 means shifting the whole
+   * stack twenty cycles earlier — there is no other way to reach a phase
+   * without waiting for it. The game never sets this; the bench does.
+   */
+  cycleOffset?: number;
 }
 
 /** Whitelisted transform names per primitive kind (spec §11, rule §25.9). */

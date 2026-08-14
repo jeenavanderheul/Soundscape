@@ -187,3 +187,38 @@ describe('§115 every world shows its own layout, not role banners', () => {
     }
   });
 });
+
+describe('§116 the bench can scrub through the thirty-two cycles', () => {
+  const graphFor = (offset: number) => {
+    setSamplesLoaded(true);
+    const deep = { unlocked: true, level: LEVEL_DEEP };
+    const track = {
+      ...createInitialTrackState(),
+      genre: 'techno' as const, form: 'drop' as const, bpm: 134,
+      drums: { kick: deep, snare: deep, hats: deep },
+      bass: deep, harmony: deep, melody: deep, texture: deep,
+      rootMidi: 45, harmonyIntervals: [0, 3, 7, 10], melodyNotes: [69, 72],
+    } as ReturnType<typeof createInitialTrackState>;
+    const music = { ...createInitialMusicState(), bpm: 134, tempoConfidence: 0.6, dynamics: 0.5 };
+    const graph = buildWorldLayerGraph({ music, structures: [], track, patterns: {}, motion: 1, energy: 0.6 });
+    graph.cycleOffset = offset;
+    return buildPatternCode(graph, []);
+  };
+
+  it('parks the stack on the cycle you asked for', () => {
+    // A document reads the cycle number in its masks, so the only way to hear
+    // cycle 20 without waiting two minutes is to play the stack that early.
+    expect(graphFor(20)).toContain('.early(20)');
+    expect(graphFor(31)).toContain('.early(31)');
+  });
+
+  it('leaves the pattern untouched at the start', () => {
+    expect(graphFor(0)).not.toContain('.early(');
+    expect(graphFor(0).startsWith('stack(')).toBe(true);
+  });
+
+  it('changes nothing about which voices exist — only when they land', () => {
+    const at = (n: number) => (graphFor(n).match(/^ {2}/gm) ?? []).length;
+    expect(at(20)).toBe(at(0));
+  });
+});

@@ -36,7 +36,7 @@ export const ALLOWED_FUNCTIONS: ReadonlySet<string> = new Set([
   'dec', 'att', 'rel', 'sus', 'lpa', 'lpd', 'lps', 'lpenv', 'lpq', 'hpq', 'bpq', 'delayfb', 'delayt',
   // §105: the short aliases. A delay whose time is a beat of the track sits
   // IN the music; the arbitrary .delay(.1) it replaces sat next to it.
-  'dfb', 'dt', 'velocity',
+  'dfb', 'dt', 'velocity', 'early',
   'vib', 'vibmod', 'hurry', 'ribbon', 'punchcard',
   // chords and voicings (strudel.cc/understand/voicings)
   'voicing', 'chord', 'anchor', 'mode', 'dict', 'rootNotes', 'arp', 'arpWith',
