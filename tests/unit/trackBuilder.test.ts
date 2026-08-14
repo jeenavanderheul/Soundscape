@@ -12,6 +12,7 @@ import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { zoneAffinity } from '../../src/genres/GenreZones';
+import { genreGrammar, regionBpm } from '../../src/audio/MusicalPrimitives';
 import { TrackBuilder, type FlightState } from '../../src/music/TrackBuilder';
 import { createInitialTrackState, TrackEvents } from '../../src/music/TrackState';
 
@@ -161,7 +162,17 @@ describe('§46 the region carries the tempo, the flight does not', () => {
     expect(store.getState().bpm).toBe(slow);
   });
 
-  it('slides to a new tempo instead of jumping when a world changes it', () => {
+  it('§126 arrives on the new world OWN tempo, because a crossing is a new track', () => {
+    // This test used to assert the opposite — that a crossing GLIDES into the
+    // new tempo. It passed only because the crossing fired a tick later than it
+    // does now, so what it actually measured was the last tick of the old
+    // track. §46 (glide) and §54 (a world is a track, at that world's tempo)
+    // contradict each other on a crossing, and the timing bug hid it.
+    //
+    // §54 wins, on the user's hard rule: a genre switch must be HEARD within
+    // two seconds, and gliding seven bpm over several seconds is the opposite
+    // of arriving. Sliding still governs tempo that moves under a track that is
+    // staying put; landing somewhere else is a cut, and should be.
     const { store, builder } = setup();
     const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
     const techno = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
@@ -170,10 +181,11 @@ describe('§46 the region carries the tempo, the flight does not', () => {
       builder.tick(t, music, { velocity: 8, hz: 220, energy: 0.4 }, techno);
     }
     const settled = store.getState().bpm;
-    // SUB PRESSURE sits seven bpm higher; crossing must glide, never cut.
     builder.tick(20_100, music, { velocity: 8, hz: 220, energy: 0.4 }, pressure);
-    expect(store.getState().bpm).toBeGreaterThanOrEqual(settled);
-    expect(store.getState().bpm).toBeLessThan(settled + 5);
+    expect(store.getState().genre).toBe('sub-pressure');
+    // SUB PRESSURE runs faster than techno, and you hear that on arrival.
+    expect(store.getState().bpm).toBeGreaterThan(settled);
+    expect(store.getState().bpm).toBe(regionBpm(genreGrammar('sub-pressure')));
   });
 
   it('§46 flying faster develops the track faster', () => {

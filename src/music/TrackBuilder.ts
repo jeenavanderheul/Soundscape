@@ -148,15 +148,16 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // Arriving in a world IS hearing it: the switch fires as soon as the region
   // reads as the new one, and lands on the next bar (§11). What stops a sweep
   // of the mouse from wiping your track is minTrackLifeMs, not a delay here.
-  // §87: both of these are REAL-WORLD protections that happen to be measured
-  // on the paced clock, so slowing that clock by nearly four silently made
-  // them four times longer — a crossing would have taken up to 27 seconds to
-  // be heard, breaking §53's promise of three. Scaled back to where they were.
+  // §126: both of these are REAL-WORLD protections and are now measured on the
+  // REAL clock. §87 spotted that the paced clock stretched them and answered by
+  // shrinking the numbers — which fixed full throttle and left everything
+  // slower than that broken, because the stretch is 1/pace: 4.0x hovering,
+  // 3.3x at cruise, 1.6x at half. The FIRST crossing was always fast; every one
+  // after it waited out this timer, so flying THROUGH worlds — the actual thing
+  // the player does — was the slow case. Wrong unit, not a wrong number.
   regionSwitchMs: 70,
-  // §125: 3200 paced is 3.3s at full throttle, and below that a crossing did
-  // nothing at all — sweeping through worlds at speed felt broken rather than
-  // protected. 1200 still stops a twitch of the mouse from wiping a track,
-  // and lets a deliberate turn land in about a second.
+  // Long enough that a twitch of the mouse cannot wipe a track, short enough
+  // that a deliberate turn is heard well inside the two seconds §126 promises.
   minTrackLifeMs: 1200,
 };
 
@@ -374,7 +375,7 @@ export class TrackBuilder {
     this.conversation.reset();
     this.arrangement.reset();
     this.awayMs = 0;
-    this.trackStartedMs = this.paceClockMs;
+    this.trackStartedMs = nowMs;
     // §125: ARRIVING SOMEWHERE ANNOUNCES ITSELF. A track born by travelling
     // only ever emitted `track:new`, so everything listening for a world
     // change — the cue that calls its name, anything downstream — missed the
@@ -484,8 +485,8 @@ export class TrackBuilder {
     // §53: fly into another world and stay there, and the world takes over:
     // the track you were building ends and a new one starts in this grammar.
     const away = this.lastRegion !== null && track.genre !== null && this.lastRegion !== track.genre;
-    this.awayMs = away ? this.awayMs + paced : 0;
-    const lived = this.paceClockMs - this.trackStartedMs;
+    this.awayMs = away ? this.awayMs + delta : 0;
+    const lived = nowMs - this.trackStartedMs;
     if (this.awayMs >= config.regionSwitchMs && lived >= config.minTrackLifeMs) {
       this.awayMs = 0;
       // §54: a world is a track. Arrive somewhere else and you start there —
