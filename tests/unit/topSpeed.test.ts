@@ -25,10 +25,16 @@ describe('the top of the throttle is travel, not tempo', () => {
     expect(FULL_SPEED / CRUISE_SPEED).toBeGreaterThan(9);
   });
 
-  it('but the arc walks no faster past the old top speed', () => {
+  it('carries you through the arc faster all the way to the top', () => {
     const b = builder();
-    expect(b.pace(FULL_SPEED)).toBe(b.pace(66));
-    expect(b.pace(FULL_SPEED * 4)).toBe(b.pace(66));
+    // The whole throttle counts, not just its first half.
+    expect(b.pace(FULL_SPEED)).toBeGreaterThan(b.pace(66));
+    expect(b.pace(FULL_SPEED) / b.pace(66)).toBeGreaterThan(1.4);
+  });
+
+  it('and stops climbing beyond it, so nothing runs away', () => {
+    const b = builder();
+    expect(b.pace(FULL_SPEED * 4)).toBe(b.pace(FULL_SPEED));
   });
 
   it('and still speeds up over the range that matters', () => {

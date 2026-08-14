@@ -244,9 +244,20 @@ export class TrackBuilder {
    * How fast the track is developing right now: 0.55× standing still, 2.4× at
    * full throttle (§46). Also what the HUD shows as the speed bar.
    */
+  /**
+   * §119 (user decision): the curve keeps CLIMBING past `fullSpeed` instead of
+   * saturating there. The top half of the throttle is not just travel — it
+   * carries you through the arc faster too, all the way to twice the rate.
+   *
+   * This is safe in a way it would not have been before §87: the pace moves
+   * the CLOCK, never the tempo. At 132 the phases go by in a minute instead of
+   * ninety seconds, and every one of them still plays at 134 bpm with the same
+   * notes in the same order. What sped a track UP musically — the tape, the
+   * hat subdivision — is gone, so speed can be generous here.
+   */
   pace(velocity: number): number {
     const { config } = this;
-    const t = Math.min(1, Math.max(0, velocity / config.fullSpeed));
+    const t = Math.min(2, Math.max(0, velocity / config.fullSpeed));
     return config.paceAtRest + (config.paceAtFullSpeed - config.paceAtRest) * t;
   }
 
