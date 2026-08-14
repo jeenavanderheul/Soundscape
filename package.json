@@ -11,7 +11,8 @@
     "sounds:vendor": "node scripts/vendor-samples.mjs",
     "sounds:vendor:used": "node scripts/vendor-samples.mjs --used",
     "sounds:audit": "node scripts/fetch-sound-inventory.mjs && vitest run tests/unit/soundInventory.test.ts",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "land:bake": "node scripts/bake-land.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.116.0",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@types/three": "0.185.4",
+    "geotiff": "^3.0.5",
     "typescript": "7.0.2",
     "vite": "8.2.1",
     "vitest": "4.1.10"

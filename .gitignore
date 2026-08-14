@@ -6,3 +6,4 @@ dist
 
 # §43: vendored sample library — gigabytes, rebuilt with npm run sounds:vendor
 public/samples/
+public/land/
