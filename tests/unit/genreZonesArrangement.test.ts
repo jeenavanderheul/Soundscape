@@ -8,43 +8,33 @@ import { HarmonyEngine, ratioToSemitones } from '../../src/music/HarmonyEngine';
 import { MelodyTracker, snapToScale } from '../../src/music/MelodyTracker';
 import type { ResonanceEvent } from '../../src/resonance/ResonanceEvent';
 
-describe('GenreZones — every direction is a genre (§29.5)', () => {
+describe('§111 GenreZones — six worlds, six equal sectors', () => {
+  const out = { x: 0, y: 10, z: -200 };
+  const step = (Math.PI * 2) / 6;
+  const at = (index: number) => dominantZone(zoneAffinity(out, step * index));
+
   it('keeps the void around spawn genre-less', () => {
     const near = zoneAffinity({ x: 5, y: 10, z: -5 });
     expect(Math.max(...Object.values(near))).toBeLessThan(0.05);
   });
 
-  it('maps the ten readable points onto the two active world halves', () => {
-    const step = (Math.PI * 2) / 10;
-    const out = { x: 0, y: 10, z: -200 }; // far enough out for full influence
-    const at = (index: number) => dominantZone(zoneAffinity(out, step * index));
-    expect(at(0)).toBe('techno');
-    expect(at(1)).toBe('techno');
-    expect(at(2)).toBe('techno');
-    expect(at(3)).toBe('sub-pressure');
-    expect(at(4)).toBe('sub-pressure');
-    expect(at(5)).toBe('sub-pressure');
-    expect(at(6)).toBe('sub-pressure');
-    expect(at(7)).toBe('sub-pressure');
-    expect(at(8)).toBe('techno');
-    expect(at(9)).toBe('techno');
+  it('gives every world one sixth of the compass, in order', () => {
+    expect([0, 1, 2, 3, 4, 5].map(at)).toEqual([
+      'techno', 'heavy-signal', 'broken-machine',
+      'sub-pressure', 'void-crusher', 'percussion-riot',
+    ]);
   });
 
-  it('blends neighbouring directions into a hybrid, and ignores the far side', () => {
-    const between = zoneAffinity({ x: 0, y: 10, z: -200 }, Math.PI / 2);
-    expect(between.techno).toBeGreaterThan(0.4);
-    expect(between['sub-pressure']).toBeGreaterThan(0.4);
-    // §103: two worlds, so a blend is only ever between these two.
-    expect(between.techno + between['sub-pressure']).toBeGreaterThan(0.8);
+  it('blends neighbours at a border and ignores the far side', () => {
+    const between = zoneAffinity(out, step / 2);
+    expect(between.techno).toBeGreaterThan(0.3);
+    expect(between['heavy-signal']).toBeGreaterThan(0.3);
+    expect(between['sub-pressure']).toBeLessThan(0.05);
   });
 
   it('§57 altitude is expression, never a place', () => {
-    // Climbing builds the track and lifts the pitch — it must not move you to
-    // another world, or you could never climb for a build where you are.
-    const high = zoneAffinity({ x: 0, y: 68, z: -200 });
-    const low = zoneAffinity({ x: 0, y: -3, z: -200 });
-    expect(dominantZone(high)).toBe('techno');
-    expect(dominantZone(low)).toBe('techno');
+    expect(dominantZone(zoneAffinity({ x: 0, y: 68, z: -200 }))).toBe('techno');
+    expect(dominantZone(zoneAffinity({ x: 0, y: -3, z: -200 }))).toBe('techno');
   });
 });
 
@@ -212,19 +202,145 @@ describe('§84 the FLIGHT ARC — thirty-two cycles that are the flight', () => 
 });
 
 describe('§53 turning towards a world takes you there', () => {
-  const step = (Math.PI * 2) / 10;
+  const step = (Math.PI * 2) / 6;
 
-  it('keeps north-west in Techno and reaches SUB PRESSURE by turning south', () => {
-    const outNorth = { x: 0, y: 10, z: -90 };
-    expect(dominantZone(zoneAffinity(outNorth, 0))).toBe('techno');
-    expect(dominantZone(zoneAffinity(outNorth, -step))).toBe('techno');
-    expect(dominantZone(zoneAffinity(outNorth, Math.PI))).toBe('sub-pressure');
+  it('a heading is a world, and turning one sector over is another', () => {
+    const out = { x: 0, y: 10, z: -90 };
+    expect(dominantZone(zoneAffinity(out, 0))).toBe('techno');
+    expect(dominantZone(zoneAffinity(out, step))).toBe('heavy-signal');
+    expect(dominantZone(zoneAffinity(out, step * 3))).toBe('sub-pressure');
   });
 
   it('and standing still still reads the way the orb is pointing', () => {
-    expect(dominantZone(zoneAffinity({ x: 110, y: 0, z: 110 }, step * 3))).toBe('sub-pressure');
+    expect(dominantZone(zoneAffinity({ x: 110, y: 0, z: 110 }, step * 5))).toBe('percussion-riot');
   });
 });
+
+describe('§84 the FLIGHT ARC — thirty-two cycles that are the flight', () => {
+  const BAR = 1800;
+  /** Fly `cycles` bars into the arc and report where that lands. */
+  function flyTo(cycles: number, engine = new ArrangementEngine(), ready = true) {
+    engine.tick(0, 0, 0.5, ready, BAR);
+    for (let c = 0; c < cycles; c += 1) engine.tick(0, BAR, 0.5, ready, BAR);
+    return engine;
+  }
+
+  it('walks the eight phases in order, four cycles each', () => {
+    const expected = [
+      [0, 'intro'], [3, 'intro'],
+      [4, 'groove'], [7, 'groove'],
+      [8, 'discovery'], [11, 'discovery'],
+      [12, 'build'], [15, 'build'],
+      [16, 'drop'], [19, 'drop'],
+      [20, 'deep'], [23, 'deep'],
+      [24, 'break'], [27, 'break'],
+      [28, 'return'], [31, 'return'],
+    ] as const;
+    for (const [cycle, phase] of expected) {
+      expect(`${cycle}:${flyTo(cycle).current}`).toBe(`${cycle}:${phase}`);
+    }
+  });
+
+  it('is the same shape every time — energy no longer rewrites the form', () => {
+    const pushing = new ArrangementEngine();
+    const floating = new ArrangementEngine();
+    pushing.tick(0, 0, 1, true, BAR);
+    floating.tick(0, 0, 0, true, BAR);
+    for (let c = 0; c < 18; c += 1) {
+      pushing.tick(0, BAR, 1, true, BAR);
+      floating.tick(0, BAR, 0, true, BAR);
+    }
+    expect(pushing.current).toBe('drop');
+    expect(floating.current).toBe(pushing.current);
+  });
+
+  it('§46 speed decides how fast you fly through it, not what it is', () => {
+    const slow = new ArrangementEngine();
+    const fast = new ArrangementEngine();
+    slow.tick(0, 0, 0.5, true, BAR);
+    fast.tick(0, 0, 0.5, true, BAR);
+    // The same real time, but one flight is paced twice as hard.
+    for (let i = 0; i < 12; i += 1) {
+      slow.tick(0, BAR, 0.5, true, BAR);
+      fast.tick(0, BAR * 2, 0.5, true, BAR);
+    }
+    // Same wall-clock, twice the flight: one is still under pressure while the
+    // other is already through the void.
+    expect(slow.cycle).toBe(12);
+    expect(slow.current).toBe('build');
+    expect(fast.cycle).toBe(24);
+    expect(fast.current).toBe('break');
+  });
+
+  it('§64 holds at the end of PRESSURE until there is a floor to drop', () => {
+    const engine = flyTo(24, new ArrangementEngine(), false);
+    expect(engine.current).toBe('build');
+    // Give it a floor and the very next cycle pays off.
+    engine.tick(0, BAR, 0.5, true, BAR);
+    expect(engine.current).toBe('drop');
+  });
+
+  it('throws the riser on the cycle BEFORE a drop lands, twice a lap', () => {
+    const engine = new ArrangementEngine();
+    engine.tick(0, 0, 0.5, true, BAR);
+    const risers: number[] = [];
+    for (let c = 0; c < 32; c += 1) {
+      engine.tick(0, BAR, 0.5, true, BAR);
+      if (engine.takeRiser()) risers.push(engine.cycle);
+    }
+    expect(risers).toEqual([15, 27]);
+  });
+
+  it('a second lap starts at DISCOVERY I — the biome is already entered', () => {
+    const engine = flyTo(32);
+    expect(engine.current).toBe('groove');
+    expect(engine.cycle).toBe(4);
+  });
+
+  it('§95 VOID steps back without stopping — the track keeps running', () => {
+    const brk = sectionMix('break');
+    const deep = sectionMix('deep');
+    // The bottom thins right out…
+    expect(brk.drums).toBeLessThan(deep.drums / 2);
+    expect(brk.bass).toBeLessThan(deep.bass / 2);
+    // …but nothing you earned ever goes silent. Zeroing these took ten voices
+    // down to five right after the last rung landed, so the moment a player
+    // finally had a whole track was the moment it fell apart.
+    expect(brk.drums).toBeGreaterThan(0);
+    expect(brk.bass).toBeGreaterThan(0);
+    // And the top opens all the way up, which is what makes it a breath.
+    expect(brk.harmony).toBe(1);
+    expect(brk.texture).toBeGreaterThan(0.5);
+    expect(brk.atmosphere).toBe(1);
+  });
+
+  it('DROP II is the loudest the track ever gets', () => {
+    const drop2 = sectionMix('return');
+    const drop1 = sectionMix('drop');
+    const total = (m: typeof drop1) => m.drums + m.bass + m.harmony + m.melody + m.texture;
+    expect(total(drop2)).toBeGreaterThan(total(drop1));
+  });
+
+  it('§61 a world may fly its own order — ambient voids before it peaks', () => {
+    const swell = new ArrangementEngine();
+    swell.setStyle('swell');
+    swell.tick(0, 0, 0.5, true, BAR);
+    for (let c = 0; c < 12; c += 1) swell.tick(0, BAR, 0.5, true, BAR);
+    expect(swell.current).toBe('break');
+  });
+
+  it('the word on screen is the phase you are in', () => {
+    expect(sectionLabel('intro')).toBe('ENTER BIOME');
+    expect(sectionLabel('groove')).toBe('DISCOVERY I');
+    expect(sectionLabel('discovery')).toBe('DISCOVERY II');
+    expect(sectionLabel('build')).toBe('PRESSURE');
+    expect(sectionLabel('drop')).toBe('DROP I');
+    expect(sectionLabel('deep')).toBe('DEEP FLIGHT');
+    expect(sectionLabel('break')).toBe('VOID');
+    expect(sectionLabel('return')).toBe('DROP II');
+  });
+});
+
 
 describe('§60 the sections can be told apart by ear', () => {
   it('a break steps the bottom aside without going silent (§32)', () => {

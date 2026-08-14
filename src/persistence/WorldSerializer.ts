@@ -173,6 +173,10 @@ function genreSnapshot(raw: unknown): GenreSnapshot | null {
   const affinity: GenreAffinity = {
     techno: num(a.techno, 0, 0, 1),
     'sub-pressure': num(a['sub-pressure'], 0, 0, 1),
+    'heavy-signal': num(a['heavy-signal'], 0, 0, 1),
+    'broken-machine': num(a['broken-machine'], 0, 0, 1),
+    'percussion-riot': num(a['percussion-riot'], 0, 0, 1),
+    'void-crusher': num(a['void-crusher'], 0, 0, 1),
   };
   const dominant = isActiveWorldGenre(raw.dominant) ? raw.dominant : null;
   return {

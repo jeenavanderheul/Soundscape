@@ -136,6 +136,10 @@ export interface MusicalAction {
 const THROWS: Record<Exclude<TrackGenre, null> | 'void', readonly [ThrowStyle, ThrowStyle]> = {
   techno: ['echo', 'riser'],
   'sub-pressure': ['riser', 'impact'],
+  'heavy-signal': ['impact', 'riser'],
+  'broken-machine': ['sweep', 'riser'],
+  'percussion-riot': ['bell', 'impact'],
+  'void-crusher': ['echo', 'sweep'],
   void: ['sweep', 'riser'],
 };
 
@@ -271,10 +275,19 @@ export const PROGRESSIONS: Record<Exclude<TrackGenre, null>, readonly (readonly 
   ],
   // i — iv — VI — V, darker and with a semitone lean in the third chord.
   'sub-pressure': [
-    [0, 3, 7, 10],
-    [5, 8, 12, 15],
-    [1, 5, 8, 12],
-    [7, 11, 14, 17],
+    [0, 3, 7, 10], [5, 8, 12, 15], [1, 5, 8, 12], [7, 11, 14, 17],
+  ],
+  'heavy-signal': [
+    [0, 3, 7, 10], [10, 14, 17, 20], [8, 12, 15, 19], [7, 10, 14, 17],
+  ],
+  'broken-machine': [
+    [0, 3, 7, 10], [3, 7, 10, 14], [10, 13, 17, 20], [5, 8, 12, 15],
+  ],
+  'percussion-riot': [
+    [0, 3, 7, 10], [7, 10, 14, 17], [5, 8, 12, 15], [3, 7, 10, 14],
+  ],
+  'void-crusher': [
+    [0, 3, 7, 10], [1, 5, 8, 12], [8, 11, 15, 18], [0, 3, 7, 10],
   ],
 };
 
@@ -577,6 +590,26 @@ const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
     textureGain: 0.02,
     harmonySlow: 2,
     melodySlow: 2,
+  },
+  'heavy-signal': {
+    ...NEUTRAL_GRAMMAR,
+    bpmCentre: 153, bpmMin: 149, bpmMax: 157, drive: 0.6,
+    drumBank: 'EmuSP12', sectionStyle: 'driven', energyStyle: 'layers',
+  },
+  'broken-machine': {
+    ...NEUTRAL_GRAMMAR,
+    bpmCentre: 148, bpmMin: 144, bpmMax: 152, drive: 0.6,
+    drumBank: 'SakataDPM48', sectionStyle: 'mutant', energyStyle: 'layers',
+  },
+  'percussion-riot': {
+    ...NEUTRAL_GRAMMAR,
+    bpmCentre: 144, bpmMin: 140, bpmMax: 148, drive: 0.6,
+    drumBank: 'YamahaRY30', sectionStyle: 'dynamic', energyStyle: 'layers',
+  },
+  'void-crusher': {
+    ...NEUTRAL_GRAMMAR,
+    bpmCentre: 136, bpmMin: 132, bpmMax: 140, drive: 0.6,
+    drumBank: 'SequentialCircuitsDrumtracks', sectionStyle: 'echo', energyStyle: 'layers',
   },
   'sub-pressure': {
     ...NEUTRAL_GRAMMAR,

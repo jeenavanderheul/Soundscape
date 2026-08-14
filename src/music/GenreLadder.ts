@@ -52,9 +52,53 @@ const SUB_PRESSURE: readonly LadderStep[] = [
   { layer: 'melody', atMs: 27_000 },
   { layer: 'texture', atMs: 35_000 },
 ];
+const HEAVY_SIGNAL: readonly LadderStep[] = [
+  { layer: 'hats', atMs: 3000 },
+  { layer: 'kick', atMs: 7000 },
+  { layer: 'snare', atMs: 11000 },
+  { layer: 'bass', atMs: 15000 },
+  { layer: 'harmony', atMs: 20000 },
+  { layer: 'melody', atMs: 27000 },
+  { layer: 'texture', atMs: 35000 },
+];
+
+const BROKEN_MACHINE: readonly LadderStep[] = [
+  { layer: 'hats', atMs: 3000 },
+  { layer: 'kick', atMs: 7000 },
+  { layer: 'snare', atMs: 11000 },
+  { layer: 'bass', atMs: 15000 },
+  { layer: 'harmony', atMs: 20000 },
+  { layer: 'melody', atMs: 27000 },
+  { layer: 'texture', atMs: 35000 },
+];
+
+const PERCUSSION_RIOT: readonly LadderStep[] = [
+  { layer: 'hats', atMs: 3000 },
+  { layer: 'snare', atMs: 7000 },
+  { layer: 'kick', atMs: 11000 },
+  { layer: 'bass', atMs: 15000 },
+  { layer: 'harmony', atMs: 20000 },
+  { layer: 'melody', atMs: 27000 },
+  { layer: 'texture', atMs: 35000 },
+];
+
+const VOID_CRUSHER: readonly LadderStep[] = [
+  { layer: 'melody', atMs: 3000 },
+  { layer: 'kick', atMs: 7000 },
+  { layer: 'snare', atMs: 11000 },
+  { layer: 'bass', atMs: 15000 },
+  { layer: 'harmony', atMs: 20000 },
+  { layer: 'hats', atMs: 27000 },
+  { layer: 'texture', atMs: 35000 },
+];
+
 export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderStep[]> = {
   techno: TECHNO,
   'sub-pressure': SUB_PRESSURE,
+  'heavy-signal': HEAVY_SIGNAL,
+  'broken-machine': BROKEN_MACHINE,
+  'percussion-riot': PERCUSSION_RIOT,
+  'void-crusher': VOID_CRUSHER,
 };
 
 /** The neutral void builds like Techno: a pulse you can immediately feel. */

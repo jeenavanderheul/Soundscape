@@ -9,7 +9,10 @@ import { compassPoint,
 } from '../../src/genres/ZonePalette';
 import type { GenreAffinity } from '../../src/music/MusicState';
 
-const NONE: GenreAffinity = { techno: 0, 'sub-pressure': 0 };
+const NONE: GenreAffinity = {
+  techno: 0, 'sub-pressure': 0, 'heavy-signal': 0,
+  'broken-machine': 0, 'percussion-riot': 0, 'void-crusher': 0,
+};
 
 describe('§33 zone palette — every direction is a place you can see', () => {
   it('gives SUB PRESSURE a dark, high-relief identity distinct from Techno', () => {

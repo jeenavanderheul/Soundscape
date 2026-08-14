@@ -23,7 +23,14 @@ export const LEVEL_DEEP = 1;
  * that still had to be maintained, audited and kept green. They are in git at
  * tag `soundopbouw-14aug` if they are ever wanted back.
  */
-export type TrackGenre = 'techno' | 'sub-pressure' | null;
+export type TrackGenre =
+  | 'techno'
+  | 'sub-pressure'
+  | 'heavy-signal'
+  | 'broken-machine'
+  | 'percussion-riot'
+  | 'void-crusher'
+  | null;
 
 export interface TrackState {
   bpm: number;

@@ -45,10 +45,7 @@ describe('PatternGuard (§30: generated code is pattern language or nothing)', (
 
 describe('validateRecipe (§30: unknown model output becomes trusted data)', () => {
   it('exposes only Techno and SUB PRESSURE to generated worlds', () => {
-    expect(RECIPE_SCHEMA.properties.zones.properties.north.enum).toEqual([
-      'techno',
-      'sub-pressure',
-    ]);
+    expect(RECIPE_SCHEMA.properties.zones.properties.north.enum).toEqual(['techno', 'sub-pressure', 'heavy-signal', 'broken-machine', 'percussion-riot', 'void-crusher']);
     expect(SYSTEM_PROMPT).toContain('techno — repetition');
     expect(SYSTEM_PROMPT).toContain('sub-pressure — seismic UK bass');
     expect(SYSTEM_PROMPT).not.toContain('ambient — space');

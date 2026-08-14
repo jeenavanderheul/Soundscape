@@ -36,6 +36,15 @@ export const GENRE_LOOKS: Record<keyof GenreAffinity, ZoneLook> = {
   // Machine red: hard, hot, industrial.
   techno: { color: { r: 1.0, g: 0.12, b: 0.1 }, relief: 0.85, haze: 0.2 },
   'sub-pressure': { color: { r: 0.02, g: 0.3, b: 0.42 }, relief: 0.92, haze: 0.58 },
+  // §111 each world its own colour, taken from what it sounds like.
+  // Overheated metal: orange going white at the edge.
+  'heavy-signal': { color: { r: 1.0, g: 0.52, b: 0.16 }, relief: 0.95, haze: 0.26 },
+  // Acid green: electro, sharp, chemical.
+  'broken-machine': { color: { r: 0.42, g: 0.95, b: 0.12 }, relief: 0.78, haze: 0.3 },
+  // Ochre: wood, skin, dust.
+  'percussion-riot': { color: { r: 0.86, g: 0.62, b: 0.18 }, relief: 0.62, haze: 0.42 },
+  // Violet under black: emptiness with weight in it.
+  'void-crusher': { color: { r: 0.42, g: 0.12, b: 0.62 }, relief: 0.88, haze: 0.72 },
   // Cool cyan, rolling and skippy — the ground never quite settles.
   // Warm gold, soft hills: the friendliest region in the world.
   // Deep purple with steep cliffs — weight you can see.

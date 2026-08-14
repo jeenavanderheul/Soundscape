@@ -24,7 +24,10 @@ import {
 const ROAMING: FlightState = { velocity: 12, hz: 220, energy: 0.5 };
 
 function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
-  const zero: GenreAffinity = { techno: 0, 'sub-pressure': 0 };
+  const zero: GenreAffinity = {
+  techno: 0, 'sub-pressure': 0, 'heavy-signal': 0,
+  'broken-machine': 0, 'percussion-riot': 0, 'void-crusher': 0,
+};
   return { ...zero, [genre]: 0.9 };
 }
 

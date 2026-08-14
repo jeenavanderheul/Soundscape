@@ -49,8 +49,17 @@ export interface FlightExportOptions {
   stepMs?: number;
 }
 
+const ZERO_AFFINITY: GenreAffinity = {
+  techno: 0,
+  'sub-pressure': 0,
+  'heavy-signal': 0,
+  'broken-machine': 0,
+  'percussion-riot': 0,
+  'void-crusher': 0,
+};
+
 function affinityFor(genre: Exclude<TrackGenre, null>): GenreAffinity {
-  return { techno: 0, 'sub-pressure': 0, [genre]: 1 } as GenreAffinity;
+  return { ...ZERO_AFFINITY, [genre]: 1 } as GenreAffinity;
 }
 
 /**

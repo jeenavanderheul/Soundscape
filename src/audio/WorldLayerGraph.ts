@@ -1,5 +1,7 @@
 import { buildSubPressureGraph } from '../lab/SubPressure';
 import { buildTechnoGraph } from './TechnoPreset';
+import { buildPresetGraph } from './PresetWorlds';
+import { HEAVY_SIGNAL, BROKEN_MACHINE, PERCUSSION_RIOT, VOID_CRUSHER, WORLD_DEFAULTS } from './worlds';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { Performance } from '../music/Performance';
 import type { TrackState } from '../music/TrackState';
@@ -41,6 +43,23 @@ export function buildWorldLayerGraph(input: WorldLayerGraphInput): MusicalLayerG
     // the arrangement, so nothing else may decide what is sounding.
     return buildTechnoGraph({
       track: input.track,
+      ...(input.motion === undefined ? {} : { motion: input.motion }),
+      ...(input.energy === undefined ? {} : { energy: input.energy }),
+      ...(input.performance === undefined ? {} : { performance: input.performance }),
+      ...(input.mix === undefined ? {} : { mix: input.mix }),
+    });
+  }
+  const document = {
+    'heavy-signal': HEAVY_SIGNAL,
+    'broken-machine': BROKEN_MACHINE,
+    'percussion-riot': PERCUSSION_RIOT,
+    'void-crusher': VOID_CRUSHER,
+  }[input.track.genre as 'heavy-signal'];
+  if (document !== undefined) {
+    // §111: the same rule as techno — the document arranges itself.
+    return buildPresetGraph(document, {
+      track: input.track,
+      defaults: WORLD_DEFAULTS[input.track.genre as 'heavy-signal'],
       ...(input.motion === undefined ? {} : { motion: input.motion }),
       ...(input.energy === undefined ? {} : { energy: input.energy }),
       ...(input.performance === undefined ? {} : { performance: input.performance }),

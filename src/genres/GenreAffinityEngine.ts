@@ -31,6 +31,10 @@ export const GENRE_AFFINITY_CONFIG: GenreAffinityEngineConfig = {
 const ZERO_AFFINITY: GenreAffinity = {
   techno: 0,
   'sub-pressure': 0,
+  'heavy-signal': 0,
+  'broken-machine': 0,
+  'percussion-riot': 0,
+  'void-crusher': 0,
 };
 
 /**

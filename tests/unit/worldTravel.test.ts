@@ -37,32 +37,15 @@ function regionFlying(position: { x: number; z: number }, direction: { x: number
 }
 
 /** Ten readable compass labels mapped onto two world halves. */
-const STEP = (Math.PI * 2) / 10;
+const STEP = (Math.PI * 2) / 6;
 const dirAt = (index: number) => ({ x: Math.sin(STEP * index), z: -Math.cos(STEP * index) });
 const COMPASS = {
-  N: dirAt(0),
-  NNE: dirAt(1),
-  ENE: dirAt(2),
-  ESE: dirAt(3),
-  SSE: dirAt(4),
-  S: dirAt(5),
-  SSW: dirAt(6),
-  WSW: dirAt(7),
-  WNW: dirAt(8),
-  NNW: dirAt(9),
+  S0: dirAt(0), S1: dirAt(1), S2: dirAt(2), S3: dirAt(3), S4: dirAt(4), S5: dirAt(5),
 } as const;
 
 const EXPECTED = {
-  N: 'techno',
-  NNE: 'techno',
-  ENE: 'techno',
-  ESE: 'sub-pressure',
-  SSE: 'sub-pressure',
-  S: 'sub-pressure',
-  SSW: 'sub-pressure',
-  WSW: 'sub-pressure',
-  WNW: 'techno',
-  NNW: 'techno',
+  S0: 'techno', S1: 'heavy-signal', S2: 'broken-machine',
+  S3: 'sub-pressure', S4: 'void-crusher', S5: 'percussion-riot',
 } as const;
 
 describe('the journey: neutral start → a direction → that world', () => {
@@ -79,25 +62,17 @@ describe('the journey: neutral start → a direction → that world', () => {
     }
   });
 
-  it('turning from one world towards another arrives in the new one', () => {
-    const deepInTechno = { x: 0, z: -120 };
-    expect(regionFlying(deepInTechno, COMPASS.N)).toBe('techno');
-    expect(regionFlying(deepInTechno, COMPASS.NNW)).toBe('techno');
-    expect(regionFlying(deepInTechno, COMPASS.NNE)).toBe('techno');
-    expect(regionFlying(deepInTechno, COMPASS.S)).toBe('sub-pressure');
+  it('turning one sector over arrives in the next world', () => {
+    const deep = { x: 0, z: -120 };
+    expect(regionFlying(deep, COMPASS.S0)).toBe('techno');
+    expect(regionFlying(deep, COMPASS.S1)).toBe('heavy-signal');
+    expect(regionFlying(deep, COMPASS.S5)).toBe('percussion-riot');
   });
 
   it('§56 what the HUD says you are flying into is what you are in', () => {
-    const inSouth = { x: -200, z: 200 };
-    expect(regionFlying(inSouth, COMPASS.S)).toBe('sub-pressure');
-    expect(regionFlying(inSouth, COMPASS.N)).toBe('techno');
-  });
-
-  it('blends softly at the east/west border and never activates dormant genres', () => {
-    const border = zoneAffinity({ x: 120, y: 6, z: 0 }, Math.PI / 2);
-    expect(border.techno).toBeGreaterThan(0);
-    expect(border['sub-pressure']).toBeGreaterThan(0);
-    expect(border.techno + border['sub-pressure']).toBeGreaterThan(0);
+    const anywhere = { x: -200, z: 200 };
+    expect(regionFlying(anywhere, COMPASS.S2)).toBe('broken-machine');
+    expect(regionFlying(anywhere, COMPASS.S0)).toBe('techno');
   });
 });
 

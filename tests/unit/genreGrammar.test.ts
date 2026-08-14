@@ -20,7 +20,10 @@ import { LEVEL_DEEP, createInitialTrackState, TrackEvents, type TrackGenre } fro
 
 
 function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
-  const zero: GenreAffinity = { techno: 0, 'sub-pressure': 0 };
+  const zero: GenreAffinity = {
+  techno: 0, 'sub-pressure': 0, 'heavy-signal': 0,
+  'broken-machine': 0, 'percussion-riot': 0, 'void-crusher': 0,
+};
   return { ...zero, [genre]: 0.9 };
 }
 

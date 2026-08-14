@@ -8,8 +8,8 @@ import {
 
 describe('Genre Lab presets', () => {
   it('offers Techno and SUB PRESSURE only', () => {
-    expect(GENRE_LAB_PRESETS).toEqual(['techno', 'sub-pressure']);
-    expect(GENRE_LAB_PRESETS.map(genreLabPresetLabel)).toEqual(['techno', 'sub pressure']);
+    expect(GENRE_LAB_PRESETS).toEqual(['techno', 'sub-pressure', 'heavy-signal', 'broken-machine', 'percussion-riot', 'void-crusher']);
+    expect(GENRE_LAB_PRESETS.map(genreLabPresetLabel)).toEqual(['techno', 'sub pressure', 'heavy signal', 'broken machine', 'percussion riot', 'void crusher']);
   });
 
   it('routes only Techno through the main world grammar', () => {

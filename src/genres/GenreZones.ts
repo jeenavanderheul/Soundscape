@@ -81,9 +81,13 @@ export function zoneGenres(): Readonly<typeof assignment> {
  */
 export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreAffinity {
   const affinity: GenreAffinity = {
-    techno: 0,
-    'sub-pressure': 0,
-  };
+  techno: 0,
+  'sub-pressure': 0,
+  'heavy-signal': 0,
+  'broken-machine': 0,
+  'percussion-riot': 0,
+  'void-crusher': 0,
+};
   const distance = Math.hypot(position.x, position.z);
   const span = ZONE_CONFIG.fullInfluenceDistance - ZONE_CONFIG.neutralRadius;
   const influence = clamp01((distance - ZONE_CONFIG.neutralRadius) / span);
@@ -95,11 +99,30 @@ export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreA
     // player. Distance from spawn still gates it, so the start is neutral.
     // atan2(x, -z): 0 points north, +π/2 east — matches HEADINGS.
     const heading = flightHeading ?? Math.atan2(position.x, -position.z);
-    const northness = Math.cos(heading);
-    const blendWidth = 0.25;
-    const techno = clamp01((northness + blendWidth) / (blendWidth * 2));
-    affinity.techno = influence * techno;
-    affinity['sub-pressure'] = influence * (1 - techno);
+    // §111 (user decision): SIX equal sectors of 60°, so every world is the
+    // same size and the same distance away. A sector's pull is cos⁵ of the
+    // angle to its centre — wide enough that neighbours blend at a border,
+    // narrow enough that its own heading is unmistakably itself.
+    const SECTORS: readonly (keyof GenreAffinity)[] = [
+      'techno', 'heavy-signal', 'broken-machine',
+      'sub-pressure', 'void-crusher', 'percussion-riot',
+    ];
+    const step = (Math.PI * 2) / SECTORS.length;
+    let total = 0;
+    const pulls = SECTORS.map((_, i) => {
+      let delta = heading - i * step;
+      while (delta > Math.PI) delta -= Math.PI * 2;
+      while (delta < -Math.PI) delta += Math.PI * 2;
+      const lobe = Math.cos(delta);
+      const pull = lobe > 0 ? Math.pow(lobe, 5) : 0;
+      total += pull;
+      return pull;
+    });
+    if (total > 0) {
+      SECTORS.forEach((genre, i) => {
+        affinity[genre] = (influence * pulls[i]!) / total;
+      });
+    }
   }
   return affinity;
 }

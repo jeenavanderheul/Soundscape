@@ -36,10 +36,17 @@ export interface MusicState {
 export interface GenreAffinity {
   techno: number;
   'sub-pressure': number;
+  'heavy-signal': number;
+  'broken-machine': number;
+  'percussion-riot': number;
+  'void-crusher': number;
 }
 
 /** Every grammar, in one place (§34) — the list all validation reads from. */
-export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = ['techno', 'sub-pressure'];
+export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = [
+  'techno', 'sub-pressure', 'heavy-signal', 'broken-machine',
+  'percussion-riot', 'void-crusher',
+];
 
 export function createInitialMusicState(): MusicState {
   return {
