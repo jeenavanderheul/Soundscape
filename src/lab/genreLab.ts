@@ -83,13 +83,22 @@ const FLIGHT: Knob[] = [
   { id: 'bpm', label: 'bpm ×', min: 0.6, max: 1.6, step: 0.01, value: 1 },
 ];
 
+/**
+ * §89: the mix knobs are MULTIPLIERS, and a layer that sits at 0.02 could
+ * never be brought up by a knob that stopped at 1.5 — its whole range was
+ * 0.00 to 0.03, which is inaudible either way. The bench existed to answer
+ * "what does this layer add" and could not. It goes to 8x now, and the result
+ * keeps three decimals instead of two, because two rounded the quiet layers
+ * back onto themselves.
+ */
 const MIX: Knob[] = LAYER_NAMES.filter((l) => l !== 'events').map((layer) => ({
   id: `mix-${layer}`,
   label: layer,
   min: 0,
-  max: 1.5,
-  step: 0.05,
+  max: 8,
+  step: 0.1,
   value: 1,
+  format: (v) => `${v.toFixed(1)}x`,
 }));
 
 const ALL_KNOBS = [...FLIGHT, ...MIX];
@@ -193,14 +202,27 @@ function currentGraph(): MusicalLayerGraph {
   graph.performance = performance;
   // The lab's own tempo trim, on top of what altitude already does (§58).
   graph.bpm = Math.round(graph.bpm * (values.get('bpm') ?? 1) * graph.performance.tempoRatio);
-  // Per-layer trim: the sliders multiply the gains the grammar chose.
+  // Per-layer trim: the sliders multiply the gains the grammar chose. Worlds
+  // that build their own code strings already had the trim handed to their
+  // builder, so touching their gains again here would apply it twice.
+  const builderTookMix = preset === 'sub-pressure';
   for (const layer of LAYER_NAMES) {
     const trim = values.get(`mix-${layer as LayerName}`) ?? 1;
     if (trim === 1) continue;
     for (const primitive of graph.layers[layer].primitives) {
       const gain = primitive.parameters['gain'];
       if (typeof gain === 'number') {
-        primitive.parameters['gain'] = Math.round(Math.min(1, gain * trim) * 100) / 100;
+        primitive.parameters['gain'] = Math.round(Math.min(1, gain * trim) * 1000) / 1000;
+        continue;
+      }
+      const code = primitive.parameters['code'];
+      if (!builderTookMix && typeof code === 'string') {
+        // §85's finale parts carry their gain inside the pattern text.
+        primitive.parameters['code'] = code.replace(
+          /\.gain\(([0-9.]+)\)/,
+          (_m, value: string) =>
+            `.gain(${Math.round(Math.min(1, Number(value) * trim) * 1000) / 1000})`,
+        );
       }
     }
   }
