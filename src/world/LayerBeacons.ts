@@ -31,15 +31,25 @@ export interface LayerBeacon {
 /** How far ahead of the player the next beacon is placed. */
 const NEAR = 90;
 const FAR = 190;
-/** Beacons sit in the air the layer belongs to (§3.1: low is mass, high is air). */
+/**
+ * §99: HEIGHT IS THE MECHANIC. Every beacon stands at the altitude of the
+ * register its layer occupies — the kick and the sub down on the deck where
+ * the mass is, the hats and the texture up in the open air where the detail
+ * lives. Going and getting a layer therefore MEANS climbing or diving, and it
+ * means it visibly, instead of through an invisible rule that handed you a
+ * layer for holding an altitude long enough.
+ *
+ * The spread is deliberately wide: 4 to 58 is most of the flyable column, so
+ * two consecutive rungs are a real journey rather than a nudge on the stick.
+ */
 const HEIGHT: Record<TrackLayerName, number> = {
-  kick: 6,
-  bass: 8,
-  snare: 16,
-  harmony: 22,
-  melody: 30,
-  hats: 38,
-  texture: 46,
+  kick: 4,
+  bass: 7,
+  snare: 20,
+  harmony: 28,
+  melody: 38,
+  hats: 48,
+  texture: 58,
 };
 const RADIUS = 9;
 

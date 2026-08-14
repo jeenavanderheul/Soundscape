@@ -67,8 +67,6 @@ export interface TrackBuilderConfig {
   airAltitude: number;
   /** Time skimming the ground that earns the kick, and (×2) the bass. */
   groundMs: number;
-  /** Time in open air that earns the hats, and (×2) the texture. */
-  airMs: number;
   /**
    * How fast the track's clock may follow a change of region, in BPM per
    * second. Crossing into another grammar has to speed the WHOLE track up or
@@ -125,7 +123,6 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   groundAltitude: 8,
   airAltitude: 30,
   groundMs: 3500,
-  airMs: 3500,
   bpmSlewPerSecond: 9,
   fullSpeed: 66,
   // §87: these decide how long a track TAKES. At 134 bpm a bar is 1.79s, so
@@ -191,7 +188,6 @@ export class TrackBuilder {
   private activeMs = 0;
   private lowRegisterMs = 0;
   private groundMs = 0;
-  private airMs = 0;
   private lastDeepenMs = 0;
   /** §82: paced time the last rung (or depth) landed. */
   private lastRungMs = Number.NEGATIVE_INFINITY;
@@ -251,7 +247,6 @@ export class TrackBuilder {
     this.paceClockMs = 0;
     this.lowRegisterMs = 0;
     this.groundMs = 0;
-    this.airMs = 0;
     this.lastDeepenMs = 0;
     // Nothing has landed yet, so the first rung is never made to wait (§82).
     this.lastRungMs = Number.NEGATIVE_INFINITY;
@@ -333,7 +328,6 @@ export class TrackBuilder {
     this.dueSinceMs = null;
     this.lowRegisterMs = 0;
     this.groundMs = 0;
-    this.airMs = 0;
     this.layerVariations = {};
     this.harmony.reset();
     this.melody.reset();
@@ -395,7 +389,6 @@ export class TrackBuilder {
     // not by waiting.
     const altitude = flight.altitude ?? (config.groundAltitude + config.airAltitude) / 2;
     this.groundMs = altitude <= config.groundAltitude && active ? this.groundMs + delta : 0;
-    this.airMs = altitude >= config.airAltitude && active ? this.airMs + delta : 0;
 
     this.harmony.tick(nowMs);
     this.melody.tick(nowMs, flight.hz);
@@ -601,9 +594,9 @@ export class TrackBuilder {
       // Low excitations, or simply flying down where the mass is (§3.1).
       case 'kick':
         return this.lowActions.length >= config.kickActionsNeeded || this.groundMs >= config.groundMs;
-      // High excitations, or climbing into the air where the detail lives.
+      // High excitations. Height itself no longer earns this (§99).
       case 'hats':
-        return this.highActions.length >= config.hatActionsNeeded || this.airMs >= config.airMs;
+        return this.highActions.length >= config.hatActionsNeeded;
       case 'snare':
         return this.strongActions.length >= config.clapActionsNeeded;
       case 'bass':
@@ -612,9 +605,13 @@ export class TrackBuilder {
         return this.harmony.discovered;
       case 'melody':
         return this.melody.discovered;
-      // §3.10 texture is space: staying up in the open air fills it in.
+      // §99 (user decision): texture is no longer earned by hovering. Height
+      // is a MECHANIC you can see — every beacon stands at the height of the
+      // layer it carries, so climbing for the texture beacon and diving for
+      // the kick is the same gesture, made visible. An invisible rule that
+      // hands you a layer for holding an altitude taught nobody anything.
       case 'texture':
-        return this.airMs >= config.airMs * 2;
+        return false;
     }
   }
 

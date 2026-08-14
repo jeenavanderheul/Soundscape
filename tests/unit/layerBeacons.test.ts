@@ -14,7 +14,11 @@ import { beaconAt, beaconIsStale, placeBeacon, remainingLayers } from '../../src
 import { ladderFor } from '../../src/music/GenreLadder';
 import { TrackBuilder } from '../../src/music/TrackBuilder';
 import { createInitialMusicState } from '../../src/music/MusicState';
-import { createInitialTrackState, type TrackEvents } from '../../src/music/TrackState';
+import {
+  createInitialTrackState,
+  type TrackEvents,
+  type TrackLayerName,
+} from '../../src/music/TrackState';
 
 /**
  * §86: the seven layers standing in the world. The ladder keeps deciding the
@@ -101,5 +105,24 @@ describe('flying through one earns that layer, there and then', () => {
     if (first !== null) expect(builder.collectBeacon(first, 24_500)).toBe(true);
     const second = builder.offeredLayer();
     if (second !== null) expect(builder.collectBeacon(second, 24_600)).toBe(false);
+  });
+});
+
+describe('§99 height is the mechanic, and you can see it', () => {
+  const here = { x: 0, y: 20, z: 0 };
+  const heightOf = (layer: TrackLayerName) =>
+    placeBeacon(layer, here, 0, createRng(`h-${layer}`), 1)!.position.y;
+
+  it('puts the mass on the deck and the detail in the open air', () => {
+    // The register a layer occupies IS where you have to fly to get it.
+    expect(heightOf('kick')).toBeLessThan(heightOf('snare'));
+    expect(heightOf('bass')).toBeLessThan(heightOf('harmony'));
+    expect(heightOf('harmony')).toBeLessThan(heightOf('hats'));
+    expect(heightOf('hats')).toBeLessThan(heightOf('texture'));
+  });
+
+  it('spreads them far enough apart that climbing is a journey', () => {
+    // Two rungs at opposite ends of the column, not a nudge on the stick.
+    expect(heightOf('texture') - heightOf('kick')).toBeGreaterThan(45);
   });
 });
