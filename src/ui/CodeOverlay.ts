@@ -135,8 +135,12 @@ export class CodeOverlay {
    * read is always the code that is actually sounding — never a copy of a
    * preset that has drifted away from it.
    */
-  update(code: string, labels: readonly string[] = []): void {
-    const annotated = labels.length > 0 ? sectioned(code, labels) : code;
+  update(code: string, labels: readonly string[] = [], header = ''): void {
+    const grouped = labels.length > 0 ? sectioned(code, labels) : code;
+    // §109: the header is live state, so it changes far more often than the
+    // pattern does — but it is cheap, and comparing the whole thing keeps the
+    // "only redraw on change" rule in one place.
+    const annotated = header === '' ? grouped : `${header}${grouped}`;
     if (annotated === this.lastCode) return;
     this.lastCode = annotated;
     if (this.visible) this.render(annotated);

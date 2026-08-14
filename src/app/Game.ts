@@ -80,6 +80,7 @@ import { Guide } from '../ui/Guide';
 import { Hints } from '../ui/Hints';
 import { LayerCue } from '../ui/LayerCue';
 import { TrackStrip } from '../ui/TrackStrip';
+import { scoreHeader } from '../ui/ScoreHeader';
 import { HUD } from '../ui/HUD';
 import { attachIntroHint } from '../ui/Intro';
 import { PauseOverlay } from '../ui/PauseOverlay';
@@ -724,10 +725,24 @@ export class Game {
       // §9.5 world tendency: mutation destabilizes existing form. SUB PRESSURE
       // is the rougher of the two worlds, so it is the one that unsettles it.
       this.structures.setMutation(genre?.affinity['sub-pressure'] ?? 0);
-      // §97: the same score, grouped by role — it grows a section at a time.
+      // §97/§109: the score, grouped by role and headed the way the presets
+      // these worlds came from are headed — except every value in that header
+      // is live. Read it top to bottom while flying and you can see the thing
+      // working: which rungs you hold, where you are in the thirty-two, and
+      // the three performance numbers being fed into the patterns below.
+      const playingTrack = this.trackStore.getState();
       this.codeOverlay.update(
         this.strudelEngine.code,
         this.lastLayerGraph ? voiceLabels(this.lastLayerGraph) : [],
+        scoreHeader({
+          track: playingTrack,
+          cycle: this.trackBuilder.arrangement.cycle,
+          style: genreGrammar(playingTrack.genre).sectionStyle,
+          trackNumber: this.trackBuilder.trackNumber,
+          performance: this.lastLayerGraph?.performance,
+          energy: clamp01(state.amplitude),
+          bank: worldBankLabel(playingTrack),
+        }),
       );
       // §41: the one line that makes "I hear no difference" checkable.
       const info = this.strudelEngine.status;
