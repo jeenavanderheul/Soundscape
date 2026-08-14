@@ -60,6 +60,15 @@ function seed(genre: TrackGenre, track: number): number {
     hash ^= text.charCodeAt(i);
     hash = Math.imul(hash, 16777619);
   }
+  // §122: FNV alone left neighbouring tracks correlated — 2, 3, 4 and 5 all
+  // came out `raw` with the same numbers to two decimals, which is the same
+  // sameness this was built to remove. A final avalanche so one character of
+  // input changes the whole output.
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 2246822507);
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 3266489909);
+  hash ^= hash >>> 16;
   return (hash >>> 0) / 4294967295;
 }
 
@@ -76,11 +85,19 @@ export function dnaFor(genre: TrackGenre, track: number): TrackDNA {
   if (track <= 1) {
     return { character: 'as written', tilt: 0, drive: 0.5, space: 0.5, sparse: 0 };
   }
-  const base = CHARACTERS[(track - 2) % CHARACTERS.length]!;
-  // How far this reading is allowed to travel from the document. Grows with
-  // depth and settles, so track 50 explores without becoming another genre.
-  const reach = Math.min(1, 0.45 + (track - 2) * 0.04);
   const wobble = seed(genre, track) - 0.5;
+  // §122: the character is CHOSEN, not counted off. Cycling the list made
+  // track 2, 9 and 16 the same reading in the same order — predictable in
+  // exactly the way an infinite world must not be. Seeded by (world, track),
+  // so it is still the same track 27 on every flight.
+  const base = CHARACTERS[Math.floor(seed(genre, track * 7 + 13) * CHARACTERS.length)
+    % CHARACTERS.length]!;
+  // How far this reading travels from the document. §118 started this at 0.45
+  // and then halved the character on top of it, so track 2 came out at
+  // tilt 0.03 against track 1's 0.00 — rounding noise, not a variation, at
+  // exactly the depth where every player begins. It starts wide now and still
+  // widens: a deep track explores a corner, it never becomes another world.
+  const reach = Math.min(1, 0.8 + (track - 2) * 0.02);
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
   return {
     character: base.name,

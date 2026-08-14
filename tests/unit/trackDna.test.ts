@@ -90,3 +90,36 @@ describe('track N is not track 1 in another key', () => {
     }
   });
 });
+
+describe('§122 an infinite world cannot be predictable', () => {
+  const names = (genre: 'techno' | 'void-crusher', n: number) =>
+    Array.from({ length: n }, (_, i) => dnaFor(genre, i + 2).character);
+
+  it('uses every character, without cycling through them in order', () => {
+    const sixty = names('techno', 60);
+    expect(new Set(sixty).size).toBe(7);
+    // Counting the list off made track 2, 9 and 16 the same reading in the
+    // same order — the one thing an endless world must not be.
+    expect(sixty[0]).not.toBe(sixty[7]);
+  });
+
+  it('does not repeat itself run after run', () => {
+    const sixty = names('techno', 60);
+    let runs = 0;
+    for (let i = 1; i < sixty.length; i += 1) if (sixty[i] === sixty[i - 1]) runs += 1;
+    expect(runs).toBeLessThan(sixty.length / 3);
+  });
+
+  it('reads differently from the very first variation', () => {
+    // §118 shipped with track 2 at tilt 0.03 against track 1's 0.00 —
+    // rounding noise at exactly the depth where every player begins.
+    const first = dnaFor('techno', 2);
+    const moved = Math.abs(first.tilt) + Math.abs(first.drive - 0.5)
+      + Math.abs(first.space - 0.5) + first.sparse;
+    expect(moved).toBeGreaterThan(0.3);
+  });
+
+  it('and every world walks its own sequence', () => {
+    expect(names('techno', 20).join()).not.toBe(names('void-crusher', 20).join());
+  });
+});
