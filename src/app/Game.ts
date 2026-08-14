@@ -17,6 +17,7 @@ import {
   diffLayerGraph,
   genreGrammar,
   throwStyleFor,
+  voiceLabels,
 } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph, ThrowStyle } from '../audio/MusicalPrimitives';
 import { buildWorldLayerGraph, worldBankLabel } from '../audio/WorldLayerGraph';
@@ -721,7 +722,11 @@ export class Game {
       this.placeGenre = dominantZone(zone, 0.4);
       // §9.5 world tendency: mutation destabilizes existing form.
       this.structures.setMutation(genre?.affinity.experimental ?? 0);
-      this.codeOverlay.update(this.strudelEngine.code);
+      // §97: the same score, grouped by role — it grows a section at a time.
+      this.codeOverlay.update(
+        this.strudelEngine.code,
+        this.lastLayerGraph ? voiceLabels(this.lastLayerGraph) : [],
+      );
       // §41: the one line that makes "I hear no difference" checkable.
       const info = this.strudelEngine.status;
       const playing = this.trackStore.getState();

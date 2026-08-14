@@ -41,6 +41,33 @@ export function tokenize(code: string): CodeToken[] {
   return tokens;
 }
 
+/**
+ * Insert a banner above each run of voices that share a label. The engine
+ * emits exactly one indented line per primitive, in layer order, so the labels
+ * line up one for one.
+ */
+export function sectioned(code: string, labels: readonly string[]): string {
+  const lines = code.split('\n');
+  const out: string[] = [];
+  let voice = 0;
+  let last = '';
+  for (const line of lines) {
+    if (!line.startsWith('  ')) {
+      out.push(line);
+      continue;
+    }
+    const label = labels[voice] ?? '';
+    voice += 1;
+    if (label !== '' && label !== last) {
+      if (last !== '') out.push('');
+      out.push(`  // ── ${label} ──`);
+      last = label;
+    }
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
 export class CodeOverlay {
   private readonly root: HTMLPreElement;
   // §11/§38: the score is ON by default — a player should always be able to
@@ -98,10 +125,21 @@ export class CodeOverlay {
     if (this.visible) this.render(this.lastCode);
   }
 
-  update(code: string): void {
-    if (code === this.lastCode) return;
-    this.lastCode = code;
-    if (this.visible) this.render(code);
+  /**
+   * §97: the score, grouped the way the preset that inspired it is grouped —
+   * one banner per role, appearing as that role arrives. A track is not a flat
+   * stack of lines; it is ATMOSPHERE, then HATS, then KICK, and being able to
+   * read it that way is what makes the code on screen mean anything.
+   *
+   * `labels` runs parallel to the voice lines the engine emitted, so what you
+   * read is always the code that is actually sounding — never a copy of a
+   * preset that has drifted away from it.
+   */
+  update(code: string, labels: readonly string[] = []): void {
+    const annotated = labels.length > 0 ? sectioned(code, labels) : code;
+    if (annotated === this.lastCode) return;
+    this.lastCode = annotated;
+    if (this.visible) this.render(annotated);
   }
 
   private render(code: string): void {

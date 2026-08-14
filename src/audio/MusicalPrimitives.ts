@@ -175,6 +175,49 @@ function emptyLayer(): MusicalLayer {
   return { primitives: [], gain: 1, density: 0 };
 }
 
+/**
+ * §97: the role each voice plays, in the words of the presets these grammars
+ * are written from — one banner per group in the on-screen score.
+ */
+const VOICE_LABELS: Record<string, string> = {
+  'sub-pressure-atmosphere': 'ATMOSPHERE', 'sub-pressure-rise': 'ATMOSPHERE',
+  'sub-pressure-hats': 'HATS', 'sub-pressure-hats-deep': 'HATS',
+  'sub-pressure-kick': 'KICK', 'sub-pressure-kick-deep': 'KICK',
+  'sub-pressure-snare': 'CLAP / SNARE', 'sub-pressure-snare-deep': 'CLAP / SNARE',
+  'sub-pressure-sub': 'SUB', 'sub-pressure-body': 'ROLLING BASS',
+  'sub-pressure-reese': 'ROLLING BASS', 'sub-pressure-stab': 'RAVE STAB',
+  'sub-pressure-signal': 'MACHINE SIGNAL', 'sub-pressure-texture': 'TEXTURE',
+  'track-kick': 'KICK', 'track-pulse': 'KICK', 'pulse': 'KICK',
+  'track-hats': 'HATS', 'track-hats-deep': 'HATS',
+  'track-snare': 'CLAP / SNARE', 'track-snare-deep': 'CLAP / SNARE',
+  'track-perc': 'PERCUSSION',
+  'track-sub': 'SUB', 'track-sub-deep': 'SUB',
+  'track-bass': 'ROLLING BASS',
+  'track-harmony': 'RAVE STAB', 'track-harmony-deep': 'RAVE STAB',
+  'track-melody': 'MACHINE SIGNAL', 'track-melody-octave': 'MACHINE SIGNAL',
+  'track-texture': 'TEXTURE', 'track-texture-wide': 'TEXTURE',
+  'tension-pulse': 'TENSION ENGINE', 'tension-drone': 'TENSION ENGINE',
+  'tension-air': 'TENSION ENGINE',
+  'climax-toms': 'CLIMAX', 'climax-ride': 'CLIMAX', 'climax-signal': 'CLIMAX',
+  'finale-response': 'CLIMAX', 'finale-noise': 'CLIMAX',
+  'sub-pressure-finale-response': 'CLIMAX', 'sub-pressure-finale-noise': 'CLIMAX',
+  'sub-pressure-finale-mutation': 'CLIMAX',
+};
+
+/** Labels for the graph's voices, in the order the engine renders them. */
+export function voiceLabels(graph: MusicalLayerGraph): string[] {
+  const labels: string[] = [];
+  for (const layer of LAYER_NAMES) {
+    for (const primitive of graph.layers[layer].primitives) {
+      labels.push(
+        VOICE_LABELS[primitive.id] ??
+          (layer === 'atmosphere' ? 'ATMOSPHERE' : layer.toUpperCase()),
+      );
+    }
+  }
+  return labels;
+}
+
 export function createEmptyLayerGraph(bpm = 0): MusicalLayerGraph {
   return {
     bpm,
@@ -1400,6 +1443,55 @@ export function buildLayerGraph(
    * and only once the track has actually grown deep, does the world answer the
    * bass, throw noise across the top and let the grid mutate.
    */
+  /**
+   * §96 TENSION ENGINE — the VOID is a REDUCTION, never a break.
+   *
+   * §95 stopped the void from muting anything, but a thinner version of the
+   * same parts is not tension, it is just quieter. What builds tension is
+   * DIFFERENT material: a pulse that takes over the bass's job, a sub drone
+   * underneath it, and air across the top. The engine keeps running and the
+   * room changes around it.
+   */
+  if ((track?.form ?? 'none') === 'break' && track?.bass.unlocked) {
+    const tonic = NOTE_NAMES[(((track.rootMidi % 12) + 12) % 12)];
+    bass.push({
+      id: 'tension-pulse',
+      kind: 'bass',
+      layer: 'bass',
+      parameters: {
+        code:
+          `note("${tonic}2 ${tonic}2 ${tonic}2 ${tonic}2").s("pulse").slow(2)` +
+          `.lpf(${Math.round(350 + grammar.drive * 900)}).lpq(12).decay(.08)` +
+          `.distort(${round2(0.7 + grammar.drive).toFixed(2)}).postgain(.25)` +
+          `.gain(${round2(grammar.bassGain * 0.35 * mix.bass)}).orbit(2)`,
+      },
+      allowedTransforms: [],
+    });
+    bass.push({
+      id: 'tension-drone',
+      kind: 'sub',
+      layer: 'bass',
+      parameters: {
+        code:
+          `note("<${tonic}1 ${tonic}1>").s("sine").slow(2).lpf(82)` +
+          `.attack(.15).decay(.6).sustain(.55).release(.35)` +
+          `.gain(${round2(grammar.bassGain * 0.5 * mix.bass)}).orbit(2)`,
+      },
+      allowedTransforms: [],
+    });
+    texture.push({
+      id: 'tension-air',
+      kind: 'noise',
+      layer: 'texture',
+      parameters: {
+        code:
+          `s("white*8").degradeBy(.4).hpf(5000).room(.5)` +
+          `.gain(${round2(0.03 + grammar.drive * 0.03)})`,
+      },
+      allowedTransforms: [],
+    });
+  }
+
   if (isFinale(track?.form ?? 'none') && trackIsDeep(track)) {
     const key = NOTE_NAMES[(((track?.rootMidi ?? 45) % 12) + 12) % 12];
     bass.push({
@@ -1412,6 +1504,43 @@ export function buildLayerGraph(
           `.s("${grammar.bassVoice}").lpf(${Math.round(180 + grammar.drive * 260)})` +
           `.lpq(9).distort(${round2(0.8 + grammar.drive).toFixed(2)}).postgain(.28)` +
           `.gain(${round2(grammar.bassGain * 0.55 * mix.bass)})`,
+      },
+      allowedTransforms: [],
+    });
+    // §96: DROP II gets NEW RHYTHMIC INFORMATION, not just more of the same —
+    // toms walking under it, a ride over the top, and a metallic signal.
+    drums.push({
+      id: 'climax-toms',
+      kind: 'perc',
+      layer: 'drums',
+      parameters: {
+        code:
+          `s("lt ~ mt [ht mt] ~ lt [mt ht] ~").bank("${grammar.deepBank ?? grammar.percBank}")` +
+          `.hpf(300).distort(${round2(0.4 + grammar.drive * 0.5).toFixed(2)})` +
+          `.gain(${round2(0.18 * mix.drums)})`,
+      },
+      allowedTransforms: [],
+    });
+    drums.push({
+      id: 'climax-ride',
+      kind: 'hat',
+      layer: 'drums',
+      parameters: {
+        code:
+          `s("rd*8").bank("${grammar.drumBank}").hpf(5000).degradeBy(.18)` +
+          `.gain(${round2(0.08 * mix.drums)})`,
+      },
+      allowedTransforms: [],
+    });
+    melody.push({
+      id: 'climax-signal',
+      kind: 'melody',
+      layer: 'melody',
+      parameters: {
+        code:
+          `note("~ ${key}5 ~ ${key}4 ~ ${key}5 ${key}4 ~").s("tubularbells")` +
+          `.hpf(1400).decay(.08).distort(${round2(0.25 + grammar.drive * 0.3).toFixed(2)})` +
+          `.room(.3).gain(${round2(0.04 * mix.melody)})`,
       },
       allowedTransforms: [],
     });
