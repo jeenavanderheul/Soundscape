@@ -318,10 +318,12 @@ export class TrackBuilder {
     // once — 4/7 of one world becomes 1/7 of the next, not 0/7. Without that
     // there is a hole where the new world should announce itself, and the
     // crossing reads as the music stopping instead of somewhere beginning.
-    if (travelled) {
-      const first = ladderFor(bornIn)[0];
-      if (first) this.unlock(first.layer, nowMs);
-    }
+    // §100 (was §58, travelled only): EVERY track opens on its first rung, at
+    // once. Waiting for the arc to reach DISCOVERY I meant eleven seconds of
+    // air at full speed and twenty at cruise before there was a beat — long
+    // enough that a player cannot tell whether anything is coming.
+    const first = ladderFor(bornIn)[0];
+    if (first) this.unlock(first.layer, nowMs);
     this.activeMs = 0;
     this.lastDeepenMs = 0;
     this.lastRungMs = this.activeMs;
@@ -493,7 +495,18 @@ export class TrackBuilder {
         melodyNotes,
         responseNotes,
       }));
-      if (genre !== track.genre) this.bus.emit('track:genre', { genre, atMs: nowMs });
+      if (genre !== track.genre) {
+        this.bus.emit('track:genre', { genre, atMs: nowMs });
+        // §100: the FIRST track of a session is never born through
+        // startNextTrack — the genre simply resolves — so it would have been
+        // the one track that opened on silence. Arriving in a world always
+        // gives you that world's first rung, at once.
+        const opening = ladderFor(genre)[0];
+        if (genre !== null && opening && !layerUnlocked(this.store.getState(), opening.layer)) {
+          this.lastRungMs = this.activeMs;
+          this.unlock(opening.layer, nowMs);
+        }
+      }
       if (section !== track.form) this.bus.emit('track:section', { section, atMs: nowMs });
     }
     // Endless journey: every turn of the arrangement rewrites ONE layer with a

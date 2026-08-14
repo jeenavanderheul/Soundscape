@@ -67,8 +67,10 @@ function graphOf(genre: Exclude<TrackGenre, null>) {
 
 describe('§32 depth — a layer grows a second voice by staying with it', () => {
   it('earns a layer at half level and deepens it later', () => {
-    const early = fly('techno', 35).track;
-    expect(early.drums.kick.level).toBe(LEVEL_EARNED);
+    // §100: the opening rung arrives with the world, so it is already deep by
+    // the time a longer flight comes back to it — check the SECOND rung.
+    const early = fly('techno', 70).track;
+    expect(early.drums.hats.level).toBe(LEVEL_EARNED);
     const late = fly('techno', 180);
     expect(late.track.drums.kick.level).toBe(LEVEL_DEEP);
     expect(late.deepened.length).toBeGreaterThan(0);

@@ -37,18 +37,12 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
     const tick = (t: number) =>
       builder.tick(t, music, { velocity: 10, hz: 220, energy: 0.4 }, region);
-    // §92: a rung cannot arrive before its PHASE opens. DISCOVERY I is cycle
-    // four, so intent buys you the kick the moment that phase starts — not
-    // sooner. Fly there first, then play for it.
-    for (let t = 0; t <= 15_000; t += 250) tick(t);
-    expect(store.getState().drums.kick.unlocked).toBe(false); // still ENTER BIOME
-    for (let t = 15_250; t <= 21_000; t += 250) tick(t);
-    for (let i = 0; i < 3; i++) {
-      builder.onAction({ atMs: 21_000 + i * 500, hz: 110, amplitude: 0.6, release: false });
-    }
-    tick(22_600);
+    // §100: arriving in a world gives you its first rung at once — techno
+    // opens on the kick, so there is a beat from the first bar.
+    tick(250);
     expect(store.getState().drums.kick.unlocked).toBe(true);
     expect(unlocked).toEqual(['kick']);
+    for (let t = 500; t <= 21_000; t += 250) tick(t);
     // §82: intent still earns the layer, but a rung has to be HEARD before the
     // next one lands — otherwise a run of actions arrives as one lump.
     for (let i = 0; i < 3; i++) {
@@ -98,18 +92,21 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
   const roamingMusic = { ...createInitialMusicState(), bpm: 112, dynamics: 0.5 };
 
   /** Fly for `ms` at a fixed height above the ground. */
+  // A track needs a WORLD: the clock, the ladder and the opening rung all
+  // come from the region you are flying in (§46, §100).
+  const TECHNO = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
   function flyAt(altitude: number, ms: number) {
     const { store, builder } = setup();
     for (let t = 0; t <= ms; t += 100) {
-      builder.tick(t, roamingMusic, { ...ROAMING, altitude });
+      builder.tick(t, roamingMusic, { ...ROAMING, altitude }, TECHNO);
     }
     return store.getState();
   }
 
-  it('§3.1 skimming the ground earns the kick — that is where the mass is', () => {
-    expect(flyAt(3, 25_000).drums.kick.unlocked).toBe(true);
-    // Same four seconds at a neutral height earns nothing yet.
-    expect(flyAt(19, 12_000).drums.kick.unlocked).toBe(false);
+  it('§3.1 skimming the ground earns the BASS — that is where the mass is', () => {
+    // §100 gave the kick away with the world, so what flying low still buys
+    // you outright is the low register itself.
+    expect(flyAt(3, 120_000).bass.unlocked).toBe(true);
   });
 
   it('§3.1 climbing into the air earns the hats, without skipping the ladder', () => {
@@ -130,10 +127,10 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
     // §46 means a slow flight develops the track more slowly.
     // §92: the arc gates it now — before DISCOVERY I opens, nobody gets a
     // kick, however patient or however deliberate.
-    expect(flyAt(19, 12_000).drums.kick.unlocked).toBe(false);
-    expect(flyAt(19, 30_000).drums.kick.unlocked).toBe(true);
+    // §100: the opening rung comes with the world itself.
+    expect(flyAt(19, 2000).drums.kick.unlocked).toBe(true);
     // …and the sub is PRESSURE's, four phases in.
-    expect(flyAt(19, 110_000).bass.unlocked).toBe(true);
+    expect(flyAt(19, 150_000).bass.unlocked).toBe(true);
   });
 
   it('does not accumulate during stillness', () => {

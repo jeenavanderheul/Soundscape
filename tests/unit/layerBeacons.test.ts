@@ -77,14 +77,16 @@ describe('flying through one earns that layer, there and then', () => {
     const { builder } = setup();
     // §98: before its phase, the world offers nothing and there is no beacon.
     expect(builder.offeredLayer()).toBeNull();
+    // §100: the opening rung is given on arrival, so what a beacon offers is
+    // the SECOND rung onwards — reached once DISCOVERY II opens.
     const music = { ...createInitialMusicState(), bpm: 132, tempoConfidence: 0.6, dynamics: 0.5 };
     const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
-    for (let t = 0; t <= 24_000; t += 250) {
+    for (let t = 0; t <= 46_000; t += 250) {
       builder.tick(t, music, { velocity: 12, hz: 220, energy: 0.4 }, region);
     }
     const offered = builder.offeredLayer();
     expect(offered).not.toBeNull();
-    expect(builder.collectBeacon(offered!, 24_500)).toBe(true);
+    expect(builder.collectBeacon(offered!, 46_500)).toBe(true);
   });
 
   it('but never out of order — the world is still assembled by its ladder', () => {
@@ -98,13 +100,13 @@ describe('flying through one earns that layer, there and then', () => {
     const { builder } = setup();
     const music = { ...createInitialMusicState(), bpm: 132, tempoConfidence: 0.6, dynamics: 0.5 };
     const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
-    for (let t = 0; t <= 24_000; t += 250) {
+    for (let t = 0; t <= 46_000; t += 250) {
       builder.tick(t, music, { velocity: 12, hz: 220, energy: 0.4 }, region);
     }
     const first = builder.offeredLayer();
-    if (first !== null) expect(builder.collectBeacon(first, 24_500)).toBe(true);
+    if (first !== null) expect(builder.collectBeacon(first, 46_500)).toBe(true);
     const second = builder.offeredLayer();
-    if (second !== null) expect(builder.collectBeacon(second, 24_600)).toBe(false);
+    if (second !== null) expect(builder.collectBeacon(second, 46_600)).toBe(false);
   });
 });
 

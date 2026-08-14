@@ -52,10 +52,12 @@ export interface SectionMix {
 
 const MIXES: Record<Section, SectionMix> = {
   none: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 1, atmosphere: 1 },
-  // §92 ENTER BIOME: the air of the world and nothing else. When the first
-  // rhythm arrives on cycle 4 it has to be an EVENT, and it cannot be one if
-  // a kick was already playing underneath it.
-  intro: { drums: 0, bass: 0, harmony: 0, melody: 0, texture: 0, atmosphere: 1 },
+  // §100 ENTER BIOME: the air of the world AND the first rhythmic element.
+  // §92 had this as air alone so that the first rhythm on cycle 4 would land
+  // as an event — but four cycles is 7.2s of musical time, which at cruise is
+  // twenty seconds of no beat. A player who has just arrived does not yet know
+  // anything is coming. Arriving somewhere IS the event; the beat proves it.
+  intro: { drums: 0.7, bass: 0, harmony: 0, melody: 0, texture: 0, atmosphere: 1 },
   // DISCOVERY I: the first rhythmic layer, alone with the air.
   groove: { drums: 0.85, bass: 0.9, harmony: 0.7, melody: 0.7, texture: 0.6, atmosphere: 0.7 },
   // DISCOVERY II: the kit fills out — kick, snare and percussion together.
@@ -92,7 +94,7 @@ const MIXES: Record<Section, SectionMix> = {
  */
 const RUNGS_DUE: Record<Section, number> = {
   none: 0,
-  intro: 0,      // ENTER BIOME — the air only
+  intro: 1,      // §100 ENTER BIOME — the air and the world's first rung
   groove: 1,     // DISCOVERY I — the first rhythmic layer
   discovery: 3,  // DISCOVERY II — the kit fills out
   build: 4,      // PRESSURE — the sub arrives

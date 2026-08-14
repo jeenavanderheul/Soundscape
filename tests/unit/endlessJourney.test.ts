@@ -96,7 +96,9 @@ describe('the endless journey (user decision)', () => {
     flyThroughADrop(builder, 0);
     unsubscribe();
 
-    expect(after.drums.kick.unlocked).toBe(false); // earned again
+    // §100: every track opens on its world's first rung — techno's is the
+    // kick, so the next track starts with a beat, not with silence.
+    expect(after.drums.kick.unlocked).toBe(true);
     expect(after.texture.unlocked).toBe(false);
     expect(after.rootMidi).not.toBe(before.rootMidi); // a related key, not the same
     // §91: the clock belongs to the WORLD, so the next track inherits the one

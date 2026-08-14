@@ -303,13 +303,15 @@ describe('§76 sections build themselves by adding and removing parts', () => {
     );
   };
 
-  it('§92 ENTER BIOME is the air of the world and nothing else', () => {
+  it('§100 ENTER BIOME is the air AND the first rhythmic element', () => {
     const intro = partsIn('intro');
-    expect(intro.drums).toBe(false);
+    // A beat from the first bar: four cycles of air is 7.2s of musical time,
+    // which at cruise is twenty seconds before a player hears any rhythm.
+    expect(intro.drums).toBe(true);
+    // …but only the beat. Everything else still arrives in its own phase.
     expect(intro.bass).toBe(false);
     expect(intro.melody).toBe(false);
-    // …so the first rhythm on cycle 4 is an event, not a fade-in.
-    expect(partsIn('groove').drums).toBe(true);
+    expect(sectionMix('intro').drums).toBeLessThan(sectionMix('drop').drums);
   });
 
   it('§92 PRESSURE brings the sub IN — nothing is taken away before the void', () => {
