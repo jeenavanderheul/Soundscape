@@ -32,10 +32,6 @@ export interface WorldLayerGraphInput {
   mix?: Partial<Record<LayerName, number>> | undefined;
 }
 
-/** §110: worlds written as a document arrange themselves; the arc must not. */
-export function isPresetWorld(genre: MusicalLayerGraph extends never ? never : TrackState['genre']): boolean {
-  return genre === 'techno' || genre === 'sub-pressure';
-}
 
 export function buildWorldLayerGraph(input: WorldLayerGraphInput): MusicalLayerGraph {
   if (input.track.genre === 'techno') {

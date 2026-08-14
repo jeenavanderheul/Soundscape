@@ -1,3 +1,4 @@
+import { applyAudibilityFloor } from './AudibilityFloor';
 import {
   createEmptyLayerGraph,
   type LayerName,
@@ -5,7 +6,7 @@ import {
   type PrimitiveKind,
 } from './MusicalPrimitives';
 import type { Performance } from '../music/Performance';
-import { LEVEL_DEEP, type TrackGenre, type TrackState } from '../music/TrackState';
+import { LEVEL_DEEP, type TrackState } from '../music/TrackState';
 
 /**
  * §111 PRESET WORLDS — four more documents, one engine.
@@ -108,10 +109,7 @@ export function buildPresetGraph(
       allowedTransforms: [],
     });
   }
-  return graph;
+  // §127: nothing you earned may sit under the threshold of noticing.
+  return applyAudibilityFloor(graph);
 }
 
-/** Which worlds arrange themselves, and must therefore never be arranged. */
-export function isPresetWorld(genre: TrackGenre): boolean {
-  return genre !== null;
-}

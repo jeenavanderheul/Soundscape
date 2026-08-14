@@ -1,3 +1,4 @@
+import { applyAudibilityFloor } from './AudibilityFloor';
 import {
   createEmptyLayerGraph,
   type LayerName,
@@ -247,5 +248,6 @@ export function buildTechnoGraph(controls: TechnoPresetControls = {}): MusicalLa
     primitive.parameters['section'] = part.section;
     graph.layers[part.layer].primitives.push(primitive);
   }
-  return graph;
+  // §127: nothing you earned may sit under the threshold of noticing.
+  return applyAudibilityFloor(graph);
 }

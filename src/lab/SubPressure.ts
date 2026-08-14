@@ -1,3 +1,4 @@
+import { applyAudibilityFloor } from '../audio/AudibilityFloor';
 import {
   createEmptyLayerGraph,
   genreGrammar,
@@ -224,5 +225,6 @@ export function buildSubPressureGraph(
     graph.layers[part.layer].primitives.push(primitive);
   }
 
-  return graph;
+  // §127: nothing you earned may sit under the threshold of noticing.
+  return applyAudibilityFloor(graph);
 }

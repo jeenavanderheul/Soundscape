@@ -13,6 +13,7 @@ import { createStore } from '../../src/core/stores';
 import { createInitialMusicState, type GenreAffinity } from '../../src/music/MusicState';
 import { TrackBuilder, type FlightState } from '../../src/music/TrackBuilder';
 import { exportTrack } from '../../src/music/TrackExport';
+import { ACTIVE_WORLD_GENRES } from '../../src/genres/ActiveWorlds';
 import {
   createInitialTrackState,
   LEVEL_DEEP,
@@ -72,11 +73,19 @@ describe('§32 depth — a layer grows a second voice by staying with it', () =>
   it('earns a layer at half level and deepens it later', () => {
     // §100: the opening rung arrives with the world, so it is already deep by
     // the time a longer flight comes back to it — check the SECOND rung.
-    // §107: the world waits three gaps before giving a rung away, so a flight
-    // that earns nothing fills up noticeably more slowly — at 55s the second
-    // rung has only just landed and has not had time to double yet.
-    const early = fly('techno', 55).track;
-    expect(early.drums.hats.level).toBe(LEVEL_EARNED);
+    // §127: asked as a PROPERTY rather than at a fixed second. This used to
+    // read the level at 55s, which stopped meaning anything the moment
+    // deepenIntervalMs changed — the rung was already deep by then and the
+    // test failed while the behaviour it describes was still true. A rung
+    // lands at half and doubles later, whatever the tuning.
+    const landed = (() => {
+      for (let s = 1; s <= 120; s += 1) {
+        const { track } = fly('techno', s);
+        if (track.drums.hats.unlocked) return track.drums.hats.level;
+      }
+      return null;
+    })();
+    expect(landed).toBe(LEVEL_EARNED);
     // §123: a track hands over once its seven layers are EARNED, so depth is
     // checked inside one track's own life rather than after several.
     const late = fly('techno', 100);
@@ -138,5 +147,28 @@ describe('§32 export — the flight handed back as source', () => {
     const code = exportTrack({ graph: empty, genre: null, flownSeconds: 3 });
     expect(code).toContain('Nothing was earned yet');
     expect(code).not.toContain('stack(');
+  });
+});
+
+describe('§127 the whole track is reachable — depth is not a promise you cannot keep', () => {
+  it('grows every one of the seven layers to LEVEL_DEEP inside a single track', () => {
+    // Measured across all six worlds before this: FOUR of seven, always. A
+    // track handed over (§123: seven EARNED is complete) long before harmony,
+    // melody and texture had grown their second voice, so the doubled voices
+    // §32 built were unreachable content in every world, in every track.
+    for (const genre of ACTIVE_WORLD_GENRES) {
+      let deepest = 0;
+      let deep = 0;
+      const store = createStore(createInitialTrackState());
+      const bus = createEventBus<TrackEvents>();
+      bus.on('track:depth', () => { deep += 1; deepest = Math.max(deepest, deep); });
+      bus.on('track:new', () => { deep = 0; });
+      const builder = new TrackBuilder(store, bus);
+      const music = { ...createInitialMusicState(), bpm: 140, tempoConfidence: 0.6, dynamics: 0.5 };
+      for (let ms = 0; ms <= 420_000; ms += 250) {
+        builder.tick(ms, music, ROAMING, affinityOf(genre));
+      }
+      expect(`${genre}: ${deepest}/7`).toBe(`${genre}: 7/7`);
+    }
   });
 });

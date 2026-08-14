@@ -112,7 +112,13 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   lowRegisterMs: 4000,
   activityFloor: 0.12,
   maxTickDeltaMs: 500,
-  deepenIntervalMs: 11_000,
+  // §127: at 11_000 a track ALWAYS died before its last three layers had grown
+  // their second voice — harmony, melody and texture reached LEVEL_DEEP in no
+  // world, in no track, ever. The doubled voices §32 built (the 808 body under
+  // the clap, the saw under the sub) were unreachable content. A track lives
+  // long enough for seven deepenings at 7500 when flown fast; 5000 also holds at
+  // a crawl, where the same track has fewer real seconds to spend.
+  deepenIntervalMs: 5000,
   // §65: 2.5 turned a three-second rung into eight and a seven-second rung
   // into twenty — long enough that a track read as "nothing is happening".
   // Behaviour still earns a layer instantly; this is only how long the world
