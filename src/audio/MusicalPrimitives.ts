@@ -224,6 +224,43 @@ export function createEmptyLayerGraph(bpm = 0): MusicalLayerGraph {
   };
 }
 
+/**
+ * §105 A PROGRESSION, NOT A CHORD.
+ *
+ * The harmony was one chord, held forever — `<[a3,c4,e4,g4] ~ ~ ... >` with a
+ * single voicing repeating every bar. No harmonic movement means no music,
+ * only texture, and it is the biggest single reason the track read as basic
+ * however many voices were stacked on it. The reference tracks all move:
+ * "Ab Cm Bb F" over five cycles, five-note voicings walking X→Y→Z→J→K.
+ *
+ * Semitone offsets from the track's own root, four chords over four bars, so
+ * every world stays in the key the flight is in (§32) and still travels.
+ */
+export const PROGRESSIONS: Record<Exclude<TrackGenre, null>, readonly (readonly number[])[]> = {
+  // i — VI — VII — v: the minor loop techno has always turned on.
+  techno: [
+    [0, 3, 7, 10],
+    [8, 12, 15, 19],
+    [10, 14, 17, 21],
+    [7, 10, 14, 17],
+  ],
+  // i — iv — VI — V, darker and with a semitone lean in the third chord.
+  'sub-pressure': [
+    [0, 3, 7, 10],
+    [5, 8, 12, 15],
+    [1, 5, 8, 12],
+    [7, 11, 14, 17],
+  ],
+};
+
+/** The four chords of this world, as note names, ready for `<a b c d>`. */
+export function progressionFor(genre: TrackGenre, rootMidi: number, octave = 12): string {
+  const chords = PROGRESSIONS[genre ?? 'techno'];
+  return chords
+    .map((chord) => `[${chord.map((n) => midiToNoteName(rootMidi + octave + n)).join(',')}]`)
+    .join(' ');
+}
+
 /** §85: has this track actually been grown, or is it still a sketch? */
 function trackIsDeep(track?: TrackState): boolean {
   if (!track) return false;
@@ -939,6 +976,10 @@ export function buildLayerGraph(
           .slice(0, 4)
           .map((semitones) => midiToNoteName(rootMidi + 12 + semitones))
           .join(','),
+        // §105: four chords, one per bar, in the track's own key. The single
+        // held voicing above is what the player's resonances built; this is
+        // where it TRAVELS.
+        progression: progressionFor(track.genre, rootMidi),
         sound: 'triangle',
         style: grammar.chordStyle,
         drive: grammar.drive,

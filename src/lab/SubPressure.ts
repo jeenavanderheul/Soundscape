@@ -115,7 +115,8 @@ export function buildSubPressureGraph(
     {
       id: 'sub-pressure-hats', kind: 'hat', layer: 'drums', role: 'hats', deep: false,
       gain: 0.11 + wind * 0.05,
-      code: (g) => `s("hh ~ hh [hh hh] ~ hh ~ [hh hh]").bank("EmuSP12").hpf(${Math.round(6600 + alt * 1600)}).gain(${g}).pan(.58)`,
+      // §105: accents across the bar, so the shuffle is heard as a shuffle.
+      code: (g) => `s("hh ~ hh [hh hh] ~ hh ~ [hh hh]").bank("EmuSP12").velocity("1 .55 .8 .45").hpf(${Math.round(6600 + alt * 1600)}).gain(${g}).pan(.58)`,
     },
     {
       id: 'sub-pressure-hats-deep', kind: 'hat', layer: 'drums', role: 'hats', deep: true,
@@ -125,7 +126,8 @@ export function buildSubPressureGraph(
     {
       id: 'sub-pressure-kick', kind: 'kick', layer: 'drums', role: 'kick', deep: false,
       gain: 0.92 + wind * 0.12,
-      code: (g) => `s("bd ~ bd ~ ~ bd [bd ~] ~").bank("AkaiMPC60").shape(${formatGain(0.3 + edge * 0.18)}).distort(${formatGain(0.4 + edge * 0.3)}).postgain(.7).gain(${g})`,
+      // §105: played, not triggered — the syncopated hit leans back.
+      code: (g) => `s("bd ~ bd ~ ~ bd [bd ~] ~").bank("AkaiMPC60").velocity("1 .9 .84 .78").shape(${formatGain(0.3 + edge * 0.18)}).distort(${formatGain(0.4 + edge * 0.3)}).postgain(.7).gain(${g})`,
     },
     {
       id: 'sub-pressure-kick-deep', kind: 'kick', layer: 'drums', role: 'kick', deep: true,
@@ -135,7 +137,8 @@ export function buildSubPressureGraph(
     {
       id: 'sub-pressure-snare', kind: 'snare', layer: 'drums', role: 'snare', deep: false,
       gain: 0.72 + wind * 0.12,
-      code: (g) => `s("~ ~ sd ~ ~ ~ sd ~").bank("EmuSP12").shape(.337).distort(${formatGain(0.28 + edge * 0.15)}).gain(${g})`,
+      // §105: the backbeat plus ghosts, one sound at two strengths.
+      code: (g) => `stack(s("~ ~ sd ~ ~ ~ sd ~").bank("EmuSP12").shape(.337).distort(${formatGain(0.28 + edge * 0.15)}).gain(${g}), s("~ ~ ~ sd ~ ~ ~ sd").bank("EmuSP12").velocity(.2).hpf(2200).gain(${g}))`,
     },
     {
       id: 'sub-pressure-snare-deep', kind: 'snare', layer: 'drums', role: 'snare', deep: true,
@@ -161,12 +164,14 @@ export function buildSubPressureGraph(
     {
       id: 'sub-pressure-stab', kind: 'chord', layer: 'harmony', role: 'harmony', deep: false,
       gain: 0.11 + wind * 0.04,
-      code: (g) => `note("<~ [c3,db3,g3] ~ ~ ~ [bb2,db3,gb3] ~ ~>").s("square").lpf(${Math.round(820 + alt * 620)}).decay(.065).distort(.855).postgain(.35).gain(${g}).orbit(3)`,
+      // §105: four chords over four bars, played at four strengths, with a pad
+      // an octave down moving with them. One held voicing is texture, not music.
+      code: (g) => `stack(note("<[c3,eb3,g3,bb3] [f3,ab3,c4,eb4] [db3,f3,ab3,c4] [g3,bb3,d4,f4]>").struct("~ x ~ ~ ~ x ~ ~").velocity("1 .6 .8 .5").s("square").lpf(${Math.round(820 + alt * 620)}).decay(.065).distort(.855).postgain(.35).gain(${g}).orbit(3), note("<[c2,eb2,g2] [f2,ab2,c3] [db2,f2,ab2] [g2,bb2,d3]>").s("supersaw").attack(.9).release(1.4).lpf(620).lpq(2).room(.55).gain(${formatGain(Number(g) * 0.45)}).orbit(3))`,
     },
     {
       id: 'sub-pressure-signal', kind: 'melody', layer: 'melody', role: 'melody', deep: false,
       gain: 0.045 + edge * 0.025,
-      code: (g) => `note("~ c5 ~ ~ db5 ~ g4 ~").s("clavisynth").decay(.04).hpf(850).distort(.625).delay(.12).gain(${g})`,
+      code: (g) => `note("~ c5 ~ ~ db5 ~ g4 ~").s("clavisynth").decay(.04).hpf(850).distort(.625).delay(.3).dfb(.35).dt(60/141).gain(${g})`,
     },
     {
       // §94: this world OPENS on texture, so the rung has to bring a voice of

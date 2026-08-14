@@ -260,6 +260,33 @@ export function msUntilNextCycleBoundary(
 }
 
 /** Note-list helpers: every token must be a real note name (no user data). */
+/**
+ * §105: a chord SEQUENCE — `[a3,c4,e4,g4] [c4,eb4,g4,bb4] …` — validated as
+ * strictly as a single chord is. Every note inside every bracket has to be a
+ * real note name, or the pattern is refused rather than played wrong.
+ */
+function chordSequence(value: unknown, id: string): string {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new TypeError(`StrudelEngine: primitive "${id}" needs a progression`);
+  }
+  const chords = value.trim().split(/\s+(?=\[)/);
+  if (chords.length === 0 || chords.length > 8) {
+    throw new TypeError(`StrudelEngine: primitive "${id}" has an invalid progression`);
+  }
+  for (const chord of chords) {
+    const inner = /^\[([^\]]+)\]$/.exec(chord);
+    if (inner === null) {
+      throw new TypeError(`StrudelEngine: malformed chord "${chord}" in primitive "${id}"`);
+    }
+    for (const note of inner[1]!.split(',')) {
+      if (!NOTE_RE.test(note.trim())) {
+        throw new TypeError(`StrudelEngine: invalid note "${note}" in primitive "${id}"`);
+      }
+    }
+  }
+  return chords.join(' ');
+}
+
 function noteList(value: unknown, id: string, separator: string): string {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new TypeError(`StrudelEngine: primitive "${id}" needs note names`);
@@ -389,9 +416,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
             ? `s("bd*4")${drumBank}.distort("1.8:.25").clip(.85).gain(${gain})`
             : `s("sbd*4").distort("1.8:.25").clip(.85).gain(${gain})`;
         case 'machine':
+          // §105: a machine that hits exactly as hard four times a bar sounds
+          // like a machine. One and three lead, two and four sit back — and
+          // the last bar of four leans harder, which is where a loop turns.
           return samplesLoaded
-            ? `s("bd*4")${drumBank}.shape(.416).distort(.456).postgain(.68).gain(1.020)`
-            : `s("sbd*4").shape(.416).distort(.456).postgain(.68).gain(1.020)`;
+            ? `s("bd*4")${drumBank}.velocity("1 .86 .95 .82").shape(.416).distort(.456).postgain(.68).gain(${gain})`
+            : `s("sbd*4").velocity("1 .86 .95 .82").shape(.416).distort(.456).postgain(.68).gain(${gain})`;
         // §9.2 space: a distant heartbeat, one hit per bar.
         case 'sparse':
           return samplesLoaded
@@ -472,8 +502,11 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       // §66b garage/house: the clap IS the backbeat — eight steps, on 3 and 7,
       // dry, exactly as the reference preset writes it.
       if (style === 'clap') {
+        // §105: the backbeat plus GHOSTS — the same clap far back in the mix
+        // between the hits. Two velocities of one sound is what reads as a
+        // player rather than a trigger.
         return samplesLoaded
-          ? `s("~ ~ cp ~ ~ ~ cp ~")${percBank}.gain(${gain})`
+          ? `s("~ ~ cp ~ ~ ~ cp ~")${percBank}.gain(${gain}).off(.375, x => x.velocity(.22).hpf(1800))`
           : `s("~ white ~ white").decay(.1).sustain(0).bpf(1700).room(.2).gain(${gain})`;
       }
       // §32: the second snare — an 808 body a hair behind the clap.
@@ -697,6 +730,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
       const s = typeof sound === 'string' && VOICE_SOUNDS.has(sound) ? sound : 'sine';
       if (typeof p['notes'] === 'string') {
         const stacked = noteList(p['notes'], primitive.id, ',');
+        // §105: where the harmony travels. Falls back to the held voicing for
+        // any primitive that has not been given a progression.
+        const walk =
+          p['progression'] === undefined
+            ? `[${stacked}]`
+            : chordSequence(p['progression'], primitive.id);
         const style = styleOf(p['style'], CHORD_STYLES, 'stab');
         // Ambient: a wide, slow pad — the chord IS the space (§31).
         if (style === 'pad') {
@@ -732,7 +771,12 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // §71 techno: a dark pad holding under a dissonant stab, with an FM
         // shadow an octave up — three voices, none of them in front.
         if (style === 'darkpad') {
-          return `note("<[${stacked}] ~ ~ [${stacked}] ~ ~ ~ ~>").s("supersaw").lpf(1253).lpq(7).decay(.055).distort(.892).postgain(.3).gain(.117).orbit(3)`;
+          // §105: the stab WALKS — a bar per chord — and it is played rather
+          // than triggered: four hits at four different strengths, so the bar
+          // has a shape instead of four identical events. A pad an octave down
+          // holds under it and moves with it, which is what makes four voices
+          // sound like a chord and not like a beep.
+          return `stack(note("<${walk}>").struct("x ~ ~ x ~ ~ x ~").velocity("1 .62 .78 .5").s("supersaw").lpf(1253).lpq(7).decay(.055).distort(.892).postgain(.3).gain(${gain}), note("<${walk}>").sub(note(12)).s("supersaw").attack(.9).release(1.4).lpf(sine.range(320, 900).slow(12)).lpq(2).room(.55).gain(${(Number(gain) * 0.5).toFixed(3)}))`;
         }
         // §73 bass music: an acid line, not a chord — a resonant saw crawling
         // through the same notes the player found.
@@ -774,7 +818,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         case 'sequence':
           {
             const phrase = notes.split(' ');
-            return `note("${phrase[0]} ~ ~ ${phrase[1] ?? phrase[0]} ~ ${phrase[2] ?? phrase[0]} ~ ${phrase[3] ?? phrase[0]}").s("clavisynth").decay(.035).hpf(850).distort(.588).delay(.1).gain(.058)`;
+            return `note("${phrase[0]} ~ ~ ${phrase[1] ?? phrase[0]} ~ ${phrase[2] ?? phrase[0]} ~ ${phrase[3] ?? phrase[0]}").s("clavisynth").decay(.035).hpf(850).distort(.588).delay(.3).dfb(.32).dt(60/134).gain(.058)`;
           }
         // Techno: not a tune but a dark stab — the hook is the rhythm.
         case 'stab':

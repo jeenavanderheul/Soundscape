@@ -44,7 +44,10 @@ describe('SUB PRESSURE, finished — what the genre lab plays', () => {
     expect(code).toContain('s("bd ~ bd ~ ~ bd [bd ~] ~").bank("AkaiMPC60")');
     expect(code).toContain('note("~ c1 ~ c1 ~ ~ bb0 db1").s("sine")');
     expect(code).toContain('note("~ c2 ~ c2 ~ ~ bb1 db2").s("sawtooth")');
-    expect(code).toContain('note("<~ [c3,db3,g3] ~ ~ ~ [bb2,db3,gb3] ~ ~>").s("square")');
+    // §105: the stab WALKS a four-chord progression instead of holding one
+    // voicing, and it is played at four strengths rather than triggered.
+    expect(code).toContain('note("<[c3,eb3,g3,bb3] [f3,ab3,c4,eb4] [db3,f3,ab3,c4] [g3,bb3,d4,f4]>")');
+    expect(code).toContain('.velocity("1 .6 .8 .5")');
     expect(code).toContain('s("bytebeat").slow(2).bpf(1300).crush(5)');
   });
 
@@ -77,7 +80,7 @@ describe('SUB PRESSURE answers the flight, like every other world', () => {
     const high = at(60, 0.4);
     const low = at(1, 0.4);
     expect(high).not.toBe(low);
-    const hz = (code: string) => Number(/bank\("EmuSP12"\)\.hpf\((\d+)\)/.exec(code)![1]);
+    const hz = (code: string) => Number(/bank\("EmuSP12"\)\.velocity\("[^"]*"\)\.hpf\((\d+)\)/.exec(code)![1]);
     expect(hz(high)).toBeGreaterThan(hz(low));
   });
 
