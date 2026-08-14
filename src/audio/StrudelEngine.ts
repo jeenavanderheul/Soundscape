@@ -860,7 +860,13 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         case 'machine-room':
           return `stack(s("brown").clip(1).lpf(674).gain(.053).room(.75).orbit(3), s("crackle").hpf(5000).gain(.017).room(.35))`;
         case 'machine-rise':
-          return `s("white").clip(1).hpf(4500).attack(.35).release(.3).room(.45).distort(.37).gain(.075)`;
+          // §104: ONE swell every sixteen bars. This is a FIGURE — the mask is
+          // the note, not an arrangement — but §101 removed every techno mask
+          // in one sweep and took it with them. Unmasked it fired every single
+          // bar: a 0.35s noise swell at 4500 Hz, louder than the texture and
+          // the deep hats, landing on nothing. It read as a clap that was not
+          // in time, because it is not a hit at all.
+          return `s("white").clip(1).hpf(4500).attack(.35).release(.3).room(.45).distort(.37).gain(.075).mask("<0!15 1 0!15 1>")`;
         // §69 breakbeat: low rumble under everything, felt more than heard.
         case 'rumble':
           return `s("white").slow(4).lpf(400).room(.75).gain(${gain})`;

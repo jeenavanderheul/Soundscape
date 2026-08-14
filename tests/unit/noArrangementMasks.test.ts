@@ -33,20 +33,35 @@ const PHASES: Section[] = ['intro', 'groove', 'discovery', 'build', 'drop', 'dee
 const WORLDS = ['techno', 'sub-pressure'] as const;
 
 /**
- * A mask is a FIGURE if it repeats within a bar or two — one hit every eight,
- * say. It is an ARRANGEMENT once it spans the length of the arc, because then
- * it is deciding which PHASE a part belongs to, which is not its business.
+ * §104: span alone cannot tell a figure from an arrangement — the machine-rise
+ * is `<0!15 1 0!15 1>`, thirty-two cycles wide and yet one swell every sixteen
+ * bars. What separates them is what the mask DOES:
+ *
+ *   an ARRANGEMENT gates the start and then leaves the part ON — a long run of
+ *   leading zeros followed by mostly ones, which is a phase decision;
+ *   a FIGURE is mostly OFF — the mask is the note itself.
  */
 function arrangementMasks(code: string): string[] {
   return [...code.matchAll(/\.mask\("([^"]*)"\)/g)]
     .map((m) => m[1]!)
     .filter((pattern) => {
-      const cycles = pattern
-        .replace(/[<>]/g, '')
-        .trim()
-        .split(/\s+/)
-        .reduce((total, token) => total + (Number(/!(\d+)/.exec(token)?.[1]) || 1), 0);
-      return cycles >= 16;
+      const steps = pattern.replace(/[<>]/g, '').trim().split(/\s+/);
+      let total = 0;
+      let on = 0;
+      let leadingZeros = 0;
+      let stillLeading = true;
+      for (const token of steps) {
+        const run = Number(/!(\d+)/.exec(token)?.[1]) || 1;
+        const isOn = token.startsWith('1');
+        total += run;
+        if (isOn) {
+          on += run;
+          stillLeading = false;
+        } else if (stillLeading) {
+          leadingZeros += run;
+        }
+      }
+      return leadingZeros >= 4 && on / total >= 0.25;
     });
 }
 
@@ -81,9 +96,12 @@ describe('presence is the arc’s job, never a template’s', () => {
     });
   }
 
-  it('still allows a short mask, which is a figure and not an arrangement', () => {
+  it('tells a figure from an arrangement by what the mask does, not its span', () => {
+    // The machine-rise: thirty-two cycles wide, but on for two of them.
     expect(arrangementMasks('s("white").mask("<1 0!7>")')).toEqual([]);
-    expect(arrangementMasks('s("x").mask("<0!15 1 0!15 1>")')).toHaveLength(1);
+    expect(arrangementMasks('s("x").mask("<0!15 1 0!15 1>")')).toEqual([]);
+    // A part held silent for half the arc and then left on: an arrangement.
     expect(arrangementMasks('s("x").mask("<0!16 1!8 0!4 1!4>")')).toHaveLength(1);
+    expect(arrangementMasks('s("x").mask("<0!4 1!20 0!4 1!4>")')).toHaveLength(1);
   });
 });
