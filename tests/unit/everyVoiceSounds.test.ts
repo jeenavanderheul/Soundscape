@@ -164,3 +164,26 @@ describe('§114 what the ENGINE renders is playable, offline, everywhere', () =>
     expect([...unplayable]).toEqual([]);
   });
 });
+
+describe('§115 every world shows its own layout, not role banners', () => {
+  it('all six carry a section title on every voice', () => {
+    setSamplesLoaded(true);
+    const deep = { unlocked: true, level: LEVEL_DEEP };
+    for (const genre of ['techno', 'sub-pressure', 'heavy-signal',
+      'broken-machine', 'percussion-riot', 'void-crusher'] as Exclude<TrackGenre, null>[]) {
+      const track = {
+        ...createInitialTrackState(),
+        genre, form: 'return' as const,
+        bpm: regionBpm(genreGrammar(genre)),
+        drums: { kick: deep, snare: deep, hats: deep },
+        bass: deep, harmony: deep, melody: deep, texture: deep,
+        rootMidi: 45, harmonyIntervals: [0, 3, 7, 10], melodyNotes: [69, 72, 76],
+      } as ReturnType<typeof createInitialTrackState>;
+      const music = { ...createInitialMusicState(), bpm: track.bpm, tempoConfidence: 0.6, dynamics: 0.5 };
+      const graph = buildWorldLayerGraph({ music, structures: [], track, patterns: {}, motion: 1, energy: 0.6 });
+      const voices = Object.values(graph.layers).flatMap((l) => l.primitives);
+      const titled = voices.filter((p) => typeof p.parameters['section'] === 'string');
+      expect(`${genre}: ${titled.length}/${voices.length}`).toBe(`${genre}: ${voices.length}/${voices.length}`);
+    }
+  });
+});

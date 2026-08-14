@@ -101,75 +101,75 @@ export function buildSubPressureGraph(
   // world's style: the bottom leaves in the build and comes back in the drop.
   const mix = sectionMix(track?.form ?? 'none', 'driven');
 
-  const parts: { id: string; kind: PrimitiveKind; layer: LayerName; role: Role; deep: boolean; gain: number; code: (g: string) => string }[] = [
+  const parts: { id: string; kind: PrimitiveKind; layer: LayerName; role: Role; deep: boolean; section: string; gain: number; code: (g: string) => string }[] = [
     {
-      id: 'sub-pressure-atmosphere', kind: 'texture', layer: 'atmosphere', role: 'texture', deep: false,
+      id: 'sub-pressure-atmosphere', section: 'ATMOSPHERE', kind: 'texture', layer: 'atmosphere', role: 'texture', deep: false,
       gain: 0.035 + wind * 0.025,
       code: (g) => `s("brown").clip(1).lpf(${Math.round(560 + alt * 220)}).gain(${g}).room(.8).orbit(3)`,
     },
     {
-      id: 'sub-pressure-rise', kind: 'texture', layer: 'atmosphere', role: 'texture', deep: true,
+      id: 'sub-pressure-rise', section: 'TRANSITION PRESSURE', kind: 'texture', layer: 'atmosphere', role: 'texture', deep: true,
       gain: 0.09,
       code: (g) => `s("white").clip(1).hpf(3500).attack(.4).release(.3).room(.55).gain(${g})`,
     },
     {
-      id: 'sub-pressure-hats', kind: 'hat', layer: 'drums', role: 'hats', deep: false,
+      id: 'sub-pressure-hats', section: '1 — HATS', kind: 'hat', layer: 'drums', role: 'hats', deep: false,
       gain: 0.11 + wind * 0.05,
       // §105: accents across the bar, so the shuffle is heard as a shuffle.
       code: (g) => `s("hh ~ hh [hh hh] ~ hh ~ [hh hh]").bank("EmuSP12").velocity("1 .55 .8 .45").hpf(${Math.round(6600 + alt * 1600)}).gain(${g}).pan(.58)`,
     },
     {
-      id: 'sub-pressure-hats-deep', kind: 'hat', layer: 'drums', role: 'hats', deep: true,
+      id: 'sub-pressure-hats-deep', section: 'DEEP HATS', kind: 'hat', layer: 'drums', role: 'hats', deep: true,
       gain: 0.025 + edge * 0.025,
       code: (g) => `s("hh*32").bank("AkaiMPC60").degradeBy(${formatGain(0.6 - edge * 0.2)}).hpf(9500).gain(${g}).pan(.72)`,
     },
     {
-      id: 'sub-pressure-kick', kind: 'kick', layer: 'drums', role: 'kick', deep: false,
+      id: 'sub-pressure-kick', section: '2 — KICK', kind: 'kick', layer: 'drums', role: 'kick', deep: false,
       gain: 0.92 + wind * 0.12,
       // §105: played, not triggered — the syncopated hit leans back.
       code: (g) => `s("bd ~ bd ~ ~ bd [bd ~] ~").bank("AkaiMPC60").velocity("1 .9 .84 .78").shape(${formatGain(0.3 + edge * 0.18)}).distort(${formatGain(0.4 + edge * 0.3)}).postgain(.7).gain(${g})`,
     },
     {
-      id: 'sub-pressure-kick-deep', kind: 'kick', layer: 'drums', role: 'kick', deep: true,
+      id: 'sub-pressure-kick-deep', section: 'DEEP / SYNCOPATED KICK', kind: 'kick', layer: 'drums', role: 'kick', deep: true,
       gain: 0.16 + edge * 0.1,
       code: (g) => `s("~ ~ ~ bd ~ ~ ~ bd").bank("OberheimDMX").lpf(1900).gain(${g})`,
     },
     {
-      id: 'sub-pressure-snare', kind: 'snare', layer: 'drums', role: 'snare', deep: false,
+      id: 'sub-pressure-snare', section: '3 — CLAP / SNARE', kind: 'snare', layer: 'drums', role: 'snare', deep: false,
       gain: 0.72 + wind * 0.12,
       // §105: the backbeat plus ghosts, one sound at two strengths.
       code: (g) => `stack(s("~ ~ sd ~ ~ ~ sd ~").bank("EmuSP12").shape(.337).distort(${formatGain(0.28 + edge * 0.15)}).gain(${g}), s("~ ~ ~ sd ~ ~ ~ sd").bank("EmuSP12").velocity(.2).hpf(2200).gain(${g}))`,
     },
     {
-      id: 'sub-pressure-snare-deep', kind: 'snare', layer: 'drums', role: 'snare', deep: true,
+      id: 'sub-pressure-snare-deep', section: 'DEEP SNARE BODY', kind: 'snare', layer: 'drums', role: 'snare', deep: true,
       gain: 0.13 + edge * 0.07,
       code: (g) => `s("~ ~ cp ~ ~ ~ cp ~").bank("AkaiMPC60").hpf(2500).late(.012).room(.15).gain(${g})`,
     },
     {
-      id: 'sub-pressure-sub', kind: 'sub', layer: 'bass', role: 'bass', deep: false,
+      id: 'sub-pressure-sub', section: '4 — SUB', kind: 'sub', layer: 'bass', role: 'bass', deep: false,
       // §3.1: flying low IS the low register — the sub is heaviest by the ground.
       gain: 0.82 + wind * 0.18,
       code: (g) => `note("~ c1 ~ c1 ~ ~ bb0 db1").s("sine").lpf(90).attack(.002).decay(.38).sustain(.38).release(.08).gain(${g}).orbit(2)`,
     },
     {
-      id: 'sub-pressure-body', kind: 'bass', layer: 'bass', role: 'bass', deep: false,
+      id: 'sub-pressure-body', section: '5 — ROLLING BASS', kind: 'bass', layer: 'bass', role: 'bass', deep: false,
       gain: 0.42 + wind * 0.12,
       code: (g) => `note("~ c2 ~ c2 ~ ~ bb1 db2").s("sawtooth").lpf(379).lpq(10.6).distort(${formatGain(1.8 + edge * 0.6)}).postgain(.3).decay(.16).release(.05).gain(${g}).orbit(2)`,
     },
     {
-      id: 'sub-pressure-reese', kind: 'bass', layer: 'bass', role: 'bass', deep: true,
+      id: 'sub-pressure-reese', section: 'DEEP — DIRTY REESE', kind: 'bass', layer: 'bass', role: 'bass', deep: true,
       gain: 0.12 + edge * 0.08,
       code: (g) => `note("~ ~ c2 ~ db2 ~ ~ c2").s("square").hpf(145).lpf(865).lpq(8).distort(${formatGain(2.2 + edge * 0.5)}).postgain(.22).gain(${g}).orbit(2)`,
     },
     {
-      id: 'sub-pressure-stab', kind: 'chord', layer: 'harmony', role: 'harmony', deep: false,
+      id: 'sub-pressure-stab', section: '6 — RAVE STAB', kind: 'chord', layer: 'harmony', role: 'harmony', deep: false,
       gain: 0.11 + wind * 0.04,
       // §105: four chords over four bars, played at four strengths, with a pad
       // an octave down moving with them. One held voicing is texture, not music.
       code: (g) => `stack(note("<[c3,eb3,g3,bb3] [f3,ab3,c4,eb4] [db3,f3,ab3,c4] [g3,bb3,d4,f4]>").struct("~ x ~ ~ ~ x ~ ~").velocity("1 .6 .8 .5").s("square").lpf(${Math.round(820 + alt * 620)}).decay(.065).distort(.855).postgain(.35).gain(${g}).orbit(3), note("<[c2,eb2,g2] [f2,ab2,c3] [db2,f2,ab2] [g2,bb2,d3]>").s("supersaw").attack(.9).release(1.4).lpf(620).lpq(2).room(.55).gain(${formatGain(Number(g) * 0.45)}).orbit(3))`,
     },
     {
-      id: 'sub-pressure-signal', kind: 'melody', layer: 'melody', role: 'melody', deep: false,
+      id: 'sub-pressure-signal', section: '7 — MACHINE SIGNAL', kind: 'melody', layer: 'melody', role: 'melody', deep: false,
       gain: 0.045 + edge * 0.025,
       code: (g) => `note("~ c5 ~ ~ db5 ~ g4 ~").s("clavisynth").decay(.04).hpf(850).distort(.625).delay(.3).dfb(.35).dt(60/141).gain(${g})`,
     },
@@ -177,7 +177,7 @@ export function buildSubPressureGraph(
       // §94: this world OPENS on texture, so the rung has to bring a voice of
       // its own — the air is always there, so gating this behind depth made
       // DISCOVERY I add nothing you could hear.
-      id: 'sub-pressure-texture', kind: 'texture', layer: 'texture', role: 'texture', deep: false,
+      id: 'sub-pressure-texture', section: '8 — TEXTURE', kind: 'texture', layer: 'texture', role: 'texture', deep: false,
       gain: 0.018 + edge * 0.015,
       code: (g) => `s("bytebeat").slow(2).bpf(1300).crush(5).distort(1.15).postgain(.3).gain(${g}).orbit(3)`,
     },
@@ -188,17 +188,17 @@ export function buildSubPressureGraph(
   if (isFinale(track?.form ?? 'none') && reveals(track, 'bass', true)) {
     parts.push(
       {
-        id: 'sub-pressure-finale-response', kind: 'response', layer: 'bass', role: 'bass', deep: true,
+        id: 'sub-pressure-finale-response', section: 'CLIMAX — BASS RESPONSE', kind: 'response', layer: 'bass', role: 'bass', deep: true,
         gain: 0.3 + wind * 0.1,
         code: (g) => `note("~ ~ c1 ~ ~ c1 ~ [c1 bb0]").s("sine").lpf(96).decay(.3).sustain(.2).distort(.4).gain(${g}).orbit(2)`,
       },
       {
-        id: 'sub-pressure-finale-noise', kind: 'noise', layer: 'texture', role: 'texture', deep: true,
+        id: 'sub-pressure-finale-noise', section: 'CLIMAX — NOISE', kind: 'noise', layer: 'texture', role: 'texture', deep: true,
         gain: 0.08 + edge * 0.05,
         code: (g) => `s("white").clip(1).hpf(4200).attack(.45).release(.35).room(.5).distort(1.2).gain(${g}).mask("<1 0!7>")`,
       },
       {
-        id: 'sub-pressure-finale-mutation', kind: 'perc', layer: 'drums', role: 'hats', deep: true,
+        id: 'sub-pressure-finale-mutation', section: 'CLIMAX — MUTATION', kind: 'perc', layer: 'drums', role: 'hats', deep: true,
         gain: 0.06 + edge * 0.06,
         code: (g) => `s("hh*16").bank("AkaiMPC60").degradeBy(${formatGain(0.7 - edge * 0.3)}).speed("<1 1.5 .75 2>").hpf(6000).gain(${g})`,
       },
@@ -216,9 +216,12 @@ export function buildSubPressureGraph(
     const trim = Math.max(0, controls.mix?.[part.layer] ?? 1);
     const level = part.gain * motion * section * trim;
     if (level <= 0) continue;
-    graph.layers[part.layer].primitives.push(
-      voice(part.id, part.kind, part.layer, part.code(formatGain(level))),
-    );
+    // §115: this world predates §110's section titles, so it alone showed
+    // role banners instead of its own layout. It carries them now like the
+    // other five.
+    const primitive = voice(part.id, part.kind, part.layer, part.code(formatGain(level)));
+    primitive.parameters['section'] = part.section;
+    graph.layers[part.layer].primitives.push(primitive);
   }
 
   return graph;
