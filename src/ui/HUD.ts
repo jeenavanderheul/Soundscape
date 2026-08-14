@@ -8,6 +8,8 @@ export interface HudPlace {
   biome: string;
   /** 0..1 how fast the track is developing right now (§46). */
   speed: number;
+  /** §129: the hyper boost is being held — twice the speed the bar shows. */
+  hyper?: boolean;
   /** Which track of the endless journey is playing, its grammar, and how full. */
   track: number;
   /** §47: the track keeps the grammar it was born in — which is not always `here`. */
@@ -56,7 +58,7 @@ export class HUD {
     const where =
       place === undefined
         ? ''
-        : `\n\nspeed ${bar(place.speed)}` +
+        : `\n\nspeed ${bar(place.speed)}${place.hyper === true ? '  HYPER ×2' : ''}` +
           `\ntrack ${String(place.track).padStart(2, '0')} · ${place.trackGenre} · ${place.layers}/${place.maxLayers} layers` +
           `\n\nflying: ${place.heading}\nhere:   ${place.biome}`;
     const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;

@@ -7,10 +7,10 @@ describe('DEFAULT_BINDINGS', () => {
     expect(DEFAULT_BINDINGS.keys['KeyS']).toBe('moveBackward');
     expect(DEFAULT_BINDINGS.keys['KeyA']).toBe('moveLeft');
     expect(DEFAULT_BINDINGS.keys['KeyD']).toBe('moveRight');
-    expect(DEFAULT_BINDINGS.keys['ShiftLeft']).toBe('accelerate');
+    expect(DEFAULT_BINDINGS.keys['ShiftLeft']).toBe('hyperBoost');
     expect(DEFAULT_BINDINGS.keys['Space']).toBe('resonancePulse');
     expect(DEFAULT_BINDINGS.keys['Escape']).toBe('pause');
-    // Left is the wind and the throttle (user decision).
+    // §129 (user decision): left is ONLY the wind now — W flies, Shift is hyper.
     expect(DEFAULT_BINDINGS.mouseButtons[0]).toBe('windHold');
     expect(DEFAULT_BINDINGS.wheel).toBe('frequencyFocus');
     expect(DEFAULT_BINDINGS.mouseMove).toBe('look');
@@ -22,7 +22,7 @@ describe('DEFAULT_BINDINGS', () => {
       'moveBackward',
       'moveLeft',
       'moveRight',
-      'accelerate',
+      'hyperBoost',
       'resonancePulse',
       'toggleCode',
       'exportTrack',

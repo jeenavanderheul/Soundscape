@@ -39,7 +39,7 @@ const HINTS: HintDef[] = [
   },
   {
     id: 'gear',
-    text: 'hold LMB: wind, full speed, and the track grows faster',
+    text: 'W: fly · hold LMB: the wind · Shift: hyper, twice the speed',
     when: (ctx) => ctx.elapsedMs > 14_000,
   },
   {

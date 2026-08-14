@@ -111,7 +111,7 @@ describe('§91 the guide points at the layer standing out there', () => {
     expect(guideLines({ ...base, beacon: at(0.9, 25) })[0]).toContain('climb');
     expect(guideLines({ ...base, beacon: at(0.9, -25) })[0]).toContain('dive');
     expect(guideLines({ ...base, beacon: at(0.9, 2) })[0]).not.toContain('climb');
-    expect(guideLines({ ...base, beacon: at(0.9, 2) })[2]).toContain('hold LMB');
+    expect(guideLines({ ...base, beacon: at(0.9, 2) })[2]).toContain('hold W'); // §129: W flies now
   });
 
   it('says hold it once the layer is on the nose', () => {

@@ -93,7 +93,7 @@ export function guideLines(state: GuideState): string[] {
       : state.heading.startsWith(home)
         ? `stay on ${home} · this is where your track grows`
         : `turn to ${home} · leaving ends this track`;
-  const push = state.energy < 0.55 ? 'hold LMB · speed is what builds it' : 'pushing · it is building';
+  const push = state.energy < 0.55 ? 'hold W · speed is what builds it' : 'pushing · it is building';
   return [target, place, push];
 }
 

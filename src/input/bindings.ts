@@ -6,7 +6,7 @@ export type KeyAction =
   | 'moveBackward'
   | 'moveLeft'
   | 'moveRight'
-  | 'accelerate'
+  | 'hyperBoost'
   | 'resonancePulse'
   | 'toggleCode'
   | 'exportTrack'
@@ -14,8 +14,10 @@ export type KeyAction =
   | 'pause';
 
 /**
- * The left button is the wind (§5 dynamics): holding it builds amplitude and
- * boosts the orb, releasing it is the timed pulse. Shift is the gearbox.
+ * §129 (user decision): W is the throttle, the left button is ONLY the wind,
+ * and Shift is a separate hyper boost. Holding the wind builds amplitude and
+ * releasing it is the timed pulse — it no longer moves you, so the tone and
+ * the speed are two hands doing two things.
  */
 export type MouseButtonAction = 'windHold';
 export type WheelAction = 'frequencyFocus';
@@ -36,8 +38,8 @@ export const DEFAULT_BINDINGS: DesktopBindings = {
     KeyS: 'moveBackward',
     KeyA: 'moveLeft',
     KeyD: 'moveRight',
-    ShiftLeft: 'accelerate',
-    ShiftRight: 'accelerate',
+    ShiftLeft: 'hyperBoost',
+    ShiftRight: 'hyperBoost',
     Space: 'resonancePulse',
     KeyC: 'toggleCode',
     KeyE: 'exportTrack',

@@ -853,6 +853,7 @@ export class Game {
       heading: headingLabel(this.flightHeading(state)),
       biome: placeName(this.placeGenre),
       speed: this.controller.throttleLevel,
+      hyper: this.controller.hyper,
       track: this.trackBuilder.trackNumber,
       trackGenre: this.trackStore.getState().genre ?? 'forming',
       layers: countUnlocked(this.trackStore.getState()),

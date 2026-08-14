@@ -19,7 +19,7 @@ import {
 function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
   return {
     axes: { moveX: 0, moveZ: 0 },
-    buttons: { accelerate: false, windHold: false },
+    buttons: { accelerate: false, windHold: false, hyper: false },
     windReleased: false,
     resonancePulse: false,
     pausePressed: false,
@@ -153,7 +153,7 @@ describe('FrequencyController', () => {
     const store = createStore(createInitialFrequencyState());
     const controller = new FrequencyController(store);
     for (let i = 0; i < 200; i++) {
-      controller.update(snapshot({ buttons: { accelerate: false, windHold: true } }), 16);
+      controller.update(snapshot({ buttons: { accelerate: false, windHold: true, hyper: false } }), 16);
       const a = store.getState().amplitude;
       expect(a).toBeGreaterThanOrEqual(0);
       expect(a).toBeLessThanOrEqual(1);
@@ -171,7 +171,7 @@ describe('FrequencyController', () => {
       controller.update(
         snapshot({
           axes: { moveX: 0, moveZ: 1 },
-          buttons: { accelerate: true, windHold: false },
+          buttons: { accelerate: true, windHold: false, hyper: false },
         }),
         16,
       );
@@ -205,7 +205,7 @@ describe('§46 speed is the throttle, not a gearbox', () => {
       controller.update(
         snapshot({
           axes: { moveX: 0, moveZ: 1 },
-          buttons: { accelerate: throttle, windHold: throttle },
+          buttons: { accelerate: throttle, windHold: throttle, hyper: false },
         }),
         16,
       );
@@ -232,7 +232,7 @@ describe('§46 speed is the throttle, not a gearbox', () => {
         controller.update(
           snapshot({
             axes: { moveX: 0, moveZ: 1 },
-            buttons: { accelerate: throttle, windHold: throttle },
+            buttons: { accelerate: throttle, windHold: throttle, hyper: false },
           }),
           16,
         );
@@ -253,10 +253,10 @@ describe('§46 speed is the throttle, not a gearbox', () => {
 describe('§51 the throttle is notched, so tapping steers the speed', () => {
   function press(controller: FrequencyController, downMs: number, upMs: number): void {
     for (let t = 0; t < downMs; t += 16) {
-      controller.update(snapshot({ buttons: { accelerate: true, windHold: true } }), 16);
+      controller.update(snapshot({ buttons: { accelerate: true, windHold: true, hyper: false } }), 16);
     }
     for (let t = 0; t < upMs; t += 16) {
-      controller.update(snapshot({ buttons: { accelerate: false, windHold: false } }), 16);
+      controller.update(snapshot({ buttons: { accelerate: false, windHold: false, hyper: false } }), 16);
     }
   }
 
@@ -285,5 +285,39 @@ describe('§51 the throttle is notched, so tapping steers the speed', () => {
       const notch = controller.throttleLevel * THROTTLE_NOTCHES;
       expect(Math.abs(notch - Math.round(notch))).toBeLessThan(1e-9);
     }
+  });
+});
+
+describe('§129 W flies, the wind sounds, Shift is hyper', () => {
+  const speedAfter = (
+    buttons: { accelerate: boolean; windHold: boolean; hyper: boolean },
+    seconds: number,
+  ): number => {
+    const store = createStore(createInitialFrequencyState());
+    const controller = new FrequencyController(store);
+    const input = snapshot({
+      axes: { moveX: 0, moveZ: buttons.accelerate ? 1 : 0 },
+      buttons,
+    });
+    for (let ms = 0; ms < seconds * 1000; ms += 16) controller.update(input, 16);
+    return store.getState().velocity;
+  };
+
+  it('doubles the speed the throttle had reached', () => {
+    const open = speedAfter({ accelerate: true, windHold: false, hyper: false }, 40);
+    const hyper = speedAfter({ accelerate: true, windHold: false, hyper: true }, 40);
+    expect(hyper / open).toBeGreaterThan(1.8);
+    expect(hyper / open).toBeLessThan(2.2);
+  });
+
+  it('is a burst, not a gear: held at a standstill it takes you nowhere', () => {
+    // Multiplying rather than adding notches is what makes this true — hyper
+    // doubles whatever the throttle already gave you, so at rest it is rest.
+    expect(speedAfter({ accelerate: false, windHold: false, hyper: true }, 6)).toBeLessThan(1);
+  });
+
+  it('the wind alone never moves the orb', () => {
+    // It used to open the throttle, so a long tone flew you across the world.
+    expect(speedAfter({ accelerate: false, windHold: true, hyper: false }, 8)).toBeLessThan(1);
   });
 });

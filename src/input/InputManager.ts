@@ -6,7 +6,7 @@ import { DEFAULT_BINDINGS, DesktopBindings, KeyAction } from './bindings';
 export interface InputSnapshot {
   /** moveX: -1 left … +1 right; moveZ: -1 backward … +1 forward. */
   axes: { moveX: number; moveZ: number };
-  buttons: { accelerate: boolean; windHold: boolean };
+  buttons: { accelerate: boolean; windHold: boolean; hyper: boolean };
   /** LMB was released since the last snapshot → timed pulse excitation. */
   windReleased: boolean;
   /** Space was pressed since the last snapshot. */
@@ -89,10 +89,12 @@ export class InputManager {
         moveZ: this.axisValue('moveForward') - this.axisValue('moveBackward'),
       },
       buttons: {
-        // The wind IS the throttle: holding it pulls the orb up to full speed
-        // (§3.2 dynamics = force). Shift does the same for the keyboard.
-        accelerate: this.windHold || this.isActionHeld('accelerate'),
+        // §129: W IS the throttle. The wind used to open it too, which meant
+        // you could not sound a long tone without also flying off, and could
+        // not fly without sounding. One hand flies, the other plays.
+        accelerate: this.isActionHeld('moveForward'),
         windHold: this.windHold,
+        hyper: this.isActionHeld('hyperBoost'),
       },
       windReleased: this.windReleased,
       resonancePulse: this.resonancePulse,

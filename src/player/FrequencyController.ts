@@ -149,6 +149,9 @@ export const FULL_SPEED = 132;
  * you are on.
  */
 export const THROTTLE_NOTCHES = 20;
+
+/** §129: hyper speed is twice whatever the throttle is already giving you. */
+export const HYPER_MULTIPLIER = 2;
 /** Notches a single press adds immediately — a tap has to DO something. */
 const TAP_NOTCHES = 2;
 /** Seconds per notch: holding fills the bar in ~1.2s, releasing empties in ~2.6s. */
@@ -176,9 +179,19 @@ export class FrequencyController {
     return this.yawRateValue;
   }
 
-  /** 0..1 how far the throttle is open right now — what the HUD bar draws. */
+  /**
+   * 0..1 how far the throttle is open right now — what the HUD bar draws.
+   * §129: hyper is NOT folded in here. It is a burst you hold, not a gear you
+   * left open, and folding it in would have halved the nine blocks §120 put
+   * there for the ordinary range. The HUD says HYPER next to the bar instead.
+   */
   get throttleLevel(): number {
     return this.notches / THROTTLE_NOTCHES;
+  }
+
+  /** Whether the hyper boost is being held right now. */
+  get hyper(): boolean {
+    return this.hyperOpen;
   }
 
   /** Vertical speed in units/s: positive is climbing (§29.7 arrangement). */
@@ -197,6 +210,7 @@ export class FrequencyController {
   private notches = 0;
   private notchTimer = 0;
   private wasThrottling = false;
+  private hyperOpen = false;
 
   constructor(private readonly store: Store<FrequencyState>) {}
 
@@ -246,8 +260,14 @@ export class FrequencyController {
         ? Math.min(THROTTLE_NOTCHES, this.notches + 1)
         : Math.max(0, this.notches - 1);
     }
-    const topSpeed =
+    // §129 (user decision): a separate hyper boost on top of the throttle —
+    // held, it doubles wherever the throttle already is. It is a burst you
+    // choose, not a gear you leave open, so it multiplies rather than adding
+    // notches: tapping it at a crawl is still a crawl.
+    const opened =
       CRUISE_SPEED + (FULL_SPEED - CRUISE_SPEED) * (this.notches / THROTTLE_NOTCHES);
+    this.hyperOpen = input.buttons.hyper;
+    const topSpeed = opened * (this.hyperOpen ? HYPER_MULTIPLIER : 1);
     const accelMagnitude = Math.max(
       FLIGHT_CONFIG.acceleration,
       topSpeed * FLIGHT_CONFIG.drag * 1.25,

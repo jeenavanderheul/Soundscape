@@ -35,12 +35,15 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('holding the wind is also the boost (user decision)', () => {
+  it('§129 the wind does NOT move you — one hand flies, the other plays', () => {
+    // It used to open the throttle too, so you could not hold a long tone
+    // without flying off, or fly without sounding one (user decision).
     const { pointer, manager } = setup();
     pointer.dispatchEvent(mouse('mousedown', 0, 0));
-    expect(manager.snapshot().buttons.accelerate).toBe(true);
+    const windy = manager.snapshot();
+    expect(windy.buttons.windHold).toBe(true);
+    expect(windy.buttons.accelerate).toBe(false);
     pointer.dispatchEvent(mouse('mouseup', 0, 400));
-    expect(manager.snapshot().buttons.accelerate).toBe(false);
     manager.detach();
   });
 
@@ -93,20 +96,29 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('shift is the keyboard throttle, the wind is the mouse one (§23)', () => {
+  it('§129 W is the throttle, Shift is the hyper boost, the mouse is the wind', () => {
     const { keyboard, pointer, manager } = setup();
 
-    keyboard.dispatchEvent(key('keydown', 'ShiftLeft'));
-    const shifted = manager.snapshot();
-    expect(shifted.buttons.accelerate).toBe(true);
-    expect(shifted.buttons.windHold).toBe(false); // no wind without the button
-    keyboard.dispatchEvent(key('keyup', 'ShiftLeft'));
+    // W flies.
+    keyboard.dispatchEvent(key('keydown', 'KeyW'));
+    expect(manager.snapshot().buttons.accelerate).toBe(true);
+    keyboard.dispatchEvent(key('keyup', 'KeyW'));
     expect(manager.snapshot().buttons.accelerate).toBe(false);
 
+    // Shift is its own thing — twice the speed, never the throttle itself.
+    keyboard.dispatchEvent(key('keydown', 'ShiftLeft'));
+    const shifted = manager.snapshot();
+    expect(shifted.buttons.hyper).toBe(true);
+    expect(shifted.buttons.accelerate).toBe(false);
+    expect(shifted.buttons.windHold).toBe(false);
+    keyboard.dispatchEvent(key('keyup', 'ShiftLeft'));
+    expect(manager.snapshot().buttons.hyper).toBe(false);
+
+    // And the mouse only ever sounds.
     pointer.dispatchEvent(mouse('mousedown', 0, 2000));
     const windy = manager.snapshot();
-    expect(windy.buttons.accelerate).toBe(true);
     expect(windy.buttons.windHold).toBe(true);
+    expect(windy.buttons.accelerate).toBe(false);
     manager.detach();
   });
 

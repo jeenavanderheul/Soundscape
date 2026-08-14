@@ -14,7 +14,7 @@ import {
 function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
   return {
     axes: { moveX: 0, moveZ: 0 },
-    buttons: { accelerate: false, windHold: false },
+    buttons: { accelerate: false, windHold: false, hyper: false },
     windReleased: false,
     resonancePulse: false,
     pausePressed: false,
@@ -90,7 +90,7 @@ describe('§35 HARD RULE — the orb never gets under the landscape', () => {
     const breaches: number[] = [];
     let closest = Infinity;
     for (let i = 0; i < steps; i++) {
-      controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 }, buttons: { accelerate: true, windHold: false } }), 16);
+      controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 }, buttons: { accelerate: true, windHold: false, hyper: false } }), 16);
       const p = store.getState().position;
       const clearance = p.y - ground(p.x, p.z);
       closest = Math.min(closest, clearance);
@@ -120,7 +120,7 @@ describe('§35 HARD RULE — the orb never gets under the landscape', () => {
     controller.setGroundSampler(ground);
     controller.update(snapshot({ mouseDelta: { x: 0, y: -4000 } }), 16);
     for (let i = 0; i < 800; i++) {
-      controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 }, buttons: { accelerate: true, windHold: false } }), 16);
+      controller.update(snapshot({ axes: { moveX: 0, moveZ: 1 }, buttons: { accelerate: true, windHold: false, hyper: false } }), 16);
     }
     expect(store.getState().position.y).toBeLessThanOrEqual(FLIGHT_CONFIG.maxY);
   });
