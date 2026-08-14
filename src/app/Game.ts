@@ -51,6 +51,7 @@ import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer } from '../rendering/ForestRenderer';
+import { CityRenderer } from '../rendering/CityRenderer';
 import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
 import { BeaconMarker } from '../rendering/BeaconMarker';
 import {
@@ -242,6 +243,8 @@ export class Game {
   private readonly orbTrail = new OrbTrail();
   private readonly hud = new HUD();
   private readonly forest = new ForestRenderer(WORLD_SEED);
+  /** §134: the built-up land, as mass standing under the grid. */
+  private readonly city = new CityRenderer();
   private readonly markers = new ResonatorMarkers(this.worldStore.getState().resonators);
   /** §86: the next layer, standing in the world where you can go and get it. */
   private readonly beaconMarker = new BeaconMarker();
@@ -371,8 +374,12 @@ export class Game {
     this.forest.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
     // §132: the real ground arrives a moment after the void does. Until it
     // lands the world is the generated field; nothing waits on it.
+    this.city.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
     void loadLandField().then((land) => {
-      if (land && !this.disposed) this.terrain.setLand(land);
+      if (land && !this.disposed) {
+        this.terrain.setLand(land);
+        this.city.setLand(land);
+      }
     });
     this.particles = new ParticleSystem(WORLD_SEED);
     this.renderer.scene.add(this.particles.points);
@@ -435,6 +442,7 @@ export class Game {
     this.renderer.scene.add(this.orb.mesh);
     this.renderer.scene.add(this.orbTrail.mesh);
     this.renderer.scene.add(this.forest.group);
+    this.renderer.scene.add(this.city.mesh);
     this.renderer.scene.add(this.markers.mesh);
     this.renderer.scene.add(this.beaconMarker.group);
     this.renderer.scene.add(this.melodyTrail.line);
@@ -602,6 +610,8 @@ export class Game {
     this.terrain.dispose();
     this.renderer.scene.remove(this.forest.group);
     this.forest.dispose();
+    this.renderer.scene.remove(this.city.mesh);
+    this.city.dispose();
     this.trackStrip.dispose();
     this.renderer.scene.remove(this.beaconMarker.group);
     this.beaconMarker.dispose();
@@ -798,6 +808,7 @@ export class Game {
       this.terrain.excite('player', state.position, state.hz, state.amplitude * 0.12);
     }
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
+    this.city.update(state.position);
     this.forest.setDepth(trackGrowth(this.trackStore.getState()));
     this.forest.update(
       state.position,
@@ -1338,6 +1349,7 @@ export class Game {
     this.orbTrail.setColor(look.color);
     this.streaks.setColor(look.color);
     this.forest.setTint(look.color);
+    this.city.setTint(look.color);
   }
 
   resetWorld(): void {
