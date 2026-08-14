@@ -153,7 +153,11 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // them four times longer — a crossing would have taken up to 27 seconds to
   // be heard, breaking §53's promise of three. Scaled back to where they were.
   regionSwitchMs: 70,
-  minTrackLifeMs: 3200,
+  // §125: 3200 paced is 3.3s at full throttle, and below that a crossing did
+  // nothing at all — sweeping through worlds at speed felt broken rather than
+  // protected. 1200 still stops a twitch of the mouse from wiping a track,
+  // and lets a deliberate turn land in about a second.
+  minTrackLifeMs: 1200,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -371,6 +375,11 @@ export class TrackBuilder {
     this.arrangement.reset();
     this.awayMs = 0;
     this.trackStartedMs = this.paceClockMs;
+    // §125: ARRIVING SOMEWHERE ANNOUNCES ITSELF. A track born by travelling
+    // only ever emitted `track:new`, so everything listening for a world
+    // change — the cue that calls its name, anything downstream — missed the
+    // crossing entirely. You saw TRACK 02 and were never told where you were.
+    if (travelled) this.bus.emit('track:genre', { genre: bornIn, atMs: nowMs });
     this.bus.emit('track:new', { number: this.trackNumberValue, atMs: nowMs });
   }
 
