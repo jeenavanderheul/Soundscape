@@ -1,4 +1,4 @@
-import { worldForHeading } from './GenreZones';
+import { sectorIndex, worldForHeading } from './GenreZones';
 import type { GenreAffinity } from '../music/MusicState';
 
 /**
@@ -97,13 +97,21 @@ export function lookFor(affinity: GenreAffinity): ZoneLook {
 }
 
 /** §57: ten points, 36° apart — one per world. */
-const POINTS = ['N', 'NNE', 'ENE', 'ESE', 'SSE', 'S', 'SSW', 'WSW', 'WNW', 'NNW'] as const;
+/**
+ * §121: SIX points, one per world.
+ *
+ * These were the ten of an older compass while §111 gave the world six equal
+ * sectors, so a world spanned nearly two points and showed up under both —
+ * "N · techno" and "NNE · techno" read as techno being in two directions at
+ * once. One direction, one world, one name.
+ */
+const POINTS = ['N', 'NE', 'SE', 'S', 'SW', 'NW'] as const;
 
 /** Heading in radians (0 = north, clockwise) → compass point. */
 export function compassPoint(heading: number): (typeof POINTS)[number] {
-  const turns = heading / (Math.PI * 2);
-  const index = Math.round((turns - Math.floor(turns)) * POINTS.length) % POINTS.length;
-  return POINTS[index]!;
+  // §121: the same index the world is read from, so the two can never
+  // disagree at a border.
+  return POINTS[sectorIndex(heading)]!;
 }
 
 /** What lies in the direction the player is facing, for the HUD (§33). */

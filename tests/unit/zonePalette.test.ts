@@ -67,17 +67,17 @@ describe('§33 zone palette — every direction is a place you can see', () => {
 });
 
 describe('§33 compass', () => {
-  it('reads the ten points from a heading (§57)', () => {
-    const step = (Math.PI * 2) / 10;
+  const step = (Math.PI * 2) / 6;
+
+  it('§121 reads the six points from a heading — one per world', () => {
     expect(compassPoint(0)).toBe('N');
-    expect(compassPoint(step)).toBe('NNE');
-    expect(compassPoint(step * 2)).toBe('ENE');
     expect(compassPoint(Math.PI)).toBe('S');
-    expect(compassPoint(-step)).toBe('NNW');
+    // Six points, six worlds: each direction names exactly one.
+    const points = [0, 1, 2, 3, 4, 5].map((i) => compassPoint(step * i));
+    expect(new Set(points).size).toBe(6);
   });
 
   it('§112 names the world the heading actually points into', () => {
-    const step = (Math.PI * 2) / 6;
     // The compass point is how it reads; the world comes from the same maths
     // the land uses, so `flying:` and `here:` can never disagree again.
     expect(headingLabel(0)).toContain('techno');
@@ -90,8 +90,11 @@ describe('§33 compass', () => {
 
   it('§56 flying and here are the same answer, at every heading', () => {
     const out = { x: 0, y: 10, z: -200 };
+    // Sampled BETWEEN the borders: exactly on one, two sectors pull equally
+    // and which of them wins is a coin toss no player can aim for. What has
+    // to hold is that everywhere you can actually fly, the two agree.
     for (let i = 0; i < 24; i += 1) {
-      const heading = (Math.PI * 2 * i) / 24;
+      const heading = (Math.PI * 2 * (i + 0.5)) / 24;
       const here = dominantZone(zoneAffinity(out, heading), 0.4);
       if (here === null) continue;
       expect(`${i}:${headingLabel(heading).includes(here)}`).toBe(`${i}:true`);
@@ -165,5 +168,33 @@ describe('§91 the crosshair: something to line up, not a number to read', () =>
   it('is centred when there is nothing to point at', () => {
     const none = beaconOffset({ genre: 'techno', heading: 'N', energy: 0.5, beacon: null });
     expect(none).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('§121 one direction, one world, one name', () => {
+  it('never names the same world under two compass points', () => {
+    // The points were ten while the worlds are six, so a world spanned two of
+    // them and read as being in two directions at once.
+    const seen = new Map<string, string[]>();
+    for (let i = 0; i < 72; i += 1) {
+      const label = headingLabel((Math.PI * 2 * i) / 72);
+      const [point, world] = label.split(' · ');
+      const points = seen.get(world!) ?? [];
+      if (!points.includes(point!)) seen.set(world!, [...points, point!]);
+    }
+    for (const [world, points] of seen) {
+      expect(`${world}: ${points.join('/')}`).toBe(`${world}: ${points[0]}`);
+    }
+  });
+
+  it('covers all six worlds and no more', () => {
+    const worlds = new Set<string>();
+    for (let i = 0; i < 72; i += 1) {
+      worlds.add(headingLabel((Math.PI * 2 * i) / 72).split(' · ')[1]!);
+    }
+    expect([...worlds].sort()).toEqual([
+      'broken-machine', 'heavy-signal', 'percussion-riot',
+      'sub-pressure', 'techno', 'void-crusher',
+    ]);
   });
 });

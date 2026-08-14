@@ -91,23 +91,25 @@ export const SECTORS: readonly (keyof GenreAffinity)[] = [
   'sub-pressure', 'void-crusher', 'percussion-riot',
 ];
 
+/**
+ * §121: which of the six sectors a heading falls in. The ONE index — the
+ * world name and the compass point are both read from it, so they cannot
+ * round differently at a border and claim two directions for one world.
+ */
+export function sectorIndex(heading: number): number {
+  const turns = heading / (Math.PI * 2);
+  const wrapped = turns - Math.floor(turns);
+  // Exactly on a border, round DOWN — `dominantZone` scans in order and keeps
+  // the first of two equal pulls, so rounding up would put the label one
+  // sector ahead of the land at every boundary.
+  return Math.floor(wrapped * SECTORS.length + 0.5 - 1e-9) % SECTORS.length;
+}
+
 /** The world a heading points into. The same maths `zoneAffinity` uses. */
 export function worldForHeading(heading: number): keyof GenreAffinity {
-  const step = (Math.PI * 2) / SECTORS.length;
-  let best = 0;
-  let bestPull = -1;
-  SECTORS.forEach((_, i) => {
-    let delta = heading - i * step;
-    while (delta > Math.PI) delta -= Math.PI * 2;
-    while (delta < -Math.PI) delta += Math.PI * 2;
-    const pull = Math.cos(delta);
-    if (pull > bestPull) {
-      bestPull = pull;
-      best = i;
-    }
-  });
-  return SECTORS[best]!;
+  return SECTORS[sectorIndex(heading)]!;
 }
+
 
 export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreAffinity {
   const affinity: GenreAffinity = {
