@@ -20,7 +20,7 @@ import {
 } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph, ThrowStyle } from '../audio/MusicalPrimitives';
 import { buildWorldLayerGraph, worldBankLabel } from '../audio/WorldLayerGraph';
-import { sectionLabel, type SectionStyle } from '../music/ArrangementEngine';
+import type { SectionStyle } from '../music/ArrangementEngine';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
 import { dominantZone, setZoneGenres, zoneAffinity } from '../genres/GenreZones';
 import { headingLabel, lookFor, placeName, NEUTRAL_LOOK } from '../genres/ZonePalette';
@@ -78,6 +78,7 @@ import type { WorldRecipe } from '../ai/WorldRecipe';
 import { Guide } from '../ui/Guide';
 import { Hints } from '../ui/Hints';
 import { LayerCue } from '../ui/LayerCue';
+import { TrackStrip } from '../ui/TrackStrip';
 import { HUD } from '../ui/HUD';
 import { attachIntroHint } from '../ui/Intro';
 import { PauseOverlay } from '../ui/PauseOverlay';
@@ -341,6 +342,8 @@ export class Game {
   private readonly pendingLayers: string[] = [];
   /** §88: the last scheduler cycle seen, so a bar boundary can be detected. */
   private lastBar = -1;
+  /** §90: the read-out that stays — arc position, phase, layers. */
+  private readonly trackStrip = new TrackStrip(document.body);
   /** §33 turn throws: one gesture per turn, never a stream. */
   private turnArmed = true;
   private lastThrowMs = -Infinity;
@@ -474,18 +477,20 @@ export class Game {
       if (this.pendingSection !== null && onBar) {
         const section = this.pendingSection;
         this.pendingSection = null;
-        // §84: the player reads the PHASE — ENTER BIOME, PRESSURE, DROP II.
-        this.layerCue.announce(sectionLabel(section));
+        // §90: the phase is no longer announced as a word that flashes and is
+        // gone — the strip shows it continuously, alongside where in the arc
+        // it sits. What still happens here is the SOUND of it arriving.
         const style = genreGrammar(this.trackStore.getState().genre).sectionStyle;
         const gesture = SECTION_GESTURE[style][section];
         if (gesture !== undefined && this.motionLevel > 0.25) {
           this.strudelEngine.schedule({ kind: 'throw', gain: 0.55 * this.motionLevel, style: gesture }, 'beat');
         }
       } else if (this.pendingLayers.length > 0 && onBar) {
-        // §83: one word per bar, and a section outranks a layer — two words on
-        // the same bar would replace each other before either could be read.
+        // §83/§90: the layer slot fills on the strip at the same moment; the
+        // word is the flourish on top of it, one per bar.
         this.layerCue.announce(this.pendingLayers.shift()!);
       }
+      if (onBar) this.refreshTrackStrip();
       // §63: the layer visuals no longer fire off the beat index — they come
       // from the notes Strudel is about to play, queued below.
       this.queueUpcomingNotes();
@@ -597,6 +602,7 @@ export class Game {
     this.terrain.dispose();
     this.renderer.scene.remove(this.forest.group);
     this.forest.dispose();
+    this.trackStrip.dispose();
     this.renderer.scene.remove(this.beaconMarker.group);
     this.beaconMarker.dispose();
     this.renderer.scene.remove(this.markers.mesh);
@@ -921,6 +927,18 @@ export class Game {
     this.lastGraphGenre = this.trackStore.getState().genre;
     this.lastLayerGraph = next;
     this.strudelEngine.setLayerGraph(next, worldChanged ? 'beat' : 'bar');
+  }
+
+  /** §90: redraw the read-out — arc position, phase, layers, what is on offer. */
+  private refreshTrackStrip(): void {
+    const track = this.trackStore.getState();
+    this.trackStrip.update({
+      track,
+      cycle: this.trackBuilder.arrangement.cycle,
+      style: genreGrammar(track.genre).sectionStyle,
+      trackNumber: this.trackBuilder.trackNumber,
+      beaconLayer: this.beacon?.layer ?? null,
+    });
   }
 
   /**
