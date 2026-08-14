@@ -69,9 +69,12 @@ const MIXES: Record<Section, SectionMix> = {
   drop: { drums: 1, bass: 1, harmony: 0.9, melody: 1, texture: 0.7, atmosphere: 0.3 },
   // DEEP FLIGHT: the first evolution at its fullest.
   deep: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 0.9, atmosphere: 0.35 },
-  // §92 VOID is the ONE place anything is taken away, which is what makes it
-  // land. Drums and bass gone; what is left is what you built on top of them.
-  break: { drums: 0, bass: 0, harmony: 1, melody: 0.8, texture: 0.9, atmosphere: 1 },
+  // §95 VOID: it still steps back, but the track KEEPS RUNNING. Drums and bass
+  // at zero took ten voices down to five — the loudest five — right after the
+  // last rungs had landed, so the moment a player finally had a whole track
+  // was the moment it fell apart. What you built stays audible; the bottom
+  // thins out and the top opens up, which is a breath, not a hole.
+  break: { drums: 0.4, bass: 0.35, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
   // DROP II: everything back, and the loudest the track ever gets.
   return: { drums: 1, bass: 1, harmony: 1, melody: 1, texture: 0.9, atmosphere: 0.5 },
   mutation: { drums: 0.8, bass: 0.9, harmony: 0.8, melody: 1, texture: 1, atmosphere: 0.9 },
@@ -127,26 +130,26 @@ const STYLE_OVERRIDES: Record<SectionStyle, Partial<Record<Section, Partial<Sect
   swell: {
     build: { drums: 0.7, bass: 1, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
     drop: { drums: 0.7, bass: 0.9, harmony: 1, melody: 1, texture: 0.9, atmosphere: 0.9 },
-    break: { drums: 0.2, bass: 0.5, harmony: 1, melody: 0.6, texture: 1, atmosphere: 1 },
+    break: { drums: 0.45, bass: 0.6, harmony: 1, melody: 0.7, texture: 1, atmosphere: 1 },
   },
   // Jazz: the band plays louder and busier, it does not filter itself.
   dynamic: {
     build: { drums: 0.9, bass: 1, harmony: 1, melody: 1, texture: 0.7, atmosphere: 0.5 },
     drop: { drums: 1, bass: 0.95, harmony: 1, melody: 1, texture: 0.5, atmosphere: 0.3 },
-    break: { drums: 0.4, bass: 0.7, harmony: 0.9, melody: 0.5, texture: 0.6, atmosphere: 0.8 },
+    break: { drums: 0.5, bass: 0.7, harmony: 0.9, melody: 0.6, texture: 0.6, atmosphere: 0.8 },
   },
   // Dub: the build empties the room, the drop is the bass and the skank
   // walking back in while the echo is still talking.
   echo: {
     build: { drums: 0.6, bass: 1, harmony: 0.8, melody: 0.7, texture: 0.9, atmosphere: 1 },
     drop: { drums: 0.9, bass: 1, harmony: 0.9, melody: 0.6, texture: 0.7, atmosphere: 0.7 },
-    break: { drums: 0.25, bass: 0.35, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
+    break: { drums: 0.4, bass: 0.45, harmony: 1, melody: 0.9, texture: 1, atmosphere: 1 },
   },
   // Experimental: it drops by removing what you expected to stay.
   mutant: {
     build: { drums: 1, bass: 1, harmony: 0.6, melody: 0.9, texture: 1, atmosphere: 0.8 },
     drop: { drums: 0.8, bass: 1, harmony: 0.4, melody: 1, texture: 1, atmosphere: 0.2 },
-    break: { drums: 0.6, bass: 0.3, harmony: 1, melody: 0.4, texture: 1, atmosphere: 0.9 },
+    break: { drums: 0.6, bass: 0.4, harmony: 1, melody: 0.5, texture: 1, atmosphere: 0.9 },
   },
 };
 

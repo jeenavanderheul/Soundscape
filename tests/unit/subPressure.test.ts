@@ -106,10 +106,24 @@ describe('SUB PRESSURE is arranged by its section, not by a baked loop', () => {
     expect(parts('drop')).toContain('sub-pressure-sub');
   });
 
-  it('the break keeps the harmony and drops the drums', () => {
+  it('§95 the void thins the bottom out but never stops the track', () => {
     const broken = parts('break');
-    expect(broken).not.toContain('sub-pressure-kick');
+    // Everything the flight earned is still sounding…
+    expect(broken).toContain('sub-pressure-kick');
+    expect(broken).toContain('sub-pressure-sub');
     expect(broken).toContain('sub-pressure-stab');
+    // …and it is the quietest the drums ever get, short of gone.
+    const gainOf = (id: string, form: TrackState['form']) => {
+      const g = buildSubPressureGraph({ track: finished(form) });
+      for (const layer of Object.values(g.layers)) {
+        const hit = layer.primitives.find((p) => p.id === id);
+        if (hit) return Number(/\.gain\(([0-9.]+)\)/.exec(String(hit.parameters['code']))?.[1] ?? 0);
+      }
+      return 0;
+    };
+    expect(gainOf('sub-pressure-kick', 'break')).toBeGreaterThan(0);
+    expect(gainOf('sub-pressure-kick', 'break'))
+      .toBeLessThan(gainOf('sub-pressure-kick', 'drop') / 2);
   });
 });
 

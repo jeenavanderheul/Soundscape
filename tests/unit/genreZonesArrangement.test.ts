@@ -167,11 +167,21 @@ describe('§84 the FLIGHT ARC — thirty-two cycles that are the flight', () => 
     expect(engine.cycle).toBe(4);
   });
 
-  it('VOID takes the drums and the bass OUT, and keeps what was built on top', () => {
-    expect(sectionMix('break').drums).toBe(0);
-    expect(sectionMix('break').bass).toBe(0);
-    expect(sectionMix('break').harmony).toBe(1);
-    expect(sectionMix('break').texture).toBeGreaterThan(0.5);
+  it('§95 VOID steps back without stopping — the track keeps running', () => {
+    const brk = sectionMix('break');
+    const deep = sectionMix('deep');
+    // The bottom thins right out…
+    expect(brk.drums).toBeLessThan(deep.drums / 2);
+    expect(brk.bass).toBeLessThan(deep.bass / 2);
+    // …but nothing you earned ever goes silent. Zeroing these took ten voices
+    // down to five right after the last rung landed, so the moment a player
+    // finally had a whole track was the moment it fell apart.
+    expect(brk.drums).toBeGreaterThan(0);
+    expect(brk.bass).toBeGreaterThan(0);
+    // And the top opens all the way up, which is what makes it a breath.
+    expect(brk.harmony).toBe(1);
+    expect(brk.texture).toBeGreaterThan(0.5);
+    expect(brk.atmosphere).toBe(1);
   });
 
   it('DROP II is the loudest the track ever gets', () => {
@@ -308,12 +318,9 @@ describe('§76 sections build themselves by adding and removing parts', () => {
     expect(partsIn('drop').drums).toBe(true);
   });
 
-  it('a break drops the drums and the bass and keeps what was built on top', () => {
+  it('§95 the void keeps every part the flight earned — it only thins them', () => {
     const brk = partsIn('break');
-    expect(brk.drums).toBe(false);
-    expect(brk.bass).toBe(false);
-    expect(brk.harmony).toBe(true);
-    expect(brk.melody).toBe(true);
+    expect(Object.values(brk).every(Boolean)).toBe(true);
   });
 
   it('and the groove has everything the player earned', () => {
