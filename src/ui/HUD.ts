@@ -76,10 +76,21 @@ export class HUD {
  */
 const QUARTERS = ['\u2591', '\u258e', '\u258c', '\u258a', '\u2588'] as const;
 
+/**
+ * §120: nine blocks, not five.
+ *
+ * The bar read a NORMALISED throttle — 0 to 1 — so when §119 doubled the top
+ * speed it could not show it: full gas filled the same five blocks it always
+ * had, and the half of the throttle that now carries you through a track in a
+ * minute was invisible. Nine blocks, and the last four are the range that
+ * only opened up at the top.
+ */
+export const SPEED_BLOCKS = 9;
+
 function bar(value: number): string {
-  const quarters = Math.round(Math.min(1, Math.max(0, value)) * 20);
+  const quarters = Math.round(Math.min(1, Math.max(0, value)) * SPEED_BLOCKS * 4);
   let out = '';
-  for (let block = 0; block < 5; block++) {
+  for (let block = 0; block < SPEED_BLOCKS; block++) {
     out += QUARTERS[Math.min(4, Math.max(0, quarters - block * 4))]!;
   }
   return out;
