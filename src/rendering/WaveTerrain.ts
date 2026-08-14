@@ -26,9 +26,18 @@ import {
  * come from excitation sources: the player's wind, engaged resonators and
  * born structures. Low hz → long slow hills (red zone), high hz → fine
  * ripples (green), mid/square → purple (§3.1 + poster palette).
+ *
+ * §138: the field is drawn in concentric rings of decreasing line density out
+ * to ~1440 units, so there is a horizon to fly towards. See `TERRAIN_LOD`.
  */
 
 export const TERRAIN_CONFIG = {
+  /**
+   * §138: these no longer describe the whole field — they describe the FINEST
+   * level of it. `size / columns` and `size / (rows - 1)` are the base cell,
+   * which is both the spacing of the near scan lines and the step everything
+   * snaps to.
+   */
   size: 360,
   rows: 96,
   columns: 192,
@@ -43,6 +52,33 @@ export const TERRAIN_CONFIG = {
   /** Structures excite permanently at this floor. */
   permanentFloor: 0.55,
 } as const;
+
+/**
+ * §138 DEPTH TO THE HORIZON — concentric rings, not a quadtree.
+ *
+ * A quadtree refines around a point and would let a hill far off to one side
+ * stay dense while the rest coarsens. It also needs its patches built, pooled
+ * and swapped while flying, and the only thing the level of a patch could
+ * depend on here is distance from the player — because nothing in this field
+ * is occluded or streamed. Rings give exactly that dependency for one geometry
+ * built once at startup, with no per-frame allocation and nothing to rebuild
+ * when the player crosses a boundary. So: rings.
+ *
+ * Each level is a lattice whose step is a whole multiple of the base cell, and
+ * every level shares ONE snapped origin. That is what keeps a coarse line
+ * standing at a fixed world position: the coarse lattice is a strict subset of
+ * the fine one, so a line that changes level is replaced by a line in the same
+ * place and only the lines BETWEEN it appear or disappear. Nothing slides.
+ *
+ * `halfX`/`halfZ` are half-extents in base cells and must divide by `step`;
+ * each ring is hollow where the previous level already covers the ground.
+ */
+const TERRAIN_LOD = [
+  { step: 1, halfX: 96, halfZ: 47 }, // ±180 × ±178, today's field, untouched
+  { step: 4, halfX: 192, halfZ: 96 }, // ±360 × ±364
+  { step: 12, halfX: 384, halfZ: 192 }, // ±720 × ±728
+  { step: 24, halfX: 768, halfZ: 384 }, // ±1440 × ±1455
+] as const;
 
 /** Normalized log position of hz in 30 Hz–8 kHz, 0..1 (§3.1). */
 export function hzNorm(hz: number): number {
@@ -148,9 +184,14 @@ void main() {
   float colourIn = clamp((length(world) - 8.0) / 45.0, 0.0, 1.0);
   vZone = zone + uZoneColor * (0.8 + vRidge * 0.1) * colourIn;
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
-  // Manual depth fade: the field dissolves into the void (§13).
-  vFar = clamp((-mv.z - 40.0) / 180.0, 0.0, 1.0);
-  vGlow *= 1.0 - vFar;
+  // §136.13/§138: the field now reaches ~1440 units, so distance is measured
+  // over that whole reach. The curve is steep up close — near and mid keep the
+  // falloff they had — and it deliberately stops short of black: brightness may
+  // no longer be what removes the far field. That is the fragment shader's job,
+  // where distance turns into LOST and GHOST instead of into haze.
+  float depth = max(0.0, -mv.z - 40.0);
+  vFar = clamp(pow(depth / 1400.0, 0.55), 0.0, 1.0);
+  vGlow *= 1.0 - vFar * 0.8;
   gl_Position = projectionMatrix * mv;
 }
 `;
@@ -196,7 +237,11 @@ void main() {
   // happening the lines exist, even in silence. Without this, level 0 is a
   // black screen you cannot fly in — and it would also be a lie, because the
   // player standing there IS a source (§136.3).
-  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 - vSeed - vFar * 0.35;
+  // vFar carries most of the weight now (§138): at the edge of the reach it
+  // costs more signal than the loudest world can supply, so the horizon is
+  // black with occasional traces — the stretches whose own demand happens to
+  // be low — rather than a dimmed but complete wireframe.
+  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 - vSeed - vFar * 1.6;
 
   if (strength < -0.22) discard;              // LOST
   float k;
@@ -249,7 +294,7 @@ export class WaveTerrain {
 
   constructor(seed = 'frequency') {
     this.noise = createNoiseTable(seed);
-    const geometry = buildScanLineGrid();
+    const geometry = buildLodGrid();
     this.sourceArray = new Float32Array(TERRAIN_CONFIG.maxSources * 4);
     this.material = new ShaderMaterial({
       vertexShader: VERTEX,
@@ -282,6 +327,11 @@ export class WaveTerrain {
     this.lines = new LineSegments(geometry, this.material);
     this.lines.position.y = TERRAIN_CONFIG.planeY;
     this.lines.frustumCulled = false;
+  }
+
+  /** §138: what the whole LOD field costs, for the dev handle. */
+  get vertexCount(): number {
+    return this.lines.geometry.getAttribute('position').count;
   }
 
   /**
@@ -396,7 +446,9 @@ export class WaveTerrain {
     if (playerPosition) {
       // Infinite field that reads as MOTION: recenter in whole grid cells so
       // every scan line stays glued to fixed world positions — lines stream
-      // past the camera instead of riding along with it.
+      // past the camera instead of riding along with it. §138: every LOD ring
+      // rides on this one snap, in the FINEST cell, which is what keeps the
+      // coarse lattices exact subsets of the fine one.
       const cellX = TERRAIN_CONFIG.size / TERRAIN_CONFIG.columns;
       const cellZ = TERRAIN_CONFIG.size / (TERRAIN_CONFIG.rows - 1);
       const snapX = Math.round(playerPosition.x / cellX) * cellX;
@@ -436,27 +488,40 @@ export class WaveTerrain {
  * alone reads as a 2.5D waveform plane; the perpendicular set turns it into a
  * wireframe surface you can see the depth of. They are drawn sparser than the
  * scan lines so the poster look survives — a grid, not graph paper.
+ *
+ * §138: the same two sets, once per LOD ring, into one buffer. Every level
+ * shares the origin and the material, so the whole field is still a single
+ * draw call and the only thing a ring changes is where the field is SAMPLED.
+ * The height function is untouched — §35 is about what the field is, not
+ * about how finely it is read.
  */
-function buildScanLineGrid(): BufferGeometry {
+function buildLodGrid(): BufferGeometry {
   const { size, rows, columns, depthLineEvery } = TERRAIN_CONFIG;
+  const cellX = size / columns;
+  const cellZ = size / (rows - 1);
   const positions: number[] = [];
-  for (let r = 0; r < rows; r++) {
-    const z = (r / (rows - 1) - 0.5) * size;
-    for (let c = 0; c < columns; c++) {
-      const x0 = (c / columns - 0.5) * size;
-      const x1 = ((c + 1) / columns - 0.5) * size;
-      positions.push(x0, 0, z, x1, 0, z);
+  TERRAIN_LOD.forEach((level, index) => {
+    const hole = index === 0 ? null : TERRAIN_LOD[index - 1]!;
+    // A segment is dropped only when BOTH ends stand on ground the finer level
+    // already draws; anything crossing the seam is kept, so the rings meet
+    // without a gap and without drawing the same line twice.
+    const covered = (i: number, j: number): boolean =>
+      hole !== null && Math.abs(i) <= hole.halfX && Math.abs(j) <= hole.halfZ;
+    const { step, halfX, halfZ } = level;
+    for (let j = -halfZ; j <= halfZ; j += step) {
+      for (let i = -halfX; i < halfX; i += step) {
+        if (covered(i, j) && covered(i + step, j)) continue;
+        positions.push(i * cellX, 0, j * cellZ, (i + step) * cellX, 0, j * cellZ);
+      }
     }
-  }
-  // The depth set: same lattice, segments joining row to row.
-  for (let c = 0; c < columns; c += depthLineEvery) {
-    const x = (c / columns - 0.5) * size;
-    for (let r = 0; r < rows - 1; r++) {
-      const z0 = (r / (rows - 1) - 0.5) * size;
-      const z1 = ((r + 1) / (rows - 1) - 0.5) * size;
-      positions.push(x, 0, z0, x, 0, z1);
+    const depthStep = step * depthLineEvery;
+    for (let i = -halfX; i <= halfX; i += depthStep) {
+      for (let j = -halfZ; j < halfZ; j += step) {
+        if (covered(i, j) && covered(i, j + step)) continue;
+        positions.push(i * cellX, 0, j * cellZ, i * cellX, 0, (j + step) * cellZ);
+      }
     }
-  }
+  });
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
   return geometry;

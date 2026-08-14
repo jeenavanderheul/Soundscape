@@ -197,6 +197,7 @@ interface FrequencyDebug {
   loadInfo(): LoadInfo;
   resetWorld(): void;
   groundHeightAt(x: number, z: number): number;
+  terrainVertexCount(): number;
   teleport(x: number, z: number, y?: number): void;
 }
 
@@ -561,6 +562,9 @@ export class Game {
         // Reaching a genre region means flying 150 units; this makes each
         // region reachable in a test without waiting for the trip.
         groundHeightAt: (x: number, z: number) => this.terrain.groundHeightAt(x, z),
+        // §138: the LOD field's whole vertex cost, so the budget can be checked
+        // from a browser rather than from a comment.
+        terrainVertexCount: () => this.terrain.vertexCount,
         teleport: (x: number, z: number, y?: number) =>
           this.frequencyStore.setState((s) => ({
             ...s,
