@@ -26,21 +26,33 @@ const SOURCES = [
   'https://raw.githubusercontent.com/felixroos/dough-samples/main/piano.json',
 ];
 
-/** The machines the grammars name (§37) — everything else stays remote. */
+/**
+ * §114: the machines the six documents name. Matched case-INSENSITIVELY —
+ * the maps key them as `RolandTR909_bd` while these are written lower case,
+ * so the old comparison silently matched nothing and `--used` vendored an
+ * empty library.
+ */
 const MACHINES = [
-  'rolandtr909', 'rolandtr808', 'rolandtr707', 'akaimpc60', 'emusp12',
-  'alesishr16', 'korgddm110', 'rolandcompurhythm1000', 'rolandcompurhythm8000',
-  'sakatadpm48', 'oberheimdmx', 'linndrum', 'linnlm1', 'rolandr8',
+  'rolandtr909', 'rolandtr808', 'rolandtr707', 'akaimpc60', 'akaixr10',
+  'emusp12', 'alesishr16', 'korgddm110', 'rolandcompurhythm1000',
+  'rolandcompurhythm8000', 'sakatadpm48', 'oberheimdmx', 'linndrum',
+  'linnlm1', 'rolandr8', 'yamahary30', 'sequentialcircuitsdrumtracks',
 ];
-/** The instruments the templates name (§34, §37). */
+/**
+ * The instruments the documents name. These live in VCSL, NOT in the drum
+ * map — which is why a vendored checkout had every kit and no voices (§113).
+ */
 const INSTRUMENTS = [
   'piano', 'organ_full', 'glockenspiel', 'vibraphone', 'marimba', 'harp',
-  'harmonica', 'sax', 'timpani', 'tubularbells', 'cabasa',
+  'harmonica', 'sax', 'timpani', 'tubularbells', 'cabasa', 'clavisynth',
 ];
 
 const ONLY_USED = process.argv.includes('--used');
-const wanted = (name) =>
-  !ONLY_USED || MACHINES.some((m) => name.startsWith(`${m}_`)) || INSTRUMENTS.includes(name);
+const wanted = (name) => {
+  if (!ONLY_USED) return true;
+  const lower = name.toLowerCase();
+  return MACHINES.some((m) => lower.startsWith(`${m}_`)) || INSTRUMENTS.includes(lower);
+};
 
 const map = {};
 let files = 0;
@@ -54,7 +66,17 @@ for (const source of SOURCES) {
   for (const [name, value] of Object.entries(json)) {
     if (name.startsWith('_')) continue;
     if (!wanted(name.toLowerCase())) continue;
-    const paths = Array.isArray(value) ? value : [value];
+    // §114: VCSL nests its instruments — `{ marimba: { hard: [...], soft:
+    // [...] } }` — so treating a value as a flat list dropped every one of
+    // them without a word. That is why a vendored checkout had all the kits
+    // and none of the voices. Take every string leaf, however deep.
+    const paths = [];
+    const collect = (node) => {
+      if (typeof node === 'string') paths.push(node);
+      else if (Array.isArray(node)) node.forEach(collect);
+      else if (node !== null && typeof node === 'object') Object.values(node).forEach(collect);
+    };
+    collect(value);
     const local = [];
     for (const path of paths) {
       if (typeof path !== 'string') continue;

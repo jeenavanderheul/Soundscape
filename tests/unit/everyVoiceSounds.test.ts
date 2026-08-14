@@ -80,3 +80,31 @@ describe('every voice the worlds ask for can actually sound', () => {
     expect(engine).toContain('SAMPLE_MAPS.slice(1)');
   });
 });
+
+describe('§114 the vendored library covers every voice, offline', () => {
+  const LOCAL = 'public/samples/strudel.json';
+
+  it('holds the instruments, not only the drum machines', () => {
+    const map: Record<string, unknown> = JSON.parse(readFileSync(LOCAL, 'utf8'));
+    // These live in VCSL and are nested under velocity layers, which the
+    // vendor script used to drop silently — all kits, no voices.
+    for (const voice of ['marimba', 'tubularbells', 'organ_full', 'clavisynth']) {
+      expect(`${voice}:${voice in map}`).toBe(`${voice}:true`);
+    }
+  });
+
+  it('holds every machine the six documents name', () => {
+    const map: Record<string, unknown> = JSON.parse(readFileSync(LOCAL, 'utf8'));
+    const have = new Set(Object.keys(map).map((k) => k.toLowerCase()));
+    const { banked } = soundsUsed();
+    const missing = banked.filter((name) => !have.has(name));
+    expect(missing).toEqual([]);
+  });
+
+  it('flattens nested entries rather than dropping them', () => {
+    const script = readFileSync('scripts/vendor-samples.mjs', 'utf8');
+    expect(script).toContain('collect(value)');
+    // And matches case-insensitively: the maps key `RolandTR909_bd`.
+    expect(script).toContain('toLowerCase()');
+  });
+});
