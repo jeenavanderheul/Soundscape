@@ -71,9 +71,13 @@ uniform vec4 uSources[${TERRAIN_CONFIG.maxSources}]; // x, z, strength, hzNorm
 uniform int uSourceCount;
 uniform vec3 uZoneColor;   // §33: the colour of the region being flown through
 uniform float uRelief;     // §33: how mountainous this direction is
+uniform float uSignal;     // §136.15: 0..1 how present the image is allowed to be
+uniform float uUnstable;   // §136.11: 0..1 how badly the signal holds together
 varying float vGlow;
 varying vec3 vZone;
 varying float vRidge;
+varying float vSeed;   // §136.6: which signal state this stretch of line is in
+varying float vFar;    // 0 at the lens, 1 at the edge of the drawn field
 
 ${TERRAIN_FIELD_GLSL}
 ${LAND_FIELD_GLSL}
@@ -121,7 +125,16 @@ void main() {
     glow += envelope;
     zone += zoneColor(s.w) * envelope;
   }
-  pos.y += h;
+  // §136.6: every stretch of line gets its own signal strength, smoothly, so a
+  // whole segment shares a state instead of flickering per vertex.
+  vSeed = terrainNoise(world * 0.09 + vec2(uTime * 0.03, 0.0));
+  // §136.11 UNSTABLE: the reconstruction misses by a little. Never enough to
+  // move the ground the player collides with — this is the drawing shaking,
+  // and it stays under a tenth of a unit.
+  float jitter = (terrainNoise(world * 0.7 + uTime * 1.7) - 0.5) * uUnstable;
+  pos.x += jitter * 0.09;
+  pos.z += jitter * 0.06;
+  pos.y += h + jitter * 0.05;
   // Lantern: an always-on pool of light under the orb, so the field beneath
   // the player is ALWAYS a visible reference (game-style spot, no lighting rig).
   float dPlayer = distance(world, uPlayer);
@@ -136,15 +149,39 @@ void main() {
   vZone = zone + uZoneColor * (0.8 + vRidge * 0.1) * colourIn;
   vec4 mv = modelViewMatrix * vec4(pos, 1.0);
   // Manual depth fade: the field dissolves into the void (§13).
-  vGlow *= clamp(1.0 - (-mv.z - 40.0) / 180.0, 0.0, 1.0);
+  vFar = clamp((-mv.z - 40.0) / 180.0, 0.0, 1.0);
+  vGlow *= 1.0 - vFar;
   gl_Position = projectionMatrix * mv;
 }
 `;
 
 const FRAGMENT = /* glsl */ `
+uniform float uTime;
+uniform float uSignal;
+uniform float uUnstable;
 varying float vGlow;
 varying vec3 vZone;
 varying float vRidge;
+varying float vSeed;
+varying float vFar;
+
+/**
+ * §136.6 A LINE HAS STATES. One perfectly clean wireframe everywhere is what
+ * makes a generative world look like a mesh instead of a measurement, so every
+ * stretch of line asks how much signal there is and answers with one of six
+ * behaviours. Which stretch gets which is vSeed: a line needs more signal
+ * than its own demand to be drawn cleanly.
+ *
+ *   LOST        below its demand by a margin — gone, into black
+ *   GHOST       barely there, grey, no colour left in it
+ *   WEAK        dim, intermittent, blinking at the rate of the music
+ *   CLEAN       thin and precise, the resting state
+ *   OVERDRIVEN  clipping white at the top of the range
+ *
+ * UNSTABLE is not a sixth branch but a modifier: displacement in the vertex
+ * shader and, here, a fringe of the EXISTING accent colours — §136.17 allows
+ * channel displacement, and only in red, green and purple.
+ */
 void main() {
   vec3 base = vec3(0.62, 0.72, 0.74); // cold monochrome scan line
   // The region TINTS the line rather than only adding to it, so a red world
@@ -152,7 +189,43 @@ void main() {
   vec3 lit = base * (0.10 + vGlow * 0.9);
   vec3 color = mix(lit, lit * (vZone + 0.15), clamp(length(vZone), 0.0, 1.0))
     + vZone * 0.85 + vec3(vRidge * 0.012);
-  gl_FragColor = vec4(color, 1.0);
+
+  // How much signal is reaching this line. Distance costs information as well
+  // as brightness (§136.13), so the far field thins out into states.
+  // The lantern and every excitation source are signal too: where something is
+  // happening the lines exist, even in silence. Without this, level 0 is a
+  // black screen you cannot fly in — and it would also be a lie, because the
+  // player standing there IS a source (§136.3).
+  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 - vSeed - vFar * 0.35;
+
+  if (strength < -0.22) discard;              // LOST
+  float k;
+  if (strength < -0.08) {
+    k = 0.14;                                 // GHOST
+    color = vec3(dot(color, vec3(0.33)));     //   colourless after-image
+  } else if (strength < 0.12) {
+    // WEAK: dim and intermittent. The blink runs on the clock, so a quiet
+    // world reads as a signal that keeps dropping out rather than a dim one.
+    float blink = step(0.35, fract(sin(vSeed * 91.7 + uTime * 2.3) * 43758.5453));
+    k = 0.3 + blink * 0.35;
+  } else if (strength > 0.85) {
+    // OVERDRIVEN: past white. Additive blending does the clipping for us.
+    k = 1.0 + (strength - 0.85) * 2.6;
+  } else {
+    k = 1.0;                                  // CLEAN
+  }
+
+  // UNSTABLE: the channels come apart a little. Red, green and purple only.
+  if (uUnstable > 0.01) {
+    float pick = fract(vSeed * 7.31);
+    vec3 accent = pick < 0.34 ? vec3(1.0, 0.18, 0.16)
+                : pick < 0.67 ? vec3(0.35, 1.0, 0.3)
+                              : vec3(0.62, 0.35, 1.0);
+    float fringe = uUnstable * 0.35 * step(0.6, fract(vSeed * 13.7 + uTime * 0.9));
+    color += accent * fringe * k;
+  }
+
+  gl_FragColor = vec4(color * k, 1.0);
 }
 `;
 
@@ -202,11 +275,22 @@ export class WaveTerrain {
         uLandSeaLevel: { value: 0 },
         uLandVerticalScale: { value: 0 },
         uLandPresent: { value: 0 },
+        uSignal: { value: 0.35 },
+        uUnstable: { value: 0 },
       },
     });
     this.lines = new LineSegments(geometry, this.material);
     this.lines.position.y = TERRAIN_CONFIG.planeY;
     this.lines.frustumCulled = false;
+  }
+
+  /**
+   * §136.6/§136.15: how present the image is, and how badly it is holding
+   * together. Everything about line quality follows from these two numbers.
+   */
+  setSignal(intensity: number, instability: number): void {
+    this.material.uniforms['uSignal']!.value = Math.min(1, Math.max(0, intensity));
+    this.material.uniforms['uUnstable']!.value = Math.min(1, Math.max(0, instability));
   }
 
   /** BeatSync hook: world pulse ripples through the field (§12). */

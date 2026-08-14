@@ -1601,3 +1601,17 @@ Fortnite colour, arcade rainbow, synthwave gradients, cyberpunk neon, generic
 Tron, glossy sci-fi rendering, colourful volumetric fog, excessive bloom,
 constant glitch overlays, VHS filters, random RGB splitting, collage objects,
 pasted paper or photocopy textures, grunge overlays.
+
+### 136.19 User decisions on §136 (2026-08-15)
+Where this amendment meets what is already built, the user has ruled:
+- **The forest goes back to pure signal.** No filled, lit surfaces: point cloud
+  and wireframe, with depth coming from occlusion and density rather than
+  shading. This reverses the lit mass of §135.
+- **Region colour stays exactly as it is today** — fog, background, terrain
+  lines, forest and trail keep taking the region's colour. This is a deliberate
+  exception to the 1–5% accent budget of §136.2: the colour identity of a place
+  was built first and outranks the budget.
+- **A post-processing pass is allowed** for phosphor persistence, ghosting,
+  grain, clipping and channel displacement (§136.8, §136.17).
+- **First slice: line quality as state** (§136.6) on the terrain, driven by the
+  music.

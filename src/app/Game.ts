@@ -51,6 +51,8 @@ import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer } from '../rendering/ForestRenderer';
+import { signalDrive } from '../rendering/signalLevel';
+import { FLIGHT_CONFIG } from '../player/FrequencyController';
 import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
 import { BeaconMarker } from '../rendering/BeaconMarker';
 import {
@@ -355,6 +357,8 @@ export class Game {
   private unlocked = false;
   private paused = false;
   private disposed = false;
+  /** §136: the last performance mapping, for the visual signal drive. */
+  private lastPerformance: ReturnType<typeof performanceFrom> | null = null;
 
   constructor(private readonly elements: GameElements) {
     this.renderer = new Renderer(elements.container);
@@ -713,6 +717,17 @@ export class Game {
       // with it, so particles never shimmer through a bar that has no hats.
       this.particles.setSparkle(performance.now() < this.hatSparkleUntil);
       this.terrain.setBass(track.bass.unlocked ? 1 : 0);
+      // §136.6/§136.15: the picture has an intensity and it follows the music,
+      // so the line quality of the whole field is decided here and nowhere
+      // else. Speed and dissonance are what pull it apart.
+      const drive = signalDrive({
+        growth: trackGrowth(track),
+        rms: this.audioAnalyser?.snapshot.rms ?? 0,
+        section: track.form,
+        speed01: clamp01(state.velocity / FLIGHT_CONFIG.maxSpeed),
+        grit: this.lastPerformance?.grit ?? 0,
+      });
+      this.terrain.setSignal(drive.intensity, drive.instability);
       this.melodyTrail.setLevel(track.melody.unlocked ? 1 : 0);
       this.harmonyBridges.setLevel(track.harmony.unlocked ? 1 : 0);
       // §9.1 world tendency: repetition organizes structures onto the grid.
@@ -940,6 +955,7 @@ export class Game {
       performance,
     });
     next.performance = performance;
+    this.lastPerformance = performance;
     // §118: which reading of this world track N is.
     next.dna = this.trackBuilder.dna;
     // §91: nothing outside the world may touch the clock. Height is colour.
