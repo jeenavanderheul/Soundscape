@@ -34,6 +34,7 @@
  */
 import { getSuperdoughAudioController, initStrudel, samples, type StrudelRepl } from '@strudel/web';
 import { guardPattern } from '../ai/PatternGuard';
+import { applyDna } from '../music/TrackDNA';
 import type { Performance } from '../music/Performance';
 import type { LayerVariations } from '../music/Variation';
 import {
@@ -1135,7 +1136,8 @@ export function buildPatternCode(
   for (const name of LAYER_NAMES) {
     const layer = graph.layers[name];
     for (const primitive of layer.primitives) {
-      const voice = withVoice(renderPrimitive(primitive, layer), primitive);
+      // §118: the track's own reading, applied before anything else shapes it.
+      const voice = applyDna(withVoice(renderPrimitive(primitive, layer), primitive), graph.dna);
       parts.push(
         plain
           ? voice

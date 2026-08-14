@@ -66,6 +66,11 @@ export interface MusicalLayerGraph {
    * without waiting for it. The game never sets this; the bench does.
    */
   cycleOffset?: number;
+  /**
+   * §118: which reading of this world's document is playing — the track's own
+   * character. Shapes how the parts are played, never what they are.
+   */
+  dna?: import('../music/TrackDNA').TrackDNA;
 }
 
 /** Whitelisted transform names per primitive kind (spec §11, rule §25.9). */

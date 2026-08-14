@@ -928,6 +928,8 @@ export class Game {
       performance,
     });
     next.performance = performance;
+    // §118: which reading of this world track N is.
+    next.dna = this.trackBuilder.dna;
     // §91: nothing outside the world may touch the clock. Height is colour.
     // Endless journey: which variation each layer is playing right now.
     next.variations = this.trackBuilder.variations;

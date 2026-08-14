@@ -10,6 +10,7 @@ import { HarmonyEngine } from './HarmonyEngine';
 import { MelodyTracker } from './MelodyTracker';
 import type { MusicState } from './MusicState';
 import { nextRootMidi, rotateVariations, type LayerVariations } from './Variation';
+import { dnaFor, type TrackDNA } from './TrackDNA';
 import {
   createInitialTrackState,
   LEVEL_DEEP,
@@ -221,6 +222,10 @@ export class TrackBuilder {
   readonly harmony = new HarmonyEngine();
   readonly melody = new MelodyTracker();
   readonly arrangement = new ArrangementEngine();
+  /** §118: the reading of this world the current track is (genre, number). */
+  get dna(): TrackDNA {
+    return dnaFor(this.store.getState().genre, this.trackNumberValue);
+  }
 
   constructor(
     private readonly store: Store<TrackState>,
