@@ -46,6 +46,30 @@ export function tokenize(code: string): CodeToken[] {
  * emits exactly one indented line per primitive, in layer order, so the labels
  * line up one for one.
  */
+/**
+ * §110: the preset's own layout — one `$:` per voice under its own section
+ * title, exactly as the document is written. The titles come from the graph,
+ * so this is not a copy of the preset next to something else playing: it is
+ * the code that is sounding, laid out the way it was authored.
+ */
+export function presetLayout(code: string, sections: readonly string[]): string {
+  const voices = code
+    .split('\n')
+    .filter((line) => line.startsWith('  '))
+    .map((line) => line.trim().replace(/,$/, ''));
+  const out: string[] = [];
+  let last = '';
+  voices.forEach((line, i) => {
+    const title = sections[i] ?? '';
+    if (title !== '' && title !== last) {
+      out.push('', `// ${'─'.repeat(58)}`, `// ${title}`, `// ${'─'.repeat(58)}`, '');
+      last = title;
+    }
+    out.push(`$: ${line}`, '');
+  });
+  return out.join('\n');
+}
+
 export function sectioned(code: string, labels: readonly string[]): string {
   const lines = code.split('\n');
   const out: string[] = [];
@@ -135,8 +159,19 @@ export class CodeOverlay {
    * read is always the code that is actually sounding — never a copy of a
    * preset that has drifted away from it.
    */
-  update(code: string, labels: readonly string[] = [], header = ''): void {
-    const grouped = labels.length > 0 ? sectioned(code, labels) : code;
+  update(
+    code: string,
+    labels: readonly string[] = [],
+    header = '',
+    sections: readonly string[] = [],
+  ): void {
+    // §110: a world authored as a document is shown in its own layout; the
+    // generated worlds keep the role banners.
+    const grouped = sections.some((s) => s !== '')
+      ? presetLayout(code, sections)
+      : labels.length > 0
+        ? sectioned(code, labels)
+        : code;
     // §109: the header is live state, so it changes far more often than the
     // pattern does — but it is cheap, and comparing the whole thing keeps the
     // "only redraw on change" rule in one place.

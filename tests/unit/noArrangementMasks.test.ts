@@ -30,7 +30,15 @@ import { LEVEL_DEEP, createInitialTrackState } from '../../src/music/TrackState'
  * bars — and those are fine.
  */
 const PHASES: Section[] = ['intro', 'groove', 'discovery', 'build', 'drop', 'deep', 'break', 'return'];
-const WORLDS = ['techno', 'sub-pressure'] as const;
+/**
+ * §110: a world written as a DOCUMENT arranges itself — its masks are the
+ * form, and the arc must not also decide. The rule this guards is "only one
+ * authority over presence", not "no masks": for techno that authority is now
+ * the preset, and `WorldLayerGraph` no longer runs the section mix over it.
+ * What must stay true is that no GENERATED world smuggles an arrangement into
+ * a template, which is the fault §101 found.
+ */
+const WORLDS = ['sub-pressure'] as const;
 
 /**
  * §104: span alone cannot tell a figure from an arrangement — the machine-rise

@@ -175,9 +175,19 @@ const VOICE_LABELS: Record<string, string> = {
   'sub-pressure-hats': 'HATS', 'sub-pressure-hats-deep': 'HATS',
   'sub-pressure-kick': 'KICK', 'sub-pressure-kick-deep': 'KICK',
   'sub-pressure-snare': 'CLAP / SNARE', 'sub-pressure-snare-deep': 'CLAP / SNARE',
-  'sub-pressure-sub': 'SUB', 'sub-pressure-body': 'ROLLING BASS',
+  'sub-pressure-sub': 'SUB', sub: 'SUB', 'sub-pressure-body': 'ROLLING BASS',
   'sub-pressure-reese': 'ROLLING BASS', 'sub-pressure-stab': 'RAVE STAB',
   'sub-pressure-signal': 'MACHINE SIGNAL', 'sub-pressure-texture': 'TEXTURE',
+  // §110 the MACHINE PRESSURE document's own voices.
+  atmosphere: 'ATMOSPHERE', 'machine-air': 'ATMOSPHERE',
+  hats: 'HATS', 'hats-deep': 'HATS',
+  kick: 'KICK', 'kick-deep': 'KICK',
+  clap: 'CLAP / SNARE', 'snare-body': 'CLAP / SNARE',
+  'rolling-bass': 'ROLLING BASS', reese: 'ROLLING BASS',
+  'rave-stab': 'RAVE STAB', acid: 'ACID MACHINE',
+  'machine-signal': 'MACHINE SIGNAL',
+  'texture-deep': 'TEXTURE',
+  'transition-pressure': 'ATMOSPHERE', 'climax-bass': 'CLIMAX',
   'track-kick': 'KICK', 'track-pulse': 'KICK', 'pulse': 'KICK',
   'track-hats': 'HATS', 'track-hats-deep': 'HATS',
   'track-snare': 'CLAP / SNARE', 'track-snare-deep': 'CLAP / SNARE',
@@ -186,7 +196,7 @@ const VOICE_LABELS: Record<string, string> = {
   'track-bass': 'ROLLING BASS',
   'track-harmony': 'RAVE STAB', 'track-harmony-deep': 'RAVE STAB',
   'track-melody': 'MACHINE SIGNAL', 'track-melody-octave': 'MACHINE SIGNAL',
-  'track-texture': 'TEXTURE', 'track-texture-wide': 'TEXTURE',
+  'track-texture': 'TEXTURE', texture: 'TEXTURE', 'track-texture-wide': 'TEXTURE',
   'tension-pulse': 'TENSION ENGINE', 'tension-drone': 'TENSION ENGINE',
   'tension-air': 'TENSION ENGINE',
   'climax-toms': 'CLIMAX', 'climax-ride': 'CLIMAX', 'climax-signal': 'CLIMAX',
@@ -194,6 +204,21 @@ const VOICE_LABELS: Record<string, string> = {
   'sub-pressure-finale-response': 'CLIMAX', 'sub-pressure-finale-noise': 'CLIMAX',
   'sub-pressure-finale-mutation': 'CLIMAX',
 };
+
+/**
+ * §110: the section title each voice was authored under, in render order —
+ * empty for a world that has no document of its own.
+ */
+export function voiceSections(graph: MusicalLayerGraph): string[] {
+  const out: string[] = [];
+  for (const layer of LAYER_NAMES) {
+    for (const primitive of graph.layers[layer].primitives) {
+      const section = primitive.parameters['section'];
+      out.push(typeof section === 'string' ? section : '');
+    }
+  }
+  return out;
+}
 
 /** Labels for the graph's voices, in the order the engine renders them. */
 export function voiceLabels(graph: MusicalLayerGraph): string[] {

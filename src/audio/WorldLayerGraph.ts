@@ -1,4 +1,5 @@
 import { buildSubPressureGraph } from '../lab/SubPressure';
+import { buildTechnoGraph } from './TechnoPreset';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { Performance } from '../music/Performance';
 import type { TrackState } from '../music/TrackState';
@@ -29,7 +30,23 @@ export interface WorldLayerGraphInput {
   mix?: Partial<Record<LayerName, number>> | undefined;
 }
 
+/** §110: worlds written as a document arrange themselves; the arc must not. */
+export function isPresetWorld(genre: MusicalLayerGraph extends never ? never : TrackState['genre']): boolean {
+  return genre === 'techno' || genre === 'sub-pressure';
+}
+
 export function buildWorldLayerGraph(input: WorldLayerGraphInput): MusicalLayerGraph {
+  if (input.track.genre === 'techno') {
+    // §110: this world IS the MACHINE PRESSURE document — its own masks are
+    // the arrangement, so nothing else may decide what is sounding.
+    return buildTechnoGraph({
+      track: input.track,
+      ...(input.motion === undefined ? {} : { motion: input.motion }),
+      ...(input.energy === undefined ? {} : { energy: input.energy }),
+      ...(input.performance === undefined ? {} : { performance: input.performance }),
+      ...(input.mix === undefined ? {} : { mix: input.mix }),
+    });
+  }
   if (input.track.genre === 'sub-pressure') {
     return buildSubPressureGraph({
       track: input.track,

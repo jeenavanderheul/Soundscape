@@ -18,6 +18,7 @@ import {
   genreGrammar,
   throwStyleFor,
   voiceLabels,
+  voiceSections,
 } from '../audio/MusicalPrimitives';
 import type { MusicalLayerGraph, ThrowStyle } from '../audio/MusicalPrimitives';
 import { buildWorldLayerGraph, worldBankLabel } from '../audio/WorldLayerGraph';
@@ -743,6 +744,7 @@ export class Game {
           energy: clamp01(state.amplitude),
           bank: worldBankLabel(playingTrack),
         }),
+        this.lastLayerGraph ? voiceSections(this.lastLayerGraph) : [],
       );
       // §41: the one line that makes "I hear no difference" checkable.
       const info = this.strudelEngine.status;

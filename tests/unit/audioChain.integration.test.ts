@@ -63,7 +63,11 @@ describe('audio chain integration (Game.unlock wiring)', () => {
       bpm: 134,
     };
     const technoCode = buildPatternCode(buildWorldLayerGraph({ music, track: technoTrack }));
-    expect(technoCode).toContain('s("sbd*4")');
+    // §110: techno is its own document now — a 909 kick with the preset's own
+    // mask, not a template picked by a grammar. Note it no longer has a synth
+    // fallback: this world needs its sample banks.
+    expect(technoCode).toContain('s("bd*4").bank("RolandTR909")');
+    expect(technoCode).toContain('<0!4 1!28>');
     expect(technoCode).not.toContain('AkaiMPC60');
     expect(worldBankLabel(technoTrack)).toBe('RolandTR909');
     expect(worldBankLabel(pressureTrack)).toBe('EmuSP12 / AkaiMPC60');
