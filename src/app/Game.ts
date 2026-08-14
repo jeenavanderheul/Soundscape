@@ -303,7 +303,6 @@ export class Game {
     undefined,
     WORLD_SEED,
   );
-  private beatIndex = 0;
   /** Dev diagnostics: how often each pulse source fired this session. */
   private readonly inputCounts = { windReleased: 0, resonancePulse: 0 };
   /** How long the wind has been genuinely held; guards the clap intent. */
@@ -340,6 +339,8 @@ export class Game {
   private pendingSection: TrackState['form'] | null = null;
   /** §83: layer words waiting for the bar where their sound arrives. */
   private readonly pendingLayers: string[] = [];
+  /** §88: the last scheduler cycle seen, so a bar boundary can be detected. */
+  private lastBar = -1;
   /** §33 turn throws: one gesture per turn, never a stream. */
   private turnArmed = true;
   private lastThrowMs = -Infinity;
@@ -451,11 +452,26 @@ export class Game {
     });
     this.detachStrudelBeat = this.strudelEngine.onBeat((event) => {
       this.events.emit('beat', { atMs: event.atMs });
-      // §29.6 layer visuals: kick = terrain shockwave; clap = backbeat flash.
-      this.beatIndex += 1;
+      // §88: a bar is a CYCLE of the scheduler, not every fourth beat of a
+      // counter that started whenever the ticker did. The graph is applied on
+      // the cycle boundary, so the word has to be read off the same clock or
+      // it drifts up to three beats away from the sound it announces.
+      const bar = Math.floor(event.cycle);
+      const onBar = bar !== this.lastBar;
+      this.lastBar = bar;
+      // §84: the riser is a SOUND, not a word, so it is consumed on its own
+      // bar rather than queuing behind the phase and layer words. Sharing that
+      // chain meant a riser was swallowed whenever a phase word landed on the
+      // same bar — which is every drop, the one place it has to be heard.
+      if (onBar && this.trackBuilder.arrangement.takeRiser() && this.motionLevel > 0.25) {
+        this.strudelEngine.schedule(
+          { kind: 'throw', gain: 0.7 * this.motionLevel, style: 'riser' },
+          'beat',
+        );
+      }
       // §60: the section word and its sound both land on the bar where the mix
       // actually changes — never before it, or the screen lies about the music.
-      if (this.pendingSection !== null && this.beatIndex % 4 === 0) {
+      if (this.pendingSection !== null && onBar) {
         const section = this.pendingSection;
         this.pendingSection = null;
         // §84: the player reads the PHASE — ENTER BIOME, PRESSURE, DROP II.
@@ -465,16 +481,7 @@ export class Game {
         if (gesture !== undefined && this.motionLevel > 0.25) {
           this.strudelEngine.schedule({ kind: 'throw', gain: 0.55 * this.motionLevel, style: gesture }, 'beat');
         }
-      } else if (this.beatIndex % 4 === 0 && this.trackBuilder.arrangement.takeRiser()) {
-        // §84: cycles 15 and 27 — the lift belongs to the cycle BEFORE the
-        // floor lands, or the drop arrives with nothing leading into it.
-        if (this.motionLevel > 0.25) {
-          this.strudelEngine.schedule(
-            { kind: 'throw', gain: 0.7 * this.motionLevel, style: 'riser' },
-            'beat',
-          );
-        }
-      } else if (this.pendingLayers.length > 0 && this.beatIndex % 4 === 0) {
+      } else if (this.pendingLayers.length > 0 && onBar) {
         // §83: one word per bar, and a section outranks a layer — two words on
         // the same bar would replace each other before either could be read.
         this.layerCue.announce(this.pendingLayers.shift()!);

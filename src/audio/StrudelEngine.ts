@@ -52,6 +52,14 @@ import {
 export interface StrudelBeatEvent {
   /** AudioContext time of the boundary, in milliseconds. */
   atMs: number;
+  /**
+   * §88: where the SCHEDULER is, in cycles — one cycle is one bar. The beat
+   * ticker is re-anchored to this clock every beat, but its own count starts
+   * wherever the ticker happened to start, so `beatIndex % 4` is an arbitrary
+   * beat inside the bar. A graph change lands on a real cycle boundary, so
+   * anything that has to arrive WITH the sound has to read this instead.
+   */
+  cycle: number;
 }
 
 export interface StrudelEnginePort {
@@ -1399,7 +1407,8 @@ export class StrudelEngine implements StrudelEnginePort {
       this.beatTimer = null;
       if (this.disposed || !this.playing) return;
       const atMs = (this.context?.currentTime ?? 0) * 1000;
-      for (const handler of [...this.beatHandlers]) handler({ atMs });
+      const cycle = this.repl?.scheduler.now() ?? 0;
+      for (const handler of [...this.beatHandlers]) handler({ atMs, cycle });
       this.startBeatTicker();
     }, ms === 0 ? beatMs : ms);
   }
