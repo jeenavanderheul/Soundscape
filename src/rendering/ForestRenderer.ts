@@ -61,8 +61,14 @@ export const FOREST_RENDER = {
   pointSize: 42,
 } as const;
 
-/** Which baked species draws which shape language (§55). */
-const FORM_SPECIES: Record<FormName, string> = {
+/**
+ * §138: a world's PRIMARY growth is its own grown species (ez-tree, one per
+ * world, in three stages), and its accent form stays a modelled Kenney tree.
+ * Keeping both was the user's call, and it earns its keep: the grown species
+ * carries the character of the world and changes as you earn it, the modelled
+ * one is a fixed, harder shape standing between them.
+ */
+const KENNEY_FORM_SPECIES: Record<FormName, string> = {
   pillar: 'tall',
   blade: 'thin',
   shard: 'pine-tall',
@@ -82,20 +88,37 @@ export interface TreeSpecies {
   id: string;
   /** Surface points, base at y = 0 and tip at y = 1. */
   points: Float32Array;
+  /** Set on grown species: which world it belongs to and how far along it is. */
+  world?: string | null;
+  stage?: 'sapling' | 'half' | 'full' | null;
 }
+
+/** How far along a growth is drawn: nothing earned is a sapling (§138). */
+export type GrowthStage = 'sapling' | 'half' | 'full';
+const STAGES: readonly GrowthStage[] = ['sapling', 'half', 'full'];
 
 /** Reads what `npm run trees:bake` wrote. Null is a valid world: no trees. */
 export async function loadTreeSpecies(base = '/trees'): Promise<Map<string, TreeSpecies> | null> {
   try {
     const manifest = (await (await fetch(`${base}/trees.json`)).json()) as {
-      species: { id: string; points: number }[];
+      species: {
+        id: string;
+        points: number;
+        world?: string | null;
+        stage?: 'sapling' | 'half' | 'full' | null;
+      }[];
     };
     const loaded = new Map<string, TreeSpecies>();
     await Promise.all(
       manifest.species.map(async (entry) => {
         const buffer = await (await fetch(`${base}/${entry.id}.bin`)).arrayBuffer();
         if (buffer.byteLength !== entry.points * 12) return;
-        loaded.set(entry.id, { id: entry.id, points: new Float32Array(buffer) });
+        loaded.set(entry.id, {
+          id: entry.id,
+          points: new Float32Array(buffer),
+          world: entry.world ?? null,
+          stage: entry.stage ?? null,
+        });
       }),
     );
     return loaded.size > 0 ? loaded : null;
@@ -171,7 +194,7 @@ interface Cloud {
 export class ForestRenderer {
   /** All the shape languages; the Game adds this to the scene. */
   readonly group = new Group();
-  private readonly clouds = new Map<FormName, Cloud>();
+  private readonly clouds = new Map<string, Cloud>();
   private readonly material: ShaderMaterial;
   private readonly seedNumber: number;
   private growths: Growth[] = [];
@@ -182,6 +205,8 @@ export class ForestRenderer {
   private tint = new Color(0.5, 0.58, 0.6);
   private pulse = 0;
   private depth = 0;
+  private species: Map<string, TreeSpecies> | null = null;
+  private world: string | null | undefined = undefined;
   private groundAt: (x: number, z: number) => number = () => -6;
 
   constructor(seed: string) {
@@ -205,8 +230,9 @@ export class ForestRenderer {
    * which is a legitimate world, not an error state.
    */
   setSpecies(species: Map<string, TreeSpecies>): void {
+    this.species = species;
     for (const form of FORM_NAMES) {
-      const source = species.get(FORM_SPECIES[form]);
+      const source = species.get(KENNEY_FORM_SPECIES[form]);
       if (!source) continue;
       const geometry = new InstancedBufferGeometry();
       geometry.setAttribute('position', new BufferAttribute(source.points, 3));
@@ -223,10 +249,54 @@ export class ForestRenderer {
       geometry.instanceCount = 0;
       const points = new Points(geometry, this.material);
       points.frustumCulled = false;
-      this.clouds.set(form, { points, geometry, offsets, scales, phases, tints });
+      this.clouds.set(`kenney:${form}`, { points, geometry, offsets, scales, phases, tints });
       this.group.add(points);
     }
+    // Three more clouds: the grown species of whichever world we are in, one
+    // per stage. Their point buffer is swapped when the world changes.
+    for (const stage of STAGES) {
+      const cloud = this.makeCloud(new Float32Array(3));
+      this.clouds.set(`stage:${stage}`, cloud);
+      this.group.add(cloud.points);
+    }
     this.cellX = Number.NaN; // whatever was placed, place it again with real trees
+  }
+
+  /** One instanced point cloud, ready to be filled. */
+  private makeCloud(points: Float32Array): Cloud {
+    const geometry = new InstancedBufferGeometry();
+    geometry.setAttribute('position', new BufferAttribute(points, 3));
+    const capacity = FOREST_RENDER.maxInstances;
+    const offsets = new InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+    const scales = new InstancedBufferAttribute(new Float32Array(capacity), 1);
+    const phases = new InstancedBufferAttribute(new Float32Array(capacity), 1);
+    const tints = new InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+    for (const attribute of [offsets, scales, phases, tints]) attribute.setUsage(DynamicDrawUsage);
+    geometry.setAttribute('iPosition', offsets);
+    geometry.setAttribute('iScale', scales);
+    geometry.setAttribute('iPhase', phases);
+    geometry.setAttribute('iTint', tints);
+    geometry.instanceCount = 0;
+    const mesh = new Points(geometry, this.material);
+    mesh.frustumCulled = false;
+    return { points: mesh, geometry, offsets, scales, phases, tints };
+  }
+
+  /**
+   * Swaps the grown species in when the world changes. Called on a region
+   * crossing, never per frame.
+   */
+  private useWorld(world: string | null): void {
+    if (world === this.world) return;
+    this.world = world;
+    for (const stage of STAGES) {
+      const cloud = this.clouds.get(`stage:${stage}`);
+      if (!cloud) continue;
+      const source = world ? this.species?.get(`${world}-${stage}`) : undefined;
+      cloud.geometry.deleteAttribute('position');
+      cloud.geometry.setAttribute('position', new BufferAttribute(source?.points ?? new Float32Array(3), 3));
+      if (!source) cloud.geometry.instanceCount = 0;
+    }
   }
 
   /** §55 user decision: the deeper into a world you are, the bigger it grows. */
@@ -270,6 +340,7 @@ export class ForestRenderer {
       this.cellX = cx;
       this.cellZ = cz;
       this.ecology = ecology;
+      this.useWorld(genre);
       this.rebuild(track);
     } else if (track) {
       // Cheap: earning a layer only flips flags, it does not move the forest.
@@ -305,17 +376,20 @@ export class ForestRenderer {
 
   private draw(): void {
     if (this.clouds.size === 0) return;
-    const used = new Map<FormName, number>();
+    const used = new Map<string, number>();
     const depthScale = 0.75 + this.depth * 0.7;
     for (const growth of this.growths) {
-      const form = growth.phase < this.ecology.formBias
-        ? this.ecology.forms[0]
-        : this.ecology.forms[1];
-      const cloud = this.clouds.get(form);
+      // §138: the world's own grown species is the primary growth; the accent
+      // form stays a modelled tree, so a forest is one species repeated with a
+      // second, harder shape standing between them.
+      const key = growth.phase < this.ecology.formBias && this.world
+        ? `stage:${stageFor(growth, this.depth)}`
+        : `kenney:${this.ecology.forms[1]}`;
+      const cloud = this.clouds.get(key);
       if (!cloud) continue;
-      const slot = used.get(form) ?? 0;
+      const slot = used.get(key) ?? 0;
       if (slot >= FOREST_RENDER.maxInstances) continue;
-      used.set(form, slot + 1);
+      used.set(key, slot + 1);
 
       const grown = growth.earned ? 1 : FOREST_RENDER.potentialScale;
       // HARD USER RULE: on the ground, always. The baked cloud has its base at
@@ -327,8 +401,8 @@ export class ForestRenderer {
       this.color.copy(this.tint).multiplyScalar(brightness);
       cloud.tints.setXYZ(slot, this.color.r, this.color.g, this.color.b);
     }
-    for (const [form, cloud] of this.clouds) {
-      cloud.geometry.instanceCount = used.get(form) ?? 0;
+    for (const [key, cloud] of this.clouds) {
+      cloud.geometry.instanceCount = used.get(key) ?? 0;
       cloud.offsets.needsUpdate = true;
       cloud.scales.needsUpdate = true;
       cloud.phases.needsUpdate = true;
@@ -340,6 +414,16 @@ export class ForestRenderer {
     for (const cloud of this.clouds.values()) cloud.geometry.dispose();
     this.material.dispose();
   }
+}
+
+/**
+ * A growth shows what it has become: nothing earned is a sapling, an earned
+ * layer is half grown, and staying long enough in a world to deepen it (§55)
+ * finishes the tree.
+ */
+function stageFor(growth: Growth, depth: number): GrowthStage {
+  if (!growth.earned) return 'sapling';
+  return depth >= 0.5 ? 'full' : 'half';
 }
 
 function isEarnedNow(growth: Growth, track: Readonly<TrackState>): boolean {
