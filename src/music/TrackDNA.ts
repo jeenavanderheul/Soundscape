@@ -110,7 +110,10 @@ export function applyDna(code: string, dna: TrackDNA | undefined): string {
   out = out.replace(/\.(distort|shape)\(([0-9]*\.?[0-9]+)\)/g, (_m, fn: string, amount: string) =>
     `.${fn}(${round3(Math.min(fn === 'shape' ? 0.9 : 3, Number(amount) * push))})`,
   );
-  const wet = 0.5 + dna.space * 1.1;
+  // 0.5 has to land on exactly 1.0, or "as written" is not as written —
+  // track 1 came out 5% wetter than the document, which is a small number
+  // and still a lie.
+  const wet = 0.4 + dna.space * 1.2;
   out = out.replace(/\.room\(([0-9]*\.?[0-9]+)\)/g, (_m, amount: string) =>
     `.room(${round3(Math.min(1, Number(amount) * wet))})`,
   );
