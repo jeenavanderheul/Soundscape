@@ -1,5 +1,5 @@
+import { worldForHeading } from './GenreZones';
 import type { GenreAffinity } from '../music/MusicState';
-import { zoneGenres } from './GenreZones';
 
 /**
  * §33: every direction is a different place, and you can SEE it. Each compass
@@ -108,21 +108,9 @@ export function compassPoint(heading: number): (typeof POINTS)[number] {
 
 /** What lies in the direction the player is facing, for the HUD (§33). */
 export function headingLabel(heading: number): string {
-  const point = compassPoint(heading);
-  const zones = zoneGenres();
-  const byPoint = {
-    N: zones.north,
-    NNE: zones.northNorthEast,
-    ENE: zones.eastNorthEast,
-    ESE: zones.eastSouthEast,
-    SSE: zones.southSouthEast,
-    S: zones.south,
-    SSW: zones.southSouthWest,
-    WSW: zones.westSouthWest,
-    WNW: zones.westNorthWest,
-    NNW: zones.northNorthWest,
-  } as const;
-  return `${point} · ${byPoint[point]}`;
+  // §112: one source. The compass point is how it READS; the world is
+  // whatever `worldForHeading` says, which is the same maths the land uses.
+  return `${compassPoint(heading)} · ${placeName(worldForHeading(heading))}`;
 }
 
 /**

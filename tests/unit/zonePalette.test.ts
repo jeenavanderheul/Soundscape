@@ -1,3 +1,4 @@
+import { dominantZone, zoneAffinity } from '../../src/genres/GenreZones';
 import { beaconOffset, guideLines, onTarget } from '../../src/ui/Guide';
 import { describe, expect, it } from 'vitest';
 
@@ -75,13 +76,26 @@ describe('§33 compass', () => {
     expect(compassPoint(-step)).toBe('NNW');
   });
 
-  it('names the region the player is flying into', () => {
-    const step = (Math.PI * 2) / 10;
-    expect(headingLabel(0)).toBe('N · techno');
-    expect(headingLabel(step * 2)).toBe('ENE · techno');
-    expect(headingLabel(Math.PI)).toBe('S · sub-pressure');
-    expect(headingLabel(-step * 3)).toBe('WSW · sub-pressure');
-    expect(headingLabel(-step)).toBe('NNW · techno');
+  it('§112 names the world the heading actually points into', () => {
+    const step = (Math.PI * 2) / 6;
+    // The compass point is how it reads; the world comes from the same maths
+    // the land uses, so `flying:` and `here:` can never disagree again.
+    expect(headingLabel(0)).toContain('techno');
+    expect(headingLabel(step)).toContain('heavy-signal');
+    expect(headingLabel(step * 2)).toContain('broken-machine');
+    expect(headingLabel(step * 3)).toContain('sub-pressure');
+    expect(headingLabel(step * 4)).toContain('void-crusher');
+    expect(headingLabel(step * 5)).toContain('percussion-riot');
+  });
+
+  it('§56 flying and here are the same answer, at every heading', () => {
+    const out = { x: 0, y: 10, z: -200 };
+    for (let i = 0; i < 24; i += 1) {
+      const heading = (Math.PI * 2 * i) / 24;
+      const here = dominantZone(zoneAffinity(out, heading), 0.4);
+      if (here === null) continue;
+      expect(`${i}:${headingLabel(heading).includes(here)}`).toBe(`${i}:true`);
+    }
   });
 });
 

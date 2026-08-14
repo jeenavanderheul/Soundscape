@@ -79,6 +79,36 @@ export function zoneGenres(): Readonly<typeof assignment> {
  * Genre pull of a world position, 0..1 per genre. Pure and deterministic.
  * The player never sees numbers — they hear the world change as they travel.
  */
+/**
+ * §112: the six sectors, in compass order — the ONE place a heading becomes a
+ * world. `flying:` used to read a separate ten-point table left over from an
+ * earlier compass, so the HUD could say you were flying into techno while the
+ * land under you was percussion riot. Two answers to one question is exactly
+ * what §56 forbids.
+ */
+export const SECTORS: readonly (keyof GenreAffinity)[] = [
+  'techno', 'heavy-signal', 'broken-machine',
+  'sub-pressure', 'void-crusher', 'percussion-riot',
+];
+
+/** The world a heading points into. The same maths `zoneAffinity` uses. */
+export function worldForHeading(heading: number): keyof GenreAffinity {
+  const step = (Math.PI * 2) / SECTORS.length;
+  let best = 0;
+  let bestPull = -1;
+  SECTORS.forEach((_, i) => {
+    let delta = heading - i * step;
+    while (delta > Math.PI) delta -= Math.PI * 2;
+    while (delta < -Math.PI) delta += Math.PI * 2;
+    const pull = Math.cos(delta);
+    if (pull > bestPull) {
+      bestPull = pull;
+      best = i;
+    }
+  });
+  return SECTORS[best]!;
+}
+
 export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreAffinity {
   const affinity: GenreAffinity = {
   techno: 0,
@@ -103,10 +133,6 @@ export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreA
     // same size and the same distance away. A sector's pull is cos⁵ of the
     // angle to its centre — wide enough that neighbours blend at a border,
     // narrow enough that its own heading is unmistakably itself.
-    const SECTORS: readonly (keyof GenreAffinity)[] = [
-      'techno', 'heavy-signal', 'broken-machine',
-      'sub-pressure', 'void-crusher', 'percussion-riot',
-    ];
     const step = (Math.PI * 2) / SECTORS.length;
     let total = 0;
     const pulls = SECTORS.map((_, i) => {
