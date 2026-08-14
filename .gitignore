@@ -7,3 +7,6 @@ dist
 # §43: vendored sample library — gigabytes, rebuilt with npm run sounds:vendor
 public/samples/
 public/land/
+
+# subagent worktrees: copies of this repo, never part of it
+.claude/worktrees/

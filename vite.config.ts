@@ -5,7 +5,10 @@ export default defineConfig({
   test: {
     // Git worktrees live inside the project, so their tests would otherwise be
     // collected here — main's suite must never depend on a scratch branch.
-    exclude: ['**/node_modules/**', '**/dist/**', '.worktrees/**'],
+    // `.claude/worktrees` holds isolated copies of this repo while subagents work
+    // in it — without this, a test run counts every copy's tests as well and the
+    // numbers stop meaning anything.
+    exclude: ['**/node_modules/**', '**/dist/**', '.worktrees/**', '**/.claude/**'],
   },
   build: {
     rollupOptions: {

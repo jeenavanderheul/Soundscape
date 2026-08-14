@@ -9,7 +9,7 @@ import {
   Vector3,
 } from 'three';
 import type { ResonatorData } from '../world/Resonator';
-import { zoneColor } from './ForestSystem';
+import { zoneColor } from './zonePitchColor';
 
 /**
  * Visible resonator cores (user decision): each remote frequency glows as a
