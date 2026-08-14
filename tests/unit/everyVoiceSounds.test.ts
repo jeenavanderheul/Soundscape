@@ -11,7 +11,13 @@ vi.mock('@strudel/web', () => ({
 declare function require(id: string): { readFileSync(p: string, enc: string): string };
 const { readFileSync } = require('node:fs');
 import { SOUND_INVENTORY } from '../../src/audio/soundInventory.generated';
-import { SAMPLE_MAPS } from '../../src/audio/StrudelEngine';
+import { SAMPLE_MAPS, buildPatternCode, setSamplesLoaded } from '../../src/audio/StrudelEngine';
+import { buildWorldLayerGraph } from '../../src/audio/WorldLayerGraph';
+import { genreGrammar, regionBpm } from '../../src/audio/MusicalPrimitives';
+import { createInitialMusicState } from '../../src/music/MusicState';
+import { LEVEL_DEEP, createInitialTrackState } from '../../src/music/TrackState';
+import type { Section } from '../../src/music/ArrangementEngine';
+import type { TrackGenre } from '../../src/music/TrackState';
 
 /**
  * §113 EVERY ELEMENT HAS TO BE AUDIBLE.
@@ -27,6 +33,8 @@ import { SAMPLE_MAPS } from '../../src/audio/StrudelEngine';
  */
 
 /** Built into superdough — synthesised, never fetched. */
+const LOCAL_MAP = 'public/samples/strudel.json';
+
 const BUILT_IN = new Set([
   'sine', 'square', 'sawtooth', 'triangle', 'supersaw', 'pulse', 'z_saw', 'z_sine',
   'white', 'pink', 'brown', 'crackle', 'bytebeat', 'sbd',
@@ -82,7 +90,7 @@ describe('every voice the worlds ask for can actually sound', () => {
 });
 
 describe('§114 the vendored library covers every voice, offline', () => {
-  const LOCAL = 'public/samples/strudel.json';
+  const LOCAL = LOCAL_MAP;
 
   it('holds the instruments, not only the drum machines', () => {
     const map: Record<string, unknown> = JSON.parse(readFileSync(LOCAL, 'utf8'));
@@ -106,5 +114,53 @@ describe('§114 the vendored library covers every voice, offline', () => {
     expect(script).toContain('collect(value)');
     // And matches case-insensitively: the maps key `RolandTR909_bd`.
     expect(script).toContain('toLowerCase()');
+  });
+});
+
+describe('§114 what the ENGINE renders is playable, offline, everywhere', () => {
+  // The strongest form of the guarantee: not what the documents are written
+  // with, but what actually comes out — including the voices the engine adds
+  // itself (the finale, the tension engine, the production coats).
+  const PHASES: Section[] = ['intro', 'groove', 'discovery', 'build', 'drop', 'deep', 'break', 'return'];
+  const WORLDS: Exclude<TrackGenre, null>[] = [
+    'techno', 'sub-pressure', 'heavy-signal',
+    'broken-machine', 'percussion-riot', 'void-crusher',
+  ];
+
+  it.each(WORLDS)('%s can be heard in every phase, from disk alone', (genre) => {
+    setSamplesLoaded(true);
+    const map: Record<string, unknown> = JSON.parse(readFileSync(LOCAL_MAP, 'utf8'));
+    const local = new Set(Object.keys(map).map((k) => k.toLowerCase()));
+    const deep = { unlocked: true, level: LEVEL_DEEP };
+    const unplayable = new Set<string>();
+
+    for (const form of PHASES) {
+      const track = {
+        ...createInitialTrackState(),
+        genre, form,
+        bpm: regionBpm(genreGrammar(genre)),
+        drums: { kick: deep, snare: deep, hats: deep },
+        bass: deep, harmony: deep, melody: deep, texture: deep,
+        rootMidi: 45, harmonyIntervals: [0, 3, 7, 10], melodyNotes: [69, 72, 76],
+      } as ReturnType<typeof createInitialTrackState>;
+      const music = { ...createInitialMusicState(), bpm: track.bpm, tempoConfidence: 0.6, dynamics: 0.5 };
+      const code = buildPatternCode(
+        buildWorldLayerGraph({ music, structures: [], track, patterns: {}, motion: 1, energy: 0.6 }),
+        [],
+      );
+      for (const m of code.matchAll(/s\("([^"]+)"\)((?:\.[a-zA-Z]+\([^)]*\))*?)\.bank\("([A-Za-z0-9]+)"\)/g)) {
+        for (const token of m[1]!.match(/[a-z]+/g) ?? []) {
+          const name = `${m[3]!.toLowerCase()}_${token}`;
+          if (!local.has(name)) unplayable.add(name);
+        }
+      }
+      for (const m of code.matchAll(/\.s\("([a-z_0-9]+)"\)/g)) {
+        if (!local.has(m[1]!) && !BUILT_IN.has(m[1]!)) unplayable.add(m[1]!);
+      }
+      for (const m of code.matchAll(/s\("([a-z]+)(?:\*\d+)?"\)(?!\s*\.bank)/g)) {
+        if (!local.has(m[1]!) && !BUILT_IN.has(m[1]!)) unplayable.add(m[1]!);
+      }
+    }
+    expect([...unplayable]).toEqual([]);
   });
 });
