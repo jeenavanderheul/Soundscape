@@ -1430,3 +1430,174 @@ Genres emerge from combinations of those laws. Eventually there is no Techno wor
 > **YOUR SOUND.**
 
 And the world is what your sound became.
+
+---
+
+## 136. Visual art direction: the world behaves like the treatment (v15 amendment — NORMATIVE)
+
+Delivered by the user on 2026-08-15 as a complete art direction. It governs HOW
+the world is rendered. It never changes what exists in the world, and it never
+changes the colour identity.
+
+> **DO NOT PUT THE TREATMENT ON TOP OF THE WORLD. MAKE THE WORLD ITSELF BEHAVE
+> LIKE THE TREATMENT.**
+>
+> **SOUND DOESN'T REACT TO THE WORLD. SOUND RENDERS THE WORLD.**
+
+The world should feel like *a scientific visualisation system that has become alive*.
+
+### 136.1 The colour system is inherited, not redesigned
+The existing palette stays exactly as it is: near-black world, monochrome white
+and grey structures, sparse accents of the existing red / green / purple. No new
+accent colour may be introduced — no orange, cyan, yellow, rainbow RGB,
+synthwave gradients or cyberpunk neon.
+
+Target balance of the frame: **85–95% black, 5–12% white/grey signal, 1–5%
+accent**. Richness comes from density, movement, texture, signal behaviour and
+distortion — never from more colour.
+
+Whatever musical or gameplay logic currently decides red, green and purple stays
+untouched (§3.1 and the zone palette). **Colour logic is inherited; treatment
+logic is added.**
+
+### 136.2 Colour is signal
+Red, green and purple behave as signal information, not environmental
+decoration: particle accents, waveform fragments, resonance events, signal
+peaks, line interruptions, subtle channel displacement. A small coloured signal
+against near-black carries enormous weight. Never flood the world.
+
+### 136.3 The world is a signal
+Nothing is conventional geometry with effects laid over it. Everything is
+measured → generated → transmitted → reconstructed, live. Architecture,
+landscape, particles and surfaces are temporary manifestations of data. The
+world is never completely stable.
+
+### 136.4 Monochrome signal geometry
+The primary language is ultra-fine white lines, grey secondary lines, contours,
+wireframes, waveform geometry, point clouds, particles, grids, technical
+linework. Avoid conventional fully rendered surfaces wherever possible. The
+world sits between a 3D environment, an oscilloscope, a scientific
+visualisation and a generative artwork.
+
+### 136.5 Analog imperfection, translated — never pasted
+No paper, photocopy, grunge or physical-media textures. Translate them into
+signal behaviour instead:
+- print misregistration → subtle signal displacement
+- scanner distortion → moving bands through geometry
+- halftone → particle-density structures
+- photocopy contrast → temporary crushed black-and-white rendering
+- compression → geometry reconstruction artefacts
+- ink bleed → signal/light bleed
+- analog noise → unstable micro-particles
+
+### 136.6 Line quality has states
+Never one clean wireframe everywhere. A line can be: CLEAN (thin, precise),
+WEAK (low opacity, fragmented, intermittent), GHOST (barely visible after-image),
+OVERDRIVEN (bright white, thicker, clipping), UNSTABLE (small displacement,
+duplicate edges, existing accent-colour channel fragments) or LOST (fragments
+into particles and disappears).
+
+Imperfection stays subtle during normal exploration: flicker, micro-noise,
+slight displacement, persistence, ghost geometry, unstable edges, particle
+breakup, occasional tearing. **Unstable, not broken** — no constant glitch.
+
+### 136.7 The player is a frequency
+Not a character and not a glowing fantasy orb: a concentrated area of signal
+energy — dense monochrome particles, waveform structures, oscillating lines,
+light concentration, spatial distortion, persistence, turbulence.
+
+> Frequency is the point where the visualisation becomes unstable.
+
+The trail is layered: primary monochrome waveform, delayed grey ghost, fine
+particle residue, small spatial distortion, occasional accent-colour fragments.
+Faster means less geometrically perfect and more unstable.
+
+### 136.8 Oscilloscope persistence
+Geometry may show persistence, after-images, flicker, waveform interference,
+oscillation, phase displacement, signal decay, amplitude change and frequency
+modulation. Movement leaves a temporary visual memory that decays into black,
+like phosphor persistence.
+
+### 136.9 Particles are data, and become structure
+Particles read as signal information, sensor noise, point-cloud data, broken
+pixels, measurement points, waveform fragments — never sparkles, fireworks,
+glossy energy or fantasy dust.
+
+They organise: **NOISE → PATTERN → CONNECTION → WIREFRAME → STRUCTURE → WORLD**.
+Sound creates visual organisation.
+
+Halftone becomes spatial: thousands of monochrome points that read as a
+continuous surface from far away and as individual points up close, with audio
+driving dot size, density, spacing, vibration and disappearance.
+
+### 136.10 Sound controls visual behaviour
+- **bass** → structural deformation, line weight, amplitude, large-scale
+  movement, black/white contrast
+- **mids** → geometry complexity, spatial oscillation, line density, formation
+- **highs** → micro-particles, fine grain, tiny line events, flicker
+- **distortion** → displacement, signal breakup, reconstruction errors
+- **reverb** → persistence, ghost geometry, trails, spatial echoes
+- **filtering** → visibility, detail, signal clarity, structural resolution
+
+### 136.11 Movement changes signal quality
+STILL: clean, precise, minimal particles. MOVING: slight persistence, more
+particles, small displacement. FAST: longer trails, more breakup, geometry
+stretches. EXTREME: reconstruction struggles — wireframes smear, particles
+stretch, highlights clip, geometry partially collapses. Slowing down stabilises
+the world again.
+
+### 136.12 Resonance is visual synchronisation
+When the player's frequency agrees with the world's: geometry oscillates in
+phase, lines duplicate, waveforms synchronise, particle structures organise,
+existing accents intensify, extra geometry emerges.
+
+### 136.13 Landscape and distance
+The generative landscape concept stays; the treatment happens in the rendering:
+contour lines, wireframes, point clouds, procedural curves, waveform surfaces,
+particle fields — some information fully visible, some fragmented, some gone
+into black, so the landscape reads as continuously reconstructed.
+
+**Distance is signal loss, not fog.** Near: precise, sharp, dense. Mid: less
+detail, thinner lines, fragmentation. Far: ghost structures, sparse points. Very
+far: near-total blackness with occasional traces. Do not lean on conventional
+fog to do this.
+
+### 136.14 Black is active space
+Black is silence, unknown space, missing information, unresolved geometry,
+potential. Protect negative space aggressively; never fill the viewport with
+wireframe. Compose large black areas against small concentrations of
+information, with extreme scale contrast — tiny particles against massive
+structures. The world may read as a gigantic scientific diagram you can fly
+into.
+
+### 136.15 Intensity has levels, and rhythm
+0 SILENCE (near-black, minimal grey, very sparse) → 1 TRACE (fine white
+geometry) → 2 SIGNAL (structure, particles, waveforms) → 3 RESONANCE (density,
+persistence, accents present) → 4 SATURATION (dense geometry, displacement,
+strong waveform behaviour) → 5 OVERLOAD (white clipping, instability,
+fragmentation, strong persistence, controlled accent use) — and then back down.
+
+Never hold maximum intensity: **SILENCE → TRACE → BUILD → RESONANCE → OVERLOAD
+→ RELEASE → SILENCE**. Moments of near-darkness matter as much as complexity.
+
+Overload behaves like an overdriven audio signal — whites clip, near lines
+merge, fine information disappears, geometry destabilises, particles break,
+trails intensify, accents bleed slightly. Signal clipping, not an explosion.
+
+### 136.16 Structures cycle
+POINTS → CONNECTIONS → WIREFRAME → COMPLEX STRUCTURE → RESONANCE → OVERLOAD →
+FRAGMENTATION → POINTS. Nothing is permanent; a structure is a manifestation of
+sound.
+
+### 136.17 Image processing, restrained
+Fine digital/analog hybrid grain. Minimal bloom — only the strongest signals.
+Very high sharpness on stable lines, variable during instability. Deep dominant
+blacks. Controlled highlight clipping. Chromatic displacement only in the
+existing red / green / purple, very subtle normally, more visible during
+instability.
+
+### 136.18 Never
+Fortnite colour, arcade rainbow, synthwave gradients, cyberpunk neon, generic
+Tron, glossy sci-fi rendering, colourful volumetric fog, excessive bloom,
+constant glitch overlays, VHS filters, random RGB splitting, collage objects,
+pasted paper or photocopy textures, grunge overlays.
