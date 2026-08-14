@@ -22,6 +22,7 @@
     "three": "0.185.1"
   },
   "devDependencies": {
+    "@dgreenheck/ez-tree": "^1.1.0",
     "@types/three": "0.185.4",
     "geotiff": "^3.0.5",
     "typescript": "7.0.2",

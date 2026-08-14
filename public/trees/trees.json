@@ -1,54 +1,250 @@
 {
-  "source": "Kenney Nature Kit (kenney.nl/assets/nature-kit)",
-  "license": "CC0 1.0 Universal — public domain",
+  "sources": [
+    {
+      "id": "kenney",
+      "name": "Kenney Nature Kit (kenney.nl/assets/nature-kit)",
+      "license": "CC0 1.0 Universal — public domain"
+    },
+    {
+      "id": "ez-tree",
+      "name": "ez-tree (github.com/dgreenheck/ez-tree)",
+      "license": "MIT"
+    }
+  ],
   "species": [
     {
       "id": "pine-tall",
-      "source": "tree_pineTallA_detailed.glb",
+      "source": "kenney",
+      "model": "tree_pineTallA_detailed.glb",
+      "world": null,
+      "stage": null,
       "points": 1400,
       "radius": 0.1631
     },
     {
       "id": "pine-round",
-      "source": "tree_pineRoundA.glb",
+      "source": "kenney",
+      "model": "tree_pineRoundA.glb",
+      "world": null,
+      "stage": null,
       "points": 1200,
       "radius": 0.2563
     },
     {
       "id": "pine-small",
-      "source": "tree_pineSmallD.glb",
+      "source": "kenney",
+      "model": "tree_pineSmallD.glb",
+      "world": null,
+      "stage": null,
       "points": 700,
       "radius": 0.259
     },
     {
       "id": "thin",
-      "source": "tree_thin.glb",
+      "source": "kenney",
+      "model": "tree_thin.glb",
+      "world": null,
+      "stage": null,
       "points": 1100,
       "radius": 0.2738
     },
     {
       "id": "tall",
-      "source": "tree_tall.glb",
+      "source": "kenney",
+      "model": "tree_tall.glb",
+      "world": null,
+      "stage": null,
       "points": 1300,
       "radius": 0.136
     },
     {
       "id": "fat",
-      "source": "tree_fat.glb",
+      "source": "kenney",
+      "model": "tree_fat.glb",
+      "world": null,
+      "stage": null,
       "points": 1200,
       "radius": 0.3277
     },
     {
       "id": "detailed",
-      "source": "tree_detailed.glb",
+      "source": "kenney",
+      "model": "tree_detailed.glb",
+      "world": null,
+      "stage": null,
       "points": 1600,
       "radius": 0.3493
     },
     {
       "id": "plateau",
-      "source": "tree_plateau.glb",
+      "source": "kenney",
+      "model": "tree_plateau.glb",
+      "world": null,
+      "stage": null,
       "points": 900,
       "radius": 0.3166
+    },
+    {
+      "id": "techno-sapling",
+      "source": "ez-tree",
+      "model": "Pine Medium",
+      "world": "techno",
+      "stage": "sapling",
+      "points": 450,
+      "radius": 0.2747
+    },
+    {
+      "id": "techno-half",
+      "source": "ez-tree",
+      "model": "Pine Medium",
+      "world": "techno",
+      "stage": "half",
+      "points": 850,
+      "radius": 0.3026
+    },
+    {
+      "id": "techno-full",
+      "source": "ez-tree",
+      "model": "Pine Medium",
+      "world": "techno",
+      "stage": "full",
+      "points": 1200,
+      "radius": 0.294
+    },
+    {
+      "id": "sub-pressure-sapling",
+      "source": "ez-tree",
+      "model": "Oak Medium",
+      "world": "sub-pressure",
+      "stage": "sapling",
+      "points": 450,
+      "radius": 0.4985
+    },
+    {
+      "id": "sub-pressure-half",
+      "source": "ez-tree",
+      "model": "Oak Medium",
+      "world": "sub-pressure",
+      "stage": "half",
+      "points": 850,
+      "radius": 0.7015
+    },
+    {
+      "id": "sub-pressure-full",
+      "source": "ez-tree",
+      "model": "Oak Medium",
+      "world": "sub-pressure",
+      "stage": "full",
+      "points": 1200,
+      "radius": 0.6773
+    },
+    {
+      "id": "heavy-signal-sapling",
+      "source": "ez-tree",
+      "model": "Ash Large",
+      "world": "heavy-signal",
+      "stage": "sapling",
+      "points": 450,
+      "radius": 0.3646
+    },
+    {
+      "id": "heavy-signal-half",
+      "source": "ez-tree",
+      "model": "Ash Large",
+      "world": "heavy-signal",
+      "stage": "half",
+      "points": 850,
+      "radius": 0.5324
+    },
+    {
+      "id": "heavy-signal-full",
+      "source": "ez-tree",
+      "model": "Ash Large",
+      "world": "heavy-signal",
+      "stage": "full",
+      "points": 1200,
+      "radius": 0.5753
+    },
+    {
+      "id": "broken-machine-sapling",
+      "source": "ez-tree",
+      "model": "Aspen Medium",
+      "world": "broken-machine",
+      "stage": "sapling",
+      "points": 450,
+      "radius": 0.6559
+    },
+    {
+      "id": "broken-machine-half",
+      "source": "ez-tree",
+      "model": "Aspen Medium",
+      "world": "broken-machine",
+      "stage": "half",
+      "points": 850,
+      "radius": 0.6773
+    },
+    {
+      "id": "broken-machine-full",
+      "source": "ez-tree",
+      "model": "Aspen Medium",
+      "world": "broken-machine",
+      "stage": "full",
+      "points": 1200,
+      "radius": 0.7932
+    },
+    {
+      "id": "percussion-riot-sapling",
+      "source": "ez-tree",
+      "model": "Oak Large",
+      "world": "percussion-riot",
+      "stage": "sapling",
+      "points": 450,
+      "radius": 0.7968
+    },
+    {
+      "id": "percussion-riot-half",
+      "source": "ez-tree",
+      "model": "Oak Large",
+      "world": "percussion-riot",
+      "stage": "half",
+      "points": 850,
+      "radius": 0.7019
+    },
+    {
+      "id": "percussion-riot-full",
+      "source": "ez-tree",
+      "model": "Oak Large",
+      "world": "percussion-riot",
+      "stage": "full",
+      "points": 1200,
+      "radius": 0.7742
+    },
+    {
+      "id": "void-crusher-sapling",
+      "source": "ez-tree",
+      "model": "Pine Large",
+      "world": "void-crusher",
+      "stage": "sapling",
+      "points": 450,
+      "radius": 0.1022
+    },
+    {
+      "id": "void-crusher-half",
+      "source": "ez-tree",
+      "model": "Pine Large",
+      "world": "void-crusher",
+      "stage": "half",
+      "points": 850,
+      "radius": 0.1303
+    },
+    {
+      "id": "void-crusher-full",
+      "source": "ez-tree",
+      "model": "Pine Large",
+      "world": "void-crusher",
+      "stage": "full",
+      "points": 1200,
+      "radius": 0.1387
     }
   ]
 }

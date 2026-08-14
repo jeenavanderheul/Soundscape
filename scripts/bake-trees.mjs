@@ -2,9 +2,11 @@
 //
 //   npm run trees:bake
 //
-// Downloads Kenney's Nature Kit (CC0, kenney.nl/assets/nature-kit), takes the
-// tree models out of it and samples each one into a cloud of surface points,
-// written to public/trees/.
+// Two sources, one output format. Kenney's Nature Kit (CC0,
+// kenney.nl/assets/nature-kit) gives us real modelled trees; ez-tree (MIT,
+// github.com/dgreenheck/ez-tree) grows them procedurally so each world can have
+// a silhouette of its own and three growth stages of it. Both end up as clouds
+// of surface points in public/trees/.
 //
 // Why points and not the models themselves: §136 says the world is a signal,
 // not a set of rendered surfaces, and a low-poly toy tree rendered normally
@@ -15,7 +17,7 @@
 //
 // The zip is fetched, never committed. Only the point clouds are.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -39,6 +41,99 @@ const SPECIES = [
   { id: 'detailed', file: 'tree_detailed.glb', points: 1600 },
   { id: 'plateau', file: 'tree_plateau.glb', points: 900 },
 ];
+
+/**
+ * One grown species per world. The ecology (ForestEcology.ts) already says how
+ * DENSE and how TALL and how IRREGULAR each forest is; these say what a single
+ * growth in it actually looks like, because density alone cannot tell the
+ * machine forest from the riot at a hundred metres.
+ *
+ * Each entry is an ez-tree preset plus the handful of parameters that pull it
+ * away from the preset, with the reason it is pulled.
+ */
+const WORLDS = [
+  {
+    world: 'techno',
+    preset: 'Pine Medium',
+    seed: 1370,
+    tune: {
+      // irregularity 0.05: techno is the metronome world, so its tree is a
+      // column — no gnarl, no twist, branches at one repeated angle.
+      branch: { levels: 2, gnarliness: { 0: 0.0, 1: 0.02, 2: 0.05 }, twist: { 0: 0, 1: 0, 2: 0 }, angle: { 1: 62, 2: 62 } },
+      leaves: { count: 8, size: 1.4 },
+    },
+  },
+  {
+    world: 'sub-pressure',
+    preset: 'Oak Medium',
+    seed: 1371,
+    tune: {
+      // Sub is weight pressing down: a short thick trunk carrying a crown that
+      // spreads sideways instead of reaching up.
+      branch: { levels: 3, angle: { 1: 78, 2: 74, 3: 70 }, length: { 0: 16, 1: 14, 2: 8, 3: 3 }, radius: { 0: 1.6, 1: 0.7, 2: 0.7, 3: 0.7 } },
+      leaves: { count: 14, size: 1.6 },
+    },
+  },
+  {
+    world: 'heavy-signal',
+    preset: 'Ash Large',
+    seed: 1372,
+    tune: {
+      // A signal is read from far away, so the mass has to sit high: bare
+      // trunk for the first half, then everything at once.
+      branch: { levels: 3, start: { 1: 0.5, 2: 0.4, 3: 0.35 }, children: { 0: 9, 1: 5, 2: 3 }, angle: { 1: 55, 2: 50, 3: 45 } },
+      leaves: { count: 16, start: 0.3 },
+    },
+  },
+  {
+    world: 'broken-machine',
+    preset: 'Aspen Medium',
+    seed: 1373,
+    tune: {
+      // irregularity 0.68: nothing here grew straight. High gnarl plus a
+      // sideways force gives a lean, and thin leaves make it read half-dead.
+      branch: { levels: 3, gnarliness: { 0: 0.35, 1: 0.4, 2: 0.5, 3: 0.6 }, twist: { 0: 0.1, 1: 0.12, 2: 0.14, 3: 0.16 }, force: { direction: { x: 0.6, y: 0.35, z: 0.2 }, strength: 0.06 }, angle: { 1: 85, 2: 95, 3: 80 } },
+      leaves: { count: 5, size: 1.1 },
+    },
+  },
+  {
+    world: 'percussion-riot',
+    preset: 'Oak Large',
+    seed: 1374,
+    tune: {
+      // density 1.35 and heightScale 0.7: many short strokes rather than few
+      // long ones. Maximum branch levels, wide angles, small dense leaves.
+      branch: { levels: 3, children: { 0: 14, 1: 8, 2: 5 }, angle: { 1: 88, 2: 96, 3: 100 }, length: { 0: 14, 1: 10, 2: 6, 3: 2.5 }, gnarliness: { 0: 0.2, 1: 0.25, 2: 0.3, 3: 0.35 } },
+      leaves: { count: 20, size: 0.9, sizeVariance: 0.9 },
+    },
+  },
+  {
+    world: 'void-crusher',
+    preset: 'Pine Large',
+    seed: 1375,
+    tune: {
+      // density 0.6, motion 0.25: the void world is nearly empty and nearly
+      // still. One near-vertical line with the barest crown left on it.
+      branch: { levels: 2, children: { 0: 5, 1: 2, 2: 1 }, angle: { 1: 40, 2: 35 }, length: { 0: 34, 1: 10, 2: 4, 3: 2 }, gnarliness: { 0: 0.02, 1: 0.03, 2: 0.04 } },
+      leaves: { count: 4, size: 1.2 },
+    },
+  },
+];
+
+/**
+ * A growth becoming what it is: the same seed grown three ways, so the runtime
+ * can show a species arriving when its layer is earned instead of popping in
+ * finished. Earlier stages lose branch levels and children, which is how a real
+ * sapling differs from its own adult — not by being a smaller copy.
+ */
+const STAGES = [
+  { stage: 'sapling', points: 450, levels: -2, children: 0.35, leaves: 0.3 },
+  { stage: 'half', points: 850, levels: -1, children: 0.6, leaves: 0.6 },
+  { stage: 'full', points: 1200, levels: 0, children: 1, leaves: 1 },
+];
+
+/** Share of the points that go to leaves — the crown is what makes a tree read. */
+const LEAF_SHARE = 0.55;
 
 /** Minimal GLB reader: JSON chunk plus binary chunk, no extensions. */
 function readGlb(buffer) {
@@ -150,14 +245,17 @@ const area = ([a, b, c]) => {
  * Points spread over the surface, area-weighted so a big trunk facet does not
  * get the same handful of points as a tiny leaf facet. Deterministic: the same
  * tree every time the script runs.
+ *
+ * `weights` multiplies a triangle's area, which is how the grown trees hand the
+ * crown more points than its bare surface area would earn.
  */
-function samplePoints(tris, count, seed = 1) {
+function samplePoints(tris, count, seed = 1, weights = null) {
   let state = seed;
   const random = () => {
     state = (state * 1664525 + 1013904223) >>> 0;
     return state / 4294967296;
   };
-  const areas = tris.map(area);
+  const areas = tris.map((tri, i) => area(tri) * (weights ? weights[i] : 1));
   const total = areas.reduce((a, b) => a + b, 0);
   const cumulative = [];
   let running = 0;
@@ -187,8 +285,80 @@ function samplePoints(tris, count, seed = 1) {
   return { points: out, radius: widest / span };
 }
 
+/** Triangles out of one of ez-tree's raw vertex/index arrays. */
+function meshTriangles(verts, indices) {
+  const out = [];
+  for (let i = 0; i < indices.length; i += 3) {
+    const tri = [];
+    for (let k = 0; k < 3; k++) {
+      const v = indices[i + k] * 3;
+      tri.push([verts[v], verts[v + 1], verts[v + 2]]);
+    }
+    out.push(tri);
+  }
+  return out;
+}
+
+/** Deep-merge the world's tuning over a preset; only leaves are replaced. */
+function merge(base, patch) {
+  for (const [key, value] of Object.entries(patch)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) merge(base[key], value);
+    else base[key] = value;
+  }
+  return base;
+}
+
+const scaleCounts = (counts, factor) => {
+  for (const key of Object.keys(counts)) counts[key] = Math.max(1, Math.round(counts[key] * factor));
+};
+
+async function growWorlds() {
+  // ez-tree builds three.js meshes, and three.js reaches for the DOM the moment
+  // a texture is constructed. Nothing is ever rendered here — we only read the
+  // vertex arrays — so the thinnest possible stand-in is enough.
+  globalThis.self = globalThis;
+  globalThis.document = {
+    createElement: () => ({ style: {}, getContext: () => null, setAttribute() {}, addEventListener() {}, removeEventListener() {} }),
+    createElementNS: () => ({ style: {}, setAttribute() {}, addEventListener() {}, removeEventListener() {} }),
+  };
+  const { Tree, TreePreset } = await import('@dgreenheck/ez-tree');
+
+  const grown = [];
+  for (const world of WORLDS) {
+    for (const stage of STAGES) {
+      const options = merge(structuredClone(TreePreset[world.preset]), world.tune);
+      options.seed = world.seed;
+      options.branch.levels = Math.max(1, options.branch.levels + stage.levels);
+      scaleCounts(options.branch.children, stage.children);
+      options.leaves.count = Math.max(1, Math.round(options.leaves.count * stage.leaves));
+
+      const tree = new Tree();
+      tree.loadFromJson(options);
+      const branchTris = meshTriangles(tree.branches.verts, tree.branches.indices);
+      const leafTris = meshTriangles(tree.leaves.verts, tree.leaves.indices);
+
+      // Leaf quads carry far less area than the trunk, so left alone the crown
+      // would be a rumour. Weight them up to a fixed share of the cloud.
+      const branchArea = branchTris.reduce((sum, tri) => sum + area(tri), 0);
+      const leafArea = leafTris.reduce((sum, tri) => sum + area(tri), 0);
+      const leafWeight = leafArea > 0 ? (LEAF_SHARE / (1 - LEAF_SHARE)) * (branchArea / leafArea) : 1;
+      const tris = [...branchTris, ...leafTris];
+      const weights = tris.map((_, i) => (i < branchTris.length ? 1 : leafWeight));
+
+      const id = `${world.world}-${stage.stage}`;
+      const { points, radius } = samplePoints(tris, stage.points, world.seed + stage.points, weights);
+      writeFileSync(join(OUT, `${id}.bin`), Buffer.from(points.buffer));
+      grown.push({ id, source: 'ez-tree', model: world.preset, world: world.world, stage: stage.stage, points: stage.points, radius: Number(radius.toFixed(4)) });
+      console.log(`  ${id.padEnd(24)} ${String(tris.length).padStart(5)} tris → ${stage.points} points · radius ${radius.toFixed(2)}`);
+    }
+  }
+  return grown;
+}
+
 const work = join(tmpdir(), 'frequency-trees');
 mkdirSync(work, { recursive: true });
+// Rewritten whole, so a species that has been renamed or dropped cannot linger.
+rmSync(OUT, { recursive: true, force: true });
 mkdirSync(OUT, { recursive: true });
 
 console.log('fetching Kenney Nature Kit (CC0)…');
@@ -204,13 +374,18 @@ for (const species of SPECIES) {
   const tris = triangles(json, bin);
   const { points, radius } = samplePoints(tris, species.points, species.id.length * 7919);
   writeFileSync(join(OUT, `${species.id}.bin`), Buffer.from(points.buffer));
-  manifest.push({ id: species.id, source: species.file, points: species.points, radius: Number(radius.toFixed(4)) });
-  console.log(`  ${species.id.padEnd(11)} ${String(tris.length).padStart(5)} tris → ${species.points} points · radius ${radius.toFixed(2)}`);
+  manifest.push({ id: species.id, source: 'kenney', model: species.file, world: null, stage: null, points: species.points, radius: Number(radius.toFixed(4)) });
+  console.log(`  ${species.id.padEnd(24)} ${String(tris.length).padStart(5)} tris → ${species.points} points · radius ${radius.toFixed(2)}`);
 }
 
+console.log('\ngrowing one species per world with ez-tree (MIT)…');
+manifest.push(...await growWorlds());
+
 writeFileSync(join(OUT, 'trees.json'), `${JSON.stringify({
-  source: "Kenney Nature Kit (kenney.nl/assets/nature-kit)",
-  license: 'CC0 1.0 Universal — public domain',
+  sources: [
+    { id: 'kenney', name: 'Kenney Nature Kit (kenney.nl/assets/nature-kit)', license: 'CC0 1.0 Universal — public domain' },
+    { id: 'ez-tree', name: 'ez-tree (github.com/dgreenheck/ez-tree)', license: 'MIT' },
+  ],
   species: manifest,
 }, null, 2)}\n`);
 console.log(`\nwritten to ${OUT}/`);
