@@ -101,7 +101,11 @@ describe('§36 the forest is the score', () => {
 });
 
 describe('§55 every world has its own shape language', () => {
-  const WORLDS = ['techno', 'sub-pressure'] as const;
+  // §135: all six, not the two that happened to be written first — a shape
+  // language only does its job if no two worlds share one.
+  const WORLDS = [
+    'techno', 'sub-pressure', 'heavy-signal', 'broken-machine', 'percussion-riot', 'void-crusher',
+  ] as const;
 
   it('no two worlds are built from the same pair of forms', () => {
     const pairs = WORLDS.map((genre) => ecologyFor(genre).forms.join('+'));

@@ -62,7 +62,16 @@ export interface Growth {
  * All of them stay abstract line work (§13): a pillar, a shard, an arch — never
  * a literal tree.
  */
-export type FormName = 'pillar' | 'shard' | 'spire' | 'arch' | 'membrane' | 'ring' | 'monolith';
+export type FormName =
+  | 'pillar'
+  | 'shard'
+  | 'spire'
+  | 'arch'
+  | 'membrane'
+  | 'ring'
+  | 'monolith'
+  | 'blade'
+  | 'frond';
 
 export interface Ecology {
   name: string;
@@ -95,7 +104,9 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Machine forest: tall thin waveform pillars, perfectly upright.
   techno: {
     name: 'MACHINE FOREST',
-    forms: ['pillar', 'arch'],
+    // §135: masts with flat blades hung off them — the machine forest is the
+    // one world where nothing is organic, and it must read that way from far.
+    forms: ['pillar', 'blade'],
     formBias: 0.85,
     density: 1,
     heightScale: 1.5,
@@ -135,7 +146,9 @@ export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   },
   'percussion-riot': {
     name: 'the riot',
-    forms: ['membrane', 'ring'],
+    // §135: the only world that grows something leaf-like — the riot is noise
+    // and limbs where the others are geometry.
+    forms: ['frond', 'ring'],
     formBias: 0.5,
     density: 1.35,
     heightScale: 0.7,

@@ -1,5 +1,4 @@
 import {
-  AdditiveBlending,
   BoxGeometry,
   BufferGeometry,
   Color,
@@ -9,7 +8,7 @@ import {
   Group,
   InstancedMesh,
   Matrix4,
-  MeshBasicMaterial,
+  MeshLambertMaterial,
   Quaternion,
   SphereGeometry,
   TorusGeometry,
@@ -25,6 +24,7 @@ import {
   type FormName,
   type Growth,
 } from './ForestEcology';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { TrackGenre } from '../music/TrackState';
 
 /**
@@ -41,66 +41,128 @@ export const FOREST_RENDER = {
   maxInstances: 1400,
   /** Dim, half-size: what this place COULD give you. */
   potentialScale: 0.45,
-  potentialBrightness: 0.22,
+  /**
+   * §135: a potential growth used to be near-black, which was readable while
+   * the forest was additive glow — dim meant faint. Lit and solid, near-black
+   * means invisible, so what a place COULD give you has to stay a visible
+   * shape and only lose its colour.
+   */
+  potentialBrightness: 0.55,
   swayAmplitude: 0.06,
 } as const;
 
 /**
- * §55: one geometry per shape language, each in its own instanced mesh. Seven
- * primitives cover ten worlds, because a world is a MIX of two of them — and
- * seven draw calls is nothing next to a mesh per growth (§22).
+ * §55/§135: one geometry per shape language — and each one is a SILHOUETTE,
+ * not a primitive.
+ *
+ * A single open-ended cone is why ten worlds read as the same forest: it has no
+ * cap, no second mass, nothing to catch the light on one side. Every form here
+ * is two or three parts merged into one buffer, so it still costs one draw call
+ * per shape language but has a stem and a crown to tell apart. They stay
+ * abstract line work (§13) — a mast, a blade, a frond — never a literal tree.
  */
 function formGeometry(form: FormName): BufferGeometry {
   switch (form) {
     case 'pillar': {
-      // Straight, hexagonal, machined: it does not taper and it does not lean.
-      const g = new CylinderGeometry(0.42, 0.5, 1, 6, 1, true);
-      g.translate(0, 0.5, 0);
-      return g;
+      // Machined mast: hexagonal shaft, capped, with a collar near the top.
+      const shaft = new CylinderGeometry(0.16, 0.22, 1, 6);
+      shaft.translate(0, 0.5, 0);
+      const collar = new CylinderGeometry(0.4, 0.4, 0.05, 6);
+      collar.translate(0, 0.82, 0);
+      const foot = new CylinderGeometry(0.34, 0.4, 0.08, 6);
+      foot.translate(0, 0.04, 0);
+      return merged([shaft, collar, foot]);
+    }
+    case 'blade': {
+      // A flat panel standing on a thin edge: all silhouette, no volume.
+      const panel = new BoxGeometry(0.7, 1, 0.06);
+      panel.translate(0, 0.5, 0);
+      const spine = new BoxGeometry(0.06, 1.06, 0.16);
+      spine.translate(0, 0.53, 0);
+      return merged([panel, spine]);
     }
     case 'shard': {
-      // Three sides and all edge — velocity you can cut yourself on.
-      const g = new ConeGeometry(0.42, 1, 3, 1, true);
-      g.translate(0, 0.5, 0);
-      return g;
+      // Splintered: a main spike with a smaller one broken off beside it.
+      const main = new ConeGeometry(0.34, 1, 3);
+      main.translate(0, 0.5, 0);
+      const splinter = new ConeGeometry(0.16, 0.55, 3);
+      splinter.rotateZ(0.4);
+      splinter.translate(0.22, 0.3, 0.05);
+      return merged([main, splinter]);
+    }
+    case 'spire': {
+      // Tapered mass under a needle — reads tall from any distance.
+      const body = new ConeGeometry(0.42, 0.8, 5);
+      body.translate(0, 0.4, 0);
+      const needle = new ConeGeometry(0.1, 0.45, 4);
+      needle.translate(0, 0.95, 0);
+      return merged([body, needle]);
     }
     case 'arch': {
-      // Half a ring standing up: a colonnade, a hall, a doorway.
-      const g = new TorusGeometry(0.5, 0.05, 3, 10, Math.PI);
-      g.translate(0, 0.5, 0);
-      g.scale(1, 1, 1);
-      return g;
+      // Half a ring standing up, on two feet: a colonnade, a hall, a doorway.
+      const bow = new TorusGeometry(0.5, 0.07, 6, 14, Math.PI);
+      bow.translate(0, 0.5, 0);
+      const left = new CylinderGeometry(0.08, 0.1, 0.5, 5);
+      left.translate(-0.5, 0.25, 0);
+      const right = left.clone();
+      right.translate(1, 0, 0);
+      return merged([bow, left, right]);
     }
     case 'membrane': {
-      // An open dome — air with a skin on it.
-      const g = new SphereGeometry(0.5, 7, 3, 0, Math.PI * 2, 0, Math.PI * 0.5);
-      g.translate(0, 0.5, 0);
-      return g;
+      // A closed dome with a rim: air with a skin over it.
+      const dome = new SphereGeometry(0.5, 10, 5, 0, Math.PI * 2, 0, Math.PI * 0.5);
+      dome.translate(0, 0.5, 0);
+      const rim = new TorusGeometry(0.5, 0.035, 5, 14);
+      rim.rotateX(Math.PI / 2);
+      rim.translate(0, 0.5, 0);
+      const stem = new CylinderGeometry(0.05, 0.07, 0.5, 5);
+      stem.translate(0, 0.25, 0);
+      return merged([dome, rim, stem]);
     }
     case 'ring': {
-      // A hoop off the ground: displacement, something skipping a step.
-      const g = new TorusGeometry(0.45, 0.04, 3, 12);
-      g.rotateX(Math.PI / 2);
-      g.translate(0, 0.7, 0);
-      return g;
+      // A hoop held off the ground: displacement, something skipping a step.
+      const hoop = new TorusGeometry(0.42, 0.06, 6, 14);
+      hoop.rotateX(Math.PI / 2);
+      hoop.translate(0, 0.85, 0);
+      const stem = new CylinderGeometry(0.05, 0.08, 0.85, 5);
+      stem.translate(0, 0.42, 0);
+      return merged([hoop, stem]);
     }
-    case 'monolith': {
-      // Mass. No curve anywhere.
-      const g = new BoxGeometry(0.8, 1, 0.8);
-      g.translate(0, 0.5, 0);
-      return g;
+    case 'frond': {
+      // The one growth with limbs: a stem and three blades splayed off it.
+      const stem = new CylinderGeometry(0.05, 0.09, 0.75, 5);
+      stem.translate(0, 0.38, 0);
+      const parts: BufferGeometry[] = [stem];
+      for (let i = 0; i < 3; i++) {
+        const leaf = new ConeGeometry(0.16, 0.6, 4);
+        leaf.rotateZ(0.9);
+        leaf.rotateY((i / 3) * Math.PI * 2);
+        leaf.translate(0, 0.8, 0);
+        parts.push(leaf);
+      }
+      return merged(parts);
     }
-    case 'spire':
+    case 'monolith':
     default: {
-      const g = new ConeGeometry(0.5, 1, 5, 1, true);
-      g.translate(0, 0.5, 0);
-      return g;
+      // Mass. No curve anywhere — a slab with a smaller slab stepped on top.
+      const base = new BoxGeometry(0.8, 0.75, 0.8);
+      base.translate(0, 0.375, 0);
+      const step = new BoxGeometry(0.5, 0.3, 0.5);
+      step.translate(0.08, 0.88, -0.05);
+      return merged([base, step]);
     }
   }
 }
 
+/** One buffer per shape language: many parts, still one draw call (§22). */
+function merged(parts: BufferGeometry[]): BufferGeometry {
+  const geometry = mergeGeometries(parts, false);
+  for (const part of parts) part.dispose();
+  return geometry ?? parts[0]!;
+}
+
 const FORM_NAMES: readonly FormName[] = [
-  'pillar', 'shard', 'spire', 'arch', 'membrane', 'ring', 'monolith',
+  'pillar', 'shard', 'spire', 'arch', 'membrane', 'ring', 'monolith', 'blade', 'frond',
 ];
 
 export class ForestRenderer {
@@ -112,6 +174,8 @@ export class ForestRenderer {
   private readonly matrix = new Matrix4();
   private readonly quaternion = new Quaternion();
   private readonly axis = new Vector3(1, 0, 0);
+  private readonly up = new Vector3(0, 1, 0);
+  private readonly spin = new Quaternion();
   private readonly scale = new Vector3();
   private readonly position = new Vector3();
   private readonly color = new Color();
@@ -126,12 +190,18 @@ export class ForestRenderer {
     this.seedNumber = [...seed].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
     // One tapered form for everything: a spire read as trunk, needle, root,
     // branch or canopy purely through scale (§13 — abstract, never literal).
-    this.material = new MeshBasicMaterial({
-      blending: AdditiveBlending,
-      depthWrite: false,
-      transparent: true,
-      opacity: 0.75,
-      vertexColors: true,
+    // §135: the forest was additive and depth-less, which is exactly why it
+    // did not feel three-dimensional — growths shone through each other and
+    // through the terrain, and no surface had a dark side. Now it is lit and
+    // solid: it occludes, it catches the key light on one face, and the fog
+    // carries it into the distance.
+    // NOTE: no `vertexColors`. Per-growth colour rides on the InstancedMesh's
+    // instanceColor, which three applies on its own. Turning vertexColors on as
+    // well makes the shader read a `color` attribute the merged geometry does
+    // not have — WebGL then feeds it black and the whole forest renders as
+    // silhouettes, lit and shaded but pure black.
+    this.material = new MeshLambertMaterial({
+      fog: true,
     });
     for (const form of FORM_NAMES) {
       const mesh = new InstancedMesh(formGeometry(form), this.material, FOREST_RENDER.maxInstances);
@@ -143,7 +213,7 @@ export class ForestRenderer {
     }
   }
 
-  private readonly material: MeshBasicMaterial;
+  private readonly material: MeshLambertMaterial;
   /** §55 user decision: the deeper into a world you are, the bigger it grows. */
   private depth = 0;
 
@@ -244,7 +314,11 @@ export class ForestRenderer {
         g.height * grown * depthScale * (1 + this.pulse * 0.12),
         g.radius * 2 * grown * depthScale,
       );
-      this.quaternion.setFromAxisAngle(this.axis, sway);
+      // Every growth faces its own way. Without this a hundred instances of
+      // one silhouette line up like wallpaper, which reads as flat however
+      // well they are lit.
+      this.spin.setFromAxisAngle(this.up, g.phase * Math.PI * 2);
+      this.quaternion.setFromAxisAngle(this.axis, sway).multiply(this.spin);
       this.matrix.compose(this.position, this.quaternion, this.scale);
       mesh.setMatrixAt(slot, this.matrix);
       const brightness = g.earned ? 1 : FOREST_RENDER.potentialBrightness;
