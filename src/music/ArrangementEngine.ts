@@ -100,8 +100,16 @@ const RUNGS_DUE: Record<Section, number> = {
   mutation: 7,
 };
 
-export function rungsDueAt(section: Section): number {
-  return RUNGS_DUE[section];
+/**
+ * §94: PRESSURE promises the SUB, so for a world whose ladder puts the bass
+ * later than fourth the count follows the ladder rather than the table. Every
+ * world reaches its own bass exactly when the phase says it should.
+ */
+export function rungsDueAt(section: Section, ladder: readonly { layer: string }[] = []): number {
+  const table = RUNGS_DUE[section];
+  if (section !== 'build') return table;
+  const bass = ladder.findIndex((rung) => rung.layer === 'bass');
+  return bass < 0 ? table : Math.max(table, bass + 1);
 }
 
 /**

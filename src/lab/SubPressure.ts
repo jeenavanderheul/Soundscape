@@ -169,7 +169,10 @@ export function buildSubPressureGraph(
       code: (g) => `note("~ c5 ~ ~ db5 ~ g4 ~").s("clavisynth").decay(.04).hpf(850).distort(.625).delay(.12).gain(${g})`,
     },
     {
-      id: 'sub-pressure-texture', kind: 'texture', layer: 'texture', role: 'texture', deep: true,
+      // §94: this world OPENS on texture, so the rung has to bring a voice of
+      // its own — the air is always there, so gating this behind depth made
+      // DISCOVERY I add nothing you could hear.
+      id: 'sub-pressure-texture', kind: 'texture', layer: 'texture', role: 'texture', deep: false,
       gain: 0.018 + edge * 0.015,
       code: (g) => `s("bytebeat").slow(2).bpf(1300).crush(5).distort(1.15).postgain(.3).gain(${g}).orbit(3)`,
     },
@@ -198,7 +201,11 @@ export function buildSubPressureGraph(
   }
 
   for (const part of parts) {
-    if (!reveals(track, part.role, part.deep)) continue;
+    // §94: the AIR of a world is never earned — ENTER BIOME is the air and
+    // nothing else, and gating it on the texture rung left the first four
+    // cycles of this world completely silent.
+    const earned = part.layer === 'atmosphere' || reveals(track, part.role, part.deep);
+    if (!earned) continue;
     const section = mix[part.layer as keyof typeof mix] ?? 1;
     if (section === 0) continue;
     const trim = Math.max(0, controls.mix?.[part.layer] ?? 1);

@@ -117,10 +117,16 @@ describe('in the game you discover it layer by layer', () => {
   it('one rung at a time, and the second machine is earned separately', () => {
     const track = { ...createInitialTrackState(), genre: 'sub-pressure' as const };
     const at = () => ids(buildSubPressureGraph({ track }));
-    expect(at()).toHaveLength(0);
+    // §94: the AIR of a world is never earned — ENTER BIOME is the air alone,
+    // and gating it left this world's first four cycles silent. `mask` puts
+    // the rise in the air layer too, so both are there from the start.
+    expect(at()).toEqual(['sub-pressure-atmosphere', 'sub-pressure-rise']);
 
+    // …and this world OPENS on texture, so its first rung brings a voice.
     track.texture = earned;
-    expect(at()).toEqual(['sub-pressure-atmosphere']);
+    expect([...at()].sort()).toEqual([
+      'sub-pressure-atmosphere', 'sub-pressure-rise', 'sub-pressure-texture',
+    ]);
 
     track.drums.hats = earned;
     expect(at()).toContain('sub-pressure-hats');

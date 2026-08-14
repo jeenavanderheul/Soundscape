@@ -65,15 +65,15 @@ describe('buildLayerGraph', () => {
     expect(graph.layers.drums.primitives).toHaveLength(0);
   });
 
-  it('creates a pulse and a sub above the threshold', () => {
+  it('creates a pulse — and NOTHING in the bass until it is earned', () => {
     const graph = buildLayerGraph(confidentState());
     expect(graph.bpm).toBe(120);
     expect(graph.layers.drums.primitives).toHaveLength(1);
-    const pulse = graph.layers.drums.primitives[0]!;
-    expect(pulse.kind).toBe('pulse');
-    const sub = graph.layers.bass.primitives[0]!;
-    expect(sub.kind).toBe('sub');
-    expect(sub.parameters['note']).toBe('a2');
+    expect(graph.layers.drums.primitives[0]!.kind).toBe('pulse');
+    // §94: a ghost sub used to anchor the heartbeat here and was swapped out
+    // for the real bass when the rung landed, so earning it took the bottom
+    // AWAY. Nothing sounds in the bass before the bass is yours.
+    expect(graph.layers.bass.primitives).toHaveLength(0);
   });
 
   it('maps rhythmDensity to pulse steps, clamped', () => {
@@ -109,13 +109,13 @@ describe('diffLayerGraph', () => {
   it('detects added primitives', () => {
     const changes = diffLayerGraph(createEmptyLayerGraph(), base());
     const adds = changes.filter((c) => c.type === 'add');
-    expect(adds).toHaveLength(2);
+    expect(adds).toHaveLength(1);
   });
 
   it('detects removed primitives', () => {
     const changes = diffLayerGraph(base(), createEmptyLayerGraph(120));
     const removes = changes.filter((c) => c.type === 'remove');
-    expect(removes).toHaveLength(2);
+    expect(removes).toHaveLength(1);
   });
 
   it('detects layer-gain-only changes', () => {

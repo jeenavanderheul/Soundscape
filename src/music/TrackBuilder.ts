@@ -464,7 +464,7 @@ export class TrackBuilder {
       track.drums.kick, track.drums.snare, track.drums.hats,
       track.bass, track.harmony, track.melody, track.texture,
     ].filter((layer) => layer.unlocked).length;
-    const readyToPeak = earned >= rungsDueAt('build');
+    const readyToPeak = earned >= rungsDueAt('build', ladderFor(genre));
     // §84: the arc walks in CYCLES of one bar at the track's own tempo, and
     // each world flies its own order through the eight phases (§61).
     this.arrangement.setStyle(genreGrammar(genre).sectionStyle);
@@ -529,7 +529,7 @@ export class TrackBuilder {
     const earnedRungs = ladder.filter((rung) => layerUnlocked(current, rung.layer)).length;
     // Only WIDTH is gated. Depth has to keep going once the arc has handed out
     // everything it owes, or a track stops growing the moment it is wide.
-    const rungDue = earnedRungs < rungsDueAt(section);
+    const rungDue = earnedRungs < rungsDueAt(section, ladder);
     // Behaviour earns the layer. The ladder time is only the world's patience
     // with a player who is doing nothing in particular (§29.3) — it must never
     // be the mechanism, or the track becomes a progress bar instead of a

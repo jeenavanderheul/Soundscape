@@ -101,11 +101,11 @@ describe('boundary math', () => {
 });
 
 describe('buildPatternCode', () => {
-  it('renders pulse and sub templates', () => {
+  it('renders the pulse template — the bass only once it is earned (§94)', () => {
     setSamplesLoaded(false); // pure template path: offline synth palette
     const code = buildPatternCode(confidentGraph());
     expect(code).toContain('s("sbd*4")');
-    expect(code).toContain('note("a2").s("sine")');
+    expect(code).not.toContain('.s("sine")');
     expect(code.startsWith('stack(')).toBe(true);
   });
 

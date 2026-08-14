@@ -1166,33 +1166,44 @@ export function buildLayerGraph(
       },
       allowedTransforms: [...ALLOWED_TRANSFORMS.bass],
     });
-    // §32: sub AND body. The sine carries the weight, the filtered voice
-    // carries the movement — together they read as one big bass.
+    // §94: sub AND body arrive TOGETHER, the moment the rung is earned. The
+    // sine carries the weight, the filtered voice carries the movement, and
+    // together they read as one big bass — which is what PRESSURE promises.
+    bass.push({
+      id: 'track-sub',
+      kind: 'sub',
+      layer: 'bass',
+      parameters: {
+        notes: [0, 0, 3, 7]
+          .map((semitones) => midiToNoteName(rootMidi - 12 + semitones))
+          .join(' '),
+        style: '',
+        gain: round2(grammar.bassGain * 0.9 * mix.bass),
+      },
+      allowedTransforms: [...ALLOWED_TRANSFORMS.sub],
+    });
+    // Depth adds a THIRD voice on the grammar's own figure — it never replaces
+    // one of the two that are already carrying the track.
     if (deepOf('bass')) {
       bass.push({
-        id: 'track-sub',
+        id: 'track-sub-deep',
         kind: 'sub',
         layer: 'bass',
         parameters: {
-          notes: (grammar.deepStyle === 'machine' ? [0, -2, 0, 0] : [0, 0, 3, 7])
+          notes: (grammar.deepStyle === 'machine' ? [0, -2, 0, 0] : [0, 7, 0, 3])
             .map((semitones) => midiToNoteName(rootMidi - 12 + semitones))
             .join(' '),
           style: grammar.deepStyle ?? '',
-          gain: round2(grammar.bassGain * 0.9 * mix.bass),
+          gain: round2(grammar.bassGain * 0.55 * mix.bass),
         },
         allowedTransforms: [...ALLOWED_TRANSFORMS.sub],
       });
     }
-  } else {
-    // Pre-unlock the sub still anchors the heartbeat, quietly (§29 fase 1).
-    bass.push({
-      id: 'sub',
-      kind: 'sub',
-      layer: 'bass',
-      parameters: { note: subNoteFromHz(music.pitchCenter), gain: round2(0.45 * mix.bass) },
-      allowedTransforms: [...ALLOWED_TRANSFORMS.sub],
-    });
   }
+  // §94: and NOTHING before it is earned. A ghost sub used to anchor the
+  // heartbeat at 0.45 and was then swapped out for the real bass, so earning
+  // the rung took the bottom away instead of adding to it — the one moment in
+  // the whole build-up that has to feel like a gain.
 
   // --- Harmony (§29.2 fase 4): the chord the player's resonances built ---
   const harmony: MusicalPrimitive[] = [...voices];
