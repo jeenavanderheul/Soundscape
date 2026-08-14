@@ -8,6 +8,7 @@ import {
   type MusicalLayerGraph,
 } from '../audio/MusicalPrimitives';
 import { buildWorldLayerGraph, worldBankLabel } from '../audio/WorldLayerGraph';
+import { formatFlight } from '../music/FlightExport';
 import type { GenreAffinity } from '../music/MusicState';
 import { createInitialMusicState } from '../music/MusicState';
 import { performanceFrom } from '../music/Performance';
@@ -324,6 +325,28 @@ $('bare').addEventListener('click', () => {
   strudel.setBare(bare);
   status.textContent = bare ? 'BARE — the parts alone, as a preset would play them' : 'coated — performance, variations and production on top';
 });
+/**
+ * §106: the missing feedback loop. Simulate a flight and write out the Strudel
+ * it produces, one block per phase — paste a block into strudel.cc and you are
+ * hearing exactly what the game plays at that point in the arc. Every fault in
+ * this track so far was found by ear and only then confirmed in code; this is
+ * how the confirming stops needing the flying.
+ */
+$('flight').addEventListener('click', () => {
+  const text = formatFlight({
+    genre: preset,
+    velocity: (values.get('energy') ?? 0.7) * 66,
+    altitude: values.get('altitude') ?? 19,
+    amplitude: values.get('amplitude') ?? 0.4,
+    seconds: 180,
+  });
+  codeBox.textContent = text;
+  void navigator.clipboard?.writeText(text).then(
+    () => { status.textContent = 'flight copied — paste a block into strudel.cc'; },
+    () => { status.textContent = 'flight written below — copy a block into strudel.cc'; },
+  );
+});
+
 $('reset').addEventListener('click', () => {
   resetKnobs();
   status.textContent = playing

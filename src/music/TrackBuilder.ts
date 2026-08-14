@@ -61,6 +61,11 @@ export interface TrackBuilderConfig {
   patienceFactor: number;
   /** §82: paced time a rung must settle before the next layer may arrive. */
   rungGapMs: number;
+  /**
+   * §107: how many of those gaps the world waits before giving a rung away.
+   * This is the size of the window in which YOUR flying is what earns it.
+   */
+  patienceGaps: number;
   /** Altitude below which the orb is skimming the ground — that is the low register. */
   groundAltitude: number;
   /** Altitude above which the orb is in open air. */
@@ -120,6 +125,12 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // (§46): ~5.5s of real time at full speed, ~12s at a crawl. Seven layers
   // then stand complete around cycle 14, just before DROP I pays them off.
   rungGapMs: 3500,
+  // §107: TWO gaps ≈ 7000 paced, just under one phase (7164). The window in
+  // which your flying earns the rung is therefore the whole phase, and a
+  // player who does nothing still gets it before that phase is over. Three
+  // gaps pushed it into the NEXT phase — the export showed DISCOVERY I and II
+  // both arriving empty, which is worse than the problem it was fixing.
+  patienceGaps: 2,
   groundAltitude: 8,
   airAltitude: 30,
   groundMs: 3500,
@@ -552,9 +563,17 @@ export class TrackBuilder {
     // know how to build one, so it comes to meet you (user decision).
     const patienceFactor =
       this.trackNumberValue === 1 ? config.patienceFactor : config.patienceFactor / 2;
-    // The world offers it for free only after a window in which YOU could have
-    // gone and taken it — that window is what makes a beacon worth flying to.
-    const offeredFreelyAt = (this.dueSinceMs ?? this.activeMs) + config.rungGapMs;
+    // §107: BEHAVIOUR IS THE MAIN ROAD, patience is the shoulder.
+    //
+    // The free rung used to arrive one rung-gap after its phase opened — about
+    // 5.5s into a phase that lasts 7.2s. There was almost no window in which
+    // what you DID made the difference, so the loop the game is built on
+    // (fly → interact → create sound) had quietly become fly → arrive →
+    // receive. The window is now most of the phase: you have three gaps to go
+    // and get it, and only if you do nothing at all does the world hand it
+    // over near the end.
+    const offeredFreelyAt =
+      (this.dueSinceMs ?? this.activeMs) + config.rungGapMs * config.patienceGaps;
     const patience = step === null ? 0 : Math.max(step.atMs * patienceFactor, offeredFreelyAt);
     // §82: whatever earns it, a layer only lands once the previous one has had
     // room to be heard. Without this, patience and behaviour fired on
@@ -617,13 +636,11 @@ export class TrackBuilder {
         return this.harmony.discovered;
       case 'melody':
         return this.melody.discovered;
-      // §99 (user decision): texture is no longer earned by hovering. Height
-      // is a MECHANIC you can see — every beacon stands at the height of the
-      // layer it carries, so climbing for the texture beacon and diving for
-      // the kick is the same gesture, made visible. An invisible rule that
-      // hands you a layer for holding an altitude taught nobody anything.
+      // §99/§107: not by HOVERING — that taught nobody anything — but by the
+      // one thing texture is: travelling through the register. Move through
+      // real pitch space and the air fills in behind you.
       case 'texture':
-        return false;
+        return this.melody.discovered && this.highActions.length >= config.hatActionsNeeded;
     }
   }
 
