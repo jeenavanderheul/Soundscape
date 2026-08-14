@@ -50,7 +50,7 @@ import { createInitialFrequencyState, FrequencyState } from '../player/Frequency
 import { BeatSync } from '../rendering/BeatSync';
 import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
-import { ForestRenderer } from '../rendering/ForestRenderer';
+import { ForestRenderer, loadTreeSpecies } from '../rendering/ForestRenderer';
 import { signalDrive } from '../rendering/signalLevel';
 import { FLIGHT_CONFIG } from '../player/FrequencyController';
 import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
@@ -375,6 +375,11 @@ export class Game {
     this.forest.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
     // §132: the real ground arrives a moment after the void does. Until it
     // lands the world is the generated field; nothing waits on it.
+    // §137: the baked tree clouds. Until they arrive the forest is empty, which
+    // is a legitimate world.
+    void loadTreeSpecies().then((species) => {
+      if (species && !this.disposed) this.forest.setSpecies(species);
+    });
     void loadLandField().then((land) => {
       if (land && !this.disposed) this.terrain.setLand(land);
     });

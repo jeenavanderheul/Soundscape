@@ -1,18 +1,13 @@
 import {
-  BoxGeometry,
-  BufferGeometry,
+  AdditiveBlending,
+  BufferAttribute,
   Color,
-  ConeGeometry,
-  CylinderGeometry,
   DynamicDrawUsage,
   Group,
-  InstancedMesh,
-  Matrix4,
-  MeshLambertMaterial,
-  Quaternion,
-  SphereGeometry,
-  TorusGeometry,
-  Vector3,
+  InstancedBufferAttribute,
+  InstancedBufferGeometry,
+  Points,
+  ShaderMaterial,
 } from 'three';
 import type { TrackState } from '../music/TrackState';
 import type { Vec3Data } from '../player/FrequencyState';
@@ -24,199 +19,217 @@ import {
   type FormName,
   type Growth,
 } from './ForestEcology';
-import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { TrackGenre } from '../music/TrackState';
 
 /**
- * §36: draws the forest the ecology decided on, in ONE instanced mesh.
+ * §137: THE FOREST IS A MEASUREMENT OF A REAL TREE.
  *
- * The field follows the player by whole cells, so growths never pop in front
- * of the camera — they are already standing when they come into view, and
- * flying back finds exactly the same forest. Potential growths are thin and
- * dim; earned ones stand at full size and brightness, so the world visibly
- * records what the player took from it.
+ * The shapes come from Kenney's Nature Kit (CC0), sampled offline into clouds
+ * of surface points by `npm run trees:bake` — real proportions, real
+ * silhouettes, which is the one thing hand-built primitives could not give.
+ * Nothing about the model survives into the runtime: no glTF, no texture, no
+ * material, only positions.
+ *
+ * They are drawn as points, never as surfaces (§136.4, user decision): a tree
+ * reads because its points crowd at the silhouette, the way the reference does
+ * it, and depth comes from occlusion and density instead of shading. Distance
+ * costs points before it costs brightness (§136.13).
+ *
+ * HARD USER RULE: every tree stands on the ground. The baked clouds have their
+ * base at y = 0 and the renderer places them at exactly the terrain height, so
+ * floating is not something that can be tuned wrong — it has nowhere to come
+ * from. `tests/unit/forestGrounded.test.ts` reads the uploaded attributes back.
  */
 
 export const FOREST_RENDER = {
-  maxInstances: 1400,
+  /**
+   * §137: a tree is now ~1200 points, not eight triangles, so the old ceiling
+   * of 1400 would put nearly two million vertices on screen. This is the
+   * number the frame budget allows; the disc of cells around the player is
+   * filled nearest-first.
+   */
+  maxInstances: 460,
   /** Dim, half-size: what this place COULD give you. */
   potentialScale: 0.45,
-  /**
-   * §135: a potential growth used to be near-black, which was readable while
-   * the forest was additive glow — dim meant faint. Lit and solid, near-black
-   * means invisible, so what a place COULD give you has to stay a visible
-   * shape and only lose its colour.
-   */
   potentialBrightness: 0.55,
   swayAmplitude: 0.06,
+  /**
+   * Point size in pixels-times-units: the size on screen is this divided by
+   * the distance, so a point is a fixed size in the WORLD and shrinks like
+   * everything else. Roughly 4 cm at this scale — fine speckle, never a blob.
+   */
+  pointSize: 42,
 } as const;
 
-/**
- * §55/§135: one geometry per shape language — and each one is a SILHOUETTE,
- * not a primitive.
- *
- * A single open-ended cone is why ten worlds read as the same forest: it has no
- * cap, no second mass, nothing to catch the light on one side. Every form here
- * is two or three parts merged into one buffer, so it still costs one draw call
- * per shape language but has a stem and a crown to tell apart. They stay
- * abstract line work (§13) — a mast, a blade, a frond — never a literal tree.
- */
-function formGeometry(form: FormName): BufferGeometry {
-  switch (form) {
-    case 'pillar': {
-      // Machined mast: hexagonal shaft, capped, with a collar near the top.
-      const shaft = new CylinderGeometry(0.16, 0.22, 1, 6);
-      shaft.translate(0, 0.5, 0);
-      const collar = new CylinderGeometry(0.4, 0.4, 0.05, 6);
-      collar.translate(0, 0.82, 0);
-      const foot = new CylinderGeometry(0.34, 0.4, 0.08, 6);
-      foot.translate(0, 0.04, 0);
-      return merged([shaft, collar, foot]);
-    }
-    case 'blade': {
-      // A flat panel standing on a thin edge: all silhouette, no volume.
-      const panel = new BoxGeometry(0.7, 1, 0.06);
-      panel.translate(0, 0.5, 0);
-      const spine = new BoxGeometry(0.06, 1.06, 0.16);
-      spine.translate(0, 0.53, 0);
-      return merged([panel, spine]);
-    }
-    case 'shard': {
-      // Splintered: a main spike with a smaller one broken off beside it.
-      const main = new ConeGeometry(0.34, 1, 3);
-      main.translate(0, 0.5, 0);
-      const splinter = new ConeGeometry(0.16, 0.55, 3);
-      splinter.rotateZ(0.4);
-      splinter.translate(0.22, 0.3, 0.05);
-      return merged([main, splinter]);
-    }
-    case 'spire': {
-      // Tapered mass under a needle — reads tall from any distance.
-      const body = new ConeGeometry(0.42, 0.8, 5);
-      body.translate(0, 0.4, 0);
-      const needle = new ConeGeometry(0.1, 0.45, 4);
-      needle.translate(0, 0.95, 0);
-      return merged([body, needle]);
-    }
-    case 'arch': {
-      // Half a ring standing up, on two feet: a colonnade, a hall, a doorway.
-      const bow = new TorusGeometry(0.5, 0.07, 6, 14, Math.PI);
-      bow.translate(0, 0.5, 0);
-      const left = new CylinderGeometry(0.08, 0.1, 0.5, 5);
-      left.translate(-0.5, 0.25, 0);
-      const right = left.clone();
-      right.translate(1, 0, 0);
-      return merged([bow, left, right]);
-    }
-    case 'membrane': {
-      // A closed dome with a rim: air with a skin over it.
-      const dome = new SphereGeometry(0.5, 10, 5, 0, Math.PI * 2, 0, Math.PI * 0.5);
-      dome.translate(0, 0.5, 0);
-      const rim = new TorusGeometry(0.5, 0.035, 5, 14);
-      rim.rotateX(Math.PI / 2);
-      rim.translate(0, 0.5, 0);
-      const stem = new CylinderGeometry(0.05, 0.07, 0.5, 5);
-      stem.translate(0, 0.25, 0);
-      return merged([dome, rim, stem]);
-    }
-    case 'ring': {
-      // A hoop held off the ground: displacement, something skipping a step.
-      const hoop = new TorusGeometry(0.42, 0.06, 6, 14);
-      hoop.rotateX(Math.PI / 2);
-      hoop.translate(0, 0.85, 0);
-      const stem = new CylinderGeometry(0.05, 0.08, 0.85, 5);
-      stem.translate(0, 0.42, 0);
-      return merged([hoop, stem]);
-    }
-    case 'frond': {
-      // The one growth with limbs: a stem and three blades splayed off it.
-      const stem = new CylinderGeometry(0.05, 0.09, 0.75, 5);
-      stem.translate(0, 0.38, 0);
-      const parts: BufferGeometry[] = [stem];
-      for (let i = 0; i < 3; i++) {
-        const leaf = new ConeGeometry(0.16, 0.6, 4);
-        leaf.rotateZ(0.9);
-        leaf.rotateY((i / 3) * Math.PI * 2);
-        leaf.translate(0, 0.8, 0);
-        parts.push(leaf);
-      }
-      return merged(parts);
-    }
-    case 'monolith':
-    default: {
-      // Mass. No curve anywhere — a slab with a smaller slab stepped on top.
-      const base = new BoxGeometry(0.8, 0.75, 0.8);
-      base.translate(0, 0.375, 0);
-      const step = new BoxGeometry(0.5, 0.3, 0.5);
-      step.translate(0.08, 0.88, -0.05);
-      return merged([base, step]);
-    }
-  }
-}
-
-/** One buffer per shape language: many parts, still one draw call (§22). */
-function merged(parts: BufferGeometry[]): BufferGeometry {
-  const geometry = mergeGeometries(parts, false);
-  for (const part of parts) part.dispose();
-  return geometry ?? parts[0]!;
-}
+/** Which baked species draws which shape language (§55). */
+const FORM_SPECIES: Record<FormName, string> = {
+  pillar: 'tall',
+  blade: 'thin',
+  shard: 'pine-tall',
+  spire: 'pine-round',
+  arch: 'plateau',
+  membrane: 'fat',
+  ring: 'pine-small',
+  monolith: 'detailed',
+  frond: 'detailed',
+};
 
 const FORM_NAMES: readonly FormName[] = [
   'pillar', 'shard', 'spire', 'arch', 'membrane', 'ring', 'monolith', 'blade', 'frond',
 ];
 
+export interface TreeSpecies {
+  id: string;
+  /** Surface points, base at y = 0 and tip at y = 1. */
+  points: Float32Array;
+}
+
+/** Reads what `npm run trees:bake` wrote. Null is a valid world: no trees. */
+export async function loadTreeSpecies(base = '/trees'): Promise<Map<string, TreeSpecies> | null> {
+  try {
+    const manifest = (await (await fetch(`${base}/trees.json`)).json()) as {
+      species: { id: string; points: number }[];
+    };
+    const loaded = new Map<string, TreeSpecies>();
+    await Promise.all(
+      manifest.species.map(async (entry) => {
+        const buffer = await (await fetch(`${base}/${entry.id}.bin`)).arrayBuffer();
+        if (buffer.byteLength !== entry.points * 12) return;
+        loaded.set(entry.id, { id: entry.id, points: new Float32Array(buffer) });
+      }),
+    );
+    return loaded.size > 0 ? loaded : null;
+  } catch {
+    return null;
+  }
+}
+
+const VERTEX = /* glsl */ `
+attribute vec3 iPosition;   // where this tree stands, world space
+attribute float iScale;     // its height in world units
+attribute float iPhase;     // its own randomness: spin, sway, which points survive
+attribute vec3 iTint;
+uniform float uTime;
+uniform float uPulse;
+uniform float uSize;
+varying vec3 vTint;
+varying float vFade;
+varying float vSurvives;
+
+void main() {
+  // Every tree faces its own way. Without it, one silhouette repeated reads as
+  // wallpaper however good the silhouette is.
+  float a = iPhase * 6.2831;
+  float c = cos(a);
+  float s = sin(a);
+  vec3 local = vec3(position.x * c - position.z * s, position.y, position.x * s + position.z * c);
+  // Sway grows with height up the tree: the base does not move, the crown does.
+  float sway = sin(uTime * (0.4 + iPhase * 0.6) + iPhase * 6.2831) * ${FOREST_RENDER.swayAmplitude.toFixed(3)} * position.y;
+  vec3 world = iPosition + local * iScale * (1.0 + uPulse * 0.04) + vec3(sway * iScale, 0.0, 0.0);
+
+  vec4 mv = modelViewMatrix * vec4(world, 1.0);
+  float distance = -mv.z;
+  // §136.13: distance costs INFORMATION first. Each point has its own place in
+  // the queue, and the far a tree is, the fewer of them are still being sent.
+  float keep = fract(sin(dot(position.xz, vec2(12.9898, 78.233)) + iPhase * 31.7) * 43758.5453);
+  vSurvives = step(keep, clamp(1.25 - distance / 190.0, 0.0, 1.0));
+  // NOT scaled by the tree: a point is a measurement, always the same size in
+  // the world, or a big tree turns into cotton wool.
+  gl_PointSize = clamp(uSize / max(1.0, distance), 1.0, 3.5);
+  vFade = clamp(1.0 - distance / 240.0, 0.0, 1.0);
+  vTint = iTint;
+  gl_Position = projectionMatrix * mv;
+}
+`;
+
+const FRAGMENT = /* glsl */ `
+varying vec3 vTint;
+varying float vFade;
+varying float vSurvives;
+void main() {
+  if (vSurvives < 0.5) discard;
+  // A round point with a hot centre: a measurement, not a sprite.
+  vec2 d = gl_PointCoord - vec2(0.5);
+  float r = dot(d, d);
+  if (r > 0.25) discard;
+  float core = 1.0 - r * 3.2;
+  // Dim: the forest is made of density, not of brightness. Additive blending
+  // does the rest where points crowd — which is exactly the silhouette.
+  gl_FragColor = vec4(vTint * vFade * core * 0.4, 1.0);
+}
+`;
+
+interface Cloud {
+  points: Points;
+  geometry: InstancedBufferGeometry;
+  offsets: InstancedBufferAttribute;
+  scales: InstancedBufferAttribute;
+  phases: InstancedBufferAttribute;
+  tints: InstancedBufferAttribute;
+}
+
 export class ForestRenderer {
   /** All the shape languages; the Game adds this to the scene. */
   readonly group = new Group();
-  private readonly meshes = new Map<FormName, InstancedMesh>();
+  private readonly clouds = new Map<FormName, Cloud>();
+  private readonly material: ShaderMaterial;
   private readonly seedNumber: number;
   private growths: Growth[] = [];
-  private readonly matrix = new Matrix4();
-  private readonly quaternion = new Quaternion();
-  private readonly axis = new Vector3(1, 0, 0);
-  private readonly up = new Vector3(0, 1, 0);
-  private readonly spin = new Quaternion();
-  private readonly scale = new Vector3();
-  private readonly position = new Vector3();
   private readonly color = new Color();
   private cellX = Number.NaN;
   private cellZ = Number.NaN;
   private ecology: Ecology = ecologyFor(null);
   private tint = new Color(0.5, 0.58, 0.6);
   private pulse = 0;
+  private depth = 0;
   private groundAt: (x: number, z: number) => number = () => -6;
 
   constructor(seed: string) {
     this.seedNumber = [...seed].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7);
-    // One tapered form for everything: a spire read as trunk, needle, root,
-    // branch or canopy purely through scale (§13 — abstract, never literal).
-    // §135: the forest was additive and depth-less, which is exactly why it
-    // did not feel three-dimensional — growths shone through each other and
-    // through the terrain, and no surface had a dark side. Now it is lit and
-    // solid: it occludes, it catches the key light on one face, and the fog
-    // carries it into the distance.
-    // NOTE: no `vertexColors`. Per-growth colour rides on the InstancedMesh's
-    // instanceColor, which three applies on its own. Turning vertexColors on as
-    // well makes the shader read a `color` attribute the merged geometry does
-    // not have — WebGL then feeds it black and the whole forest renders as
-    // silhouettes, lit and shaded but pure black.
-    this.material = new MeshLambertMaterial({
-      fog: true,
+    this.material = new ShaderMaterial({
+      vertexShader: VERTEX,
+      fragmentShader: FRAGMENT,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+      uniforms: {
+        uTime: { value: 0 },
+        uPulse: { value: 0 },
+        uSize: { value: FOREST_RENDER.pointSize },
+      },
     });
-    for (const form of FORM_NAMES) {
-      const mesh = new InstancedMesh(formGeometry(form), this.material, FOREST_RENDER.maxInstances);
-      mesh.instanceMatrix.setUsage(DynamicDrawUsage);
-      mesh.frustumCulled = false;
-      mesh.count = 0;
-      this.meshes.set(form, mesh);
-      this.group.add(mesh);
-    }
   }
 
-  private readonly material: MeshLambertMaterial;
-  /** §55 user decision: the deeper into a world you are, the bigger it grows. */
-  private depth = 0;
+  /**
+   * Hands the baked species over. Until this happens the forest is empty —
+   * which is a legitimate world, not an error state.
+   */
+  setSpecies(species: Map<string, TreeSpecies>): void {
+    for (const form of FORM_NAMES) {
+      const source = species.get(FORM_SPECIES[form]);
+      if (!source) continue;
+      const geometry = new InstancedBufferGeometry();
+      geometry.setAttribute('position', new BufferAttribute(source.points, 3));
+      const capacity = FOREST_RENDER.maxInstances;
+      const offsets = new InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+      const scales = new InstancedBufferAttribute(new Float32Array(capacity), 1);
+      const phases = new InstancedBufferAttribute(new Float32Array(capacity), 1);
+      const tints = new InstancedBufferAttribute(new Float32Array(capacity * 3), 3);
+      for (const attribute of [offsets, scales, phases, tints]) attribute.setUsage(DynamicDrawUsage);
+      geometry.setAttribute('iPosition', offsets);
+      geometry.setAttribute('iScale', scales);
+      geometry.setAttribute('iPhase', phases);
+      geometry.setAttribute('iTint', tints);
+      geometry.instanceCount = 0;
+      const points = new Points(geometry, this.material);
+      points.frustumCulled = false;
+      this.clouds.set(form, { points, geometry, offsets, scales, phases, tints });
+      this.group.add(points);
+    }
+    this.cellX = Number.NaN; // whatever was placed, place it again with real trees
+  }
 
+  /** §55 user decision: the deeper into a world you are, the bigger it grows. */
   setDepth(value: number): void {
     this.depth = Math.min(1, Math.max(0, value));
   }
@@ -264,7 +277,9 @@ export class ForestRenderer {
         growth.earned = growth.earned || isEarnedNow(growth, track);
       }
     }
-    this.draw(elapsedSeconds);
+    this.material.uniforms['uTime']!.value = elapsedSeconds;
+    this.material.uniforms['uPulse']!.value = this.pulse;
+    this.draw();
   }
 
   private rebuild(track: Readonly<TrackState> | undefined): void {
@@ -288,52 +303,41 @@ export class ForestRenderer {
     this.growths = next;
   }
 
-  private draw(elapsedSeconds: number): void {
-    const count = Math.min(this.growths.length, FOREST_RENDER.maxInstances);
+  private draw(): void {
+    if (this.clouds.size === 0) return;
     const used = new Map<FormName, number>();
-    // §55: the world grows with how deep into it you are.
     const depthScale = 0.75 + this.depth * 0.7;
-    for (let i = 0; i < count; i++) {
-      const g = this.growths[i]!;
-      // Deterministic per growth: the same forest every time you come back.
-      const form = g.phase < this.ecology.formBias
+    for (const growth of this.growths) {
+      const form = growth.phase < this.ecology.formBias
         ? this.ecology.forms[0]
         : this.ecology.forms[1];
-      const mesh = this.meshes.get(form)!;
+      const cloud = this.clouds.get(form);
+      if (!cloud) continue;
       const slot = used.get(form) ?? 0;
+      if (slot >= FOREST_RENDER.maxInstances) continue;
       used.set(form, slot + 1);
-      const grown = g.earned ? 1 : FOREST_RENDER.potentialScale;
-      const sway =
-        Math.sin(elapsedSeconds * (0.4 + g.phase) + g.phase * 6.28) *
-        FOREST_RENDER.swayAmplitude *
-        this.ecology.motion;
-      const ground = this.groundAt(g.x, g.z);
-      this.position.set(g.x, ground + g.lift, g.z);
-      this.scale.set(
-        g.radius * 2 * grown * depthScale,
-        g.height * grown * depthScale * (1 + this.pulse * 0.12),
-        g.radius * 2 * grown * depthScale,
-      );
-      // Every growth faces its own way. Without this a hundred instances of
-      // one silhouette line up like wallpaper, which reads as flat however
-      // well they are lit.
-      this.spin.setFromAxisAngle(this.up, g.phase * Math.PI * 2);
-      this.quaternion.setFromAxisAngle(this.axis, sway).multiply(this.spin);
-      this.matrix.compose(this.position, this.quaternion, this.scale);
-      mesh.setMatrixAt(slot, this.matrix);
-      const brightness = g.earned ? 1 : FOREST_RENDER.potentialBrightness;
+
+      const grown = growth.earned ? 1 : FOREST_RENDER.potentialScale;
+      // HARD USER RULE: on the ground, always. The baked cloud has its base at
+      // y = 0, so this is the whole guarantee.
+      cloud.offsets.setXYZ(slot, growth.x, this.groundAt(growth.x, growth.z), growth.z);
+      cloud.scales.setX(slot, growth.height * grown * depthScale);
+      cloud.phases.setX(slot, growth.phase);
+      const brightness = growth.earned ? 1 : FOREST_RENDER.potentialBrightness;
       this.color.copy(this.tint).multiplyScalar(brightness);
-      mesh.setColorAt(slot, this.color);
+      cloud.tints.setXYZ(slot, this.color.r, this.color.g, this.color.b);
     }
-    for (const [form, mesh] of this.meshes) {
-      mesh.count = used.get(form) ?? 0;
-      mesh.instanceMatrix.needsUpdate = true;
-      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    for (const [form, cloud] of this.clouds) {
+      cloud.geometry.instanceCount = used.get(form) ?? 0;
+      cloud.offsets.needsUpdate = true;
+      cloud.scales.needsUpdate = true;
+      cloud.phases.needsUpdate = true;
+      cloud.tints.needsUpdate = true;
     }
   }
 
   dispose(): void {
-    for (const mesh of this.meshes.values()) mesh.geometry.dispose();
+    for (const cloud of this.clouds.values()) cloud.geometry.dispose();
     this.material.dispose();
   }
 }

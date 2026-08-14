@@ -15,6 +15,14 @@ import type { TrackGenre, TrackState } from '../music/TrackState';
  * draws it.
  */
 
+/**
+ * HARD USER RULE (2026-08-15): growths ALWAYS stand on the ground. Never
+ * floating, in any role, for any reason. That is why there is no vertical
+ * offset on a growth at all — a field that can lift something off the terrain
+ * is a field that eventually will. Canopy and spore say what they are through
+ * their size and their shape, not by hanging in the air.
+ */
+
 /** What a growth is, musically. */
 export type GrowthRole =
   | 'trunk' // kick — thick, low, the mass of the place
@@ -42,8 +50,6 @@ export interface Growth {
   /** Base height above the terrain surface. */
   height: number;
   radius: number;
-  /** Vertical band: <0 below the surface (roots), 0 ground level, >0 canopy. */
-  lift: number;
   /** Stable per-growth randomness for sway phase and variation. */
   phase: number;
   /** True once the layer this growth carries has been earned (§36). */
@@ -248,16 +254,12 @@ export function growthsInCell(
     const height = base * (0.6 + size * 0.8) * ecology.heightScale;
     const radius =
       role === 'giant' ? 3.4 : role === 'trunk' ? 1.1 : role === 'thin' ? 0.22 : role === 'canopy' ? 2.6 : role === 'root' ? 0.7 : role === 'branch' ? 0.45 : 0.3;
-    const lift =
-      role === 'canopy' ? 16 + size * 12 : role === 'root' ? -6 - size * 5 : role === 'spore' ? 4 + size * 18 : 0;
-
     growths.push({
       role,
       x: (cx + jx) * FOREST_GRID.cellSize,
       z: (cz + jz) * FOREST_GRID.cellSize,
       height,
       radius: radius * (1 + wobble * 0.5),
-      lift,
       phase,
       earned: isEarned(role, track),
       solid: height >= FOREST_GRID.solidHeight,

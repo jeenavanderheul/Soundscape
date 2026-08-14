@@ -1,0 +1,54 @@
+{
+  "source": "Kenney Nature Kit (kenney.nl/assets/nature-kit)",
+  "license": "CC0 1.0 Universal — public domain",
+  "species": [
+    {
+      "id": "pine-tall",
+      "source": "tree_pineTallA_detailed.glb",
+      "points": 1400,
+      "radius": 0.1631
+    },
+    {
+      "id": "pine-round",
+      "source": "tree_pineRoundA.glb",
+      "points": 1200,
+      "radius": 0.2563
+    },
+    {
+      "id": "pine-small",
+      "source": "tree_pineSmallD.glb",
+      "points": 700,
+      "radius": 0.259
+    },
+    {
+      "id": "thin",
+      "source": "tree_thin.glb",
+      "points": 1100,
+      "radius": 0.2738
+    },
+    {
+      "id": "tall",
+      "source": "tree_tall.glb",
+      "points": 1300,
+      "radius": 0.136
+    },
+    {
+      "id": "fat",
+      "source": "tree_fat.glb",
+      "points": 1200,
+      "radius": 0.3277
+    },
+    {
+      "id": "detailed",
+      "source": "tree_detailed.glb",
+      "points": 1600,
+      "radius": 0.3493
+    },
+    {
+      "id": "plateau",
+      "source": "tree_plateau.glb",
+      "points": 900,
+      "radius": 0.3166
+    }
+  ]
+}
