@@ -7,6 +7,9 @@ vi.mock('@strudel/web', () => ({
 }));
 
 import { buildWorldLayerGraph } from '../../src/audio/WorldLayerGraph';
+import { buildPatternCode } from '../../src/audio/StrudelEngine';
+import { performanceFrom } from '../../src/music/Performance';
+import { createInitialMusicState } from '../../src/music/MusicState';
 import { ACTIVE_WORLD_GENRES } from '../../src/genres/ActiveWorlds';
 import { createInitialTrackState, LEVEL_DEEP, type TrackState } from '../../src/music/TrackState';
 
@@ -47,5 +50,54 @@ describe('§127 nothing you earned is inaudible', () => {
     // PERCUSSION RIOT writes its harmony at −8 dB on purpose; the floor is a
     // floor, not a mix, so that intent has to survive untouched.
     expect(levels('percussion-riot').harmony).toBeGreaterThan(-10);
+  });
+});
+
+describe('§130 the flight colours a voice, it never closes it', () => {
+  const WORLDS = ACTIVE_WORLD_GENRES;
+  const ALTITUDES = [0, 1, 4, 8, 20, 32, 45, 60];
+
+  /** Every rendered voice that carries both filters, at every height. */
+  function windows(): { line: string; lpf: number; hpf: number }[] {
+    const music = { ...createInitialMusicState(), pitchCenter: 220, timbreBrightness: 0.5 };
+    const found: { line: string; lpf: number; hpf: number }[] = [];
+    for (const genre of WORLDS) {
+      for (const altitude of ALTITUDES) {
+        const performance = performanceFrom(music, { altitude, amplitude: 0.5, velocity: 40 });
+        const graph = buildWorldLayerGraph({
+          track: finished(genre), motion: 1, energy: 0.6, performance,
+        } as never);
+        (graph as { performance?: unknown }).performance = performance;
+        for (const line of buildPatternCode(graph).split('\n')) {
+          const lpf = /\.lpf\((?:sine\.range\()?([0-9]+)/.exec(line);
+          const hpf = /\.hpf\(([0-9]+)\)/.exec(line);
+          if (lpf && hpf) found.push({ line: line.trim(), lpf: Number(lpf[1]), hpf: Number(hpf[1]) });
+        }
+      }
+    }
+    return found;
+  }
+
+  it('never hands a voice a lowpass under its own highpass', () => {
+    // Measured before this: 61 voices were filtered into silence. The techno
+    // texture is hpf(8200) and was given lpf(702) down at ground level; the
+    // 909/808 hats sit at hpf 6200–9500, above the brightness ceiling at EVERY
+    // height, so they were gone the whole flight. Earned, shown as 7/7, silent.
+    const shut = windows().filter((v) => v.hpf >= v.lpf);
+    expect(shut.map((v) => `${v.hpf}≥${v.lpf} ${v.line.slice(0, 40)}`)).toEqual([]);
+  });
+
+  it('still lets height colour those voices — it is a floor, not a bypass', () => {
+    const music = { ...createInitialMusicState(), pitchCenter: 220, timbreBrightness: 0.5 };
+    const cutoff = (altitude: number): number => {
+      const performance = performanceFrom(music, { altitude, amplitude: 0.5, velocity: 40 });
+      const graph = buildWorldLayerGraph({
+        track: finished('techno'), motion: 1, energy: 0.6, performance,
+      } as never);
+      (graph as { performance?: unknown }).performance = performance;
+      const melody = buildPatternCode(graph).split('\n').find((l) => l.includes('clavisynth'))!;
+      return Number(/\.lpf\((?:sine\.range\()?([0-9]+)/.exec(melody)![1]);
+    };
+    expect(cutoff(60)).toBeGreaterThan(cutoff(1));
   });
 });

@@ -1005,7 +1005,17 @@ function applyPerformance(
   if (perf === undefined) return code;
   let out = code;
   if (!out.includes('.lpf(')) {
-    const top = Math.round(perf.brightHz);
+    // §130: a voice that declared its own HIGH pass has already said which
+    // band it lives in, and the flight's brightness must not contradict it.
+    // Measured before this: 61 voices across the six worlds were filtered
+    // into silence — the techno texture is `hpf(8200)` and was handed
+    // `lpf(702)` at ground level, and the 909/808 hats (hpf 6200–9500) sat
+    // above the brightness ceiling at EVERY altitude. Layers you had earned,
+    // that §127 had just made audible, were gone. Height still colours them;
+    // it may not close the window it is looking through.
+    const declared = /\.hpf\(([0-9]+)\)/.exec(out);
+    const floor = declared === undefined || declared === null ? 0 : Number(declared[1]) * 2;
+    const top = Math.round(Math.max(perf.brightHz, floor));
     // §48 automation: a filter that opens and closes over eight bars is the
     // difference between a pad that sits there and one that breathes.
     out += moving && AUTOMATED.has(layer)
