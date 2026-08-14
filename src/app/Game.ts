@@ -338,11 +338,9 @@ export class Game {
   private hatSparkleUntil = 0;
   /** §60: the section word waits for the bar where the music turns. */
   private pendingSection: TrackState['form'] | null = null;
-  /** §83: layer words waiting for the bar where their sound arrives. */
-  private readonly pendingLayers: string[] = [];
   /** §88: the last scheduler cycle seen, so a bar boundary can be detected. */
   private lastBar = -1;
-  /** §90: the read-out that stays — arc position, phase, layers. */
+  /** §93: the read-out that stays — the seven layer slots, no words. */
   private readonly trackStrip = new TrackStrip(document.body);
   /** §33 turn throws: one gesture per turn, never a stream. */
   private turnArmed = true;
@@ -448,11 +446,6 @@ export class Game {
     this.events.on('track:section', ({ section }) => {
       if (section !== 'none') this.pendingSection = section;
     });
-    // §83: same rule for a layer. It is earned mid-bar and sounds at the next
-    // bar, so the word waits for the bar it arrives on.
-    this.events.on('track:layer', ({ layer }) => {
-      this.pendingLayers.push(layer.toUpperCase());
-    });
     this.detachStrudelBeat = this.strudelEngine.onBeat((event) => {
       this.events.emit('beat', { atMs: event.atMs });
       // §88: a bar is a CYCLE of the scheduler, not every fourth beat of a
@@ -485,10 +478,6 @@ export class Game {
         if (gesture !== undefined && this.motionLevel > 0.25) {
           this.strudelEngine.schedule({ kind: 'throw', gain: 0.55 * this.motionLevel, style: gesture }, 'beat');
         }
-      } else if (this.pendingLayers.length > 0 && onBar) {
-        // §83/§90: the layer slot fills on the strip at the same moment; the
-        // word is the flourish on top of it, one per bar.
-        this.layerCue.announce(this.pendingLayers.shift()!);
       }
       if (onBar) this.refreshTrackStrip();
       // §63: the layer visuals no longer fire off the beat index — they come

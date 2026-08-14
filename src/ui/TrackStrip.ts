@@ -4,17 +4,18 @@ import { LEVEL_DEEP } from '../music/TrackState';
 import type { TrackLayerName, TrackState } from '../music/TrackState';
 
 /**
- * §90 TRACK STRIP — what is happening, while it happens.
+ * §90/§93 TRACK STRIP — the layers, and nothing else.
  *
- * A word that flashes for half a second and disappears tells you a thing
- * arrived; it cannot tell you where you are, how far the track has come, or
- * what is still missing. So the announcement is replaced by something that
- * stays: the arc as thirty-two marks with your position moving through it, the
- * phase you are in, and the seven layers as slots that fill as you earn them
- * — hollow for not yet, half for earned, solid for grown deep.
+ * §93 (user decision): every WORD is gone — the phase names, the genre and
+ * tempo header, and the layer name that used to flash on the bar it arrived.
+ * A name is a claim about what you are hearing, and any drift between the two
+ * makes the screen a liar. What is left claims nothing it cannot show: seven
+ * slots that fill as the parts are earned — hollow for not yet, half for
+ * earned, solid for grown deep — and an arrow at whichever one is standing in
+ * the world waiting to be flown through.
  *
- * It is a read-out, not a scoreboard: no numbers to chase, nothing to score.
- * You should be able to glance at it and know what to do next.
+ * `arcBar` is kept and tested but no longer drawn; it is the position display
+ * without any naming, ready if the shape is wanted back on screen.
  */
 
 const LAYERS: readonly { key: TrackLayerName; label: string }[] = [
@@ -72,8 +73,6 @@ export function layerRow(state: TrackStripState): string {
 
 export class TrackStrip {
   private readonly root = document.createElement('div');
-  private readonly head = document.createElement('div');
-  private readonly arc = document.createElement('div');
   private readonly layers = document.createElement('div');
 
   constructor(container: HTMLElement) {
@@ -91,18 +90,12 @@ export class TrackStrip {
       textShadow: '0 0 12px rgba(0, 0, 0, 0.8)',
       zIndex: '10',
     });
-    this.head.style.opacity = '0.62';
-    this.arc.style.letterSpacing = '0.14em';
     this.layers.style.opacity = '0.78';
-    this.root.append(this.head, this.arc, this.layers);
+    this.root.append(this.layers);
     container.appendChild(this.root);
   }
 
   update(state: TrackStripState): void {
-    const genre = state.track.genre ?? 'the void';
-    this.head.textContent =
-      `${genre.toUpperCase()} · ${state.track.bpm} BPM · TRACK ${String(state.trackNumber).padStart(2, '0')}`;
-    this.arc.textContent = arcBar(state.cycle, state.style);
     this.layers.textContent = layerRow(state);
   }
 

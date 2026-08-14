@@ -28,12 +28,10 @@ export class LayerCue {
     });
     container.appendChild(this.root);
     const offs = [
-      // §83: layers are NOT announced here either. A layer is unlocked in the
-      // middle of a bar but only becomes audible when the graph is applied at
-      // the next bar, so the Game holds the word until then — reading KICK a
-      // beat before the kick exists is the screen lying about the music.
-      // §29.5/§29.7: entering a region announces itself the same way — one
-      // word, then gone.
+      // §93: layers and phases are not announced at all any more. A name is a
+      // claim about what you are hearing, and any drift between the two makes
+      // the screen a liar — the strip shows the slots instead, which claim
+      // nothing. What is left here is ARRIVAL: a world, and a new track.
       bus.on('track:genre', ({ genre }) => {
         if (genre) this.show(genre.toUpperCase());
       }),
