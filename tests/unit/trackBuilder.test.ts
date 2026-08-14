@@ -11,6 +11,7 @@ import { buildPatternCode } from '../../src/audio/StrudelEngine';
 import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
 import { createInitialMusicState } from '../../src/music/MusicState';
+import { zoneAffinity } from '../../src/genres/GenreZones';
 import { TrackBuilder, type FlightState } from '../../src/music/TrackBuilder';
 import { createInitialTrackState, TrackEvents } from '../../src/music/TrackState';
 
@@ -30,10 +31,16 @@ function setup() {
 describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
   it('unlocks KICK after three low-register actions, then HAT, then SNARE', () => {
     const { store, builder, unlocked, music } = setup();
+    // §91: the WORLD owns the clock, so a track only exists while you are
+    // flying somewhere. Standing still no longer borrows a tempo from a
+    // rhythm you tapped, which is what this test used to lean on.
+    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    const tick = (t: number) =>
+      builder.tick(t, music, { velocity: 10, hz: 220, energy: 0.4 }, region);
     for (let i = 0; i < 3; i++) {
       builder.onAction({ atMs: i * 500, hz: 110, amplitude: 0.6, release: false });
     }
-    builder.tick(1600, music, STILL);
+    tick(1600);
     expect(store.getState().drums.kick.unlocked).toBe(true);
     expect(unlocked).toEqual(['kick']);
     // §82: intent still earns the layer, but a rung has to be HEARD before the
@@ -41,20 +48,20 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     for (let i = 0; i < 3; i++) {
       builder.onAction({ atMs: 2000 + i * 400, hz: 900, amplitude: 0.5, release: false });
     }
-    builder.tick(3300, music, STILL);
+    tick(3300);
     expect(store.getState().drums.hats.unlocked).toBe(false);
-    for (let t = 3800; t <= 30_000; t += 500) builder.tick(t, music, STILL);
+    for (let t = 3800; t <= 30_000; t += 500) tick(t);
     for (let i = 0; i < 3; i++) {
       builder.onAction({ atMs: 30_000 + i * 400, hz: 900, amplitude: 0.5, release: false });
     }
-    builder.tick(31_300, music, STILL);
+    tick(31_300);
     expect(store.getState().drums.hats.unlocked).toBe(true);
     // A layer growing its second voice is also a thing arriving, so it takes
     // its turn in the same queue — which is why the snare waits this long.
-    for (let t = 31_800; t <= 60_000; t += 500) builder.tick(t, music, STILL);
+    for (let t = 31_800; t <= 60_000; t += 500) tick(t);
     builder.onAction({ atMs: 60_000, hz: 400, amplitude: 0.8, release: true });
     builder.onAction({ atMs: 60_500, hz: 400, amplitude: 0.9, release: true });
-    builder.tick(60_600, music, STILL);
+    tick(60_600);
     expect(store.getState().drums.snare.unlocked).toBe(true);
     expect(unlocked.slice(0, 3)).toEqual(['kick', 'hats', 'snare']);
   });
@@ -135,7 +142,7 @@ describe('§46 the region carries the tempo, the flight does not', () => {
     expect(regionBpm(genreGrammar('bass'))).toBeGreaterThan(140);
   });
 
-  it('flying faster does not move the clock, and your own rhythm still wins', () => {
+  it('§91 nothing but the world moves the clock', () => {
     const { store, builder } = setup();
     const noRhythm = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
     const settle = (velocity: number, from: number) => {
@@ -146,24 +153,30 @@ describe('§46 the region carries the tempo, the flight does not', () => {
     };
     const slow = settle(6, 0);
     const fast = settle(66, 31_000);
-    expect(fast).toBe(slow); // the void's own tempo, whatever the speed
+    expect(fast).toBe(slow); // the place's own tempo, whatever the speed
 
-    const tapped = { ...createInitialMusicState(), bpm: 124, tempoConfidence: 0.9, dynamics: 0.5 };
-    for (let t = 62_000; t <= 90_000; t += 100) {
-      builder.tick(t, tapped, { velocity: 66, hz: 220, energy: 0.8 });
+    // …and a confident tapped rhythm no longer takes it over either. The same
+    // world always plays at the same tempo, so the record you built stays the
+    // record you built (user decision).
+    const tapped = { ...createInitialMusicState(), bpm: 124, tempoConfidence: 0.95, dynamics: 0.5 };
+    for (let t = 62_000; t <= 120_000; t += 100) {
+      builder.tick(t, tapped, { velocity: 20, hz: 220, energy: 0.5 });
     }
-    expect(store.getState().bpm).toBe(124);
+    expect(store.getState().bpm).toBe(slow);
   });
 
-  it('slides to a new tempo instead of jumping (user decision)', () => {
+  it('slides to a new tempo instead of jumping when a world changes it', () => {
     const { store, builder } = setup();
     const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
-    for (let t = 0; t <= 6000; t += 100) builder.tick(t, music, { velocity: 8, hz: 220, energy: 0.4 });
+    const techno = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    const pressure = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), 'sub-pressure': 1 };
+    for (let t = 0; t <= 20_000; t += 100) {
+      builder.tick(t, music, { velocity: 8, hz: 220, energy: 0.4 }, techno);
+    }
     const settled = store.getState().bpm;
-    const tapped = { ...music, bpm: settled + 40, tempoConfidence: 0.9 };
-    builder.tick(6100, tapped, { velocity: 8, hz: 220, energy: 0.4 });
-    // One tick later it is on its way, not there.
-    expect(store.getState().bpm).toBeGreaterThan(settled);
+    // SUB PRESSURE sits seven bpm higher; crossing must glide, never cut.
+    builder.tick(20_100, music, { velocity: 8, hz: 220, energy: 0.4 }, pressure);
+    expect(store.getState().bpm).toBeGreaterThanOrEqual(settled);
     expect(store.getState().bpm).toBeLessThan(settled + 5);
   });
 

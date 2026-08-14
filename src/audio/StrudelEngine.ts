@@ -957,6 +957,11 @@ function renderAction(action: MusicalAction): string {
 /** Layers whose filter travels over bars instead of standing still (§48). */
 const AUTOMATED: ReadonlySet<LayerName> = new Set<LayerName>(['harmony', 'texture', 'atmosphere']);
 
+/** Layers whose voices hold a note long enough for note length to mean anything. */
+const SUSTAINED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>([
+  'bass', 'harmony', 'melody', 'texture', 'atmosphere',
+]);
+
 function applyPerformance(
   code: string,
   layer: LayerName,
@@ -980,9 +985,6 @@ function applyPerformance(
     out += `.clip(${perf.length.toFixed(2)})`;
   }
   if (perf.grit > 0.02 && !out.includes('.shape(')) out += `.shape(${perf.grit.toFixed(2)})`;
-  // Climbing lifts the pitched voices together, in steps of the key, so the
-  // track transposes without ever going out of tune (user decision).
-  if (perf.transpose !== 0 && PITCHED_LAYERS.has(layer)) out += `.add(note(${perf.transpose}))`;
   // §3.1: skimming the ground IS the low register. Down there the bass and the
   // kick carry the track; up in the air they step back and the detail takes over.
   const weighted =
@@ -1069,13 +1071,6 @@ function applyProduction(
   return out;
 }
 
-/** Layers that actually carry notes, and can therefore be transposed. */
-const PITCHED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>(['bass', 'harmony', 'melody']);
-
-/** Layers whose voices hold a note long enough for note length to mean anything. */
-const SUSTAINED_LAYERS: ReadonlySet<LayerName> = new Set<LayerName>([
-  'bass', 'harmony', 'melody', 'texture', 'atmosphere',
-]);
 
 /**
  * Deterministically map a layer graph (plus one-shot actions) to pattern code.

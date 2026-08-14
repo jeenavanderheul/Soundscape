@@ -138,15 +138,16 @@ describe('arriving somewhere new starts a track in that world', () => {
     expect(layerUnlocked(pressureTrack, first)).toBe(true);
   });
 
-  it('§58 height is a tape: up is faster and higher, down is slower and deeper', () => {
+  it('§91 height is colour, not a tape: the track stays in tune and in time', () => {
     const music = createInitialMusicState();
     const high = performanceFrom(music, { altitude: 60, amplitude: 0, velocity: 20 });
     const low = performanceFrom(music, { altitude: 1, amplitude: 0, velocity: 20 });
-    expect(high.transpose).toBeGreaterThan(low.transpose);
-    expect(high.tempoRatio).toBeGreaterThan(1);
-    expect(low.tempoRatio).toBeLessThan(1);
-    // Never so far that the sub drops out of hearing (§21).
-    expect(low.transpose).toBeGreaterThanOrEqual(-5);
+    // Open and airy up there, dark and heavy down by the ground…
+    expect(high.brightHz).toBeGreaterThan(low.brightHz);
+    expect(low.weight).toBeGreaterThan(high.weight);
+    // …and not one semitone or one beat of difference between them.
+    expect(Object.keys(high)).not.toContain('transpose');
+    expect(Object.keys(high)).not.toContain('tempoRatio');
   });
 
   it('and the sounds of that world come with it', () => {

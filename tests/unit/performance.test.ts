@@ -35,15 +35,23 @@ describe('§3 the flight plays the track', () => {
     expect(high.weight).toBe(0);
   });
 
-  it('flying low is heavy: lower pitch, darker filter, far more weight', () => {
+  it('flying low is heavy: darker filter, far more weight — never a pitch', () => {
     const low = perf({}, { ...flying, altitude: 2 });
     const mid = perf({}, { ...flying, altitude: 20 });
     const high = perf({}, { ...flying, altitude: 60 });
-    expect(low.transpose).toBeLessThan(0);
-    expect(low.transpose).toBeGreaterThanOrEqual(-5); // §21: the sub must stay audible
-    expect(high.transpose).toBeGreaterThan(mid.transpose);
     expect(low.brightHz).toBeLessThan(mid.brightHz);
+    expect(high.brightHz).toBeGreaterThan(mid.brightHz);
     expect(low.weight).toBeGreaterThan(0.8);
+    expect(high.weight).toBeLessThan(low.weight);
+    expect(high.space).toBeGreaterThan(low.space);
+  });
+
+  // §91 (user decision): height must never transpose or re-clock the track —
+  // it is the one thing that could put what you built out of tune with itself.
+  it('§91 height carries no pitch and no tempo at all', () => {
+    const shape = Object.keys(perf({}, { ...flying, altitude: 30 }));
+    expect(shape).not.toContain('transpose');
+    expect(shape).not.toContain('tempoRatio');
   });
 
   it('and the bass really hears it: ground level pushes it far harder', () => {

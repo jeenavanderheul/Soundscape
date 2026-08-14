@@ -31,7 +31,7 @@ import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
 import { RhythmDetector } from '../music/RhythmDetector';
 import { TrackBuilder } from '../music/TrackBuilder';
 import { createInitialTrackState, trackGrowth, TrackEvents, TrackState } from '../music/TrackState';
-import type { TrackGenre } from '../music/TrackState';
+import type { TrackGenre, TrackLayerName } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
 import type { SerializableWorld, WorldSave } from '../persistence/WorldSerializer';
 import { FrequencyController } from '../player/FrequencyController';
@@ -831,10 +831,10 @@ export class Game {
       dtSeconds,
     );
     this.guide.update({
-      altitude: state.position.y - this.terrain.groundHeightAt(state.position.x, state.position.z),
       genre: this.trackStore.getState().genre,
       heading: headingLabel(this.flightHeading(state)),
       energy: clamp01(state.amplitude),
+      beacon: this.beaconBearing(state),
     });
     this.hud.update(state, {
       heading: headingLabel(this.flightHeading(state)),
@@ -915,8 +915,7 @@ export class Game {
       performance,
     });
     next.performance = performance;
-    // §58: height runs the track like a tape — the clock goes with the pitch.
-    if (next.bpm > 0) next.bpm = Math.round(next.bpm * performance.tempoRatio);
+    // §91: nothing outside the world may touch the clock. Height is colour.
     // Endless journey: which variation each layer is playing right now.
     next.variations = this.trackBuilder.variations;
     if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
@@ -927,6 +926,33 @@ export class Game {
     this.lastGraphGenre = this.trackStore.getState().genre;
     this.lastLayerGraph = next;
     this.strudelEngine.setLayerGraph(next, worldChanged ? 'beat' : 'bar');
+  }
+
+  /**
+   * §91: where the beacon sits relative to the nose, so the crosshair can
+   * point at it. Bearing is signed off the flight heading; rise is how far
+   * above or below the orb it stands.
+   */
+  private beaconBearing(state: FrequencyState): {
+    layer: TrackLayerName;
+    bearing: number;
+    rise: number;
+    distance: number;
+  } | null {
+    const beacon = this.beacon;
+    if (beacon === null) return null;
+    const dx = beacon.position.x - state.position.x;
+    const dz = beacon.position.z - state.position.z;
+    const to = Math.atan2(dx, -dz);
+    let bearing = to - this.flightHeading(state);
+    while (bearing > Math.PI) bearing -= Math.PI * 2;
+    while (bearing < -Math.PI) bearing += Math.PI * 2;
+    return {
+      layer: beacon.layer,
+      bearing,
+      rise: beacon.position.y - state.position.y,
+      distance: Math.hypot(dx, dz),
+    };
   }
 
   /** §90: redraw the read-out — arc position, phase, layers, what is on offer. */

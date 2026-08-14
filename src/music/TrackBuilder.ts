@@ -396,17 +396,16 @@ export class TrackBuilder {
     this.harmony.tick(nowMs);
     this.melody.tick(nowMs, flight.hz);
 
-    // --- Fase 1: TEMPO. Flight speed sets the clock; the player's own
-    // rhythm always wins once it is confident (§3.4, §29.2).
-    const playerTempo = music.tempoConfidence >= 0.35 && music.bpm > 0;
-    // §46: the region decides the tempo, full stop. Flying faster develops the
-    // track faster (below) — it never moves the clock.
+    // --- Fase 1: TEMPO. §91 (user decision): the WORLD owns the clock and
+    // nothing else may move it. The player's own tapped rhythm used to take
+    // over once it was confident, which meant the same world played at a
+    // different tempo depending on what your hand had been doing — a track
+    // that is being re-clocked underneath you is never quite the record you
+    // built. Flying faster still develops the track faster (§46); it never
+    // touches the clock.
     const placeBpm = moving ? regionBpm(genreGrammar(track.genre ?? this.dominant(affinity))) : 0;
-    const targetBpm = playerTempo
-      ? Math.round(music.bpm)
-      : placeBpm > 0
-        ? placeBpm
-        : track.bpm; // an earned track keeps its clock through stillness
+    // An earned track keeps its clock through stillness.
+    const targetBpm = placeBpm > 0 ? placeBpm : track.bpm;
     // The clock slides toward the flight instead of snapping to it: shifting up
     // makes the whole track accelerate, it does not swap it for a faster one.
     const nextBpm =

@@ -11,9 +11,15 @@
  *   §3.10 texture  · altitude and unhurriedness     → space (reverb)
  *   §3.1 mass      · flying low over the ground     → weight (the sub)
  *
- * Tempo (§3.4) is flight speed, rhythm (§3.3) is your onsets, melody (§3.5) is
- * your pitch trajectory and form (§3.11) is where the flight has been — those
- * already have their own systems.
+ * §91 (user decision): height does CLANG, never pitch and never tempo. It ran
+ * the track like a tape — up to a fourth down and an octave up, plus a tempo
+ * trim — and a track that is being transposed and re-clocked while you fly is
+ * never quite the record you built. The register you are in is now heard as
+ * filter, air and weight, which cannot put anything out of tune.
+ *
+ * Rhythm (§3.3) is your onsets, melody (§3.5) is your pitch trajectory and
+ * form (§3.11) is where the flight has been — those have their own systems.
+ * Tempo belongs to the WORLD alone (§46).
  *
  * Everything is quantized: a continuously drifting number would re-evaluate the
  * Strudel pattern every frame, which §11 forbids.
@@ -40,49 +46,10 @@ export interface Performance {
   grit: number;
   /** Sub emphasis: 1 when skimming the ground, 0 high up (§3.1 low = mass). */
   weight: number;
-  /**
-   * Semitones the whole track is lifted by, quantized to steps of the key so
-   * it always stays in tune (user decision). Climbing raises the pitch.
-   */
-  transpose: number;
-  /**
-   * §58 (user decision): height runs the track like a tape. Up is faster AND
-   * higher, down by the ground is slower and deeper — one gesture, one
-   * meaning, nothing else attached to it. Clamped, because the top of the
-   * pitch range would otherwise double the tempo into nonsense.
-   */
-  tempoRatio: number;
 }
 
 /** Height at which the world is fully "air" rather than "ground". */
 export const AIR_ALTITUDE = 45;
-
-/**
- * How far the track is shifted at each height band. Steps of the key, never
- * raw semitones, so height changes the pitch without ever putting the track
- * out of tune (§3.1, §3.6). Flying low pulls it DOWN — that is where the mass
- * is — and climbing lifts it.
- *
- * The bottom stops at a fourth down on purpose: a full octave would take the
- * sub under 30 Hz, which §21 says must stay perceptible on ordinary speakers.
- */
-export const PITCH_STEPS: readonly number[] = [-5, -3, -2, 0, 2, 3, 7, 12];
-
-/** The band flown at neutral height, where the track runs at its own tempo. */
-const NEUTRAL_BAND = 3;
-/** §87: how far height may pull the clock, either way. A DJ's pitch fader. */
-export const TEMPO_SWING = 0.08;
-
-/**
- * Height as a tempo trim: 0.92× skimming the ground, 1.00× at the neutral
- * band, 1.08× in open air. Derived from the same discrete band the pitch uses,
- * so the two always move together and neither can churn the graph (§11).
- */
-export function tempoAt(band: number): number {
-  const span = band >= NEUTRAL_BAND ? PITCH_STEPS.length - 1 - NEUTRAL_BAND : NEUTRAL_BAND;
-  const ratio = 1 + ((band - NEUTRAL_BAND) / span) * TEMPO_SWING;
-  return Math.round(ratio * 1000) / 1000;
-}
 
 export function performanceFrom(music: MusicState, flight: FlightPose): Performance {
   const air = clamp01(flight.altitude / AIR_ALTITUDE);
@@ -90,8 +57,6 @@ export function performanceFrom(music: MusicState, flight: FlightPose): Performa
   // §3.1 + §3.7: register and timbre brightness, pulled down by flying low.
   const tone = clamp01(0.35 * music.timbreBrightness + 0.35 * pitchNorm(music.pitchCenter) + 0.3 * air);
   const weight = step(ground * ground, 8);
-  const band = Math.min(PITCH_STEPS.length - 1, Math.floor(air * PITCH_STEPS.length));
-  const semitones = PITCH_STEPS[band]!;
   return {
     // Skimming the ground closes the filter down hard: low is dark and heavy.
     brightHz: quantizeLog((300 + tone * 8700) * (1 - 0.45 * weight), 300, 9000),
@@ -105,15 +70,6 @@ export function performanceFrom(music: MusicState, flight: FlightPose): Performa
     grit: step(clamp01(music.dissonance * 0.8 + music.timbreNoise * 0.3), 8) * 0.4,
     // §3.1: low frequencies are mass. Skimming the ground IS the low register.
     weight,
-    // Climbing lifts the whole track, in steps of its own key.
-    transpose: semitones,
-    // …and carries the tempo with it, the way a tape does — but only just.
-    // §87: a true tape ratio ran 0.75×–1.6×, which on techno is 100 to 214
-    // bpm. That is not the same track played faster, it is a different genre,
-    // and it made a fast flight sound hurried. ±8% is what a DJ's pitch fader
-    // does: unmistakable as heavier or lighter, still the same record. The
-    // band index is already discrete, so this stays diff-stable (§11).
-    tempoRatio: tempoAt(band),
   };
 }
 

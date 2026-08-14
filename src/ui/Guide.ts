@@ -1,33 +1,27 @@
-import { AIR_ALTITUDE, PITCH_STEPS } from '../music/Performance';
+import type { TrackLayerName } from '../music/TrackState';
 import { zoneGenres } from '../genres/GenreZones';
 import type { TrackGenre } from '../music/TrackState';
 
 /**
- * §67 the guide (user request): where to fly, and how high, to hear this track
- * at its best.
+ * §67/§91 the guide (user request): where to fly to get the next layer.
+ *
+ * It used to point at an altitude BAND, because height ran the track like a
+ * tape and one band was the only place it played at its own pitch and tempo.
+ * §91 took that out — height is colour now, and the track is always in tune at
+ * any height — so the band had nothing left to mean. What it points at instead
+ * is the thing that does have a place: the layer standing in the world (§86).
  *
  * NOT a quest arrow — §P1 keeps waypoints out of the world and §23 makes every
  * assist optional. This is a read-out at the edge of the screen, in the same
  * monospace as the HUD, that says three things and nothing more:
  *
- *   - the altitude band where the track plays at its OWN pitch and tempo,
- *     because height is a tape (§58) and every other band is a version of it
+ *   - where the layer that is on offer is, and which layer it is
  *   - the direction of the world this track belongs to, since leaving it ends
  *     the track and starts another (§54)
  *   - whether to push, because speed is what develops it (§46)
  *
  * `G` turns it off.
  */
-
-/** Altitude band where the track runs untransposed and at its region tempo. */
-export function trueAltitudeBand(): { low: number; high: number } {
-  const index = PITCH_STEPS.indexOf(0);
-  const bands = PITCH_STEPS.length;
-  return {
-    low: (index / bands) * AIR_ALTITUDE,
-    high: ((index + 1) / bands) * AIR_ALTITUDE,
-  };
-}
 
 /** The compass point this grammar lives at, or null while nothing is playing. */
 export function homePoint(genre: TrackGenre): string | null {
@@ -51,45 +45,48 @@ export function homePoint(genre: TrackGenre): string | null {
   return null;
 }
 
-/**
- * §67b: where the ideal band sits relative to the orb, as −1..1 for the
- * crosshair. Positive means the band is ABOVE you, so the tick rides above the
- * cross and you climb towards it; 0 means you are in it.
- */
-export function bandOffset(altitude: number): number {
-  const band = trueAltitudeBand();
-  const centre = (band.low + band.high) / 2;
-  if (altitude >= band.low && altitude <= band.high) return 0;
-  // Half the band's own width is one "notch"; the tick saturates after eight.
-  const notch = Math.max(1, (band.high - band.low) / 2);
-  return Math.max(-1, Math.min(1, (centre - altitude) / (notch * 8)));
-}
-
-export function inBand(altitude: number): boolean {
-  const band = trueAltitudeBand();
-  return altitude >= band.low && altitude <= band.high;
-}
-
 export interface GuideState {
-  /** Height above the terrain right under the orb. */
-  altitude: number;
   genre: TrackGenre;
   /** Compass point the orb is flying towards. */
   heading: string;
   /** 0..1 how hard the player is pushing. */
   energy: number;
+  /** The layer standing in the world, and where it is relative to the flight. */
+  beacon: {
+    layer: TrackLayerName;
+    /** Radians off the nose: negative is left, positive is right. */
+    bearing: number;
+    /** How far above (+) or below (−) the orb it sits, in world units. */
+    rise: number;
+    distance: number;
+  } | null;
+}
+
+/** Where the beacon sits relative to the nose, as −1..1 for the crosshair. */
+export function beaconOffset(state: GuideState): { x: number; y: number } {
+  if (state.beacon === null) return { x: 0, y: 0 };
+  const x = Math.max(-1, Math.min(1, state.beacon.bearing / (Math.PI / 3)));
+  const y = Math.max(-1, Math.min(1, state.beacon.rise / 30));
+  return { x, y };
+}
+
+/** On the nose and close enough that it will be flown through. */
+export function onTarget(state: GuideState): boolean {
+  if (state.beacon === null) return false;
+  return Math.abs(state.beacon.bearing) < 0.16 && Math.abs(state.beacon.rise) < 7;
 }
 
 /** The advice itself, as pure text — testable without a DOM. */
 export function guideLines(state: GuideState): string[] {
-  const band = trueAltitudeBand();
   const home = homePoint(state.genre);
-  const altitude =
-    state.altitude < band.low
-      ? `climb to ${Math.round(band.low)}-${Math.round(band.high)} · you are running slow and deep`
-      : state.altitude > band.high
-        ? `drop to ${Math.round(band.low)}-${Math.round(band.high)} · you are running fast and high`
-        : `hold this height · the track is at its own pitch`;
+  const target =
+    state.beacon === null
+      ? 'every layer earned · fly it out to the finale'
+      : onTarget(state)
+        ? `${state.beacon.layer} dead ahead · hold it`
+        : `${state.beacon.layer} ${state.beacon.bearing < -0.16 ? 'to your left' : state.beacon.bearing > 0.16 ? 'to your right' : 'ahead'}` +
+          `${state.beacon.rise > 7 ? ', climb' : state.beacon.rise < -7 ? ', dive' : ''}` +
+          ` · ${Math.round(state.beacon.distance)}m`;
   const place =
     home === null
       ? 'pick a direction · any of the ten is a world'
@@ -97,7 +94,7 @@ export function guideLines(state: GuideState): string[] {
         ? `stay on ${home} · this is where your track grows`
         : `turn to ${home} · leaving ends this track`;
   const push = state.energy < 0.55 ? 'hold LMB · speed is what builds it' : 'pushing · it is building';
-  return [altitude, place, push];
+  return [target, place, push];
 }
 
 export class Guide {
@@ -180,15 +177,16 @@ export class Guide {
 
   update(state: GuideState): void {
     if (this.root.hidden) return;
-    // §67b: the tick rides above the cross while the good height is above you
-    // and settles onto it when you are there — no numbers to read, just a
+    // §91: the tick rides towards the layer standing out there and settles
+    // onto the cross when it is on the nose — no numbers to read, just a
     // thing to line up.
-    const offset = bandOffset(state.altitude);
-    const settled = inBand(state.altitude);
-    const marker = `${(-offset * 46).toFixed(0)}:${settled ? 1 : 0}`;
+    const offset = beaconOffset(state);
+    const settled = onTarget(state);
+    const marker = `${(offset.x * 46).toFixed(0)}:${(-offset.y * 46).toFixed(0)}:${settled ? 1 : 0}`;
     if (marker !== this.lastTick) {
       this.lastTick = marker;
-      this.tick.style.transform = `translateY(${(-offset * 46).toFixed(1)}px)`;
+      this.tick.style.transform =
+        `translate(${(offset.x * 46).toFixed(1)}px, ${(-offset.y * 46).toFixed(1)}px)`;
       this.tick.style.opacity = settled ? '0.95' : '0.6';
       this.tick.style.width = settled ? '13px' : '26px';
       this.tick.style.marginLeft = settled ? '-6.5px' : '-13px';

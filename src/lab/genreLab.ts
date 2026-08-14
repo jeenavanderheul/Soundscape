@@ -201,7 +201,7 @@ function currentGraph(): MusicalLayerGraph {
   });
   graph.performance = performance;
   // The lab's own tempo trim, on top of what altitude already does (§58).
-  graph.bpm = Math.round(graph.bpm * (values.get('bpm') ?? 1) * graph.performance.tempoRatio);
+  graph.bpm = Math.round(graph.bpm * (values.get('bpm') ?? 1));
   // Per-layer trim: the sliders multiply the gains the grammar chose. Worlds
   // that build their own code strings already had the trim handed to their
   // builder, so touching their gains again here would apply it twice.

@@ -99,7 +99,10 @@ describe('the endless journey (user decision)', () => {
     expect(after.drums.kick.unlocked).toBe(false); // earned again
     expect(after.texture.unlocked).toBe(false);
     expect(after.rootMidi).not.toBe(before.rootMidi); // a related key, not the same
-    expect(after.bpm).toBe(before.bpm); // the journey keeps its clock
+    // §91: the clock belongs to the WORLD, so the next track inherits the one
+    // the last track was actually running on — not the tempo the player had
+    // tapped, which no longer moves it at all.
+    expect(after.bpm).toBe(lastBefore.bpm);
     const shift = after.rootMidi - before.rootMidi;
     expect(after.melodyNotes.length).toBeGreaterThan(0);
     expect(after.melodyNotes).toEqual(lastBefore.melodyNotes.map((n) => n + shift));

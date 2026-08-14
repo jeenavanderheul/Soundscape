@@ -1,4 +1,4 @@
-import { bandOffset, guideLines, inBand, trueAltitudeBand } from '../../src/ui/Guide';
+import { beaconOffset, guideLines, onTarget } from '../../src/ui/Guide';
 import { describe, expect, it } from 'vitest';
 
 import { placeName,
@@ -134,60 +134,82 @@ describe('§59 ten worlds you can tell apart at a glance', () => {
   });
 });
 
-describe('§67 the guide tells you where and how high, and nothing else', () => {
-  it('names the band where the track plays at its own pitch and tempo', () => {
-    const band = trueAltitudeBand();
-    expect(band.low).toBeGreaterThan(10);
-    expect(band.high).toBeLessThan(30);
-    // Inside it, the advice is to stay put.
-    const inside = guideLines({
-      altitude: (band.low + band.high) / 2,
-      genre: 'techno',
-      heading: 'N · techno',
-      energy: 0.8,
+describe('§91 the guide points at the layer standing out there', () => {
+  const at = (bearing: number, rise: number, distance = 120) =>
+    ({ layer: 'bass' as const, bearing, rise, distance });
+
+  it('names the layer, which way to turn and how far', () => {
+    const right = guideLines({
+      genre: 'techno', heading: 'N · techno', energy: 0.8, beacon: at(0.9, 0, 140),
     });
-    expect(inside[0]).toContain('hold this height');
-    expect(inside[1]).toContain('stay on N');
-    expect(inside[2]).toContain('pushing');
+    expect(right[0]).toContain('bass');
+    expect(right[0]).toContain('to your right');
+    expect(right[0]).toContain('140m');
+    expect(right[1]).toContain('stay on N');
+    expect(right[2]).toContain('pushing');
   });
 
-  it('says climb when you are running slow and deep, and drop when high', () => {
+  it('says climb or dive only when the height really differs', () => {
     const base = { genre: 'techno' as const, heading: 'N · techno', energy: 0.2 };
-    expect(guideLines({ ...base, altitude: 2 })[0]).toContain('climb');
-    expect(guideLines({ ...base, altitude: 60 })[0]).toContain('drop');
-    expect(guideLines({ ...base, altitude: 2 })[2]).toContain('hold LMB');
+    expect(guideLines({ ...base, beacon: at(0.9, 25) })[0]).toContain('climb');
+    expect(guideLines({ ...base, beacon: at(0.9, -25) })[0]).toContain('dive');
+    expect(guideLines({ ...base, beacon: at(0.9, 2) })[0]).not.toContain('climb');
+    expect(guideLines({ ...base, beacon: at(0.9, 2) })[2]).toContain('hold LMB');
+  });
+
+  it('says hold it once the layer is on the nose', () => {
+    const on = guideLines({
+      genre: 'techno', heading: 'N · techno', energy: 0.8, beacon: at(0.02, 1),
+    });
+    expect(on[0]).toContain('dead ahead');
+  });
+
+  it('and says the track is full when there is nothing left to collect', () => {
+    const done = guideLines({ genre: 'techno', heading: 'N · techno', energy: 0.8, beacon: null });
+    expect(done[0]).toContain('every layer earned');
   });
 
   it('sends you home when you are heading out of your own world', () => {
-    const away = guideLines({ altitude: 18, genre: 'sub-pressure', heading: 'N · techno', energy: 0.9 });
+    const away = guideLines({
+      genre: 'sub-pressure', heading: 'N · techno', energy: 0.9, beacon: null,
+    });
     expect(away[1]).toContain('turn to ESE');
     expect(away[1]).toContain('leaving ends this track');
   });
 
   it('and asks for a direction while nothing is playing yet', () => {
-    const empty = guideLines({ altitude: 18, genre: null, heading: 'N · techno', energy: 0.5 });
+    const empty = guideLines({ genre: null, heading: 'N · techno', energy: 0.5, beacon: null });
     expect(empty[1]).toContain('pick a direction');
   });
 });
 
-describe('§67b the crosshair: something to line up, not a number to read', () => {
-  it('settles on the cross inside the band and rides above it below', () => {
-    const band = trueAltitudeBand();
-    expect(bandOffset((band.low + band.high) / 2)).toBe(0);
-    expect(inBand(band.low + 0.1)).toBe(true);
-    // Below the band the tick sits ABOVE the cross: climb towards it.
-    expect(bandOffset(2)).toBeGreaterThan(0);
-    // Above it, the other way round.
-    expect(bandOffset(60)).toBeLessThan(0);
+describe('§91 the crosshair: something to line up, not a number to read', () => {
+  const state = (bearing: number, rise: number) => ({
+    genre: 'techno' as const, heading: 'N · techno', energy: 0.8,
+    beacon: { layer: 'bass' as const, bearing, rise, distance: 100 },
+  });
+
+  it('settles on the cross when the beacon is on the nose', () => {
+    expect(onTarget(state(0.02, 1))).toBe(true);
+    const offset = beaconOffset(state(0.02, 1));
+    expect(Math.abs(offset.x)).toBeLessThan(0.1);
+  });
+
+  it('rides towards it: right is positive, above is positive', () => {
+    expect(beaconOffset(state(0.9, 0)).x).toBeGreaterThan(0);
+    expect(beaconOffset(state(-0.9, 0)).x).toBeLessThan(0);
+    expect(beaconOffset(state(0, 25)).y).toBeGreaterThan(0);
+    expect(beaconOffset(state(0, -25)).y).toBeLessThan(0);
   });
 
   it('saturates instead of flying off the screen', () => {
-    expect(bandOffset(-50)).toBeLessThanOrEqual(1);
-    expect(bandOffset(500)).toBeGreaterThanOrEqual(-1);
+    expect(beaconOffset(state(Math.PI, 400)).x).toBeLessThanOrEqual(1);
+    expect(beaconOffset(state(Math.PI, 400)).y).toBeLessThanOrEqual(1);
+    expect(beaconOffset(state(-Math.PI, -400)).x).toBeGreaterThanOrEqual(-1);
   });
 
-  it('moves the further you are from the good height', () => {
-    expect(bandOffset(2)).toBeGreaterThan(bandOffset(14));
-    expect(Math.abs(bandOffset(70))).toBeGreaterThan(Math.abs(bandOffset(28)));
+  it('is centred when there is nothing to point at', () => {
+    const none = beaconOffset({ genre: 'techno', heading: 'N', energy: 0.5, beacon: null });
+    expect(none).toEqual({ x: 0, y: 0 });
   });
 });
