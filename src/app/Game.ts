@@ -969,7 +969,6 @@ export class Game {
    */
   private updateBeacon(elapsedMs: number): void {
     const flight = this.frequencyStore.getState();
-    const track = this.trackStore.getState();
     if (this.beacon !== null) {
       const hit = beaconAt([this.beacon], flight.position);
       if (hit !== null) {
@@ -984,8 +983,7 @@ export class Game {
     if (this.beacon === null) {
       this.beaconSerial += 1;
       this.beacon = placeBeacon(
-        track,
-        track.genre,
+        this.trackBuilder.offeredLayer(),
         flight.position,
         Math.atan2(flight.direction.x, -flight.direction.z),
         this.beaconRng,

@@ -195,6 +195,8 @@ export class TrackBuilder {
   private lastDeepenMs = 0;
   /** §82: paced time the last rung (or depth) landed. */
   private lastRungMs = Number.NEGATIVE_INFINITY;
+  /** §98: paced time the arc first allowed the next rung. */
+  private dueSinceMs: number | null = null;
   private lastTickMs: number | null = null;
   private paceClockMs = 0;
   /** Paced time the current track was born at, for §54's minimum life. */
@@ -253,6 +255,7 @@ export class TrackBuilder {
     this.lastDeepenMs = 0;
     // Nothing has landed yet, so the first rung is never made to wait (§82).
     this.lastRungMs = Number.NEGATIVE_INFINITY;
+    this.dueSinceMs = null;
     this.lastTickMs = null;
     this.conversation.reset();
     this.harmony.reset();
@@ -327,6 +330,7 @@ export class TrackBuilder {
     this.activeMs = 0;
     this.lastDeepenMs = 0;
     this.lastRungMs = this.activeMs;
+    this.dueSinceMs = null;
     this.lowRegisterMs = 0;
     this.groundMs = 0;
     this.airMs = 0;
@@ -530,6 +534,11 @@ export class TrackBuilder {
     // Only WIDTH is gated. Depth has to keep going once the arc has handed out
     // everything it owes, or a track stops growing the moment it is wide.
     const rungDue = earnedRungs < rungsDueAt(section, ladder);
+    // §98: remember WHEN the world became willing, so patience can wait a
+    // beat behind it. Without this the free rung landed the instant its phase
+    // opened, and the beacon you flew to never actually gave you anything.
+    if (rungDue && this.dueSinceMs === null) this.dueSinceMs = this.activeMs;
+    if (!rungDue) this.dueSinceMs = null;
     // Behaviour earns the layer. The ladder time is only the world's patience
     // with a player who is doing nothing in particular (§29.3) — it must never
     // be the mechanism, or the track becomes a progress bar instead of a
@@ -538,7 +547,10 @@ export class TrackBuilder {
     // know how to build one, so it comes to meet you (user decision).
     const patienceFactor =
       this.trackNumberValue === 1 ? config.patienceFactor : config.patienceFactor / 2;
-    const patience = step === null ? 0 : step.atMs * patienceFactor;
+    // The world offers it for free only after a window in which YOU could have
+    // gone and taken it — that window is what makes a beacon worth flying to.
+    const offeredFreelyAt = (this.dueSinceMs ?? this.activeMs) + config.rungGapMs;
+    const patience = step === null ? 0 : Math.max(step.atMs * patienceFactor, offeredFreelyAt);
     // §82: whatever earns it, a layer only lands once the previous one has had
     // room to be heard. Without this, patience and behaviour fired on
     // consecutive ticks and the track arrived in a lump.
@@ -623,14 +635,33 @@ export class TrackBuilder {
   }
 
   /**
+   * §98: the layer the world is willing to give RIGHT NOW — the next rung of
+   * this world's ladder, but only once the arc has opened its phase.
+   *
+   * The beacon used to bypass that gate: everything else waited for its phase
+   * while flying through a marker granted the rung out of turn. Two paths to
+   * the same thing with different rules is how a build-up stops being
+   * learnable. A beacon is now only PLACED when its rung is due, so flying to
+   * one always works — the arc decides when the invitation exists, and the
+   * player decides whether to take it.
+   */
+  offeredLayer(): TrackLayerName | null {
+    const track = this.store.getState();
+    const ladder = ladderFor(track.genre);
+    const step = nextStep(track, ladder);
+    if (step === null) return null;
+    const earned = ladder.filter((rung) => layerUnlocked(track, rung.layer)).length;
+    return earned < rungsDueAt(this.arrangement.current, ladder) ? step.layer : null;
+  }
+
+  /**
    * §86: a beacon was flown through, so that rung is earned NOW — the player
    * went and got it. It still has to be the next rung of this world's ladder,
    * or a world could be assembled out of order (§31.2), and it still respects
    * the §82 gap so two layers can never land on top of each other.
    */
   collectBeacon(layer: TrackLayerName, nowMs: number): boolean {
-    const step = nextStep(this.store.getState(), ladderFor(this.store.getState().genre));
-    if (step === null || step.layer !== layer) return false;
+    if (this.offeredLayer() !== layer) return false;
     if (this.activeMs - this.lastRungMs < this.config.rungGapMs) return false;
     this.lastRungMs = this.activeMs;
     this.unlock(layer, nowMs);

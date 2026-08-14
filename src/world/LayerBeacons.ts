@@ -59,15 +59,16 @@ export function remainingLayers(
  * has already made that choice (§31.2).
  */
 export function placeBeacon(
-  track: Readonly<TrackState>,
-  genre: TrackGenre,
+  offered: TrackLayerName | null,
   from: Vec3Data,
   heading: number,
   rng: Rng,
   serial: number,
 ): LayerBeacon | null {
-  const layer = remainingLayers(track, genre)[0];
-  if (layer === undefined) return null;
+  // §98: only what the world is willing to give right now. A beacon you can
+  // reach but not collect is worse than no beacon at all.
+  const layer = offered;
+  if (layer === null) return null;
   // Ahead, but off to one side: straight ahead would mean the beacon is
   // collected by not steering, which earns nothing.
   const spread = (rng.next() - 0.5) * 1.1;

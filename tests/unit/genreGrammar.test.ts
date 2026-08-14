@@ -86,15 +86,15 @@ describe('§31 genre ladders — every grammar builds a track in its own order',
   it('Techno opens with the pulse; Ambient opens with space, not a kick', () => {
     // §92: a rung arrives when its PHASE opens, so these flights have to be
     // long enough for the arc to reach DISCOVERY I and II.
-    expect(flyThrough('techno', 30)[0]).toBe('kick');
-    const ambient = flyThrough('ambient', 40);
+    expect(flyThrough('techno', 40)[0]).toBe('kick');
+    const ambient = flyThrough('ambient', 50);
     expect(ambient[0]).toBe('texture');
     expect(ambient).not.toContain('kick');
   });
 
   it('Jazz opens with harmony and BASS with its kick', () => {
-    expect(flyThrough('jazz', 30)[0]).toBe('harmony');
-    expect(flyThrough('bass', 55).slice(0, 2)).toEqual(['kick', 'bass']); // §73
+    expect(flyThrough('jazz', 40)[0]).toBe('harmony');
+    expect(flyThrough('bass', 70).slice(0, 2)).toEqual(['kick', 'bass']); // §73
   });
 
   it('§54 a world is a track: crossing starts a new one, from the first layer', () => {

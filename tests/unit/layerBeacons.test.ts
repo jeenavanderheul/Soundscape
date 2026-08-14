@@ -7,11 +7,13 @@ vi.mock('@strudel/web', () => ({
 }));
 
 import { createRng } from '../../src/core/rng';
+import { zoneAffinity } from '../../src/genres/GenreZones';
 import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
 import { beaconAt, beaconIsStale, placeBeacon, remainingLayers } from '../../src/world/LayerBeacons';
-import { ladderFor, nextStep } from '../../src/music/GenreLadder';
+import { ladderFor } from '../../src/music/GenreLadder';
 import { TrackBuilder } from '../../src/music/TrackBuilder';
+import { createInitialMusicState } from '../../src/music/MusicState';
 import { createInitialTrackState, type TrackEvents } from '../../src/music/TrackState';
 
 /**
@@ -29,9 +31,8 @@ describe('a beacon is the next rung, standing somewhere you have to fly to', () 
   });
 
   it('stands ahead of the flight but never straight ahead', () => {
-    const track = { ...createInitialTrackState(), genre: 'techno' as const };
     const rng = createRng('beacons');
-    const beacon = placeBeacon(track, 'techno', here, 0, rng, 1)!;
+    const beacon = placeBeacon(ladderFor('techno')[0]!.layer, here, 0, rng, 1)!;
     expect(beacon.layer).toBe(ladderFor('techno')[0]!.layer);
     // Ahead: heading 0 is -z.
     expect(beacon.position.z).toBeLessThan(here.z);
@@ -40,14 +41,8 @@ describe('a beacon is the next rung, standing somewhere you have to fly to', () 
   });
 
   it('is nothing once every layer has been earned', () => {
-    const deep = { unlocked: true, level: 1 };
-    const full = {
-      ...createInitialTrackState(),
-      genre: 'techno' as const,
-      drums: { kick: deep, snare: deep, hats: deep },
-      bass: deep, harmony: deep, melody: deep, texture: deep,
-    };
-    expect(placeBeacon(full, 'techno', here, 0, createRng('beacons'), 1)).toBeNull();
+    // §98: nothing is offered, so nothing stands out there.
+    expect(placeBeacon(null, here, 0, createRng('beacons'), 1)).toBeNull();
   });
 
   it('is flown through, not walked past', () => {
@@ -74,10 +69,18 @@ describe('flying through one earns that layer, there and then', () => {
     return { store, builder, earned };
   }
 
-  it('gives the rung the moment it is collected', () => {
-    const { store, builder } = setup();
-    const next = nextStep(store.getState(), ladderFor(store.getState().genre))!.layer;
-    expect(builder.collectBeacon(next, 21_000)).toBe(true);
+  it('gives the rung the moment it is collected — once the arc has opened it', () => {
+    const { builder } = setup();
+    // §98: before its phase, the world offers nothing and there is no beacon.
+    expect(builder.offeredLayer()).toBeNull();
+    const music = { ...createInitialMusicState(), bpm: 132, tempoConfidence: 0.6, dynamics: 0.5 };
+    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    for (let t = 0; t <= 24_000; t += 250) {
+      builder.tick(t, music, { velocity: 12, hz: 220, energy: 0.4 }, region);
+    }
+    const offered = builder.offeredLayer();
+    expect(offered).not.toBeNull();
+    expect(builder.collectBeacon(offered!, 24_500)).toBe(true);
   });
 
   it('but never out of order — the world is still assembled by its ladder', () => {
@@ -88,11 +91,15 @@ describe('flying through one earns that layer, there and then', () => {
   });
 
   it('and never two on top of each other (§82)', () => {
-    const { store, builder } = setup();
-    const ladder = ladderFor(store.getState().genre);
-    const first = nextStep(store.getState(), ladder)!.layer;
-    expect(builder.collectBeacon(first, 21_000)).toBe(true);
-    const second = nextStep(store.getState(), ladder)!.layer;
-    expect(builder.collectBeacon(second, 21_100)).toBe(false);
+    const { builder } = setup();
+    const music = { ...createInitialMusicState(), bpm: 132, tempoConfidence: 0.6, dynamics: 0.5 };
+    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    for (let t = 0; t <= 24_000; t += 250) {
+      builder.tick(t, music, { velocity: 12, hz: 220, energy: 0.4 }, region);
+    }
+    const first = builder.offeredLayer();
+    if (first !== null) expect(builder.collectBeacon(first, 24_500)).toBe(true);
+    const second = builder.offeredLayer();
+    if (second !== null) expect(builder.collectBeacon(second, 24_600)).toBe(false);
   });
 });

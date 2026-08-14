@@ -67,20 +67,20 @@ function graphOf(genre: Exclude<TrackGenre, null>) {
 
 describe('§32 depth — a layer grows a second voice by staying with it', () => {
   it('earns a layer at half level and deepens it later', () => {
-    const early = fly('techno', 25).track;
+    const early = fly('techno', 35).track;
     expect(early.drums.kick.level).toBe(LEVEL_EARNED);
-    const late = fly('techno', 150);
+    const late = fly('techno', 180);
     expect(late.track.drums.kick.level).toBe(LEVEL_DEEP);
     expect(late.deepened.length).toBeGreaterThan(0);
   });
 
   it('deepens in the grammar order, oldest layer first', () => {
-    expect(fly('techno', 150).deepened[0]).toBe('kick');
-    expect(fly('ambient', 150).deepened[0]).toBe('texture');
+    expect(fly('techno', 180).deepened[0]).toBe('kick');
+    expect(fly('ambient', 180).deepened[0]).toBe('texture');
   });
 
   it('never deepens a layer that was not earned', () => {
-    const { track } = fly('ambient', 90);
+    const { track } = fly('ambient', 110);
     expect(track.drums.kick.unlocked).toBe(false);
     expect(track.drums.kick.level).toBe(0);
   });
