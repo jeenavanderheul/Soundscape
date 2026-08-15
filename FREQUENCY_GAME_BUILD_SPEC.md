@@ -1934,3 +1934,23 @@ inside it. The halo is small enough to read as an object now, with room left
 for the beam that hangs under it, and the pool the fixtures cast on the ground
 is tight enough to have a visible edge travelling — a wide falloff is
 indistinguishable from turning the ambient up.
+
+## 172-174. The lamp, its glow, and the colour it burns (v15 amendment)
+
+Three separate things that were being turned up and down together, and are not
+the same thing at all:
+
+- **§172 THE FIXTURE** may be bright on its own. It is the object you are
+  looking at, and a rig you can see is a rig — unlit fixtures read as hardware
+  hanging in the dark rather than as nothing.
+- **§173 THE GLOW** belongs to the LIGHT, not to the hardware. Hung on the
+  fixture's own brightness it also hung on the resting ember, so every dark
+  lamp in the ring carried a halo it had no source for. It burns only where the
+  band actually is, and 40% quieter than it did.
+- **§174 THE COLOUR** is the world's, and the rig carries it: a red world has
+  red lamps. Two worlds used to be the same colour in practice — heavy-signal
+  and percussion-riot were both orange, twenty-five degrees of hue apart, and
+  nobody flying between them could tell. The six are spread around the wheel
+  now with at least forty degrees between any pair, held by a test, because
+  "each world has its own colour" is a claim about DISTANCE between colours and
+  nothing else.

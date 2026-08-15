@@ -48,8 +48,12 @@ export const DOME_LIGHTS = {
    * brightness — present in the buffer, invisible to a human.
    */
   size: 3400,
-  /** What a fixture gives off when the signal is nowhere near it. */
-  ember: 0.22,
+  /**
+   * What a fixture gives off when the signal is nowhere near it. §172: a rig
+   * you can see is a rig — the unlit fixtures read as hardware hanging in the
+   * dark rather than as nothing at all.
+   */
+  ember: 0.34,
   /** Share of the gap between two fixtures that the bar itself fills. */
   fill: 0.62,
   /** Width of a batten as a share of its height (§149: they stand upright). */
@@ -96,6 +100,7 @@ varying float vHot;
 varying vec2 vCorner;
 varying vec2 vQuad;
 varying float vHaze;
+varying float vLit;
 
 void main() {
   // The rig hangs around the player and travels with them: wherever you fly,
@@ -149,6 +154,11 @@ void main() {
   // Calibrated against the corrected blacks, not against the washed ones.
   float hot = clamp(${DOME_LIGHTS.ember.toFixed(2)} + band * uBeamIntensity * 2.1 + uPulse * 0.2, 0.0, 2.2);
   vHot = hot;
+  // §173: how much real light is on this fixture, with the ember taken OUT.
+  // The glow belongs to the light, not to the hardware — hung on the hot term
+  // it also hung on the resting ember, so every dark fixture in the rig
+  // carried a halo it had no source for.
+  vLit = clamp(band * uBeamIntensity, 0.0, 1.0);
   vHaze = uHaze;
   // §167: the colour is the world's, and only the very hottest core burns
   // toward white — the way a real fixture does when it is driven hard. It used
@@ -189,6 +199,7 @@ varying float vHot;
 varying vec2 vCorner;
 varying vec2 vQuad;
 varying float vHaze;
+varying float vLit;
 void main() {
   // §150 A LAMP, NOT A HIGHLIGHT. Two things are drawn here: the filament,
   // which is small and hard and clips white, and the light it is throwing,
@@ -209,10 +220,19 @@ void main() {
   float down = clamp(-vQuad.y, 0.0, 1.0);
   float taper = 1.0 - down * 0.55;
   float shaft = exp(-(vQuad.x * vQuad.x) / max(0.02, taper * taper * 0.32)) * down * (1.0 - down * 0.35);
-  // §168 (user): half. Halved on the OUTPUT side rather than in the hot term,
-  // so the ratio between a lit fixture and a resting one is untouched — the
-  // rig gets quieter, not flatter.
-  float light = filament * 0.58 + glow * 0.19 + shaft * vHaze * 0.35;
+  // §168: halved on the OUTPUT side rather than in the hot term, so the ratio
+  // between a lit fixture and a resting one is untouched.
+  //
+  // §172 (user): but the LAMP itself may burn. These are three separate
+  // things and they were being turned down together — the filament is the
+  // object you are looking at, the glow is what hangs around it, and the shaft
+  // is what it throws. Only the first one goes back up: bright little
+  // fixtures, a modest throw.
+  // §173 (user): the glow is 40% quieter, and it only burns when there is a
+  // source for it. vLit is the band alone, so an unlit fixture is a bright
+  // little object in the dark with nothing around it, which is what a real one
+  // looks like.
+  float light = filament * 1.35 + (glow * 0.114 + shaft * vHaze * 0.35) * vLit;
   if (light < 0.004) discard;
   gl_FragColor = vec4(vColor * light * vHot, 1.0);
 }

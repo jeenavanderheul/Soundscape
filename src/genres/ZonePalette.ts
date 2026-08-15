@@ -33,18 +33,31 @@ export const NEUTRAL_LOOK: ZoneLook = {
 
 /** One identity per grammar, from the poster palette. */
 export const GENRE_LOOKS: Record<keyof GenreAffinity, ZoneLook> = {
+  /**
+   * §174 (user): every world gets a colour you cannot mistake for another
+   * one, and the RIG carries it — a red world has red lamps.
+   *
+   * Two of these used to be the same colour in practice: heavy-signal at
+   * (1.0, 0.52, 0.16) and percussion-riot at (0.86, 0.62, 0.18) are both
+   * orange, six degrees of hue apart, and nobody flying between them could
+   * tell. The six are now spread around the wheel on purpose, and the pairs
+   * that could be confused are the ones furthest apart.
+   */
   // Machine red: hard, hot, industrial.
-  techno: { color: { r: 1.0, g: 0.12, b: 0.1 }, relief: 0.85, haze: 0.2 },
-  'sub-pressure': { color: { r: 0.02, g: 0.3, b: 0.42 }, relief: 0.92, haze: 0.58 },
-  // §111 each world its own colour, taken from what it sounds like.
-  // Overheated metal: orange going white at the edge.
-  'heavy-signal': { color: { r: 1.0, g: 0.52, b: 0.16 }, relief: 0.95, haze: 0.26 },
+  techno: { color: { r: 1.0, g: 0.1, b: 0.08 }, relief: 0.85, haze: 0.2 },
+  // Deep blue: mass, pressure, the bottom of the water.
+  'sub-pressure': { color: { r: 0.05, g: 0.32, b: 0.95 }, relief: 0.92, haze: 0.58 },
+  // Overheated metal, pushed all the way to the yellow end: at orange it sat
+  // 25 degrees from techno's red, and two worlds 25 degrees apart are one
+  // world with a mood swing.
+  'heavy-signal': { color: { r: 1.0, g: 0.74, b: 0.02 }, relief: 0.95, haze: 0.26 },
   // Acid green: electro, sharp, chemical.
-  'broken-machine': { color: { r: 0.42, g: 0.95, b: 0.12 }, relief: 0.78, haze: 0.3 },
-  // Ochre: wood, skin, dust.
-  'percussion-riot': { color: { r: 0.86, g: 0.62, b: 0.18 }, relief: 0.62, haze: 0.42 },
+  'broken-machine': { color: { r: 0.4, g: 1.0, b: 0.1 }, relief: 0.78, haze: 0.3 },
+  // Magenta: the riot is the loudest thing in the world and it looks it.
+  // It used to be ochre, which read as a slightly duller heavy-signal.
+  'percussion-riot': { color: { r: 1.0, g: 0.12, b: 0.72 }, relief: 0.62, haze: 0.42 },
   // Violet under black: emptiness with weight in it.
-  'void-crusher': { color: { r: 0.42, g: 0.12, b: 0.62 }, relief: 0.88, haze: 0.72 },
+  'void-crusher': { color: { r: 0.5, g: 0.1, b: 1.0 }, relief: 0.88, haze: 0.72 },
   // Cool cyan, rolling and skippy — the ground never quite settles.
   // Warm gold, soft hills: the friendliest region in the world.
   // Deep purple with steep cliffs — weight you can see.

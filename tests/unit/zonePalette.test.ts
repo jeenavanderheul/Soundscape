@@ -19,7 +19,13 @@ describe('§33 zone palette — every direction is a place you can see', () => {
   it('gives SUB PRESSURE a dark, high-relief identity distinct from Techno', () => {
     const pressure = GENRE_LOOKS['sub-pressure'];
     expect(pressure.relief).toBeGreaterThan(0.7);
-    expect(pressure.color.r + pressure.color.g + pressure.color.b).toBeLessThan(1);
+    // §174: LUMINANCE, not the sum of the channels. Sub-pressure is a
+    // saturated blue now, and blue carries almost no luminance — the old test
+    // called it bright because 0.95 is a big number, when a human eye reads it
+    // as one of the darkest colours on the wheel.
+    const luma =
+      0.2126 * pressure.color.r + 0.7152 * pressure.color.g + 0.0722 * pressure.color.b;
+    expect(luma).toBeLessThan(0.35);
     expect(pressure).not.toEqual(GENRE_LOOKS.techno);
   });
 
