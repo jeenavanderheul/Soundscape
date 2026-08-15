@@ -1899,3 +1899,38 @@ there is no beam at all — not a dimmed one, none — and as the haze thickens 
 appears under each fixture, narrowing as it falls and never reaching a hard
 edge. It is the one place where §146's "never a volumetric cone" gives way,
 and it gives way to the haze, not to a switch.
+
+## 170. Formations — the circle is the only shape (v15 amendment — NORMATIVE)
+
+User rule: **light only ever makes circles, and the formation is what happens
+inside one.** The rig is a ring, so everything it can say it says in circles.
+Until now it could say one thing — a band sweeping round. These are the others,
+and every one belongs to a drum:
+
+| formation | what it does | driven by |
+|---|---|---|
+| SWEEP | the band travels; the resting state | the orbit |
+| PULSE | the whole circle lights and dies between | KICK |
+| ALTERNATE | every other fixture; the halves swap | SNARE |
+| QUARTERS | four arcs, stepping round a quarter | KICK |
+| OPPOSITE | two arcs facing each other, opening | BASS |
+| RIPPLE | ring by ring outward from the crown | KICK |
+
+Each world reaches for one — techno quarters, sub-pressure opposite,
+heavy-signal pulse, broken-machine alternate, percussion-riot ripple,
+void-crusher sweep — and the music takes it over where it has to: a drop is
+PULSE because a drop is one event, and a break is SWEEP because a break has
+nothing to hold a shape with.
+
+The snare is a SWITCH, not a level: it flips a state that stays flipped, which
+is why ALTERNATE reads as a backbeat rather than as a flicker.
+
+## 171. The source is an object, not a cloud (v15 amendment)
+
+"Too big" is a different complaint from "too bright". At thirty by twenty-six
+filament-widths, the quad around each batten was an order of magnitude larger
+than the fixture, so what the player saw was a cloud with a lamp somewhere
+inside it. The halo is small enough to read as an object now, with room left
+for the beam that hangs under it, and the pool the fixtures cast on the ground
+is tight enough to have a visible edge travelling — a wide falloff is
+indistinguishable from turning the ambient up.

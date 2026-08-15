@@ -395,6 +395,7 @@ export class Game {
   private layerEarnedFrame = false;
   private trackChangedFrame = false;
   private lastKickMs = -9999;
+  private lastSnareMs = -9999;
   private signalInstability = 0;
   private signalIntensity = 0;
   /**
@@ -943,6 +944,7 @@ export class Game {
         // game clock and performance.now() is not, and mixing them makes the
         // pulse fire at random.
         sinceKick: (performance.now() - this.lastKickMs) / 1000,
+        sinceSnare: (performance.now() - this.lastSnareMs) / 1000,
         instability: this.signalInstability,
       },
       dtSeconds,
@@ -1377,6 +1379,7 @@ export class Game {
           break;
         // Snare and clap = a sharp flash across the field.
         case 'snare':
+          this.lastSnareMs = performance.now();
           this.terrain.clapFlash();
           // §160: a snare is a cut. The frame tears on the hit and nowhere
           // else — it is an event, never a running effect (§136.6).

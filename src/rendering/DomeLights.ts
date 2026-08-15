@@ -6,7 +6,17 @@ import {
   Mesh,
   ShaderMaterial,
 } from 'three';
-import { DOME_SCANNER_GLSL, type ScannerState } from './domeScanner';
+import { DOME_SCANNER_GLSL, type Formation, type ScannerState } from './domeScanner';
+
+/** §170: the shader takes a number, not a name. */
+const FORMATION_INDEX: Record<Formation, number> = {
+  sweep: 0,
+  pulse: 1,
+  alternate: 2,
+  quarters: 3,
+  opposite: 4,
+  ripple: 5,
+};
 
 /**
  * §147 THE LEDS — light you can see, circling the player.
@@ -54,14 +64,24 @@ export const DOME_LIGHTS = {
    * grows is the LIGHT, which is the part that makes a fixture read as a
    * source rather than as a lit shape.
    */
-  haloWidth: 30,
-  /** §155: tall, because the beam that hangs under the fixture lives in here. */
-  haloHeight: 26,
+  /**
+   * §171 (user): the SOURCE was too big, which is a different complaint from
+   * too bright — at 30 by 26 filament-widths the quad around each batten was
+   * bigger than the fixture by an order of magnitude, so what you saw was a
+   * cloud with a lamp somewhere inside it. Small enough to read as an object,
+   * with room left for the beam that hangs under it.
+   */
+  haloWidth: 9,
+  haloHeight: 11,
 } as const;
 
 const VERTEX = /* glsl */ `
 attribute vec2 aCorner;   // -1..1 across the bar and up it
 uniform float uHaze;      // §155: how thick the air is, 0..1
+uniform float uFormation; // §170: which shape the circle is holding
+uniform float uKick;      // §170: 0..1, how recently the kick landed
+uniform float uFlip;      // §170: flips on every snare
+uniform float uCount;     // fixtures on this instance's ring
 attribute float aAngle;   // where on its ring this fixture hangs
 attribute float aRing;    // 0..1 from the horizon ring to the crown
 attribute float aRadius;
@@ -91,6 +111,33 @@ void main() {
   if (uBeamGhost >= 0.0) band = max(band, beamBand(angle, uBeamGhost) * 0.45);
   // Higher rings answer a little later: the light climbs the dome as it turns.
   band *= 1.0 - aRing * 0.25;
+
+  // §170 FORMATIONS. The rig is a ring, so everything it can say it says in
+  // circles; this is what happens INSIDE one. Each shape belongs to a drum,
+  // and the sweep is what it falls back to when there is nothing to hold.
+  float slot = floor(aAngle / 6.2831 * uCount + 0.5);
+  if (uFormation > 0.5 && uFormation < 1.5) {
+    // PULSE: the whole circle on the kick, dark between. The heaviest thing
+    // the rig can do, so it is reserved for the heaviest sections.
+    band = max(band * 0.35, uKick);
+  } else if (uFormation < 2.5) {
+    // ALTERNATE: every other fixture, and the snare swaps which half burns.
+    float odd = mod(slot, 2.0);
+    band = max(band * 0.3, (abs(odd - uFlip) < 0.5 ? 1.0 : 0.0) * uKick * 0.9);
+  } else if (uFormation < 3.5) {
+    // QUARTERS: four arcs, stepping round a quarter on every kick.
+    float quarter = floor(aAngle / 6.2831 * 4.0);
+    float step = mod(floor(uFlip * 2.0 + uKick * 3.0), 4.0);
+    band = max(band * 0.3, abs(quarter - step) < 0.5 ? uKick : 0.0);
+  } else if (uFormation < 4.5) {
+    // OPPOSITE: two arcs facing each other, opening with the bass.
+    float toAxis = abs(sin(aAngle));
+    band = max(band * 0.3, smoothstep(0.75 - uBeamWidth, 1.0, 1.0 - toAxis) * (0.4 + uKick * 0.6));
+  } else if (uFormation > 4.5) {
+    // RIPPLE: ring by ring outward, fired by the kick.
+    float wave = fract(uKick * 1.2 + aRing * 0.55);
+    band = max(band * 0.3, (1.0 - wave) * uKick);
+  }
 
   // §153: where the band passes, forty fixtures overlap and additive blending
   // adds every one of them, so the per-fixture gain has to stay low enough
@@ -226,6 +273,10 @@ export class DomeLights {
         uPulse: { value: 0 },
         uPlayerY: { value: 0 },
         uHaze: { value: 0 },
+        uFormation: { value: 0 },
+        uKick: { value: 0 },
+        uFlip: { value: 0 },
+        uCount: { value: 120 },
         uTint: { value: [0.7, 0.78, 0.8] },
         uBeam: { value: 0 },
         uBeamCounter: { value: -1 },
@@ -278,6 +329,9 @@ export class DomeLights {
     u['uBeamIntensity']!.value = scanner.intensity;
     u['uBeamElevation']!.value = scanner.elevation;
     u['uBeamDirection']!.value = scanner.mode === 'reverse' ? -1 : 1;
+    u['uFormation']!.value = FORMATION_INDEX[scanner.formation];
+    u['uKick']!.value = scanner.kickPulse;
+    u['uFlip']!.value = scanner.flip;
     const centre = u['uBeamPlayer']!.value as number[];
     centre[0] = player.x;
     centre[1] = player.z;

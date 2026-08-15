@@ -108,6 +108,35 @@ export function patternFor(genre: string | null): ScannerPattern {
   return (genre && GENRE_PATTERNS[genre]) || NEUTRAL_PATTERN;
 }
 
+/**
+ * §170 FORMATIONS — what the circle is doing, as opposed to where it is.
+ *
+ * The rig is a ring, so everything it can say it says in circles. Until now it
+ * could only say one thing: a band sweeping round. These are the others, and
+ * each one belongs to a drum:
+ *
+ *   SWEEP     the band travels — the resting state
+ *   PULSE     the whole circle lights on the KICK and dies between
+ *   ALTERNATE every other fixture, and the SNARE flips which half is lit
+ *   QUARTERS  four arcs, stepping round a quarter on every kick
+ *   OPPOSITE  two arcs facing each other, opening and closing with the BASS
+ *   RIPPLE    ring by ring outward from the crown, fired by the kick
+ *
+ * The rule the user set: light only ever makes circles, and the formation is
+ * what happens INSIDE one.
+ */
+export type Formation = 'sweep' | 'pulse' | 'alternate' | 'quarters' | 'opposite' | 'ripple';
+
+/** Which formation a world reaches for. The section still decides the motion. */
+const GENRE_FORMATION: Record<string, Formation> = {
+  techno: 'quarters',
+  'sub-pressure': 'opposite',
+  'heavy-signal': 'pulse',
+  'broken-machine': 'alternate',
+  'percussion-riot': 'ripple',
+  'void-crusher': 'sweep',
+};
+
 export interface ScannerInput {
   /** Which world is holding the light (§148). */
   genre: string | null;
@@ -120,6 +149,8 @@ export interface ScannerInput {
   high: number;
   /** Seconds since the last kick; drives the intensity pulse. */
   sinceKick: number;
+  /** Seconds since the last snare — the formation's switch (§170). */
+  sinceSnare: number;
   /** 0..1 how badly the signal is holding together (§136.11). */
   instability: number;
 }
@@ -143,10 +174,19 @@ export interface ScannerState {
   tail: number;
   /** The un-quantised angle the orbit is really at (§148). */
   rawBearing: number;
+  /** §170: what the circle is doing right now. */
+  formation: Formation;
+  /** §170: 0..1 how long ago the kick was — the formations fire on it. */
+  kickPulse: number;
+  /** §170: flips on every snare; ALTERNATE swaps halves with it. */
+  flip: number;
   mode: ScannerMode;
 }
 
 export const SCANNER_START: ScannerState = {
+  formation: 'sweep',
+  kickPulse: 0,
+  flip: 0,
   extraBearings: [],
   rawBearing: 0,
   bearing: 0,
@@ -314,7 +354,22 @@ export function advanceScanner(
   // opens with instability — a signal that is coming apart smears (§136.11).
   const tail = 0.55 + clamp01(input.instability) * 1.5;
 
+  // §170: the formation is the world's, except where the music takes it over.
+  // A break has nothing to hold a shape with, and a drop is a single event —
+  // both of those are the whole circle at once.
+  const formation: Formation = input.section === 'drop'
+    ? 'pulse'
+    : input.section === 'break'
+      ? 'sweep'
+      : GENRE_FORMATION[input.genre ?? ''] ?? 'sweep';
+  const kickPulse = Math.exp(-Math.max(0, input.sinceKick) * 6.5);
+  // The snare is a switch, not a level: it flips a state that stays flipped.
+  const flip = input.sinceSnare < 0.05 ? 1 - previous.flip : previous.flip;
+
   return {
+    formation,
+    kickPulse,
+    flip,
     bearing,
     rawBearing,
     extraBearings,
@@ -404,7 +459,9 @@ float lampPool(vec2 world, float bearing, float radius, float height, float gain
   // Height matters: a fixture 46 units up throws a wider, softer pool than one
   // at ground level, and the ground right under it is the brightest place.
   float d2 = dot(onGround, onGround) + height * height;
-  return gain / (1.0 + d2 / 5200.0);
+  // §171: tight enough that the pool has an edge you can see travelling. A
+  // wide falloff is indistinguishable from turning the ambient up.
+  return gain / (1.0 + d2 / 2400.0);
 }
 
 /** Everything the rig is throwing at this point of ground, right now. */

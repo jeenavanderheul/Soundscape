@@ -24,6 +24,7 @@ const quiet: ScannerInput = {
   mid: 0,
   high: 0,
   sinceKick: 9,
+  sinceSnare: 9,
   instability: 0,
 };
 
