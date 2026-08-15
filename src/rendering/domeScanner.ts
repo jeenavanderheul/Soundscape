@@ -187,7 +187,7 @@ export function advanceScanner(
   const smooth = Math.min(1, dtSeconds * 2.2);
   const targetWidth = 0.16 + clamp01(input.low) * 0.42;
   const width = previous.width + (targetWidth - previous.width) * smooth;
-  const targetElevation = 0.22 + clamp01(input.mid) * 0.72;
+  const targetElevation = 0.3 + clamp01(input.mid) * 0.6;
   const elevation = previous.elevation + (targetElevation - previous.elevation) * smooth;
 
   // KICK: a short punch, decayed by how long ago it was.
@@ -252,7 +252,7 @@ float domeBeamWide(vec2 world) {
   float bearing = atan(fromPlayer.y, fromPlayer.x);
   float band = beamBand(bearing, uBeam);
   if (uBeamCounter >= 0.0) band = max(band, beamBand(bearing, uBeamCounter));
-  float peak = mix(430.0, 70.0, uBeamElevation);
+  float peak = mix(260.0, 55.0, uBeamElevation);
   float radial = exp(-pow((distance - peak) / (peak * 0.85), 2.0));
   return band * radial * uBeamIntensity;
 }
@@ -266,7 +266,10 @@ float domeBeam(vec2 world) {
   if (uBeamCounter >= 0.0) band = max(band, beamBand(bearing, uBeamCounter));
   if (uBeamGhost >= 0.0) band = max(band, beamBand(bearing, uBeamGhost) * 0.4);
   // Where on the ground the dome is pointing, in and out with elevation.
-  float peak = mix(430.0, 70.0, uBeamElevation);
+  // 430 units put the ring out where the distance fade eats it, so in silence
+  // — no mids, elevation low — there was no light anywhere the player could
+  // see. The whole travel now happens inside the field you are looking at.
+  float peak = mix(260.0, 55.0, uBeamElevation);
   // Narrow on purpose: at 0.6 the lit annulus was hundreds of units deep and
   // the sweep read as "the near world is bright", not as a band travelling.
   // §146 composition: only a limited section may be active at once.

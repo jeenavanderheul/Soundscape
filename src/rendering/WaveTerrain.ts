@@ -294,7 +294,9 @@ void main() {
   // §146: the beam is signal. Where it passes, lines that were sitting at the
   // floor climb through WEAK and CLEAN into OVERDRIVEN, and behind it they
   // sink back — the world is revealed rather than lit.
-  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 + vBeam * 1.1 - vSeed - vFar * 1.6;
+  // The beam has to beat the distance fade on its own, or the ring is only
+  // ever visible where the world was already bright.
+  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 + vBeam * 2.2 - vSeed - vFar * 1.6;
 
   float k;
   if (strength < -0.22) {
@@ -326,6 +328,10 @@ void main() {
     color += accent * fringe * k;
   }
 
+  // §146: and it is LIGHT, not only a state. The signal states decide whether
+  // a line is drawn cleanly; this is what makes the band read as illumination
+  // sweeping over it, white and clipping at the centre.
+  color *= 1.0 + vBeam * 2.6;
   gl_FragColor = vec4(color * k, 1.0);
 }
 `;
