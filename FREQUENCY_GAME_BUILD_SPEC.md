@@ -1791,3 +1791,26 @@ Scale is the thing to get right and the thing I got wrong twice: a fixture 235
 units away needs a screen size in the thousands and an ember around a fifth,
 or it renders as a single dim pixel — present in the buffer, invisible to a
 human.
+
+## 148. Every world moves its light differently (v15 amendment)
+
+The section says what the MUSIC is doing (§146.3). This says who is doing it.
+Same rig, same orbit, a different hand on it:
+
+| world | pattern |
+|---|---|
+| techno | lands on the four to the bar and nowhere in between |
+| sub-pressure | slow and wide; weight, not speed |
+| heavy-signal | strobed on the eighths — a signal pushed past its limit |
+| broken-machine | advances in jumps and sometimes stalls |
+| percussion-riot | three clusters chasing each other, quantised to sixteenths |
+| void-crusher | one slow arm in an empty room |
+
+Four knobs: `rate` scales the orbit, `steps` quantises the bearing to musical
+positions, `gate` chops the intensity on a division of the bar, `stutter` is a
+repeatable hesitation (hashed on the lap, so a world stumbles the same way
+every time), `spread` adds standing clusters around the ring.
+
+The fixtures are BARS, not points: a point at 200 units is a dot however bright
+you make it, a bar bends with its ring and reads as something hanging in a rig.
+A lit bar also grows — the fixture opens when the signal reaches it.

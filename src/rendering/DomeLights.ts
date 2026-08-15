@@ -1,8 +1,9 @@
 import {
   AdditiveBlending,
   BufferAttribute,
-  BufferGeometry,
-  Points,
+  InstancedBufferAttribute,
+  InstancedBufferGeometry,
+  Mesh,
   ShaderMaterial,
 } from 'three';
 import { DOME_SCANNER_GLSL, type ScannerState } from './domeScanner';
@@ -16,9 +17,11 @@ import { DOME_SCANNER_GLSL, type ScannerState } from './domeScanner';
  * actual fixtures, hung in rings around the world, turning with the same
  * signal.
  *
- * They are points, like everything else here, not lamps: small, precise, hot
- * in the middle, and mostly dark. A cluster of them lights as the signal
- * passes, the rest sit at an ember, and the ring keeps turning around you.
+ * §148 (user): they are BARS now, not points. A point at 200 units is a dot
+ * however bright you make it; a bar bends with its ring and reads as a fixture
+ * hanging in a rig, which is what the user is asking to see. They are still
+ * dark most of the time — a cluster lights as the signal passes, the rest sit
+ * at an ember, and the ring keeps turning around you.
  */
 
 export const DOME_LIGHTS = {
@@ -37,27 +40,35 @@ export const DOME_LIGHTS = {
   size: 3400,
   /** What a fixture gives off when the signal is nowhere near it. */
   ember: 0.22,
+  /** Share of the gap between two fixtures that the bar itself fills. */
+  fill: 0.62,
+  /** Height of a bar as a share of its length. */
+  aspect: 0.16,
 } as const;
 
 const VERTEX = /* glsl */ `
+attribute vec2 aCorner;   // -1..1 across the bar and up it
 attribute float aAngle;   // where on its ring this fixture hangs
 attribute float aRing;    // 0..1 from the horizon ring to the crown
 attribute float aRadius;
 attribute float aHeight;
-uniform float uSize;
+attribute float aLength;
 uniform float uTime;
 uniform float uPulse;
 uniform vec3 uTint;
 uniform float uPlayerY;
 varying vec3 vColor;
 varying float vHot;
+varying vec2 vCorner;
 
 void main() {
   // The rig hangs around the player and travels with them: wherever you fly,
   // the lights are around you.
   float angle = aAngle;
-  vec2 ring = vec2(cos(angle), sin(angle)) * aRadius;
-  vec3 world = vec3(uBeamPlayer.x + ring.x, uPlayerY + aHeight, uBeamPlayer.y + ring.y);
+  vec2 out2 = vec2(cos(angle), sin(angle));
+  vec2 tangent = vec2(-out2.y, out2.x);
+  vec2 ring = out2 * aRadius;
+  vec3 centre = vec3(uBeamPlayer.x + ring.x, uPlayerY + aHeight, uBeamPlayer.y + ring.y);
 
   // The same signal that scans the world lights the fixtures. A cluster is
   // bright, everything behind it is fading, everything ahead is dark.
@@ -69,58 +80,80 @@ void main() {
 
   float hot = clamp(${DOME_LIGHTS.ember.toFixed(2)} + band * uBeamIntensity * 2.4 + uPulse * 0.2, 0.0, 2.6);
   vHot = hot;
+  vCorner = aCorner;
   // White at the centre of the band, the region's own colour at the edges —
   // the accent is what is LEFT when the white falls away (§136.2).
   vColor = mix(uTint, vec3(1.0), clamp(band * 1.4, 0.0, 1.0));
 
-  vec4 mv = modelViewMatrix * vec4(world, 1.0);
-  float distance = max(1.0, -mv.z);
-  gl_PointSize = clamp(uSize * (0.35 + hot * 0.9) / distance, 2.0, 34.0);
-  gl_Position = projectionMatrix * mv;
+  // A lit bar grows: the fixture opens up when the signal reaches it, the way
+  // a real one does when its shutter is wide.
+  float grow = 0.75 + hot * 0.5;
+  // NOT the word h-a-l-f: that is reserved in GLSL and the whole program fails
+  // to link, silently, as 171 identical WebGL warnings and an empty sky.
+  float halfLength = aLength * 0.5 * grow;
+  vec3 offset = vec3(tangent.x, 0.0, tangent.y) * (aCorner.x * halfLength)
+    + vec3(0.0, 1.0, 0.0) * (aCorner.y * halfLength * ${DOME_LIGHTS.aspect.toFixed(2)});
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(centre + offset, 1.0);
 }
 `;
 
 const FRAGMENT = /* glsl */ `
 varying vec3 vColor;
 varying float vHot;
+varying vec2 vCorner;
 void main() {
-  vec2 d = gl_PointCoord - vec2(0.5);
-  float r2 = dot(d, d);
-  if (r2 > 0.25) discard;
-  // A hard little core with a soft falloff: a fixture, never a glowing cone
-  // (§146 light character).
-  float core = exp(-r2 * 11.0);
-  gl_FragColor = vec4(vColor * core * vHot, 1.0);
+  // Hot along the middle of the bar, falling off to its ends and edges: a
+  // fixture with a filament, never a glowing cone (§146 light character).
+  float across = 1.0 - vCorner.y * vCorner.y;
+  float along = 1.0 - pow(abs(vCorner.x), 6.0);
+  gl_FragColor = vec4(vColor * across * along * vHot, 1.0);
 }
 `;
 
 export class DomeLights {
-  readonly points: Points;
+  /** The rig; the Game adds this to the scene. */
+  readonly points: Mesh;
   private readonly material: ShaderMaterial;
-  private readonly geometry: BufferGeometry;
+  private readonly geometry: InstancedBufferGeometry;
 
   constructor() {
     const angles: number[] = [];
     const rings: number[] = [];
     const radii: number[] = [];
     const heights: number[] = [];
-    const positions: number[] = [];
+    const lengths: number[] = [];
     DOME_LIGHTS.rings.forEach((ring, index) => {
+      // A bar fills most of the gap to its neighbour, leaving the rig readable
+      // as separate fixtures rather than a solid hoop.
+      const length = ((Math.PI * 2 * ring.radius) / ring.count) * DOME_LIGHTS.fill;
       for (let i = 0; i < ring.count; i++) {
         angles.push((i / ring.count) * Math.PI * 2);
         rings.push(index / (DOME_LIGHTS.rings.length - 1));
         radii.push(ring.radius);
         heights.push(ring.height);
-        // The real position is computed in the shader; this only has to exist.
-        positions.push(0, 0, 0);
+        lengths.push(length);
       }
     });
-    this.geometry = new BufferGeometry();
-    this.geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
-    this.geometry.setAttribute('aAngle', new BufferAttribute(new Float32Array(angles), 1));
-    this.geometry.setAttribute('aRing', new BufferAttribute(new Float32Array(rings), 1));
-    this.geometry.setAttribute('aRadius', new BufferAttribute(new Float32Array(radii), 1));
-    this.geometry.setAttribute('aHeight', new BufferAttribute(new Float32Array(heights), 1));
+
+    // One quad, instanced once per fixture. The bar is built in the shader
+    // from its angle, so nothing here has to know where the player is.
+    this.geometry = new InstancedBufferGeometry();
+    this.geometry.setAttribute(
+      'aCorner',
+      new BufferAttribute(new Float32Array([-1, -1, 1, -1, 1, 1, -1, 1]), 2),
+    );
+    this.geometry.setAttribute(
+      'position',
+      new BufferAttribute(new Float32Array(4 * 3), 3),
+    );
+    this.geometry.setIndex([0, 1, 2, 0, 2, 3]);
+    this.geometry.setAttribute('aAngle', new InstancedBufferAttribute(new Float32Array(angles), 1));
+    this.geometry.setAttribute('aRing', new InstancedBufferAttribute(new Float32Array(rings), 1));
+    this.geometry.setAttribute('aRadius', new InstancedBufferAttribute(new Float32Array(radii), 1));
+    this.geometry.setAttribute('aHeight', new InstancedBufferAttribute(new Float32Array(heights), 1));
+    this.geometry.setAttribute('aLength', new InstancedBufferAttribute(new Float32Array(lengths), 1));
+    this.geometry.instanceCount = angles.length;
+
     this.material = new ShaderMaterial({
       vertexShader: `${DOME_SCANNER_GLSL}\n${VERTEX}`,
       fragmentShader: FRAGMENT,
@@ -128,7 +161,6 @@ export class DomeLights {
       depthWrite: false,
       transparent: true,
       uniforms: {
-        uSize: { value: DOME_LIGHTS.size },
         uTime: { value: 0 },
         uPulse: { value: 0 },
         uPlayerY: { value: 0 },
@@ -144,7 +176,7 @@ export class DomeLights {
         uBeamPlayer: { value: [0, 0] },
       },
     });
-    this.points = new Points(this.geometry, this.material);
+    this.points = new Mesh(this.geometry, this.material);
     this.points.frustumCulled = false;
   }
 

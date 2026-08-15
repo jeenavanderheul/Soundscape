@@ -877,6 +877,8 @@ export class Game {
       {
         bpm: scannerTrack.bpm,
         section: scannerTrack.form,
+        // §148: the world holding the light decides HOW it moves.
+        genre: scannerTrack.genre,
         low: analysis?.lowBand ?? 0,
         mid: analysis?.midBand ?? 0,
         high: analysis?.highBand ?? 0,

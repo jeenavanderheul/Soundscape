@@ -67,7 +67,50 @@ const SECTION_BARS: Record<Section, number> = {
   mutation: 2,
 };
 
+/**
+ * §148: how a WORLD moves its light. The section says what the music is doing;
+ * this says who is doing it. Same rig, same orbit, different hand on it.
+ *
+ * - `steps` quantises the bearing: 0 is a smooth sweep, 4 lands the signal on
+ *   the four to the bar and nowhere in between.
+ * - `gate` chops the intensity at that many events per bar; 0 leaves it alone.
+ * - `stutter` is how much the orbit stumbles — an irregular, repeatable
+ *   hesitation, never noise for its own sake.
+ * - `spread` adds standing extra signals around the ring, so a world can have
+ *   three clusters running instead of one.
+ */
+export interface ScannerPattern {
+  rate: number;
+  steps: number;
+  gate: number;
+  stutter: number;
+  spread: number;
+}
+
+export const GENRE_PATTERNS: Record<string, ScannerPattern> = {
+  // The metronome world: the light lands on the beat and nowhere else.
+  techno: { rate: 1, steps: 4, gate: 0, stutter: 0, spread: 0 },
+  // Weight, not speed: slow, wide, no chopping.
+  'sub-pressure': { rate: 0.6, steps: 0, gate: 0, stutter: 0, spread: 0 },
+  // A signal being pushed past its limit: strobed on the eighths.
+  'heavy-signal': { rate: 1.15, steps: 0, gate: 8, stutter: 0, spread: 0 },
+  // Nothing here runs true — it advances in jumps and sometimes stalls.
+  'broken-machine': { rate: 1.1, steps: 0, gate: 0, stutter: 0.75, spread: 0 },
+  // Many hands: three clusters chasing each other around the ring.
+  'percussion-riot': { rate: 1.35, steps: 16, gate: 0, stutter: 0.2, spread: 3 },
+  // One slow arm in an empty room.
+  'void-crusher': { rate: 0.45, steps: 0, gate: 0, stutter: 0, spread: 0 },
+};
+
+const NEUTRAL_PATTERN: ScannerPattern = { rate: 1, steps: 0, gate: 0, stutter: 0, spread: 0 };
+
+export function patternFor(genre: string | null): ScannerPattern {
+  return (genre && GENRE_PATTERNS[genre]) || NEUTRAL_PATTERN;
+}
+
 export interface ScannerInput {
+  /** Which world is holding the light (§148). */
+  genre: string | null;
   /** Track tempo. 0 or less means the world has no clock yet. */
   bpm: number;
   section: Section;
@@ -82,6 +125,8 @@ export interface ScannerInput {
 }
 
 export interface ScannerState {
+  /** Extra standing clusters around the ring, radians (§148 spread). */
+  extraBearings: number[];
   /** Where the signal is coming from, radians. */
   bearing: number;
   /** A second signal turning the other way; null unless the mode splits. */
@@ -96,10 +141,14 @@ export interface ScannerState {
   elevation: number;
   /** How long the tail behind the beam takes to fade, radians. */
   tail: number;
+  /** The un-quantised angle the orbit is really at (§148). */
+  rawBearing: number;
   mode: ScannerMode;
 }
 
 export const SCANNER_START: ScannerState = {
+  extraBearings: [],
+  rawBearing: 0,
   bearing: 0,
   counterBearing: null,
   ghostBearing: null,
@@ -169,7 +218,8 @@ export function advanceScanner(
   dtSeconds: number,
 ): ScannerState {
   const mode = SECTION_MODE[input.section];
-  const base = TAU / orbitSeconds(input.bpm, input.section);
+  const pattern = patternFor(input.genre);
+  const base = (TAU / orbitSeconds(input.bpm, input.section)) * pattern.rate;
 
   // Each behaviour is a factor on the same orbit, never a different clock.
   let rate = base;
@@ -182,8 +232,22 @@ export function advanceScanner(
   else if (mode === 'reverse') rate = -base;
   else if (mode === 'drop') rate = base * 1.35;
 
-  const bearing = wrap(previous.bearing + rate * dtSeconds);
+  // §148 STUTTER: a repeatable hesitation, not noise. The hash is on the lap
+  // the signal is in, so the same world stumbles the same way every time.
+  const raw = previous.rawBearing + rate * dtSeconds;
+  const stumble = pattern.stutter > 0
+    ? 1 - pattern.stutter * (0.5 + 0.5 * Math.sin(raw * 5.7) * Math.sin(raw * 2.3))
+    : 1;
+  const rawBearing = previous.rawBearing + rate * dtSeconds * stumble;
+  // §148 STEPS: quantised worlds land the signal on musical positions only.
+  const bearing = pattern.steps > 0
+    ? wrap(Math.round((rawBearing / TAU) * pattern.steps) * (TAU / pattern.steps))
+    : wrap(rawBearing);
   const direction: 1 | -1 = rate < 0 ? -1 : 1;
+  const extraBearings: number[] = [];
+  for (let i = 1; i <= pattern.spread; i++) {
+    extraBearings.push(wrap(bearing + (TAU * i) / (pattern.spread + 1)));
+  }
 
   // DOUBLE: a second signal turning against the first, meeting twice a lap.
   const counterBearing = mode === 'double' ? wrap(-bearing + Math.PI) : null;
@@ -206,12 +270,28 @@ export function advanceScanner(
   // back at full — the one moment it is allowed to be absent.
   const dropGate = mode === 'drop' && input.sinceKick < 0.18 ? 0 : 1;
   const intensity = clamp01((0.45 + punch + clamp01(input.high) * 0.3) * dropGate);
+  // §148 GATE: strobed worlds chop the intensity on a musical division of the
+  // bar, using the same clock the orbit runs on.
+  const gated = pattern.gate > 0
+    ? intensity * (Math.floor((rawBearing / TAU) * pattern.gate * SECTION_BARS[input.section]) % 2 === 0 ? 1 : 0.18)
+    : intensity;
 
   // REVERB is not measured here; persistence rides on the tail, and the tail
   // opens with instability — a signal that is coming apart smears (§136.11).
   const tail = 0.55 + clamp01(input.instability) * 1.5;
 
-  return { bearing, counterBearing, ghostBearing, width, intensity, elevation, tail, mode };
+  return {
+    bearing,
+    rawBearing,
+    extraBearings,
+    counterBearing,
+    ghostBearing,
+    width,
+    intensity: gated,
+    elevation,
+    tail,
+    mode,
+  };
 }
 
 /**

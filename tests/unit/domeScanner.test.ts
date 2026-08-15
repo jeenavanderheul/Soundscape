@@ -15,6 +15,7 @@ import {
  */
 
 const quiet: ScannerInput = {
+  genre: null,
   bpm: 128,
   section: 'groove',
   low: 0,
@@ -116,6 +117,47 @@ describe('§146 the dome signal', () => {
     // Turning the other way puts the tail on the other side.
     expect(beamStrengthAt(0.9, beam, width, tail, -1)).toBeGreaterThan(0);
     expect(beamStrengthAt(-0.9, beam, width, tail, -1)).toBe(0);
+  });
+
+  it('§148 gives each world its own way of moving the light', () => {
+    // Techno lands on musical positions only: every bearing it ever takes is
+    // one of four, however long it runs.
+    const seen = new Set<string>();
+    let state = SCANNER_START;
+    for (let i = 0; i < 600; i++) {
+      state = advanceScanner(state, { ...quiet, genre: 'techno' }, 1 / 60);
+      seen.add(state.bearing.toFixed(3));
+    }
+    expect(seen.size).toBe(4);
+
+    // The void turns slower than the riot, by a wide margin.
+    const void1 = run({ ...quiet, genre: 'void-crusher' }, 2).bearing;
+    const riot1 = run({ ...quiet, genre: 'percussion-riot' }, 2).bearing;
+    expect(riot1).toBeGreaterThan(void1 * 2);
+
+    // The riot runs three clusters; everything else runs one.
+    expect(run({ ...quiet, genre: 'percussion-riot' }, 1).extraBearings).toHaveLength(3);
+    expect(run({ ...quiet, genre: 'techno' }, 1).extraBearings).toHaveLength(0);
+
+    // The broken machine stumbles: it covers less ground than its own rate
+    // would suggest, and it does it the same way every time.
+    const brokenA = run({ ...quiet, genre: 'broken-machine' }, 3).rawBearing;
+    const brokenB = run({ ...quiet, genre: 'broken-machine' }, 3).rawBearing;
+    const straight = run({ ...quiet, genre: null }, 3).rawBearing;
+    expect(brokenA).toBe(brokenB);
+    expect(brokenA).toBeLessThan(straight * 1.1);
+  });
+
+  it('§148 strobes only the world that asks for it', () => {
+    const strobed = new Set<number>();
+    let state = SCANNER_START;
+    for (let i = 0; i < 400; i++) {
+      state = advanceScanner(state, { ...quiet, genre: 'heavy-signal' }, 1 / 60);
+      strobed.add(Math.round(state.intensity * 100));
+    }
+    // Two families of values: on, and chopped down to a fifth.
+    expect(strobed.size).toBeGreaterThan(1);
+    expect(Math.min(...strobed)).toBeLessThan(Math.max(...strobed) * 0.3);
   });
 
   it('leaves most of the world dark at any moment', () => {
