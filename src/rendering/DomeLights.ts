@@ -92,16 +92,22 @@ void main() {
   // Higher rings answer a little later: the light climbs the dome as it turns.
   band *= 1.0 - aRing * 0.25;
 
-  // §153 (user): the throw stays this big, the burn does not. Where the band
-  // passes, forty fixtures overlap and additive blending adds every one of
-  // them, so the per-fixture gain has to be low enough that a CLUSTER reads as
-  // bright rather than as a white hole with a world behind it.
-  float hot = clamp(${DOME_LIGHTS.ember.toFixed(2)} + band * uBeamIntensity * 1.35 + uPulse * 0.16, 0.0, 1.7);
+  // §153: where the band passes, forty fixtures overlap and additive blending
+  // adds every one of them, so the per-fixture gain has to stay low enough
+  // that a CLUSTER reads as bright rather than as a white hole.
+  //
+  // §166: but it was cut for a frame that was never black. The colour-space
+  // fix in §163 dropped the whole world by roughly a stop, and this dimming
+  // sat on top of that — so the fixtures stopped reading as sources at all.
+  // Calibrated against the corrected blacks, not against the washed ones.
+  float hot = clamp(${DOME_LIGHTS.ember.toFixed(2)} + band * uBeamIntensity * 2.1 + uPulse * 0.2, 0.0, 2.2);
   vHot = hot;
   vHaze = uHaze;
-  // White at the centre of the band, the region's own colour at the edges —
-  // the accent is what is LEFT when the white falls away (§136.2).
-  vColor = mix(uTint, vec3(1.0), clamp(band * 1.4, 0.0, 1.0));
+  // §167: the colour is the world's, and only the very hottest core burns
+  // toward white — the way a real fixture does when it is driven hard. It used
+  // to go fully white across the whole band, which threw the region's colour
+  // away exactly where the eye was looking.
+  vColor = mix(uTint, vec3(1.0), clamp(band - 0.55, 0.0, 1.0) * 1.3);
 
   // A lit bar grows: the fixture opens up when the signal reaches it, the way
   // a real one does when its shutter is wide.
@@ -156,7 +162,7 @@ void main() {
   float down = clamp(-vQuad.y, 0.0, 1.0);
   float taper = 1.0 - down * 0.55;
   float shaft = exp(-(vQuad.x * vQuad.x) / max(0.02, taper * taper * 0.32)) * down * (1.0 - down * 0.35);
-  float light = filament * 0.85 + glow * 0.16 + shaft * vHaze * 0.5;
+  float light = filament * 1.15 + glow * 0.38 + shaft * vHaze * 0.7;
   if (light < 0.004) discard;
   gl_FragColor = vec4(vColor * light * vHot, 1.0);
 }
@@ -233,12 +239,18 @@ export class DomeLights {
     this.points.frustumCulled = false;
   }
 
-  /** §33: the rig takes the colour of the region it is hanging in. */
+  /**
+   * §167 (user): a red world has RED lights. The rig used to sit on a floor of
+   * roughly half on every channel, which is a polite way of saying it was
+   * white with a hint — techno and void-crusher hung the same lamps. The floor
+   * is now the same 0.12 the forest uses, so the region's colour is what you
+   * see and the fixtures name the world from a distance.
+   */
   setTint(color: { r: number; g: number; b: number }): void {
     const tint = this.material.uniforms['uTint']!.value as number[];
-    tint[0] = 0.45 + color.r * 0.55;
-    tint[1] = 0.5 + color.g * 0.5;
-    tint[2] = 0.55 + color.b * 0.45;
+    tint[0] = 0.12 + color.r * 0.88;
+    tint[1] = 0.14 + color.g * 0.86;
+    tint[2] = 0.16 + color.b * 0.84;
   }
 
   /** §155: how thick the air is — a beam exists only when there is smoke. */

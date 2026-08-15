@@ -113,9 +113,11 @@ export class Haze {
   /** §33: even the air takes the colour of the region it is hanging in. */
   setTint(color: { r: number; g: number; b: number }): void {
     const tint = this.material.uniforms['uColor']!.value as number[];
-    tint[0] = 0.3 + color.r * 0.42;
-    tint[1] = 0.34 + color.g * 0.38;
-    tint[2] = 0.38 + color.b * 0.34;
+    // §167: smoke takes the colour of the light in it, so it carries the
+    // region too — a red world has red smoke, not grey smoke lit red.
+    tint[0] = 0.16 + color.r * 0.6;
+    tint[1] = 0.18 + color.g * 0.56;
+    tint[2] = 0.22 + color.b * 0.52;
   }
 
   /**
