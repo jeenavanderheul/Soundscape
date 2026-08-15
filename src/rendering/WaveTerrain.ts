@@ -353,6 +353,7 @@ export class WaveTerrain {
   /** §132: the real ground, once it has loaded. Null is a valid world. */
   private land: LandField | null = null;
   private landTexture: DataTexture | null = null;
+  private beamOverride: number | null = null;
 
   constructor(seed = 'frequency') {
     this.noise = createNoiseTable(seed);
@@ -421,17 +422,29 @@ export class WaveTerrain {
    */
   setScanner(scanner: ScannerState, player: { x: number; z: number }): void {
     const u = this.material.uniforms;
+    if (this.beamOverride !== null) {
+      u['uBeamIntensity']!.value = this.beamOverride;
+    }
     u['uBeam']!.value = scanner.bearing;
     u['uBeamCounter']!.value = scanner.counterBearing ?? -1;
     u['uBeamGhost']!.value = scanner.ghostBearing ?? -1;
     u['uBeamWidth']!.value = scanner.width;
     u['uBeamTail']!.value = scanner.tail;
-    u['uBeamIntensity']!.value = scanner.intensity;
+    if (this.beamOverride === null) u['uBeamIntensity']!.value = scanner.intensity;
     u['uBeamElevation']!.value = scanner.elevation;
     u['uBeamDirection']!.value = scanner.mode === 'reverse' ? -1 : 1;
     const centre = u['uBeamPlayer']!.value as number[];
     centre[0] = player.x;
     centre[1] = player.z;
+  }
+
+  /**
+   * DEV: pin the dome's intensity so it can be switched on and off between two
+   * otherwise identical frames. Three rounds of "I still cannot see it" is
+   * three rounds too many to keep guessing at.
+   */
+  forceBeam(intensity: number | null): void {
+    this.beamOverride = intensity;
   }
 
   /** DEV: what the shader is being told about the dome, for verification. */

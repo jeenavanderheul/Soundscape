@@ -1766,3 +1766,28 @@ Trees, particles and phosphor persistence follow in their own slices.
 A concert spotlight, a laser show, a volumetric cone, a colour beyond the
 three the world already has, or a ring mesh. If the circle is visible as an
 object, this is wrong.
+
+## 147. The LEDs — light you can see (v15 amendment — NORMATIVE)
+
+§146 built the dome as an invisible thing that reveals itself only through what
+it touches. That is what the brief asked for, and it is exactly why the player
+could not find it: there was nothing to look AT. The user's correction —
+"eigenlijk wil ik allemaal LED lichten rondom de wereld die dan circulair
+kunnen bewegen om de speler heen" — is the other half of the same idea, and it
+overrides §146's "the dome itself remains invisible".
+
+Four rings of fixtures hang around the player, from a horizon ring out at 235
+units up to a crown at 62, and they travel with the player: wherever you fly,
+the lights are around you. They are POINTS, like everything else in this world
+— small, precise, hot in the middle — never lamps, cones or volumetric beams.
+
+The same signal that scans the world lights them: a cluster burns as the band
+passes, everything behind it fades, everything ahead sits at an ember. Higher
+rings answer slightly later, so the light climbs the dome as it turns. White at
+the centre of the band, the region's colour at the edges — the accent is what
+is LEFT when the white falls away (§136.2). The beat lifts the whole rig.
+
+Scale is the thing to get right and the thing I got wrong twice: a fixture 235
+units away needs a screen size in the thousands and an ember around a fifth,
+or it renders as a single dim pixel — present in the buffer, invisible to a
+human.

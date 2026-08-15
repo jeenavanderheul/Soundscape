@@ -53,6 +53,7 @@ import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer, loadTreeSpecies } from '../rendering/ForestRenderer';
 import { signalDrive } from '../rendering/signalLevel';
 import { advanceScanner, SCANNER_START, type ScannerState } from '../rendering/domeScanner';
+import { DomeLights } from '../rendering/DomeLights';
 import {
   DEFAULT_VOLUME,
   loadVolume,
@@ -210,6 +211,7 @@ interface FrequencyDebug {
   terrainVertexCount(): number;
   /** §146: what the terrain shader is actually being told about the dome. */
   beamUniforms(): Record<string, unknown>;
+  forceBeam(intensity: number | null): void;
   teleport(x: number, z: number, y?: number): void;
 }
 
@@ -375,6 +377,8 @@ export class Game {
   private signalLevelAttribute = '';
   /** §146: the dome signal, advanced every tick from the music. */
   private scanner: ScannerState = SCANNER_START;
+  /** §147: the fixtures themselves, hanging in rings around the player. */
+  private readonly domeLights = new DomeLights();
   private lastKickMs = -9999;
   private signalInstability = 0;
   /** §145: what the player asked to hear, 0..1, remembered between flights. */
@@ -466,6 +470,7 @@ export class Game {
     this.renderer.scene.add(this.orb.mesh);
     this.renderer.scene.add(this.orbTrail.mesh);
     this.renderer.scene.add(this.forest.group);
+    this.renderer.scene.add(this.domeLights.points);
     this.renderer.scene.add(this.markers.mesh);
     this.renderer.scene.add(this.beaconMarker.group);
     this.renderer.scene.add(this.melodyTrail.line);
@@ -479,6 +484,8 @@ export class Game {
       this.orb,
       this.forest,
       this.markers,
+      // §147: the rig lifts on the beat like everything else does.
+      this.domeLights,
     ]);
     this.detachBeatSync = this.beatSync.subscribe(this.events);
     // §20 M4 synchronized world behavior: the Strudel clock's beat boundaries
@@ -589,6 +596,7 @@ export class Game {
         // from a browser rather than from a comment.
         terrainVertexCount: () => this.terrain.vertexCount,
         beamUniforms: () => this.terrain.beamUniforms(),
+        forceBeam: (intensity: number | null) => this.terrain.forceBeam(intensity),
         teleport: (x: number, z: number, y?: number) =>
           this.frequencyStore.setState((s) => ({
             ...s,
@@ -640,6 +648,8 @@ export class Game {
     this.terrain.dispose();
     this.renderer.scene.remove(this.forest.group);
     this.forest.dispose();
+    this.renderer.scene.remove(this.domeLights.points);
+    this.domeLights.dispose();
     this.trackStrip.dispose();
     this.renderer.scene.remove(this.beaconMarker.group);
     this.beaconMarker.dispose();
@@ -879,6 +889,7 @@ export class Game {
       dtSeconds,
     );
     this.terrain.setScanner(this.scanner, state.position);
+    this.domeLights.update(this.scanner, state.position, elapsedMs / 1000);
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.setDepth(trackGrowth(this.trackStore.getState()));
     this.forest.update(
@@ -1455,6 +1466,7 @@ export class Game {
     this.orbTrail.setColor(look.color);
     this.streaks.setColor(look.color);
     this.forest.setTint(look.color);
+    this.domeLights.setTint(look.color);
   }
 
   resetWorld(): void {
