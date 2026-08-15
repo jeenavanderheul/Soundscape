@@ -61,6 +61,7 @@ interface QueuedNote {
   atMs: number;
   velocity: number;
 }
+import { CrowdField, loadCrowdPose } from '../rendering/CrowdField';
 import { DomeLights } from '../rendering/DomeLights';
 import { Haze } from '../rendering/Haze';
 import { advanceSmoke, SMOKE_START, type SmokeState } from '../rendering/smokeState';
@@ -223,6 +224,9 @@ interface FrequencyDebug {
   beamUniforms(): Record<string, unknown>;
   forceBeam(intensity: number | null): void;
   teleport(x: number, z: number, y?: number): void;
+  /** §176: how much crowd is actually being drawn, and how to force it there. */
+  crowdStats(): Record<string, unknown>;
+  forceCrowd(layers: number | null): void;
 }
 
 type DebugWindow = Window & { __FREQUENCY_DEBUG__?: FrequencyDebug };
@@ -391,6 +395,10 @@ export class Game {
   private readonly domeLights = new DomeLights();
   /** §154: the air the light is in, and when the jets fire. */
   private readonly haze = new Haze();
+  /** §176: real mocap dancers, as signal. Empty until the track earns them. */
+  private readonly crowd = new CrowdField();
+  /** Dev only: pin the crowd to a layer count so it can be looked at. */
+  private crowdOverride: number | null = null;
   private smoke: SmokeState = SMOKE_START;
   private layerEarnedFrame = false;
   private trackChangedFrame = false;
@@ -438,6 +446,11 @@ export class Game {
     });
     void loadLandField().then((land) => {
       if (land && !this.disposed) this.terrain.setLand(land);
+    });
+    // §176: five megabytes of recorded dance. Same rule as the trees — until
+    // it lands there is simply nobody here, which is a world we already had.
+    void loadCrowdPose().then((pose) => {
+      if (pose && !this.disposed) this.crowd.setPose(pose.manifest, pose.buffers);
     });
     this.particles = new ParticleSystem(WORLD_SEED);
     this.renderer.scene.add(this.particles.points);
@@ -502,6 +515,7 @@ export class Game {
     this.renderer.scene.add(this.forest.group);
     this.renderer.scene.add(this.domeLights.points);
     this.renderer.scene.add(this.haze.points);
+    for (const tier of this.crowd.tiers) this.renderer.scene.add(tier);
     this.renderer.scene.add(this.markers.mesh);
     this.renderer.scene.add(this.beaconMarker.group);
     this.renderer.scene.add(this.melodyTrail.line);
@@ -631,6 +645,13 @@ export class Game {
         // Reaching a genre region means flying 150 units; this makes each
         // region reachable in a test without waiting for the trip.
         groundHeightAt: (x: number, z: number) => this.terrain.groundHeightAt(x, z),
+        // §176: three times now a light system has been called invisible when
+        // it was simply being told the wrong number. The crowd ships with the
+        // measurement already attached.
+        crowdStats: () => ({ ...this.crowd.stats(), ...this.crowd.uniformSnapshot() }),
+        forceCrowd: (layers: number | null) => {
+          this.crowdOverride = layers;
+        },
         // §138: the LOD field's whole vertex cost, so the budget can be checked
         // from a browser rather than from a comment.
         terrainVertexCount: () => this.terrain.vertexCount,
@@ -691,6 +712,8 @@ export class Game {
     this.domeLights.dispose();
     this.renderer.scene.remove(this.haze.points);
     this.haze.dispose();
+    for (const tier of this.crowd.tiers) this.renderer.scene.remove(tier);
+    this.crowd.dispose();
     this.trackStrip.dispose();
     this.renderer.scene.remove(this.beaconMarker.group);
     this.beaconMarker.dispose();
@@ -982,6 +1005,33 @@ export class Game {
       dtSeconds,
     );
     this.domeLights.setHaze(this.smoke.density);
+    // §176: the crowd is not scenery, it is what the track has earned. It reads
+    // the same beam the terrain does, so a dancer outside the sweep is almost
+    // nothing and resolves out of the dark as the light comes round.
+    this.crowd.setScanner(
+      this.motionScale < 1
+        ? { ...this.scanner, intensity: this.scanner.intensity * this.motionScale }
+        : this.scanner,
+      state.position,
+    );
+    this.crowd.setSignal(
+      this.crowdOverride === null ? this.signalIntensity : 1,
+      this.crowdOverride ?? countUnlocked(scannerTrack),
+    );
+    // The kick is an event, not a band: a transient that decays, stamped from
+    // the same clock the dome uses so the crowd hits on the beat the light does.
+    this.crowd.setDrums(
+      Math.max(0, 1 - (performance.now() - this.lastKickMs) / 220),
+      analysis?.lowBand ?? 0,
+      analysis?.highBand ?? 0,
+    );
+    this.crowd.setReducedMotion(this.motionScale < 1);
+    this.crowd.update(
+      state.position,
+      (x, z) => this.terrain.groundHeightAt(x, z),
+      elapsedMs / 1000,
+      dtSeconds,
+    );
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.setDepth(trackGrowth(this.trackStore.getState()));
     this.forest.update(
@@ -1579,6 +1629,7 @@ export class Game {
     this.forest.setTint(look.color);
     this.domeLights.setTint(look.color);
     this.haze.setTint(look.color);
+    this.crowd.setColor(look.color);
   }
 
   resetWorld(): void {

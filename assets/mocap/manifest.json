@@ -1,0 +1,68 @@
+{
+  "source": "CMU Graphics Lab Motion Capture Database, BVH conversion by Bruce Hahne (cgspeed, 2010 MotionBuilder-friendly release)",
+  "license": "Free for all uses including commercial; resale of the data itself is not allowed. See LICENSE.md.",
+  "verifiedOn": "2026-08-15",
+  "notes": "Elk bestand heeft frame 0 als kunstmatige T-pose die door cgspeed is toegevoegd; alle volgende frames komen uit de originele CMU-opname. De joints LFingers, RFingers, LThumb, RThumb en de toe-joints bevatten geen echte meetdata (CMU) en kunnen genegeerd worden.",
+  "clips": [
+    {
+      "file": "05_02.bvh",
+      "subject": 5,
+      "trial": 2,
+      "frames": 1124,
+      "frameTime": 0.0083333,
+      "durationSeconds": 9.37,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Moderne dans: brede, expressieve armbewegingen met een pirouette; duidelijke gewichtsverplaatsing en rotatie van het hele lichaam."
+    },
+    {
+      "file": "05_12.bvh",
+      "subject": 5,
+      "trial": 12,
+      "frames": 1355,
+      "frameTime": 0.0083333,
+      "durationSeconds": 11.29,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Moderne dans, grotendeels op de plek: armen hoog boven het hoofd, uitgestrekte voet op de grond, romp draait om zijn as. Sterk leesbaar in silhouet."
+    },
+    {
+      "file": "49_09.bvh",
+      "subject": 49,
+      "trial": 9,
+      "frames": 1918,
+      "frameTime": 0.0083333,
+      "durationSeconds": 15.98,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Rustige moderne dans: armen hoog gehouden, zijwaartse arabesque, langzaam uitrekken en balanceren op één been."
+    },
+    {
+      "file": "55_02.bvh",
+      "subject": 55,
+      "trial": 2,
+      "frames": 2181,
+      "frameTime": 0.0083333,
+      "durationSeconds": 18.17,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Lambada: ritmisch heupwerk, doorlopende gewichtsverplaatsing van links naar rechts en flink verplaatsen door de ruimte."
+    },
+    {
+      "file": "143_35.bvh",
+      "subject": 143,
+      "trial": 35,
+      "frames": 1280,
+      "frameTime": 0.0083333,
+      "durationSeconds": 10.67,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Macarena: herhalende choreografie met armen vooruit, handen naar schouders en hoofd, heupdraai en een kwartslag sprong. Blijft vrijwel op de plek."
+    }
+  ]
+}

@@ -1971,3 +1971,46 @@ behaviour, the world's own rate — so a drop still turns faster than a groove.
 What it drops is the shape, not the timing. And it outranks the section: at
 five layers a drop is still the circle, because arrival is a bigger fact about
 a track than which phase it is in.
+
+## 176. The crowd is recorded dancing, and the track earns it (v16 amendment — NORMATIVE)
+
+Real motion capture from the CMU Graphics Lab, five dance clips, rendered as
+signal. The motion is human because it was recorded from a human; the body is a
+point cloud because that is what this world is made of. Nothing about it is a
+character: there is no mesh at runtime, no skeleton and no bone matrix.
+
+**The bake owns the hard part.** `scripts/bake-mocap.mjs` parses the BVH, runs
+the kinematics, samples a body of 1024 points off the bones and writes a texture
+of points across by frames down. The obvious alternative — a SkinnedMesh per
+dancer, surface sampled each frame — works for one dancer and dies at twenty,
+because the deformed positions only exist on the GPU and the work is identical
+every time round. Baking it makes three things free that are otherwise features
+in their own right: phase variation is a row offset, motion persistence is rows
+-2/-4/-8, and level of detail is a stride along the point axis.
+
+**Rules that hold.**
+- Feet on the ground, always. Inherited from §153 and held by a measurement,
+  not a promise: `crowdStats().feetError` is the worst gap between a dancer's
+  feet and the terrain, and the reground sweep keeps it under a world unit.
+- The crowd owns no colour. White signal, tinted by the region, like everything
+  else (§33).
+- The dome reveals it. A dancer outside the beam is barely there and resolves
+  out of the dark as the sweep comes round — the same `domeBeam` the terrain
+  reads, so the light does not gain a second meaning (§28).
+- Darkness stays dominant. The crowd makes density against emptiness; it does
+  not fill the frame.
+
+**The crowd is the music.** In silence there is nobody. It grows with the ladder
+and is full at five layers — the same rung that turns the rig into one circle
+(§175), so the crowd and the light arrive together. A break empties the field
+because it empties the arrangement, exactly as it empties the terrain. And
+coherence is not a knob: below four layers everyone dances alone, and by five
+the whole crowd shares a beat while still moving as many bodies.
+
+**Audio touches the rendering, not the motion.** Kick is a brightness and a
+short expansion, bass moves the body out from its own spine, highs put flicker
+in the extremities. The mocap stays the mocap.
+
+Licence: CMU places no restrictions on the data ("free for all uses", including
+commercial products; reselling the dataset itself is excluded), and the BVH
+conversion adds none. Recorded in `assets/mocap/LICENSE.md`.

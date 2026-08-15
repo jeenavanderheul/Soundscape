@@ -13,7 +13,8 @@
     "sounds:audit": "node scripts/fetch-sound-inventory.mjs && vitest run tests/unit/soundInventory.test.ts",
     "test:watch": "vitest",
     "land:bake": "node scripts/bake-land.mjs",
-    "trees:bake": "node scripts/bake-trees.mjs"
+    "trees:bake": "node scripts/bake-trees.mjs",
+    "mocap:bake": "node scripts/bake-mocap.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.116.0",
