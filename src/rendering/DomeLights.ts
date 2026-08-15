@@ -55,11 +55,13 @@ export const DOME_LIGHTS = {
    * source rather than as a lit shape.
    */
   haloWidth: 30,
-  haloHeight: 11,
+  /** §155: tall, because the beam that hangs under the fixture lives in here. */
+  haloHeight: 26,
 } as const;
 
 const VERTEX = /* glsl */ `
 attribute vec2 aCorner;   // -1..1 across the bar and up it
+uniform float uHaze;      // §155: how thick the air is, 0..1
 attribute float aAngle;   // where on its ring this fixture hangs
 attribute float aRing;    // 0..1 from the horizon ring to the crown
 attribute float aRadius;
@@ -73,6 +75,7 @@ varying vec3 vColor;
 varying float vHot;
 varying vec2 vCorner;
 varying vec2 vQuad;
+varying float vHaze;
 
 void main() {
   // The rig hangs around the player and travels with them: wherever you fly,
@@ -95,6 +98,7 @@ void main() {
   // bright rather than as a white hole with a world behind it.
   float hot = clamp(${DOME_LIGHTS.ember.toFixed(2)} + band * uBeamIntensity * 1.35 + uPulse * 0.16, 0.0, 1.7);
   vHot = hot;
+  vHaze = uHaze;
   // White at the centre of the band, the region's own colour at the edges —
   // the accent is what is LEFT when the white falls away (§136.2).
   vColor = mix(uTint, vec3(1.0), clamp(band * 1.4, 0.0, 1.0));
@@ -131,6 +135,7 @@ varying vec3 vColor;
 varying float vHot;
 varying vec2 vCorner;
 varying vec2 vQuad;
+varying float vHaze;
 void main() {
   // §150 A LAMP, NOT A HIGHLIGHT. Two things are drawn here: the filament,
   // which is small and hard and clips white, and the light it is throwing,
@@ -144,7 +149,14 @@ void main() {
   // Five times the area is roughly five times the light, and additive blending
   // adds it all up where fixtures overlap: at full amplitude the rig burns a
   // white hole through the middle of the world. Bigger throw, softer per pixel.
-  float light = filament * 0.85 + glow * 0.16;
+  // §155 THE BEAM. Only in smoke: a shaft is the light you can see because
+  // something is in the way, so with clear air there is nothing here at all.
+  // It runs DOWN from the fixture, narrowing as it goes, and it never reaches
+  // a hard edge — §146 asks for a scanning beam, not a concert cone.
+  float down = clamp(-vQuad.y, 0.0, 1.0);
+  float taper = 1.0 - down * 0.55;
+  float shaft = exp(-(vQuad.x * vQuad.x) / max(0.02, taper * taper * 0.32)) * down * (1.0 - down * 0.35);
+  float light = filament * 0.85 + glow * 0.16 + shaft * vHaze * 0.5;
   if (light < 0.004) discard;
   gl_FragColor = vec4(vColor * light * vHot, 1.0);
 }
@@ -204,6 +216,7 @@ export class DomeLights {
         uTime: { value: 0 },
         uPulse: { value: 0 },
         uPlayerY: { value: 0 },
+        uHaze: { value: 0 },
         uTint: { value: [0.7, 0.78, 0.8] },
         uBeam: { value: 0 },
         uBeamCounter: { value: -1 },
@@ -226,6 +239,11 @@ export class DomeLights {
     tint[0] = 0.45 + color.r * 0.55;
     tint[1] = 0.5 + color.g * 0.5;
     tint[2] = 0.55 + color.b * 0.45;
+  }
+
+  /** §155: how thick the air is — a beam exists only when there is smoke. */
+  setHaze(density: number): void {
+    this.material.uniforms['uHaze']!.value = Math.min(1, Math.max(0, density));
   }
 
   /** BeatSync hook: the whole rig lifts on the beat (§12). */

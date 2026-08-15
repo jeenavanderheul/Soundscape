@@ -54,6 +54,8 @@ import { ForestRenderer, loadTreeSpecies } from '../rendering/ForestRenderer';
 import { signalDrive } from '../rendering/signalLevel';
 import { advanceScanner, SCANNER_START, type ScannerState } from '../rendering/domeScanner';
 import { DomeLights } from '../rendering/DomeLights';
+import { Haze } from '../rendering/Haze';
+import { advanceSmoke, SMOKE_START, type SmokeState } from '../rendering/smokeState';
 import {
   DEFAULT_VOLUME,
   loadVolume,
@@ -379,8 +381,14 @@ export class Game {
   private scanner: ScannerState = SCANNER_START;
   /** §147: the fixtures themselves, hanging in rings around the player. */
   private readonly domeLights = new DomeLights();
+  /** §154: the air the light is in, and when the jets fire. */
+  private readonly haze = new Haze();
+  private smoke: SmokeState = SMOKE_START;
+  private layerEarnedFrame = false;
+  private trackChangedFrame = false;
   private lastKickMs = -9999;
   private signalInstability = 0;
+  private signalIntensity = 0;
   /** §145: what the player asked to hear, 0..1, remembered between flights. */
   private volumeLevel = loadVolume();
   private readonly volumeReadout = new VolumeReadout();
@@ -471,6 +479,7 @@ export class Game {
     this.renderer.scene.add(this.orbTrail.mesh);
     this.renderer.scene.add(this.forest.group);
     this.renderer.scene.add(this.domeLights.points);
+    this.renderer.scene.add(this.haze.points);
     this.renderer.scene.add(this.markers.mesh);
     this.renderer.scene.add(this.beaconMarker.group);
     this.renderer.scene.add(this.melodyTrail.line);
@@ -491,6 +500,14 @@ export class Game {
     // §20 M4 synchronized world behavior: the Strudel clock's beat boundaries
     // become 'beat' bus events, the strong pulse BeatSync locks visuals to.
     // §60: hold each new section until the bar where its mix takes effect.
+    // §154: the two events the smoke answers to. A layer earned is a breath;
+    // a new track clears the room.
+    this.events.on('track:layer', () => {
+      this.layerEarnedFrame = true;
+    });
+    this.events.on('track:new', () => {
+      this.trackChangedFrame = true;
+    });
     this.events.on('track:section', ({ section }) => {
       if (section !== 'none') this.pendingSection = section;
     });
@@ -650,6 +667,8 @@ export class Game {
     this.forest.dispose();
     this.renderer.scene.remove(this.domeLights.points);
     this.domeLights.dispose();
+    this.renderer.scene.remove(this.haze.points);
+    this.haze.dispose();
     this.trackStrip.dispose();
     this.renderer.scene.remove(this.beaconMarker.group);
     this.beaconMarker.dispose();
@@ -773,6 +792,7 @@ export class Game {
       });
       this.terrain.setSignal(drive.intensity, drive.instability);
       this.signalInstability = drive.instability;
+      this.signalIntensity = drive.intensity;
       // §143: the interface is part of the instrument. At the top of the range
       // the type comes out of register and the grain thickens; everywhere else
       // this is a no-op, and it only ever writes when the level changes.
@@ -892,6 +912,23 @@ export class Game {
     );
     this.terrain.setScanner(this.scanner, state.position);
     this.domeLights.update(this.scanner, state.position, elapsedMs / 1000);
+    // §154: the air follows the arc of the track, and the jets fire on the
+    // beat — a blast between two beats reads as a fault, not as an effect.
+    this.smoke = advanceSmoke(
+      this.smoke,
+      {
+        section: scannerTrack.form,
+        intensity: this.signalIntensity,
+        sinceKick: (performance.now() - this.lastKickMs) / 1000,
+        layerEarned: this.layerEarnedFrame,
+        trackChanged: this.trackChangedFrame,
+      },
+      dtSeconds,
+    );
+    this.layerEarnedFrame = false;
+    this.trackChangedFrame = false;
+    this.haze.update(this.smoke.density, this.smoke.blast, state.position, dtSeconds);
+    this.domeLights.setHaze(this.smoke.density);
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.setDepth(trackGrowth(this.trackStore.getState()));
     this.forest.update(
@@ -1469,6 +1506,7 @@ export class Game {
     this.streaks.setColor(look.color);
     this.forest.setTint(look.color);
     this.domeLights.setTint(look.color);
+    this.haze.setTint(look.color);
   }
 
   resetWorld(): void {

@@ -1860,3 +1860,42 @@ Five times the area is roughly five times the light, and additive blending adds
 it up wherever fixtures overlap, so the per-pixel amplitude comes down as the
 size goes up. Bigger throw, softer light, or the rig burns a white hole through
 the middle of the world.
+
+## 154. Smoke — the air the light is in (v15 amendment — NORMATIVE)
+
+**This amends §136.18.** That section forbids volumetric cones and festival
+lighting outright. The user has decided otherwise: "het moet echt een soort
+festival ervaring worden, maar dan in de wereld", with smoke and visible beams,
+and asked for it explicitly after being shown the conflict. Everything else in
+§136 stands — the colour system especially (§136.2): white and grey, and the
+three accents, and no fourth.
+
+Two things, and they are not the same thing:
+
+**HAZE** is the standing density, and it follows the arc: `intro` 0.10,
+`groove` 0.30, `build` 0.62, `drop` 0.95, `deep` 0.80, `break` 0.06, scaled by
+how loud the picture is (§136.15). The air thickens slowly and clears fast,
+because a break has to feel like the room emptying rather than like a fade.
+
+**BLASTS** are events, and they land ON A BEAT — a jet between two beats reads
+as a fault, not as an effect:
+
+| trigger | blast |
+|---|---|
+| top of a `drop`, first beat | full, once, never repeating through the drop |
+| through a `build` | jets closing up as the intensity rises, 3.2s → 0.9s apart |
+| `return` | one, on the beat it arrives |
+| a layer earned | a breath — the world exhales when you take something |
+| a new track | the room clears; the blast comes with its first kick instead |
+
+Jets fire from the ring the fixtures hang on and are thrown inward and up, so
+the smoke comes out of the RIG. It is matter in the air, not fog: sparse enough
+to see the world through, thick enough to catch a beam.
+
+## 155. The beam is only visible in smoke (v15 amendment)
+
+A shaft is light you can see because something is in the way. With clear air
+there is no beam at all — not a dimmed one, none — and as the haze thickens it
+appears under each fixture, narrowing as it falls and never reaching a hard
+edge. It is the one place where §146's "never a volumetric cone" gives way,
+and it gives way to the haze, not to a switch.
