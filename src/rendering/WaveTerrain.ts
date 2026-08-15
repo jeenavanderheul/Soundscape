@@ -80,6 +80,25 @@ const TERRAIN_LOD = [
   { step: 24, halfX: 768, halfZ: 384 }, // ±1440 × ±1455
 ] as const;
 
+/**
+ * §141 NO HOLES AT THE SEAMS.
+ *
+ * A ring's lattice is coarser than the one inside it, so three out of every
+ * four fine scan lines have no counterpart to continue into and simply STOP at
+ * the boundary. That dangling row is the hole in the grid — the classic LOD
+ * crack, and the classic answer is the one clipmaps use: a line that is about
+ * to disappear slides onto the neighbour that survives, before it reaches the
+ * edge, so nothing ever ends in mid-air.
+ *
+ * `lattice` is the spacing of the COARSER ring in world units and `morph` runs
+ * 0 → 1 across the outer band of a ring. Mirrored in the vertex shader; this
+ * copy exists so the seam can be proven whole on the CPU.
+ */
+export function morphToCoarse(value: number, lattice: number, morph: number): number {
+  const snapped = Math.round(value / lattice) * lattice;
+  return value + (snapped - value) * Math.min(1, Math.max(0, morph));
+}
+
 /** Normalized log position of hz in 30 Hz–8 kHz, 0..1 (§3.1). */
 export function hzNorm(hz: number): number {
   const min = 30;
@@ -109,6 +128,8 @@ uniform vec3 uZoneColor;   // §33: the colour of the region being flown through
 uniform float uRelief;     // §33: how mountainous this direction is
 uniform float uSignal;     // §136.15: 0..1 how present the image is allowed to be
 uniform float uUnstable;   // §136.11: 0..1 how badly the signal holds together
+attribute vec2 aLattice;   // §141: spacing of the ring outside this one
+attribute float aMorph;    // §141: 0 inside the ring, 1 at its outer edge
 varying float vGlow;
 varying vec3 vZone;
 varying float vRidge;
@@ -129,6 +150,15 @@ vec3 zoneColor(float hzn) {
 void main() {
   vec3 pos = position;
   vec2 world = pos.xz + uOrigin;
+  // §141: slide onto the coarser lattice across the outer band of this ring,
+  // so every line that cannot continue outwards has already merged with the
+  // one that can. No dangling rows, no crack. The innermost ring carries
+  // aMorph = 0 everywhere, so the ground under the player never moves.
+  if (aMorph > 0.0) {
+    vec2 snapped = floor(world / aLattice + 0.5) * aLattice;
+    world = mix(world, snapped, aMorph);
+    pos.xz = world - uOrigin;
+  }
   // Idle reference ripple: barely-there breathing of the void.
   float h = ${TERRAIN_CONFIG.idleAmplitude.toFixed(2)} *
     sin(world.x * 0.045 + uTime * 0.35) * sin(world.y * 0.06 + uTime * 0.22);
@@ -500,6 +530,8 @@ function buildLodGrid(): BufferGeometry {
   const cellX = size / columns;
   const cellZ = size / (rows - 1);
   const positions: number[] = [];
+  const lattices: number[] = [];
+  const morphs: number[] = [];
   TERRAIN_LOD.forEach((level, index) => {
     const hole = index === 0 ? null : TERRAIN_LOD[index - 1]!;
     // A segment is dropped only when BOTH ends stand on ground the finer level
@@ -508,22 +540,44 @@ function buildLodGrid(): BufferGeometry {
     const covered = (i: number, j: number): boolean =>
       hole !== null && Math.abs(i) <= hole.halfX && Math.abs(j) <= hole.halfZ;
     const { step, halfX, halfZ } = level;
+    // §141: what this ring's lines have to become before they run out of ring.
+    const outer = TERRAIN_LOD[index + 1];
+    const lattice = outer ? [outer.step * cellX, outer.step * cellZ] : [cellX, cellZ];
+    /**
+     * How far into the outer band a vertex is, 0..1. The band is the last
+     * quarter of the ring, measured on whichever axis is closest to its edge —
+     * a corner belongs to both, so the larger of the two wins.
+     */
+    const morphAt = (i: number, j: number): number => {
+      if (!outer) return 0;
+      const edge = Math.max(Math.abs(i) / halfX, Math.abs(j) / halfZ);
+      return Math.min(1, Math.max(0, (edge - 0.75) / 0.25));
+    };
+    const push = (i: number, j: number): void => {
+      positions.push(i * cellX, 0, j * cellZ);
+      lattices.push(lattice[0]!, lattice[1]!);
+      morphs.push(morphAt(i, j));
+    };
     for (let j = -halfZ; j <= halfZ; j += step) {
       for (let i = -halfX; i < halfX; i += step) {
         if (covered(i, j) && covered(i + step, j)) continue;
-        positions.push(i * cellX, 0, j * cellZ, (i + step) * cellX, 0, j * cellZ);
+        push(i, j);
+        push(i + step, j);
       }
     }
     const depthStep = step * depthLineEvery;
     for (let i = -halfX; i <= halfX; i += depthStep) {
       for (let j = -halfZ; j < halfZ; j += step) {
         if (covered(i, j) && covered(i, j + step)) continue;
-        positions.push(i * cellX, 0, j * cellZ, i * cellX, 0, (j + step) * cellZ);
+        push(i, j);
+        push(i, j + step);
       }
     }
   });
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
+  geometry.setAttribute('aLattice', new BufferAttribute(new Float32Array(lattices), 2));
+  geometry.setAttribute('aMorph', new BufferAttribute(new Float32Array(morphs), 1));
   return geometry;
 }
 
