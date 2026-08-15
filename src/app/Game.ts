@@ -53,6 +53,14 @@ import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer, loadTreeSpecies } from '../rendering/ForestRenderer';
 import { signalDrive } from '../rendering/signalLevel';
 import { advanceScanner, SCANNER_START, type ScannerState } from '../rendering/domeScanner';
+import type { Vec3Data } from '../player/FrequencyState';
+
+/** §63: a note Strudel is about to play, and the moment it will sound. */
+interface QueuedNote {
+  kind: NoteKind;
+  atMs: number;
+  velocity: number;
+}
 import { DomeLights } from '../rendering/DomeLights';
 import { Haze } from '../rendering/Haze';
 import { advanceSmoke, SMOKE_START, type SmokeState } from '../rendering/smokeState';
@@ -357,7 +365,7 @@ export class Game {
    * wall-clock moment it sounds. The render loop fires their visuals then — so
    * a kick shockwave IS a kick, and a two-step flashes where the two-step is.
    */
-  private noteQueue: Array<{ kind: NoteKind; atMs: number; velocity: number }> = [];
+  private noteQueue: QueuedNote[] = [];
   private hatSparkleUntil = 0;
   /** §60: the section word waits for the bar where the music turns. */
   private pendingSection: TrackState['form'] | null = null;
@@ -389,6 +397,8 @@ export class Game {
   private lastKickMs = -9999;
   private signalInstability = 0;
   private signalIntensity = 0;
+  /** §158: reused every frame; never reallocated. */
+  private readonly bridgeEnds: Vec3Data[] = [];
   /** §145: what the player asked to hear, 0..1, remembered between flights. */
   private volumeLevel = loadVolume();
   private readonly volumeReadout = new VolumeReadout();
@@ -944,11 +954,14 @@ export class Game {
     this.updateBeacon(elapsedMs);
     this.melodyTrail.update(state.position, dtSeconds);
     // Bridges connect the sounding things: resonators plus born structures.
+    // §158: filled into one scratch array rather than built out of two maps
+    // and a spread — this runs every render frame, and three arrays a frame is
+    // a steady drip of garbage for the collector to stop the world over.
     const world = this.worldStore.getState();
-    this.harmonyBridges.update(
-      [...world.resonators.map((r) => r.position), ...world.structures.map((s) => s.position)],
-      state.position,
-    );
+    this.bridgeEnds.length = 0;
+    for (const resonator of world.resonators) this.bridgeEnds.push(resonator.position);
+    for (const structure of world.structures) this.bridgeEnds.push(structure.position);
+    this.harmonyBridges.update(this.bridgeEnds, state.position);
     // §63: every visual event is a real note, fired at the moment it sounds.
     this.fireDueNotes(performance.now(), state.position);
     // §29.6: the orb and the cloud around it ARE the track so far — and §42:
@@ -1287,7 +1300,7 @@ export class Game {
     const now = performance.now();
     // Drop anything stale, then take the next window. Beats arrive every
     // 60/bpm seconds, so one second of look-ahead always covers the gap.
-    this.noteQueue = this.noteQueue.filter((note) => note.atMs > now);
+    dropBefore(this.noteQueue, now);
     for (const note of this.strudelEngine.upcomingNotes(1)) {
       const atMs = now + note.inSeconds * 1000;
       // Only what is genuinely ahead, and never the same note twice.
@@ -1300,11 +1313,24 @@ export class Game {
   /** §63: fire each note's visual at the moment it sounds. */
   private fireDueNotes(nowMs: number, position: Readonly<FrequencyState>['position']): void {
     if (this.noteQueue.length === 0) return;
-    const due = this.noteQueue.filter((note) => note.atMs <= nowMs);
-    if (due.length === 0) return;
-    this.noteQueue = this.noteQueue.filter((note) => note.atMs > nowMs);
-    for (const note of due) {
-      switch (note.kind) {
+    // §158: fire in place and compact what survives. Two filters a frame
+    // allocated two arrays a frame for a list that is usually empty — but do
+    // NOT assume the queue is sorted: notes are appended as the engine
+    // discovers them, and a later look-ahead can hand back an earlier note.
+    let keep = 0;
+    for (let i = 0; i < this.noteQueue.length; i++) {
+      const queued = this.noteQueue[i]!;
+      if (queued.atMs > nowMs) {
+        this.noteQueue[keep++] = queued;
+        continue;
+      }
+      this.fireNote(queued, position);
+    }
+    this.noteQueue.length = keep;
+  }
+
+  private fireNote(note: QueuedNote, position: Readonly<FrequencyState>['position']): void {
+    switch (note.kind) {
         // §17: kick = a low shockwave through the ground under the player.
         case 'kick':
           this.lastKickMs = performance.now();
@@ -1316,7 +1342,7 @@ export class Game {
           break;
         // Hats = high, fine sparkle in the particles.
         case 'hat':
-          this.hatSparkleUntil = nowMs + 130;
+          this.hatSparkleUntil = performance.now() + 130;
           break;
         case 'perc':
           this.terrain.excite('note-perc', position, 900, 0.1 + note.velocity * 0.1);
@@ -1325,9 +1351,8 @@ export class Game {
         case 'bass':
           this.terrain.excite('note-bass', position, 80, 0.18 + note.velocity * 0.2);
           break;
-        default:
-          break;
-      }
+      default:
+        break;
     }
   }
 
@@ -1599,4 +1624,15 @@ function showOverlayError(overlay: HTMLElement, error: unknown): void {
 
 function reportAudioLifecycleError(error: unknown): void {
   console.error('FREQUENCY: audio lifecycle error', error);
+}
+
+/**
+ * §158: drops everything already past, in place. The note queue is in arrival
+ * order, so this is a splice at the front rather than a new array — it runs
+ * every frame, and a frame is not a place to allocate.
+ */
+function dropBefore(queue: { atMs: number }[], nowMs: number): void {
+  let count = 0;
+  while (count < queue.length && queue[count]!.atMs <= nowMs) count++;
+  if (count > 0) queue.splice(0, count);
 }
