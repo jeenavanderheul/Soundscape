@@ -43,12 +43,16 @@ import type { TrackGenre } from '../music/TrackState';
 
 export const FOREST_RENDER = {
   /**
-   * §137: a tree is now ~1200 points, not eight triangles, so the old ceiling
-   * of 1400 would put nearly two million vertices on screen. This is the
-   * number the frame budget allows; the disc of cells around the player is
-   * filled nearest-first.
+   * §137: a tree is ~1200 points, not eight triangles, so this ceiling is a
+   * real budget: 920 growths is about 1.1 million points on screen. The disc
+   * of cells around the player is filled nearest first, so what the cap cuts
+   * is always the farthest.
+   *
+   * §144 (user): twice the forest. Raising this alone would only have doubled
+   * the two worlds that were hitting it — the sparse ones are held back by
+   * their own ecology, so `thinningAt` had to open up as well.
    */
-  maxInstances: 460,
+  maxInstances: 920,
   /** Dim, half-size: what this place COULD give you. */
   potentialScale: 0.45,
   potentialBrightness: 0.55,
@@ -447,13 +451,14 @@ export class ForestRenderer {
  */
 export function thinningAt(distance01: number): number {
   const t = distance01 < 0 ? 0 : distance01 > 1 ? 1 : distance01;
-  // Steep on purpose. There are ~5600 growths in the disc and room for 460, so
-  // a gentle curve spends the whole budget by half the radius and the far half
-  // of the forest never gets drawn at all — which is the bug this fixes, just
-  // moved outwards. The fifth power averages out to about 8% of them, which is
-  // exactly what fits, and it keeps everything standing near the player.
-  const falloff = (1 - t) ** 5;
-  return 0.035 + 0.965 * falloff;
+  // Two things are being bought at once and they compete: density near the
+  // player, and a forest that still reaches the far field. The cube gives the
+  // near band its trees; the FLOOR is what keeps the rim alive, because the
+  // budget is spent nearest first and whatever is left has to stretch. Raising
+  // the floor from 0.035 to 0.09 is what pulled the treeline back out past 400
+  // units after the budget doubled.
+  const falloff = (1 - t) ** 3;
+  return 0.09 + 0.91 * falloff;
 }
 
 /**

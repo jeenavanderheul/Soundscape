@@ -60,9 +60,12 @@ describe('§140 the forest stands where the player is', () => {
     expect(distances.length).toBeGreaterThan(100);
     // The nearest tree is close enough to fly between, not a horizon smear.
     expect(distances[0]!).toBeLessThan(30);
-    // A quarter of the forest stands inside 100 units.
+    // Density, not share. A share of the total falls whenever the forest is
+    // allowed to reach further, even though MORE trees are standing next to
+    // the player than before — which is the opposite of what this test is for.
     const near = distances.filter((d) => d < 100).length;
-    expect(near / distances.length).toBeGreaterThan(0.25);
+    const perHectare = near / (Math.PI * 100 * 100) * 10000;
+    expect(perHectare).toBeGreaterThan(40);
   });
 
   it('still reaches out towards the horizon', () => {
@@ -81,7 +84,7 @@ describe('§140 the forest stands where the player is', () => {
 
   it('keeps everything near and only a fraction at the rim', () => {
     expect(thinningAt(0)).toBe(1);
-    expect(thinningAt(1)).toBeCloseTo(0.035);
+    expect(thinningAt(1)).toBeCloseTo(0.09);
     expect(thinningAt(0.5)).toBeGreaterThan(thinningAt(0.9));
   });
 });
