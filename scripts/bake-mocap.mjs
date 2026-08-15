@@ -209,9 +209,12 @@ function poseAt(clip, frame) {
  * sausage no matter how good the motion driving it is.
  */
 const REGIONS = [
-  { match: ['head', 'skull'], radius: 0.055, taper: 1, bulge: true, weight: 3.2, region: 0 },
+  // §178: the boosts were tuned when area was faked from bone length. A real
+  // mesh already carries the true area, so the perceptual multiplier only has
+  // to lean — at 3.2 the head took a fifth of the whole body.
+  { match: ['head', 'skull'], radius: 0.055, taper: 1, bulge: true, weight: 1.7, region: 0 },
   { match: ['neck'], radius: 0.031, taper: 1, weight: 0.5, region: 0 },
-  { match: ['hand', 'finger', 'thumb', 'wrist'], radius: 0.026, taper: 0.7, weight: 2.6, region: 1 },
+  { match: ['hand', 'finger', 'thumb', 'wrist'], radius: 0.026, taper: 0.7, weight: 2.0, region: 1 },
   { match: ['forearm', 'lowerarm', 'elbow'], radius: 0.028, taper: 0.72, weight: 1.8, region: 1 },
   // The bone from the spine out to the shoulder is not an arm: it is the
   // width of the chest and the mass of the deltoid, and building it at
@@ -333,6 +336,264 @@ function buildBody(clip, scale) {
   return points.slice(0, POINTS);
 }
 
+/* ------------------------------------------------------- the real human skin */
+
+/**
+ * §178. Capsules can never give a waist, a shoulder blade or a foot that points
+ * somewhere, and those are what carry a silhouette. So when a human mesh is
+ * present, the points come off its actual surface instead.
+ *
+ * The mesh's own skeleton is not needed and it does not have one. All the bake
+ * ever stores per point is which bone owns it, where along that bone, and how
+ * far off the axis — the capsule was only ever a way of INVENTING those three
+ * numbers. Measuring them off a real surface is the same three numbers.
+ */
+
+function parseObj(text) {
+  const verts = [];
+  const tris = [];
+  for (const line of text.split('\n')) {
+    if (line.startsWith('v ')) {
+      const p = line.split(/\s+/);
+      verts.push([+p[1], +p[2], +p[3]]);
+    } else if (line.startsWith('f ')) {
+      const ids = line.trim().split(/\s+/).slice(1).map((f) => parseInt(f.split('/')[0], 10) - 1);
+      for (let i = 2; i < ids.length; i++) tris.push([ids[0], ids[i - 1], ids[i]]);
+    }
+  }
+  if (verts.length < 100 || tris.length < 100) {
+    throw new Error(`OBJ: ${verts.length} vertices and ${tris.length} triangles — this is not a body`);
+  }
+  return { verts, tris };
+}
+
+const sub3 = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const len3 = (a) => Math.hypot(a[0], a[1], a[2]);
+
+/** Inverse of a rigid transform: transpose the rotation, undo the translation. */
+function inverseRigid(m) {
+  const t = [m[3], m[7], m[11]];
+  const out = [
+    m[0], m[4], m[8], 0,
+    m[1], m[5], m[9], 0,
+    m[2], m[6], m[10], 0,
+    0, 0, 0, 1,
+  ];
+  out[3] = -(out[0] * t[0] + out[1] * t[1] + out[2] * t[2]);
+  out[7] = -(out[4] * t[0] + out[5] * t[1] + out[6] * t[2]);
+  out[11] = -(out[8] * t[0] + out[9] * t[1] + out[10] * t[2]);
+  return out;
+}
+
+/** Shortest distance from p to segment a-b, and where along it. */
+function toSegment(p, a, b) {
+  const ab = sub3(b, a);
+  const l2 = dot3(ab, ab);
+  if (l2 < 1e-12) return { d: len3(sub3(p, a)), t: 0 };
+  const t = Math.max(0, Math.min(1, dot3(sub3(p, a), ab) / l2));
+  return { d: len3(sub3(p, [a[0] + ab[0] * t, a[1] + ab[1] * t, a[2] + ab[2] * t])), t };
+}
+
+/**
+ * The pose the mesh is bound AGAINST — not the pose it is animated in.
+ *
+ * Two corrections, both measured rather than guessed:
+ *
+ * The arms. The mesh stands in A-pose with its arms 47 degrees down and the
+ * skeleton's rest pose has them out at 8. Bound naively, an arm vertex is
+ * nearer the torso than the arm, and TEN of twenty-seven bones receive not one
+ * point — every arm bone among them. So the binding skeleton's arms are swung
+ * down to meet the mesh.
+ *
+ * The legs. Against anthropometric standards the skeleton's hip sits 5.6% of
+ * stature too high and its knee 3.6%, which pushes the leg bones up into the
+ * mesh's pelvis and makes pelvis skin bind to a leg. Shortening the thigh and
+ * shin is enough — everything above the hip then falls into place on its own,
+ * because the bake re-floors and re-scales the body afterwards anyway.
+ *
+ * Both are rigid: the offsets change length but never direction, and the arm
+ * swing is a rotation about the shoulder. That matters, because the frame the
+ * off-axis offset is measured in is built from the bone's DIRECTION, so it
+ * survives both corrections unchanged.
+ */
+const LIMB_FIT = { LeftLeg: 0.925, RightLeg: 0.925, LeftFoot: 0.83, RightFoot: 0.83 };
+
+function bindingSkeleton(clip, armSwingDegrees) {
+  const offsets = clip.joints.map((j) => {
+    const k = LIMB_FIT[j.name] ?? 1;
+    return [j.offset[0] * k, j.offset[1] * k, j.offset[2] * k];
+  });
+
+  const fitted = { ...clip, joints: clip.joints.map((j, i) => ({ ...j, offset: offsets[i] })) };
+  const world = poseAt(fitted, 0);
+
+  // Swing each arm subtree down about its own shoulder, in the frontal plane.
+  const swing = (armSwingDegrees * Math.PI) / 180;
+  for (const [name, side] of [['LeftArm', 1], ['RightArm', -1]]) {
+    const start = clip.joints.findIndex((j) => j.name === name);
+    if (start < 0) continue;
+    const pivot = [world[start][3], world[start][7], world[start][11]];
+    const a = swing * side; // mirrored, because +X is the body's left
+    const rot = [
+      Math.cos(a), -Math.sin(a), 0, 0,
+      Math.sin(a), Math.cos(a), 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1,
+    ];
+    const move = multiply(translation(pivot[0], pivot[1], pivot[2]), multiply(rot, translation(-pivot[0], -pivot[1], -pivot[2])));
+    const walk = (i) => {
+      world[i] = multiply(move, world[i]);
+      for (const c of clip.joints[i].children) walk(c);
+    };
+    walk(start);
+  }
+  return { offsets, world };
+}
+
+/** Sample the mesh surface, weighted by triangle area — not by vertex. */
+function sampleSurface(mesh, count, random) {
+  const cumulative = [];
+  let running = 0;
+  for (const [i, j, k] of mesh.tris) {
+    const e1 = sub3(mesh.verts[j], mesh.verts[i]);
+    const e2 = sub3(mesh.verts[k], mesh.verts[i]);
+    running += len3([
+      e1[1] * e2[2] - e1[2] * e2[1],
+      e1[2] * e2[0] - e1[0] * e2[2],
+      e1[0] * e2[1] - e1[1] * e2[0],
+    ]) / 2;
+    cumulative.push(running);
+  }
+  const out = [];
+  for (let n = 0; n < count; n++) {
+    const target = random() * running;
+    let lo = 0;
+    let hi = cumulative.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (cumulative[mid] < target) lo = mid + 1;
+      else hi = mid;
+    }
+    const [i, j, k] = mesh.tris[lo];
+    let u = random();
+    let v = random();
+    if (u + v > 1) { u = 1 - u; v = 1 - v; }
+    const A = mesh.verts[i];
+    const B = mesh.verts[j];
+    const C = mesh.verts[k];
+    out.push([
+      A[0] + (B[0] - A[0]) * u + (C[0] - A[0]) * v,
+      A[1] + (B[1] - A[1]) * u + (C[1] - A[1]) * v,
+      A[2] + (B[2] - A[2]) * u + (C[2] - A[2]) * v,
+    ]);
+  }
+  return out;
+}
+
+/** Where the mesh actually holds its arms, so the binding pose can match it. */
+function meshArmAngle(mesh, shoulderHeight) {
+  let tip = mesh.verts[0];
+  for (const v of mesh.verts) if (v[0] > tip[0]) tip = v;
+  return (Math.atan2(tip[1] - shoulderHeight, tip[0]) * 180) / Math.PI;
+}
+
+function buildBodyFromMesh(clip, mesh) {
+  const rest = poseAt(clip, 0);
+  const restYs = rest.map((w) => w[7]);
+  const low = Math.min(...restYs);
+  const stature = Math.max(...restYs) - low;
+  const meshHigh = Math.max(...mesh.verts.map((v) => v[1]));
+  const k = meshHigh / stature;
+
+  const centreX = (Math.max(...rest.map((w) => w[3])) + Math.min(...rest.map((w) => w[3]))) / 2;
+  const centreZ = rest[0][11];
+  const shoulder = clip.joints.findIndex((j) => j.name === 'LeftArm');
+  const armAngle = meshArmAngle(mesh, (rest[shoulder][7] - low) * k);
+
+  const { offsets, world } = bindingSkeleton(clip, armAngle);
+  // Put the binding skeleton in the mesh's own space: same height, same origin.
+  const place = (m) => [(m[3] - centreX) * k, (m[7] - low) * k, (m[11] - centreZ) * k];
+  const bones = [];
+  for (let j = 0; j < clip.joints.length; j++) {
+    for (const child of clip.joints[j].children) {
+      const offset = offsets[child];
+      if (Math.hypot(offset[0], offset[1], offset[2]) < 1e-4) continue;
+      bones.push({ joint: j, child, a: place(world[j]), b: place(world[child]), info: classify(clip.joints[child].name) });
+    }
+  }
+
+  const random = makeRandom(0x5eed);
+  // Sample generously, then keep POINTS of them weighted towards the landmarks
+  // §13 says a moving body is read from — hands, head — which area alone
+  // under-serves.
+  const candidates = sampleSurface(mesh, POINTS * 6, random);
+  // OWNERSHIP IS NOT NEAREST-BONE. In the A-pose the upper arms hang against
+  // the ribs, so a quarter of the chest is physically closer to an arm bone
+  // than to the spine — and a chest bound to an arm means a patch of ribcage
+  // flying up whenever the dancer raises a hand.
+  //
+  // Distance divided by how thick that body part is meant to be settles it.
+  // Chest skin sits about 0.11 out from a spine of radius 0.092, so 1.2 of a
+  // torso; the same point may be 0.05 from an upper arm of radius 0.037, which
+  // is 1.35 of an arm — and therefore a worse claim. This is the anatomical
+  // table earning its keep a second time: not to build the body, but to decide
+  // which limb a piece of skin plausibly belongs to.
+  const bound = [];
+  for (const sample of candidates) {
+    let best = null;
+    for (const bone of bones) {
+      const hit = toSegment(sample, bone.a, bone.b);
+      const score = hit.d / (bone.info.radius * meshHigh);
+      if (!best || score < best.score) best = { score, d: hit.d, bone, t: hit.t };
+    }
+    bound.push({ sample, ...best });
+  }
+
+  const chosen = [];
+  const totalWeight = bound.reduce((sum, b) => sum + b.bone.info.weight, 0);
+  for (const entry of bound) {
+    if (chosen.length >= POINTS) break;
+    if (random() < (entry.bone.info.weight * POINTS) / totalWeight) chosen.push(entry);
+  }
+  // Deterministic top-up if the weighted pass came up short.
+  for (let i = 0; chosen.length < POINTS; i++) chosen.push(bound[i % bound.length]);
+
+  const points = [];
+  for (const entry of chosen.slice(0, POINTS)) {
+    const { joint, child } = entry.bone;
+    // Into the owning joint's own frame, where the bone is just its offset.
+    const local = apply(inverseRigid(world[joint]), [
+      entry.sample[0] / k + centreX,
+      entry.sample[1] / k + low,
+      entry.sample[2] / k + centreZ,
+    ]);
+    const bind = offsets[child];
+    const length = Math.hypot(bind[0], bind[1], bind[2]);
+    const dir = [bind[0] / length, bind[1] / length, bind[2] / length];
+    const seed = Math.abs(dir[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+    const u = normalise(cross(dir, seed));
+    const v = cross(dir, u);
+    const off = sub3(local, [dir[0] * entry.t * length, dir[1] * entry.t * length, dir[2] * entry.t * length]);
+
+    // Rebuilt against the REAL offset, so the point rides the mocap skeleton's
+    // own bone length. The fitted proportions only ever decided OWNERSHIP.
+    const real = clip.joints[child].offset;
+    const pu = dot3(off, u);
+    const pv = dot3(off, v);
+    points.push({
+      joint,
+      local: [
+        real[0] * entry.t + u[0] * pu + v[0] * pv,
+        real[1] * entry.t + u[1] * pu + v[1] * pv,
+        real[2] * entry.t + u[2] * pu + v[2] * pv,
+      ],
+      region: entry.bone.info.region,
+    });
+  }
+  return points;
+}
+
 /* ---------------------------------------------------------------- the bake */
 
 const HALF_VIEW = new DataView(new ArrayBuffer(4));
@@ -351,7 +612,7 @@ function toHalf(value) {
   return sign | (shifted << 10) | ((mantissa + 0x1000) >>> 13);
 }
 
-function bakeClip(path, name) {
+function bakeClip(path, name, mesh) {
   const clip = parseBvh(readFileSync(path, 'utf8'));
 
   // Normalise scale: the dancer comes out exactly 1.0 tall, and the runtime
@@ -369,7 +630,8 @@ function bakeClip(path, name) {
   if (!(rawHeight > 0)) throw new Error(`${name}: skeleton has no height — the file is probably not mocap`);
   const scale = 1 / rawHeight;
 
-  const points = buildBody(clip, scale);
+  // §178: a real skin when one is available, capsules when it is not.
+  const points = mesh ? buildBodyFromMesh(clip, mesh) : buildBody(clip, scale);
 
   // Resample the clip onto FRAMES rows. Nearest frame, not interpolated: mocap
   // is dense enough that a lerp buys nothing and rotation lerp in Euler space
@@ -474,10 +736,16 @@ function main() {
   const files = readdirSync(MOCAP_DIR).filter((f) => f.toLowerCase().endsWith('.bvh'));
   if (files.length === 0) throw new Error(`no .bvh files in ${MOCAP_DIR}`);
 
+  // §178: the human skin, if it has been fetched. Without it the bake falls
+  // back to capsules, which is a worse body but a working one.
+  const meshPath = 'assets/human/makehuman_base_body.obj';
+  const mesh = existsSync(meshPath) ? parseObj(readFileSync(meshPath, 'utf8')) : null;
+  console.log(mesh ? `skin: ${mesh.tris.length} triangles` : 'skin: none, using capsules');
+
   const clips = [];
   for (const file of files) {
     const name = file.replace(/\.bvh$/i, '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    const clip = bakeClip(join(MOCAP_DIR, file), name);
+    const clip = bakeClip(join(MOCAP_DIR, file), name, mesh);
     clips.push(clip);
     console.log(`${name}: ${clip.points} points x ${clip.frames} frames, ${clip.seconds}s, ${(clip.bytes / 1024 / 1024).toFixed(2)} MB`);
   }
@@ -493,4 +761,4 @@ function main() {
 // the tests import them directly.
 if (process.argv[1] && process.argv[1].endsWith('bake-mocap.mjs')) main();
 
-export { parseBvh, poseAt, buildBody, classify, POINTS, FRAMES };
+export { parseBvh, poseAt, buildBody, buildBodyFromMesh, parseObj, bindingSkeleton, classify, POINTS, FRAMES };

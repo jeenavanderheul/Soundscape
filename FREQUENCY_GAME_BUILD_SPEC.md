@@ -2051,3 +2051,51 @@ And the render: a hard dot with a faint bloom instead of a soft ball, and
 presence raised from 66-92% to 93-99%. A third of the torso missing at any
 moment read as noise that happened to be person-shaped. The instability belongs
 in the world around the dancer, not in whether the dancer exists.
+
+## 178. A real skin, bound to the mocap skeleton (v16 amendment — NORMATIVE)
+
+The capsules are gone. Points come off the surface of a real human mesh —
+MakeHuman's hm08 base body, CC0, 26,756 triangles — because a tube has no waist,
+no shoulder blade and no foot that points anywhere, and those are what a
+silhouette is made of.
+
+**The mesh's skeleton is not used, and it does not have one.** The bake only
+ever stores which bone owns a point, where along it, and how far off the axis;
+the capsule was one way of inventing those three numbers and a real surface is
+a better way of measuring them. So no retargeting, no skinning weights, no bind
+pose conversion — an ungrigged static mesh is enough.
+
+Three corrections make the binding work, each found by measurement:
+
+**The A-pose is fatal, not a caveat.** The mesh holds its arms 47° down and the
+skeleton's rest pose has them at 8°. Bound naively, an arm vertex is nearer the
+torso than the arm and TEN of twenty-seven bones receive not one point — every
+arm bone among them. The binding skeleton's arms swing down to meet the mesh.
+
+**The skeleton is not proportioned like a person.** Against anthropometric
+standards its hip sits 5.6% of stature too high and its knee 3.6%, so leg bones
+reach up into the mesh's pelvis. Shortening thigh and shin is enough; everything
+above the hip then falls into place, because the bake re-floors and re-scales
+afterwards anyway.
+
+**Ownership is not nearest-bone.** In the A-pose the upper arms lie against the
+ribs, so a quarter of the chest is physically closer to an arm bone than to the
+spine — and chest bound to an arm means a patch of ribcage flying up whenever a
+dancer raises a hand. Dividing the distance by how thick that body part is meant
+to be settles it: chest skin is 1.2 torso-radii from the spine but 1.35
+arm-radii from the arm, so the spine has the better claim. Measured, the torso
+went from 5% of the body's points to 29%, against a true skin share of ~30%.
+
+Both corrections are rigid — offsets change length but never direction, and the
+arm swing is a rotation about the shoulder — which matters because the frame the
+off-axis offset is measured in is built from the bone's DIRECTION. The point is
+then rebuilt against the REAL bone offset, so it rides the mocap skeleton's own
+proportions; the fitted pose only ever decided ownership.
+
+The anatomical radius table survives, no longer to build the body but to
+disambiguate which limb a piece of skin belongs to. Capsules remain as the
+fallback when no mesh is present: a worse body, but a working one.
+
+Licence: CC0 1.0 (MakeHuman assets, released September 2020). Commercial use
+permitted, no attribution required. Note CC0 art. 4a — trademark is not waived,
+so the name must not be used as a brand in the app.
