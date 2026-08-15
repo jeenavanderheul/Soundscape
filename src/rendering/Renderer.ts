@@ -1,6 +1,7 @@
 import { Color, FogExp2, Scene, WebGLRenderer } from 'three';
 import { RENDER_CONFIG } from '../app/Config';
 import { Camera } from './Camera';
+import { SignalPass } from './SignalPass';
 
 /**
  * Owns the WebGLRenderer, near-black Scene and resize handling (spec §13).
@@ -9,6 +10,8 @@ import { Camera } from './Camera';
 export class Renderer {
   readonly scene: Scene;
   readonly camera: Camera;
+  /** §156: the world's treatment pass — persistence, ghosting, grain, clipping. */
+  readonly post: SignalPass;
   private readonly webgl: WebGLRenderer;
   private readonly container: HTMLElement;
   private readonly onResize = (): void => {
@@ -23,6 +26,7 @@ export class Renderer {
     this.camera = new Camera(window.innerWidth / window.innerHeight);
     this.webgl = new WebGLRenderer({ antialias: true });
     this.webgl.setClearColor(RENDER_CONFIG.clearColor);
+    this.post = new SignalPass(this.webgl);
     this.applySize();
     container.appendChild(this.webgl.domElement);
     window.addEventListener('resize', this.onResize);
@@ -62,11 +66,12 @@ export class Renderer {
   }
 
   render(): void {
-    this.webgl.render(this.scene, this.camera.instance);
+    this.post.render(this.scene, this.camera.instance);
   }
 
   dispose(): void {
     window.removeEventListener('resize', this.onResize);
+    this.post.dispose();
     this.webgl.dispose();
     if (this.webgl.domElement.parentElement === this.container) {
       this.container.removeChild(this.webgl.domElement);
@@ -76,8 +81,12 @@ export class Renderer {
   private applySize(): void {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    this.webgl.setPixelRatio(Math.min(window.devicePixelRatio, RENDER_CONFIG.maxPixelRatio));
+    const pixelRatio = Math.min(window.devicePixelRatio, RENDER_CONFIG.maxPixelRatio);
+    this.webgl.setPixelRatio(pixelRatio);
     this.webgl.setSize(width, height);
     this.camera.setAspect(width / height);
+    // The pass's targets are sized in device pixels from the same numbers, or
+    // the world arrives on screen at the wrong resolution and reads as soft.
+    this.post.setSize(width, height, pixelRatio);
   }
 }
