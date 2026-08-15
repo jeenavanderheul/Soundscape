@@ -207,6 +207,40 @@ export function beamStrengthAt(
 }
 
 /**
+ * §156 THE LIFT THE BEAM PUTS ON THE GROUND, on the CPU.
+ *
+ * `domeBeamWide` in the GLSL below displaces the terrain where the band
+ * passes. That makes it part of the SURFACE, and §35 is absolute about the
+ * surface: what the player sees and what the player hits are one field, or the
+ * orb ends up under a grid it is looking straight at. This is the mirror the
+ * collision reads, and it must stay identical to the shader function.
+ */
+export function beamLiftAt(
+  scanner: ScannerState,
+  playerX: number,
+  playerZ: number,
+  x: number,
+  z: number,
+): number {
+  const dx = x - playerX;
+  const dz = z - playerZ;
+  const distance = Math.hypot(dx, dz);
+  if (distance < 0.001) return scanner.intensity;
+  const bearing = Math.atan2(dz, dx);
+  const direction: 1 | -1 = scanner.mode === 'reverse' ? -1 : 1;
+  let band = beamStrengthAt(bearing, scanner.bearing, scanner.width, scanner.tail, direction);
+  if (scanner.counterBearing !== null) {
+    band = Math.max(
+      band,
+      beamStrengthAt(bearing, scanner.counterBearing, scanner.width, scanner.tail, direction),
+    );
+  }
+  const peak = 260 + (55 - 260) * scanner.elevation;
+  const radial = Math.exp(-Math.pow((distance - peak) / (peak * 0.85), 2));
+  return band * radial * scanner.intensity;
+}
+
+/**
  * Advances the signal. Everything the music does to it happens here: the
  * tempo sets the orbit, the section picks the behaviour, bass opens the band,
  * mids lift it up the dome, the kick punches the intensity, and distortion

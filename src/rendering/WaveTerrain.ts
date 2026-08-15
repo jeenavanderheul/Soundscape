@@ -11,7 +11,7 @@ import {
 } from 'three';
 import type { Vec3Data } from '../player/FrequencyState';
 import { LAND_FIELD_GLSL, sampleLand, type LandField } from '../world/LandField';
-import { DOME_SCANNER_GLSL, type ScannerState } from './domeScanner';
+import { beamLiftAt, DOME_SCANNER_GLSL, SCANNER_START, type ScannerState } from './domeScanner';
 import {
   createNoiseTable,
   TERRAIN_FIELD,
@@ -354,6 +354,10 @@ export class WaveTerrain {
   private land: LandField | null = null;
   private landTexture: DataTexture | null = null;
   private beamOverride: number | null = null;
+  /** §156: the collision has to know where the beam is, or it is not the same surface. */
+  private scanner: ScannerState = SCANNER_START;
+  private scannerPlayerX = 0;
+  private scannerPlayerZ = 0;
 
   constructor(seed = 'frequency') {
     this.noise = createNoiseTable(seed);
@@ -421,6 +425,9 @@ export class WaveTerrain {
    * a branchful of extra uniforms.
    */
   setScanner(scanner: ScannerState, player: { x: number; z: number }): void {
+    this.scanner = scanner;
+    this.scannerPlayerX = player.x;
+    this.scannerPlayerZ = player.z;
     const u = this.material.uniforms;
     if (this.beamOverride !== null) {
       u['uBeamIntensity']!.value = this.beamOverride;
@@ -490,8 +497,26 @@ export class WaveTerrain {
       TERRAIN_CONFIG.planeY +
       terrainHeight(this.noise, x, z, this.elapsedSeconds, this.relief) +
       (this.land ? sampleLand(this.land, x, z) : 0) +
-      terrainMotion(x, z, this.elapsedSeconds, this.bassLevel, this.pulse, this.sources)
+      terrainMotion(x, z, this.elapsedSeconds, this.bassLevel, this.pulse, this.sources) +
+      // §156: the beam presses on the field, so the beam is part of the field.
+      // The shader lifts the ground here and for two commits the collision did
+      // not know — which is exactly the divergence §35 exists to prevent.
+      this.beamLift(x, z)
     );
+  }
+
+  /** Mirror of `domeBeamWide` in the shader; §35 requires both or neither. */
+  private beamLift(x: number, z: number): number {
+    const intensity = this.beamOverride ?? this.scanner.intensity;
+    if (intensity <= 0) return 0;
+    const beam = beamLiftAt(
+      { ...this.scanner, intensity },
+      this.scannerPlayerX,
+      this.scannerPlayerZ,
+      x,
+      z,
+    );
+    return beam * (0.8 + this.bassLevel * 2.2);
   }
 
   /**

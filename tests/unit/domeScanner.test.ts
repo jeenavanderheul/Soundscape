@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   advanceScanner,
+  beamLiftAt,
   beamStrengthAt,
   orbitSeconds,
   SCANNER_START,
   type ScannerInput,
 } from '../../src/rendering/domeScanner';
+import { WaveTerrain } from '../../src/rendering/WaveTerrain';
 
 /**
  * §146: the dome turns on the music's clock, and every behaviour belongs to a
@@ -170,5 +172,44 @@ describe('§146 the dome signal', () => {
     }
     // §146 composition: a limited section, never the whole circle.
     expect(lit / samples).toBeLessThan(0.35);
+  });
+});
+
+/**
+ * §156: the beam DISPLACES the terrain in the shader, which makes it part of
+ * the surface — and §35 says the surface the player sees and the surface the
+ * player hits are one thing. For two commits it was not: the GPU lifted the
+ * ground and the collision knew nothing about it.
+ */
+describe('§156 the beam is part of the ground it presses on', () => {
+  it('lifts the collision surface exactly where it lights it', () => {
+    const terrain = new WaveTerrain('beam-lift');
+    const scanner = {
+      ...SCANNER_START,
+      bearing: 0,
+      width: 0.35,
+      tail: 0.6,
+      intensity: 1,
+      elevation: 0.5,
+    };
+    const player = { x: 0, z: 0 };
+    // Straight ahead of the beam, at the radius its band is pointing at.
+    const peak = 260 + (55 - 260) * scanner.elevation;
+    const before = terrain.groundHeightAt(peak, 0);
+    terrain.setScanner(scanner, player);
+    const after = terrain.groundHeightAt(peak, 0);
+    expect(after - before).toBeCloseTo(beamLiftAt(scanner, 0, 0, peak, 0) * 0.8, 5);
+    expect(after).toBeGreaterThan(before);
+    terrain.dispose();
+  });
+
+  it('leaves the ground alone where the beam is not', () => {
+    const terrain = new WaveTerrain('beam-lift');
+    const scanner = { ...SCANNER_START, bearing: 0, width: 0.3, tail: 0.5, intensity: 1 };
+    const behind = terrain.groundHeightAt(-200, 0);
+    terrain.setScanner(scanner, { x: 0, z: 0 });
+    // Ahead of the band, in the dark, nothing has been measured yet.
+    expect(terrain.groundHeightAt(-200, 0)).toBeCloseTo(behind, 6);
+    terrain.dispose();
   });
 });
