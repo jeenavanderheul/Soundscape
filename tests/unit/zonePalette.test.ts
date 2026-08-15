@@ -130,7 +130,11 @@ describe('§91 the guide points at the layer standing out there', () => {
     const away = guideLines({
       genre: 'sub-pressure', heading: 'N · techno', energy: 0.9, beacon: null,
     });
-    expect(away[1]).toContain('turn to ESE');
+    // §157: sub-pressure is due SOUTH. It used to read ESE from a second,
+    // ten-point compass table that the land stopped agreeing with when the
+    // world became six equal sectors — the guide now derives from the sectors
+    // themselves, so there is one answer instead of two.
+    expect(away[1]).toContain('turn to S');
     expect(away[1]).toContain('leaving ends this track');
   });
 

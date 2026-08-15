@@ -51,28 +51,34 @@ const BEARINGS = {
 type Compass = keyof typeof BEARINGS;
 export type GroundGenre = ActiveWorldGenre;
 
-/** Which genre lies in each direction; a world recipe may reassign it (§30). */
-let assignment: Record<Compass, GroundGenre> = {
-  north: 'techno',
-  northNorthEast: 'techno',
-  eastNorthEast: 'techno',
-  eastSouthEast: 'sub-pressure',
-  southSouthEast: 'sub-pressure',
-  south: 'sub-pressure',
-  southSouthWest: 'sub-pressure',
-  westSouthWest: 'sub-pressure',
-  westNorthWest: 'techno',
-  northNorthWest: 'techno',
-};
-
-export function setZoneGenres(next: Partial<Record<Compass, keyof GenreAffinity>>): void {
-  for (const [compass, genre] of Object.entries(next) as [Compass, keyof GenreAffinity][]) {
-    if (isActiveWorldGenre(genre)) assignment[compass] = genre;
+/**
+ * §157: which genre lies in each direction, DERIVED from the six sectors.
+ *
+ * There used to be a second table here — ten compass points with their own
+ * genres, left over from the eight-wind compass — and it still said techno and
+ * sub-pressure long after the world had six sectors. Nothing reading it was
+ * wrong, exactly; it was just answering a question the land no longer agreed
+ * with, which is what §56 forbids. The guide reads this, the land reads
+ * `SECTORS`, and now those are the same thing by construction.
+ */
+export function zoneGenres(): Readonly<Record<Compass, GroundGenre>> {
+  const out = {} as Record<Compass, GroundGenre>;
+  for (const compass of Object.keys(BEARINGS) as Compass[]) {
+    out[compass] = worldForHeading(BEARINGS[compass]);
   }
+  return out;
 }
 
-export function zoneGenres(): Readonly<typeof assignment> {
-  return assignment;
+/**
+ * §30: a world recipe may reassign a direction. It names compass points, so
+ * each one is resolved to the SECTOR it falls in — there is only one table to
+ * write into now.
+ */
+export function setZoneGenres(next: Partial<Record<Compass, keyof GenreAffinity>>): void {
+  for (const [compass, genre] of Object.entries(next) as [Compass, keyof GenreAffinity][]) {
+    if (!isActiveWorldGenre(genre)) continue;
+    sectors[sectorIndex(BEARINGS[compass])] = genre;
+  }
 }
 
 /**
@@ -86,10 +92,13 @@ export function zoneGenres(): Readonly<typeof assignment> {
  * land under you was percussion riot. Two answers to one question is exactly
  * what §56 forbids.
  */
-export const SECTORS: readonly (keyof GenreAffinity)[] = [
+const sectors: GroundGenre[] = [
   'techno', 'heavy-signal', 'broken-machine',
   'sub-pressure', 'void-crusher', 'percussion-riot',
 ];
+
+/** The six worlds in compass order. A recipe may rewrite them (§30). */
+export const SECTORS: readonly GroundGenre[] = sectors;
 
 /**
  * §121: which of the six sectors a heading falls in. The ONE index — the
