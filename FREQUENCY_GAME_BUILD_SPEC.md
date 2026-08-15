@@ -1659,3 +1659,21 @@ dimmed but complete wireframe.
 No more than ~1.5× the old vertex count. Today: 45 984 → 62 592 (1.36×), of
 which the innermost ring is the old field, unchanged. `__FREQUENCY_DEBUG__
 .terrainVertexCount()` reports it.
+
+## 139. Every world grows its own species (v15 amendment)
+
+The forest's primary growth is a tree GROWN for that world (ez-tree, MIT, baked
+to points by `npm run trees:bake`), and the accent form stays a modelled Kenney
+tree (CC0). Both sources are kept deliberately: the grown species carries the
+character of a world and changes as you earn it, the modelled one is a fixed,
+harder shape standing between them.
+
+Three stages per species — sapling, half, full — baked from the same seed with
+fewer branch levels and fewer children, never as scaled copies, because that is
+how a sapling actually differs from its adult. A growth is a sapling until its
+layer is earned, half once it is, and full once the world has been deepened
+(§55). The stage clouds swap their point buffer on a region crossing, never per
+frame.
+
+Nothing of either source reaches the runtime but Float32 positions: no glTF, no
+texture, no material, no loader.

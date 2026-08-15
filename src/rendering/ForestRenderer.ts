@@ -62,7 +62,7 @@ export const FOREST_RENDER = {
 } as const;
 
 /**
- * §138: a world's PRIMARY growth is its own grown species (ez-tree, one per
+ * §139: a world's PRIMARY growth is its own grown species (ez-tree, one per
  * world, in three stages), and its accent form stays a modelled Kenney tree.
  * Keeping both was the user's call, and it earns its keep: the grown species
  * carries the character of the world and changes as you earn it, the modelled
@@ -93,7 +93,7 @@ export interface TreeSpecies {
   stage?: 'sapling' | 'half' | 'full' | null;
 }
 
-/** How far along a growth is drawn: nothing earned is a sapling (§138). */
+/** How far along a growth is drawn: nothing earned is a sapling (§139). */
 export type GrowthStage = 'sapling' | 'half' | 'full';
 const STAGES: readonly GrowthStage[] = ['sapling', 'half', 'full'];
 
@@ -379,7 +379,7 @@ export class ForestRenderer {
     const used = new Map<string, number>();
     const depthScale = 0.75 + this.depth * 0.7;
     for (const growth of this.growths) {
-      // §138: the world's own grown species is the primary growth; the accent
+      // §139: the world's own grown species is the primary growth; the accent
       // form stays a modelled tree, so a forest is one species repeated with a
       // second, harder shape standing between them.
       const key = growth.phase < this.ecology.formBias && this.world
