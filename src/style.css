@@ -1,6 +1,68 @@
+/**
+ * §143 POST-DIGITAL RAW — the interface layer.
+ *
+ * The user's art direction reduced to six oppositions, and the rule is that
+ * BOTH sides are always present: precision that is constantly contaminated.
+ *
+ *   CONTROL      ·  ACCIDENT      an 8px grid, and nothing sits quite square on it
+ *   PRECISION    ·  ANALOG ERROR  crisp type, printed half a pixel out of register
+ *   BLACK SPACE  ·  ACID COLOUR   near-black everywhere, three accents, used rarely
+ *   SHARP        ·  DEGRADED      hairlines, under a layer of grain
+ *   TECHNICAL    ·  ORGANIC       machine labels, breathing at the pace of the flight
+ *   MINIMAL      ·  CHAOTIC       quiet at rest, coming apart at overload
+ *   FLAT         ·  SPATIAL       flat panels, lifted only by what is behind them
+ *
+ * The accents are the three the world already has (§136.2) — red, green,
+ * violet — and no fourth one may be added here.
+ */
+
+@font-face {
+  /* Departure Mono, MIT (public/fonts/DepartureMono-LICENSE.txt). A drawn
+     pixel grid: technical and raw in the same glyph, which is the whole
+     argument of this interface. Self-hosted — the game runs offline. */
+  font-family: 'Departure Mono';
+  src: url('/fonts/DepartureMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --void: #020202;
   --text: #e8e8e8;
+
+  /* The signal ladder: everything readable is one of these five greys. */
+  --signal-100: #f4f6f6;
+  --signal-80: rgb(232 240 240 / 82%);
+  --signal-60: rgb(214 226 226 / 58%);
+  --signal-40: rgb(198 210 210 / 34%);
+  --signal-20: rgb(180 196 196 / 16%);
+
+  /* The world's three accents. Signal, never decoration (§136.2). */
+  --acid-red: #ff2f1e;
+  --acid-green: #6bff59;
+  --acid-violet: #9e5cff;
+
+  /* CONTROL: one grid unit, one hairline, one rhythm. */
+  --grid: 8px;
+  --hair: rgb(232 240 240 / 14%);
+  --font-display: 'Departure Mono', ui-monospace, Menlo, monospace;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ACCIDENT: how far out of register the print is, right now. The game
+     raises this at overload and drops it back in silence (§136.15). */
+  --error: 0px;
+  --grain-opacity: 0.11;
+}
+
+/* The interface comes apart with the music, and only at the top of the range. */
+:root[data-signal='4'] {
+  --error: 0.4px;
+  --grain-opacity: 0.15;
+}
+
+:root[data-signal='5'] {
+  --error: 0.9px;
+  --grain-opacity: 0.2;
 }
 
 * {
@@ -15,7 +77,7 @@ body {
   overflow: hidden;
   background: var(--void);
   color: var(--text);
-  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
 }
 
 #app {
@@ -27,14 +89,68 @@ body {
   display: block;
 }
 
+/**
+ * DEGRADED: one grain field over everything, the world included. Not a filter
+ * on the image — a contamination of the whole surface, which is what §136.5
+ * asks for and what a filter would only imitate. It steps rather than slides,
+ * because analog noise does not interpolate.
+ */
+#grain {
+  position: fixed;
+  inset: -100%;
+  z-index: 40;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  /* Screen, not overlay: on a near-black world the grain has to LIFT the
+     blacks a little, or it is noise you cannot see. Desaturated in the filter
+     itself, because feTurbulence is colour noise and §136.2 allows exactly
+     three accents, none of which is "random". */
+  mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-drift 0.9s steps(6) infinite;
+  transition: opacity 600ms linear;
+}
+
+@keyframes grain-drift {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -4%); }
+  60% { transform: translate(-2%, -2%); }
+  80% { transform: translate(3%, 3%); }
+  100% { transform: translate(0, 0); }
+}
+
+/**
+ * ANALOG ERROR: the type is printed a hair out of register, in two of the
+ * three accents. At rest --error is 0 and this costs nothing; at overload the
+ * channels visibly separate. Never a random RGB split (§136.18) — always these
+ * colours, always the same two directions.
+ */
+.misregistered {
+  text-shadow:
+    calc(var(--error) * -1) 0 0 rgb(255 47 30 / 55%),
+    var(--error) 0 0 rgb(107 255 89 / 45%);
+}
+
+/* TECHNICAL: every label in this interface is set the same way. */
+.label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  text-transform: uppercase;
+  color: var(--signal-60);
+}
+
 #unlock-overlay {
   position: fixed;
   inset: 0;
+  z-index: 50;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
+  gap: calc(var(--grid) * 5);
   background: var(--void);
   text-align: center;
 }
@@ -44,49 +160,79 @@ body {
 }
 
 #unlock-overlay h1 {
-  font-size: 1.2rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
   font-weight: 400;
-  letter-spacing: 0.6em;
-  text-indent: 0.6em;
+  letter-spacing: 0.62em;
+  text-indent: 0.62em;
+  color: var(--signal-100);
 }
 
-#unlock-button {
-  padding: 0.9rem 1.8rem;
-  font: inherit;
-  font-size: 0.9rem;
-  color: var(--text);
+/* A rule under the title, thinner than the type it carries. */
+#unlock-overlay h1::after {
+  content: '';
+  display: block;
+  width: 62%;
+  height: 1px;
+  margin: calc(var(--grid) * 2) auto 0;
+  background: var(--hair);
+}
+
+#unlock-button,
+#pause-overlay button {
+  padding: calc(var(--grid) * 1.5) calc(var(--grid) * 3);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.24em;
+  text-indent: 0.24em;
+  text-transform: uppercase;
+  color: var(--signal-80);
   background: transparent;
-  border: 1px solid var(--text);
+  border: 1px solid var(--hair);
   cursor: pointer;
+  /* ACCIDENT: nothing sits quite square on the grid. Fractions of a degree —
+     you do not see it, you feel that it was not printed by a machine. */
+  transform: rotate(-0.18deg);
+  transition: color 120ms steps(2), background-color 120ms steps(2), border-color 120ms steps(2);
+}
+
+#pause-overlay button:nth-of-type(even) {
+  transform: rotate(0.14deg);
 }
 
 #unlock-button:hover:not(:disabled),
-#unlock-button:focus-visible {
-  background: var(--text);
+#unlock-button:focus-visible,
+#pause-overlay button:hover,
+#pause-overlay button:focus-visible {
   color: var(--void);
-  outline: 2px solid var(--text);
-  outline-offset: 3px;
+  background: var(--signal-100);
+  border-color: var(--signal-100);
+  outline: 1px solid var(--signal-40);
+  outline-offset: 4px;
 }
 
 #unlock-button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: wait;
 }
 
 [data-unlock-error] {
-  color: #ff5540;
   max-width: 32rem;
+  color: var(--acid-red);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
 }
 
 /* Esc pause overlay (spec §5): minimal, monochrome, not a DAW. */
 #pause-overlay {
   position: fixed;
   inset: 0;
+  z-index: 50;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.4rem;
+  gap: calc(var(--grid) * 2);
   background: rgb(2 2 2 / 88%);
   text-align: center;
 }
@@ -96,33 +242,31 @@ body {
 }
 
 #pause-overlay h2 {
-  font-size: 1rem;
+  margin-bottom: calc(var(--grid) * 2);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
   font-weight: 400;
-  letter-spacing: 0.6em;
-  text-indent: 0.6em;
-}
-
-#pause-overlay button {
-  min-width: 12rem;
-  padding: 0.7rem 1.4rem;
-  font: inherit;
-  font-size: 0.85rem;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid var(--text);
-  cursor: pointer;
-}
-
-#pause-overlay button:hover,
-#pause-overlay button:focus-visible {
-  background: var(--text);
-  color: var(--void);
-  outline: 2px solid var(--text);
-  outline-offset: 3px;
+  letter-spacing: 0.62em;
+  text-indent: 0.62em;
+  color: var(--signal-100);
 }
 
 #pause-overlay p {
   min-height: 1.4em;
-  font-size: 0.8rem;
-  color: #9a9a9a;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  color: var(--signal-40);
+}
+
+/* ORGANIC: the grain is the only thing that never stops moving. If the player
+   asked the system for stillness, it stops too. */
+@media (prefers-reduced-motion: reduce) {
+  #grain {
+    animation: none;
+  }
+
+  #unlock-button,
+  #pause-overlay button {
+    transform: none;
+  }
 }

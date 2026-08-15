@@ -85,7 +85,7 @@ export class Hints {
       left: '50%',
       transform: 'translateX(-50%)',
       color: 'rgba(215, 228, 230, 0.75)',
-      font: '13px/1.6 "SF Mono", ui-monospace, Menlo, monospace',
+      font: '13px/1.6 var(--font-mono)',
       letterSpacing: '0.12em',
       pointerEvents: 'none',
       opacity: '0',

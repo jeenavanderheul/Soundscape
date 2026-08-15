@@ -82,7 +82,7 @@ export class TrackStrip {
       bottom: '18px',
       transform: 'translateX(-50%)',
       color: 'rgba(226, 240, 244, 0.82)',
-      font: '12px/1.7 "SF Mono", ui-monospace, Menlo, monospace',
+      font: '12px/1.7 var(--font-mono)',
       letterSpacing: '0.08em',
       whiteSpace: 'pre',
       textAlign: 'center',

@@ -360,6 +360,7 @@ export class Game {
   private disposed = false;
   /** §136: the last performance mapping, for the visual signal drive. */
   private lastPerformance: ReturnType<typeof performanceFrom> | null = null;
+  private signalLevelAttribute = '';
 
   constructor(private readonly elements: GameElements) {
     this.renderer = new Renderer(elements.container);
@@ -737,6 +738,14 @@ export class Game {
         grit: this.lastPerformance?.grit ?? 0,
       });
       this.terrain.setSignal(drive.intensity, drive.instability);
+      // §143: the interface is part of the instrument. At the top of the range
+      // the type comes out of register and the grain thickens; everywhere else
+      // this is a no-op, and it only ever writes when the level changes.
+      const level = String(Math.min(5, Math.round(drive.intensity * 5)));
+      if (level !== this.signalLevelAttribute) {
+        this.signalLevelAttribute = level;
+        document.documentElement.dataset['signal'] = level;
+      }
       this.melodyTrail.setLevel(track.melody.unlocked ? 1 : 0);
       this.harmonyBridges.setLevel(track.harmony.unlocked ? 1 : 0);
       // §9.1 world tendency: repetition organizes structures onto the grid.

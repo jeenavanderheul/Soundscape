@@ -112,7 +112,7 @@ export class CodeOverlay {
       maxHeight: '60vh',
       overflow: 'hidden',
       color: TOKEN_COLORS.plain,
-      font: '11px/1.65 "SF Mono", ui-monospace, Menlo, monospace',
+      font: '11px/1.65 var(--font-mono)',
       letterSpacing: '0.02em',
       whiteSpace: 'pre-wrap',
       // Pattern code has no spaces to break at: wrap anywhere rather than clip.

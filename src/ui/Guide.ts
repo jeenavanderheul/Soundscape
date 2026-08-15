@@ -149,7 +149,7 @@ export class Guide {
       bottom: '16px',
       textAlign: 'right',
       color: 'rgba(200, 216, 220, 0.55)',
-      font: '11px/1.9 "SF Mono", ui-monospace, Menlo, monospace',
+      font: '11px/1.9 var(--font-mono)',
       letterSpacing: '0.06em',
       whiteSpace: 'pre',
       pointerEvents: 'none',

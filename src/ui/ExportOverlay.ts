@@ -16,7 +16,7 @@ const PANEL_STYLE: Partial<CSSStyleDeclaration> = {
   boxSizing: 'border-box',
   background: 'rgba(6, 8, 14, 0.94)',
   color: 'rgba(228, 236, 255, 0.92)',
-  font: '12px/1.7 "SF Mono", ui-monospace, Menlo, monospace',
+  font: '12px/1.7 var(--font-mono)',
   letterSpacing: '0.02em',
   overflow: 'auto',
   whiteSpace: 'pre-wrap',

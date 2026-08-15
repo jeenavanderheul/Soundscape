@@ -11,6 +11,9 @@ export class LayerCue {
     this.root = document.createElement('div');
     this.root.setAttribute('role', 'status');
     this.root.setAttribute('aria-live', 'assertive');
+    // §143: the one moment the interface speaks is the one moment it is
+    // printed out of register — control and accident in the same word.
+    this.root.className = 'misregistered';
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     Object.assign(this.root.style, {
       position: 'fixed',
@@ -18,12 +21,12 @@ export class LayerCue {
       left: '50%',
       transform: 'translateX(-50%)',
       color: 'rgba(235, 245, 246, 0.92)',
-      font: '28px/1 "SF Mono", ui-monospace, Menlo, monospace',
+      font: '30px/1 var(--font-display)',
       letterSpacing: '0.5em',
       pointerEvents: 'none',
       opacity: '0',
       transition: reduced ? 'none' : 'opacity 0.5s ease',
-      textShadow: '0 0 18px rgba(180, 230, 240, 0.6)',
+
       zIndex: '11',
     });
     container.appendChild(this.root);

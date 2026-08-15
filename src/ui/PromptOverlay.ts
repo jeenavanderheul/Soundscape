@@ -37,7 +37,7 @@ export class PromptOverlay {
       gap: '14px',
       background: 'rgba(2, 2, 2, 0.88)',
       color: 'rgba(215, 228, 230, 0.9)',
-      font: '13px/1.7 "SF Mono", ui-monospace, Menlo, monospace',
+      font: '13px/1.7 var(--font-mono)',
       letterSpacing: '0.08em',
       zIndex: '20',
     });

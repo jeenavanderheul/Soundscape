@@ -1677,3 +1677,43 @@ frame.
 
 Nothing of either source reaches the runtime but Float32 positions: no glTF, no
 texture, no material, no loader.
+
+## 143. POST-DIGITAL RAW — the interface layer (v15 amendment — NORMATIVE)
+
+The user's art direction, reduced by the user to six oppositions. The rule is
+that BOTH sides are always present: **precision that is constantly contaminated
+by noise, distortion and physical imperfection.**
+
+| CONTROL | ACCIDENT |
+|---|---|
+| digital precision | analog error |
+| black space | acid colour |
+| sharp | degraded |
+| technical | organic |
+| minimal | chaotic |
+| flat | spatial |
+
+How each one is spent, in `src/style.css`:
+
+- **control / accident** — one 8px grid, one hairline, one rhythm; and nothing
+  sits quite square on it. Buttons are rotated fractions of a degree in
+  alternating directions. You do not see it; you feel it was not printed by a
+  machine.
+- **precision / analog error** — the type is crisp and printed a hair out of
+  register, in two of the three accents, never a random RGB split (§136.18).
+  `--error` is 0 at rest and opens at overload.
+- **black space / acid colour** — the five-step grey ladder carries all the
+  information; red, green and violet appear only as signal.
+- **sharp / degraded** — hairlines under one grain field over the whole
+  surface, world included. Screen-blended so it lifts the blacks instead of
+  disappearing into them, desaturated in the filter, and stepped rather than
+  slid, because analog noise does not interpolate.
+- **technical / organic** — machine labels in a drawn pixel face (Departure
+  Mono, MIT, self-hosted so the game stays offline), breathing at the pace of
+  the flight.
+- **minimal / chaotic** — quiet at rest; `data-signal` on the root element
+  carries the §136.15 level, and only levels 4 and 5 thicken the grain and open
+  the misregistration. The interface is part of the instrument.
+- **flat / spatial** — flat panels, lifted only by what is behind them.
+
+Reduced motion stops the grain and squares the buttons.

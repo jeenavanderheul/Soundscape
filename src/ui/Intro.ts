@@ -25,7 +25,7 @@ export function attachIntroHint(
     'bottom:12vh',
     'margin:0',
     'text-align:center',
-    'font:400 0.95rem/1.4 system-ui, sans-serif',
+    'font:400 0.9rem/1.5 var(--font-mono)',
     'letter-spacing:0.08em',
     'color:#9a9a9a',
     'pointer-events:none',

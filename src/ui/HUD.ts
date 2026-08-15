@@ -34,7 +34,7 @@ export class HUD {
       top: '16px',
       left: '18px',
       color: 'rgba(220, 230, 232, 0.82)',
-      font: '12px/1.7 "SF Mono", ui-monospace, Menlo, monospace',
+      font: '12px/1.7 var(--font-mono)',
       letterSpacing: '0.08em',
       whiteSpace: 'pre',
       pointerEvents: 'none',
