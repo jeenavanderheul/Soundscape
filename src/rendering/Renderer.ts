@@ -17,6 +17,23 @@ export class Renderer {
   private readonly onResize = (): void => {
     this.applySize();
   };
+  /**
+   * §159: a lost context is the worst failure this thing has. A laptop
+   * switching GPUs or waking from sleep drops it, and without these two lines
+   * the player is left looking at a frozen black canvas with no way back —
+   * the browser will not even try to restore unless the default is prevented.
+   */
+  private readonly onContextLost = (event: Event): void => {
+    event.preventDefault();
+    this.contextLost = true;
+  };
+  private readonly onContextRestored = (): void => {
+    this.contextLost = false;
+    // Everything the pass owns lives in GPU memory that just went away.
+    this.post.dispose();
+    this.applySize();
+  };
+  private contextLost = false;
 
   constructor(container: HTMLElement) {
     this.container = container;
@@ -30,6 +47,8 @@ export class Renderer {
     this.applySize();
     container.appendChild(this.webgl.domElement);
     window.addEventListener('resize', this.onResize);
+    this.webgl.domElement.addEventListener('webglcontextlost', this.onContextLost);
+    this.webgl.domElement.addEventListener('webglcontextrestored', this.onContextRestored);
   }
 
   /** Distance fog is always on (game-style depth reference, §13); the
@@ -66,11 +85,16 @@ export class Renderer {
   }
 
   render(): void {
+    // Drawing into a dead context throws on some drivers and silently corrupts
+    // state on others; the loop keeps running so we come back when it returns.
+    if (this.contextLost) return;
     this.post.render(this.scene, this.camera.instance);
   }
 
   dispose(): void {
     window.removeEventListener('resize', this.onResize);
+    this.webgl.domElement.removeEventListener('webglcontextlost', this.onContextLost);
+    this.webgl.domElement.removeEventListener('webglcontextrestored', this.onContextRestored);
     this.post.dispose();
     this.webgl.dispose();
     if (this.webgl.domElement.parentElement === this.container) {

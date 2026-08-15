@@ -397,6 +397,17 @@ export class Game {
   private lastKickMs = -9999;
   private signalInstability = 0;
   private signalIntensity = 0;
+  /**
+   * §161: the accessibility gate the render path did not have. The CSS and
+   * four UI files honoured `prefers-reduced-motion`; the WORLD did not, so a
+   * player who had asked their system for less motion still got the full
+   * pulsing, flashing thing. One number, read once, applied to everything that
+   * pulses — and §23 asks for exactly this.
+   */
+  private readonly motionScale = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    ? 0.3
+    : 1;
   /** §158: reused every frame; never reallocated. */
   private readonly bridgeEnds: Vec3Data[] = [];
   /** §145: what the player asked to hear, 0..1, remembered between flights. */
@@ -800,7 +811,23 @@ export class Game {
         speed01: clamp01(state.velocity / FLIGHT_CONFIG.maxSpeed),
         grit: this.lastPerformance?.grit ?? 0,
       });
-      this.terrain.setSignal(drive.intensity, drive.instability);
+      this.terrain.setSignal(drive.intensity, drive.instability * this.motionScale);
+      // §160: the treatment pass takes the same two numbers the world does, so
+      // the image and the geometry are answering one signal rather than two.
+      //
+      // Persistence is REVERB in §136.10's terms, and the closest thing this
+      // game has to reverb is space: the more of the track is standing and the
+      // higher you are, the longer the world remembers. Displacement is
+      // instability, exactly as the terrain uses it. Grain is texture — the
+      // layer whose whole job is fine detail. Clipping only at the top of the
+      // range, so the whites blow on a drop and nowhere else.
+      const post = this.renderer.post;
+      post.setReducedMotion(this.motionScale < 1);
+      post.setPersistence(0.25 + drive.intensity * 0.5);
+      post.setEcho(2 + Math.round(drive.intensity * 6));
+      post.setDisplacement(drive.instability);
+      post.setGrain(0.18 + (track.texture.unlocked ? 0.3 : 0) * drive.intensity);
+      post.setClipping(Math.max(0, drive.intensity - 0.65) * 2.4);
       this.signalInstability = drive.instability;
       this.signalIntensity = drive.intensity;
       // §143: the interface is part of the instrument. At the top of the range
@@ -920,7 +947,14 @@ export class Game {
       },
       dtSeconds,
     );
-    this.terrain.setScanner(this.scanner, state.position);
+    // §161: the dome still turns under reduced motion — it is the clock of the
+    // world — but it stops throwing hard light and hard deformation.
+    this.terrain.setScanner(
+      this.motionScale < 1
+        ? { ...this.scanner, intensity: this.scanner.intensity * this.motionScale }
+        : this.scanner,
+      state.position,
+    );
     this.domeLights.update(this.scanner, state.position, elapsedMs / 1000);
     // §154: the air follows the arc of the track, and the jets fire on the
     // beat — a blast between two beats reads as a fault, not as an effect.
@@ -937,7 +971,12 @@ export class Game {
     );
     this.layerEarnedFrame = false;
     this.trackChangedFrame = false;
-    this.haze.update(this.smoke.density, this.smoke.blast, state.position, dtSeconds);
+    this.haze.update(
+      this.smoke.density,
+      this.smoke.blast * this.motionScale,
+      state.position,
+      dtSeconds,
+    );
     this.domeLights.setHaze(this.smoke.density);
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.setDepth(trackGrowth(this.trackStore.getState()));
@@ -1339,6 +1378,9 @@ export class Game {
         // Snare and clap = a sharp flash across the field.
         case 'snare':
           this.terrain.clapFlash();
+          // §160: a snare is a cut. The frame tears on the hit and nowhere
+          // else — it is an event, never a running effect (§136.6).
+          this.renderer.post.triggerSlice(0.35 + note.velocity * 0.5);
           break;
         // Hats = high, fine sparkle in the particles.
         case 'hat':
