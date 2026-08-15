@@ -243,11 +243,20 @@ varying float vFar;
  * behaviours. Which stretch gets which is vSeed: a line needs more signal
  * than its own demand to be drawn cleanly.
  *
- *   LOST        below its demand by a margin — gone, into black
+ *   TRACE       the faintest the line is allowed to get — never gone
  *   GHOST       barely there, grey, no colour left in it
- *   WEAK        dim, intermittent, blinking at the rate of the music
+ *   WEAK        dim, breathing with the music
  *   CLEAN       thin and precise, the resting state
  *   OVERDRIVEN  clipping white at the top of the range
+ *
+ * §142 (user decision): the grid is NEVER BROKEN. LOST used to discard the
+ * fragment, which is the one state that takes the surface away instead of
+ * dimming it, and holes in the grid is what the player saw. The line now has a
+ * floor it can sink to but not through, and everything else about the states
+ * stays: the picture still breathes with the music, it just breathes in
+ * brightness rather than in geometry. This is a deliberate step back from
+ * §136.6's LOST and §136.13's "distance removes information" — the whole
+ * surface outranks them.
  *
  * UNSTABLE is not a sixth branch but a modifier: displacement in the vertex
  * shader and, here, a fringe of the EXISTING accent colours — §136.17 allows
@@ -267,15 +276,18 @@ void main() {
   // happening the lines exist, even in silence. Without this, level 0 is a
   // black screen you cannot fly in — and it would also be a lie, because the
   // player standing there IS a source (§136.3).
-  // vFar carries most of the weight now (§138): at the edge of the reach it
-  // costs more signal than the loudest world can supply, so the horizon is
-  // black with occasional traces — the stretches whose own demand happens to
-  // be low — rather than a dimmed but complete wireframe.
+  // vFar carries most of the weight (§138): at the edge of the reach it costs
+  // more signal than the loudest world can supply, so the horizon sinks to the
+  // floor — a complete but very faint wireframe, since §142 says the grid may
+  // thin towards nothing and never actually reach it.
   float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 - vSeed - vFar * 1.6;
 
-  if (strength < -0.22) discard;              // LOST
   float k;
-  if (strength < -0.08) {
+  if (strength < -0.22) {
+    // TRACE: the floor. Present, readable against black, never absent.
+    k = 0.07;
+    color = vec3(dot(color, vec3(0.33)));
+  } else if (strength < -0.08) {
     k = 0.14;                                 // GHOST
     color = vec3(dot(color, vec3(0.33)));     //   colourless after-image
   } else if (strength < 0.12) {
