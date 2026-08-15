@@ -48,8 +48,22 @@ export interface Performance {
   weight: number;
 }
 
-/** Height at which the world is fully "air" rather than "ground". */
-export const AIR_ALTITUDE = 45;
+/**
+ * Height at which the world is fully "air" rather than "ground".
+ *
+ * This is an absolute height, so it has to be rescaled whenever the world is.
+ * At 45 it covered most of a 70-unit sky; once the ceiling went to 1200 — the
+ * crowd is 140 units tall and the tallest growth reaches ~1125 — the same 45
+ * meant the top 96% of the sky sounded identical, and climbing stopped being
+ * something you could hear.
+ *
+ * 250 is deliberately NOT proportional (that would be ~770). Proportional makes
+ * the mapping honest and the mechanic useless: hundreds of units of climbing
+ * before anything moves. At 250 a few seconds of climbing is audible AND the
+ * upper sky is not musically dead. Under a fifth of the sky does the work,
+ * which is the trade the user chose.
+ */
+export const AIR_ALTITUDE = 250;
 
 export function performanceFrom(music: MusicState, flight: FlightPose): Performance {
   const air = clamp01(flight.altitude / AIR_ALTITUDE);

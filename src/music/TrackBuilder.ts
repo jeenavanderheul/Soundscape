@@ -140,8 +140,13 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // most of the first half to go and earn it yourself, and a passive flight
   // fills up in half the time it did.
   patienceOfPhase: 0.45,
-  groundAltitude: 8,
-  airAltitude: 30,
+  // Rescaled with the world alongside AIR_ALTITUDE (was 8 and 30, set when the
+  // sky was 70 units tall). Skimming stays a deliberately tight band — you have
+  // to mean it — and the height that earns the airy layers sits below the point
+  // where the filter is fully open, so the layer arrives while the sound is
+  // still opening rather than after it has finished.
+  groundAltitude: 30,
+  airAltitude: 150,
   groundMs: 3500,
   bpmSlewPerSecond: 9,
   fullSpeed: 66,

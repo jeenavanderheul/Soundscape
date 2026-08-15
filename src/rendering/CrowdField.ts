@@ -74,10 +74,19 @@ export const CROWD_CONFIG = {
   radius: 2600,
   /** Nobody stands closer than this to the orb — the crowd is around you, not on you. */
   clearance: 220,
-  /** Instance capacity per detail tier. Placement never exceeds these. */
-  near: 24,
-  mid: 90,
-  far: 340,
+  /**
+   * Instance capacity per detail tier. Placement never exceeds these.
+   *
+   * User (15 aug): a thousand dancers, and the extra ones stand CLOSE with full
+   * bodies rather than filling in the horizon cheaply. So the near and mid
+   * tiers carry the growth. That is roughly 1.3 million points and the user has
+   * accepted the frame cost that comes with it: "laat maar haperen".
+   */
+  near: 90,
+  mid: 380,
+  // 1070 places for 1000 dancers: the ones that land inside the clearance are
+  // dropped, and that has been costing about 6% of the floor.
+  far: 600,
   // The near tier is capped at 24 dancers whatever happens, so reaching further
   // out costs nothing — it only changes WHICH two dozen get the full body.
   nearDistance: 1300,
@@ -96,8 +105,12 @@ export const CROWD_CONFIG = {
    */
   midPoints: 768,
   farPoints: 192,
-  /** Clusters the crowd forms up into, rather than a uniform scatter. */
-  clusters: 9,
+  /**
+   * Clusters the crowd forms up into, rather than a uniform scatter. More of
+   * them now that there are more people, or the same nine knots simply get
+   * thicker and the gaps between them — which are half the read — stay put.
+   */
+  clusters: 15,
   clusterRadius: 620,
   /** Loops per second at rest; the beat pulls this around. */
   rate: 0.24,
@@ -273,7 +286,8 @@ export class CrowdField {
   private noise = 991;
   private anchorX = Number.NaN;
   private anchorZ = Number.NaN;
-  private groundCursor = 0;
+  /** 0..1 of the ladder, which is how much of the floor is filled. */
+  private earned = 0;
   private groundAt: ((x: number, z: number) => number) | null = null;
 
   constructor() {
@@ -420,7 +434,8 @@ export class CrowdField {
    * one. Hence the floor: earned scales from FLOOR to 1, never from 0.
    */
   setSignal(intensity: number, layers: number): void {
-    const earned = CROWD_CONFIG.floor + (1 - CROWD_CONFIG.floor) * Math.min(1, layers / 5);
+    this.earned = Math.min(1, layers / 5);
+    const earned = CROWD_CONFIG.floor + (1 - CROWD_CONFIG.floor) * this.earned;
     const present = Math.min(1, earned * (0.35 + intensity * 0.65));
     this.material.uniforms['uIntensity']!.value = present;
     // §25: nobody shares a beat until the track has something to share. This
@@ -475,7 +490,6 @@ export class CrowdField {
     player: { x: number; y: number; z: number },
     groundAt: (x: number, z: number) => number,
     time: number,
-    dtSeconds: number,
   ): void {
     this.material.uniforms['uTime']!.value = time;
     this.groundAt = groundAt;
@@ -494,7 +508,7 @@ export class CrowdField {
     }
 
     this.assign(player);
-    this.reground(groundAt, dtSeconds);
+    this.reground(groundAt);
   }
 
   /**
@@ -516,7 +530,9 @@ export class CrowdField {
       const rung = c / (CROWD_CONFIG.clusters - 1);
       const reach =
         CROWD_CONFIG.clearance +
-        Math.pow(rung, 1.4) * (CROWD_CONFIG.radius - CROWD_CONFIG.clearance) +
+        // Pulled inward (was 1.4): with the forest gone the crowd is what you
+        // fly through, so most knots sit close and only the last few reach out.
+        Math.pow(rung, 2.1) * (CROWD_CONFIG.radius - CROWD_CONFIG.clearance) +
         (this.random() - 0.5) * 30;
       clusters.push({ x: player.x + Math.cos(angle) * reach, z: player.z + Math.sin(angle) * reach });
     }
@@ -545,19 +561,41 @@ export class CrowdField {
   /** Nearest dancers get the detailed body; the rest get less of the same one. */
   private assign(player: { x: number; z: number }): void {
     for (const tier of this.built) tier.members.length = 0;
+    // The forest used to say how far a track had got — a stand of trunks was a
+    // kick you had not taken yet. With it switched off the crowd carries that:
+    // an untouched world is a thin scattering of people, a full track is a
+    // packed floor. Room stays for everyone at the floor, so it never reads as
+    // a world that failed to load (§181).
+    //
+    // The budget is on the WHOLE floor, not per tier. Per tier, the far ring is
+    // limited by how many people happen to be standing out there rather than by
+    // the ladder, and it diluted the ramp down to nothing.
+    const share = CROWD_CONFIG.floor + (1 - CROWD_CONFIG.floor) * this.earned;
+    const budget = Math.round(this.placed.length * share);
+    let drawn = 0;
     const order = this.placed
       .map((dancer, index) => ({ index, d: Math.hypot(dancer.x - player.x, dancer.z - player.z) }))
       .sort((a, b) => a.d - b.d);
 
     const frames = this.material.uniforms['uFrames']!.value as number;
     for (const entry of order) {
-      const tier =
-        entry.d < CROWD_CONFIG.nearDistance
-          ? this.built[0]!
-          : entry.d < CROWD_CONFIG.midDistance
-            ? this.built[1]!
-            : this.built[2]!;
-      if (tier.members.length >= tier.capacity) continue;
+      if (drawn >= budget) break;
+      const wanted =
+        entry.d < CROWD_CONFIG.nearDistance ? 0 : entry.d < CROWD_CONFIG.midDistance ? 1 : 2;
+      // Distance asks for a tier; a full tier hands the dancer DOWN rather than
+      // dropping them. Without this, a crowd packed close overflows the near
+      // tier and everyone past its capacity simply vanishes — which is what
+      // held the floor at ~430 of a thousand people, all of them nearby.
+      let tier: Tier | null = null;
+      for (let t = wanted; t < this.built.length; t++) {
+        const candidate = this.built[t]!;
+        if (candidate.members.length < candidate.capacity) {
+          tier = candidate;
+          break;
+        }
+      }
+      if (!tier) break;
+      drawn += 1;
       const slot = tier.members.length;
       const dancer = this.placed[entry.index]!;
       tier.members.push(entry.index);
@@ -581,19 +619,17 @@ export class CrowdField {
 
   /**
    * The ground is not static — it breathes with the music and the dome presses
-   * on it — so standing on it is a per-frame problem. Doing all of them every
-   * frame is hundreds of field evaluations for a change of a few centimetres,
-   * so it sweeps: a slice each frame, everybody current within a fifth of a
-   * second. Nobody is ever off the ground, only slightly behind it.
+   * on it — so standing on it is a per-frame problem.
+   *
+   * This used to sweep a slice per frame and let the rest run up to a fifth of
+   * a second behind, which is cheap and is why `feetError` climbed every time
+   * the crowd grew. User decision (15 aug): everybody, every frame, exactly on
+   * the ground — a thousand field evaluations a frame, with the frame cost
+   * accepted. There is no lag term left to tune.
    */
-  private reground(groundAt: (x: number, z: number) => number, dtSeconds: number): void {
+  private reground(groundAt: (x: number, z: number) => number): void {
     if (this.placed.length === 0) return;
-    const slice = Math.max(1, Math.ceil(this.placed.length * Math.min(1, dtSeconds * 5)));
-    for (let n = 0; n < slice; n++) {
-      this.groundCursor = (this.groundCursor + 1) % this.placed.length;
-      const dancer = this.placed[this.groundCursor]!;
-      dancer.y = groundAt(dancer.x, dancer.z);
-    }
+    for (const dancer of this.placed) dancer.y = groundAt(dancer.x, dancer.z);
     for (const tier of this.built) {
       for (let slot = 0; slot < tier.members.length; slot++) {
         tier.origins[slot * 3 + 1] = this.placed[tier.members[slot]!]!.y;

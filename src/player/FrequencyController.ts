@@ -32,7 +32,15 @@ export const FLIGHT_CONFIG = {
    * itself is what stops the orb (§35) — not an invisible plane.
    */
   minY: -12,
-  maxY: 70,
+  /**
+   * §180: the sky has to stand above the world's tallest thing, or climbing
+   * stops dead in mid-air. It sat at 70 from when a tree was ~30 units. Since
+   * §176-§179 the world is measured in 140-unit dancers: the SHORTEST growth
+   * is drawn at 280 units and a giant reaches ~1125, so a 70-unit ceiling was
+   * below a dancer's waist — measured, the orb was pinned at exactly y=70 with
+   * +132 u/s of climb still being asked for. 1200 clears the whole canopy.
+   */
+  maxY: 1200,
   /** §35: how far the orb's centre stays clear of the ground. */
   orbRadius: 1.6,
   /** Upward push when the orb touches the landscape — a bump, not a wall. */

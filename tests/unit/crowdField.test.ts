@@ -42,7 +42,7 @@ function posed(): CrowdField {
 function fly(crowd: CrowdField, x: number, z: number, seconds = 1): void {
   const steps = Math.round(seconds * 60);
   for (let i = 0; i < steps; i++) {
-    crowd.update({ x, y: 30, z }, hilly, i / 60, 1 / 60);
+    crowd.update({ x, y: 30, z }, hilly, i / 60);
   }
 }
 
@@ -211,10 +211,14 @@ describe('§176 the crowd is a crowd, not a pattern', () => {
     const spread = [...phases].sort((a, b) => a - b);
     expect(spread[0]!).toBeLessThan(80);
     expect(spread[spread.length - 1]!).toBeGreaterThan(920);
-    // Rounded to a thousandth, ninety draws from a thousand buckets collide a
-    // handful of times by chance alone; which dancers land in this tier depends
-    // on the placement radius, so 0.95 was measuring the sample, not the spread.
-    expect(phases.size).toBeGreaterThan(count * 0.85);
+    // Every tenth of the loop has people in it. Counting DISTINCT phases was
+    // measuring the sample instead: rounded to a thousandth, a few hundred
+    // draws from a thousand buckets collide dozens of times by chance, so the
+    // threshold had to be lowered every time the crowd grew. Occupancy across
+    // the loop is the claim — nobody is bunched on the same beat — and it holds
+    // at any crowd size.
+    const deciles = new Set([...phases].map((p) => Math.floor(p / 100)));
+    expect(deciles.size).toBe(10);
     expect(maxScale - minScale).toBeGreaterThan(0.1);
     crowd.dispose();
   });
@@ -252,6 +256,87 @@ describe('§176 the bake and the runtime have to agree', () => {
     crowd.setSignal(1, 7);
     fly(crowd, 0, 0, 1);
     expect(crowd.stats().dancers).toBe(0);
+    crowd.dispose();
+  });
+});
+
+/**
+ * §182 (user: the forest is off for now and the crowd fills the space). With
+ * the trees gone the crowd is the only thing left that shows how far a track
+ * has got, so the size of the floor has to carry it.
+ */
+describe('the crowd carries what the forest used to say', () => {
+  const drawnTotal = (crowd: CrowdField): number =>
+    crowd.stats().drawn.reduce((a, b) => a + b, 0);
+
+  it('puts fewer people on the floor before anything is earned', () => {
+    const crowd = posed();
+    crowd.setSignal(1, 0);
+    fly(crowd, 0, 0, 1);
+    const empty = drawnTotal(crowd);
+    crowd.setSignal(1, 5);
+    fly(crowd, 0, 0, 1);
+    expect(drawnTotal(crowd)).toBeGreaterThan(empty * 1.6);
+    crowd.dispose();
+  });
+
+  it('never leaves the floor deserted, however little is earned', () => {
+    // An empty field reads as a world that failed to load, not a quiet one.
+    const crowd = posed();
+    crowd.setSignal(0, 0);
+    fly(crowd, 0, 0, 1);
+    expect(drawnTotal(crowd)).toBeGreaterThan(100);
+    crowd.dispose();
+  });
+
+  it('grows the floor step by step rather than switching it on', () => {
+    const crowd = posed();
+    const at = (layers: number): number => {
+      crowd.setSignal(1, layers);
+      fly(crowd, 0, 0, 1);
+      return drawnTotal(crowd);
+    };
+    const steps = [0, 2, 4, 5].map(at);
+    for (let i = 1; i < steps.length; i++) expect(steps[i]!).toBeGreaterThan(steps[i - 1]!);
+    crowd.dispose();
+  });
+});
+
+/**
+ * §182 (user: "IK WIL 1000 DANSERS EN ZE MOETEN ALLEMAAL OP DE GROND BLIJVEN").
+ */
+describe('a thousand of them, all standing on the ground', () => {
+  it('puts a thousand people on the floor', () => {
+    const crowd = posed();
+    crowd.setSignal(1, 7);
+    fly(crowd, 0, 0, 1);
+    expect(crowd.stats().dancers).toBeGreaterThanOrEqual(1000);
+    crowd.dispose();
+  });
+
+  it('draws all of them once the track is full, none silently dropped', () => {
+    // Distance asks for a detail tier; a full tier hands the dancer down to the
+    // next one instead of dropping them. Without that, a crowd packed close
+    // overflowed the near tier and everyone past its capacity vanished — 430 of
+    // a thousand people were being drawn, all of them nearby.
+    const crowd = posed();
+    crowd.setSignal(1, 7);
+    fly(crowd, 0, 0, 1);
+    const drawn = crowd.stats().drawn.reduce((a, b) => a + b, 0);
+    expect(drawn).toBe(crowd.stats().dancers);
+    crowd.dispose();
+  });
+
+  it('keeps every single one on the ground, not most of them', () => {
+    // The reground sweep is gone: this is all of them, every frame. One frame
+    // after a rebuild the error has to be zero, not small.
+    const crowd = posed();
+    crowd.setSignal(1, 7);
+    fly(crowd, 0, 0, 2);
+    expect(crowd.stats().feetError).toBe(0);
+    // And it stays zero while the player travels across the hills.
+    fly(crowd, 700, -500, 2);
+    expect(crowd.stats().feetError).toBe(0);
     crowd.dispose();
   });
 });

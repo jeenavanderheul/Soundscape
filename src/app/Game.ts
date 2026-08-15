@@ -127,7 +127,11 @@ const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
  * Both scale with the orb, because it grows to five times its starting size
  * with the track: a fixed distance would end up inside a finished one.
  */
-const CAMERA_DISTANCE = 3.4;
+// Nudged out from 3.4 (user, 15 aug: "nu te dichtbij, klein beetje terug").
+// This is the resting distance every other camera term is expressed against,
+// so raising it moves the whole range back without touching the framing
+// correction or the throttle pull-back.
+const CAMERA_DISTANCE = 4.8;
 const CAMERA_DISTANCE_PER_RADIUS = 2.2;
 /**
  * How much further back the camera sits at full throttle, on top of the framing
@@ -497,6 +501,10 @@ export class Game {
     this.renderer.scene.add(this.terrain.lines);
     this.renderer.scene.add(this.orb.mesh);
     this.renderer.scene.add(this.orbTrail.mesh);
+    // User (15 aug): no forest for now, and the crowd fills the space instead.
+    // One line to put it back — the ecology, the growth roles and the layer
+    // visuals are all still here, they are simply not being drawn.
+    this.forest.group.visible = false;
     this.renderer.scene.add(this.forest.group);
     this.renderer.scene.add(this.domeLights.points);
     this.renderer.scene.add(this.haze.points);
@@ -1018,7 +1026,6 @@ export class Game {
       state.position,
       (x, z) => this.terrain.groundHeightAt(x, z),
       elapsedMs / 1000,
-      dtSeconds,
     );
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.setDepth(trackGrowth(this.trackStore.getState()));

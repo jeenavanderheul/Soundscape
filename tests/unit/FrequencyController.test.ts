@@ -321,3 +321,37 @@ describe('§129 W flies, the wind sounds, Shift is hyper', () => {
     expect(speedAfter({ accelerate: false, windHold: true, hyper: false }, 8)).toBeLessThan(1);
   });
 });
+
+describe('§180 the sky stands above the canopy', () => {
+  const climbFor = (seconds: number, throttle: boolean): number => {
+    const store = createStore(createInitialFrequencyState());
+    const controller = new FrequencyController(store);
+    controller.setGroundSampler(() => 0);
+    store.setState((s) => ({ ...s, position: { x: 0, y: 2, z: 0 } }));
+    controller.update(snapshot({ mouseDelta: { x: 0, y: -2000 } }), 16); // look straight up
+    const input = snapshot({
+      axes: { moveX: 0, moveZ: 1 },
+      buttons: { accelerate: throttle, windHold: false, hyper: false },
+    });
+    for (let ms = 0; ms < seconds * 1000; ms += 16) controller.update(input, 16);
+    return store.getState().position.y;
+  };
+
+  it('climbing over the forest is possible at all: past the shortest tree in ten seconds', () => {
+    // A growth is drawn at 280 units at its FLOOR (§179b: two 140-unit
+    // dancers). With the old 70-unit ceiling this was unreachable — the orb
+    // stopped in mid-air with full thrust still pointing up.
+    expect(climbFor(10, true)).toBeGreaterThan(280);
+  });
+
+  it('the ceiling clears the tallest giant, so climbing never stops under the trees', () => {
+    expect(FLIGHT_CONFIG.maxY).toBeGreaterThan(1125);
+  });
+
+  it('cruising up still climbs steadily rather than hitting a wall', () => {
+    const five = climbFor(5, false);
+    const ten = climbFor(10, false);
+    expect(five).toBeGreaterThan(50);
+    expect(ten - five).toBeGreaterThan(50);
+  });
+});
