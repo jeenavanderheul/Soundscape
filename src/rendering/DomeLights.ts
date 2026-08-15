@@ -49,8 +49,13 @@ export const DOME_LIGHTS = {
    * the light itself. A fixture that stops at its own edge is a highlight; the
    * glow around it is what makes it a source.
    */
-  haloWidth: 6,
-  haloHeight: 2.2,
+  /**
+   * §152 (user): five times the throw. The filament keeps its size — what
+   * grows is the LIGHT, which is the part that makes a fixture read as a
+   * source rather than as a lit shape.
+   */
+  haloWidth: 30,
+  haloHeight: 11,
 } as const;
 
 const VERTEX = /* glsl */ `
@@ -67,6 +72,7 @@ uniform float uPlayerY;
 varying vec3 vColor;
 varying float vHot;
 varying vec2 vCorner;
+varying vec2 vQuad;
 
 void main() {
   // The rig hangs around the player and travels with them: wherever you fly,
@@ -109,6 +115,9 @@ void main() {
   mv.x += aCorner.x * halfLength * ${DOME_LIGHTS.aspect.toFixed(2)} * ${DOME_LIGHTS.haloWidth.toFixed(1)};
   mv.y += aCorner.y * halfLength * ${DOME_LIGHTS.haloHeight.toFixed(1)};
   vCorner = vec2(aCorner.x * ${DOME_LIGHTS.haloWidth.toFixed(1)}, aCorner.y * ${DOME_LIGHTS.haloHeight.toFixed(1)});
+  // The glow is measured on the QUAD, not on the filament, so making the throw
+  // bigger widens the light without smearing the lamp inside it.
+  vQuad = aCorner;
   gl_Position = projectionMatrix * mv;
 }
 `;
@@ -117,6 +126,7 @@ const FRAGMENT = /* glsl */ `
 varying vec3 vColor;
 varying float vHot;
 varying vec2 vCorner;
+varying vec2 vQuad;
 void main() {
   // §150 A LAMP, NOT A HIGHLIGHT. Two things are drawn here: the filament,
   // which is small and hard and clips white, and the light it is throwing,
@@ -124,9 +134,13 @@ void main() {
   // difference between a shape that is bright and something that is shining.
   float filament = smoothstep(1.0, 0.45, abs(vCorner.y)) * smoothstep(1.0, 0.25, abs(vCorner.x));
   // Diffusion: wider across than along, so a batten throws sideways the way a
-  // real one does, and never a hard-edged cone (§146).
-  float glow = exp(-(vCorner.x * vCorner.x * 0.5 + vCorner.y * vCorner.y * 1.35));
-  float light = filament * 1.15 + glow * 0.6;
+  // real one does, and never a hard-edged cone (§146). Measured on the quad,
+  // so the throw can grow without the lamp growing with it.
+  float glow = exp(-(vQuad.x * vQuad.x * 3.1 + vQuad.y * vQuad.y * 4.4));
+  // Five times the area is roughly five times the light, and additive blending
+  // adds it all up where fixtures overlap: at full amplitude the rig burns a
+  // white hole through the middle of the world. Bigger throw, softer per pixel.
+  float light = filament * 1.15 + glow * 0.42;
   if (light < 0.004) discard;
   gl_FragColor = vec4(vColor * light * vHot, 1.0);
 }

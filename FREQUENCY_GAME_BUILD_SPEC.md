@@ -1834,3 +1834,29 @@ The quad is drawn larger than the fixture so there is room for the glow, and
 the fragment shader is told where the filament ends, so the two can be shaded
 differently. No hard-edged cone (§146 light character); the diffusion is what
 makes it read as a source.
+
+## 151. The trail is residue, not a ribbon (v15 amendment — NORMATIVE)
+
+§131 narrowed it, §133 capped its angular width, and the user still had a strip
+across the view. The width was never the problem: a ribbon is a SURFACE, and a
+surface has edges, so somewhere on screen there will always be a straight line.
+
+Flying leaves PARTICLES — signal residue dropped along the path, scattered
+BESIDE it, drifting and fading into nothing. Nothing in it can form a line, at
+any speed, from any angle, which is the only way this stops coming back. It is
+also what §136.10 asked a trail to be: fine signal residue, not geometry.
+
+A ring of 700 motes, recycled, never accumulated. Standing still leaves nothing
+(§42). The scatter is deterministic: the same flight leaves the same residue.
+
+## 152. The throw is five times the lamp (v15 amendment)
+
+User: the light the fixtures make may be five times bigger. The filament keeps
+its size — what grows is the LIGHT, which is the part that makes a fixture read
+as a source rather than as a lit shape. The glow is measured on the quad rather
+than on the filament, so the throw can grow without smearing the lamp inside it.
+
+Five times the area is roughly five times the light, and additive blending adds
+it up wherever fixtures overlap, so the per-pixel amplitude comes down as the
+size goes up. Bigger throw, softer light, or the rig burns a white hole through
+the middle of the world.

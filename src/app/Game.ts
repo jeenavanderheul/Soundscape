@@ -988,8 +988,8 @@ export class Game {
       position.y + direction.y * CAMERA_LOOK_AHEAD + CAMERA_LOOK_LIFT + this.orb.radius * 0.3,
       position.z + direction.z * CAMERA_LOOK_AHEAD,
     );
-    // §131: after the camera has been placed, because the trail closes to
-    // nothing where it passes the lens and needs this frame's camera to do it.
+    // §151: the trail is residue now, not a ribbon, so it no longer needs the
+    // camera — there is no surface left that could face the wrong way.
     this.orbTrail.update(
       state.position,
       {
@@ -999,7 +999,7 @@ export class Game {
       },
       this.controller.throttleLevel,
       growth,
-      camera.position,
+      dtSeconds,
     );
     this.renderer.render();
   };

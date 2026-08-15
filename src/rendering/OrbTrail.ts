@@ -2,92 +2,109 @@ import {
   AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
-  Mesh,
+  Points,
   ShaderMaterial,
 } from 'three';
 import type { Vec3Data } from '../player/FrequencyState';
 
 /**
- * The trail the orb leaves (user decision): a jet of light behind it, longer
- * and brighter the faster you fly, and it whips as you turn because it is made
- * of where you HAVE been, not of where you are pointing.
+ * §151 THE TRAIL IS RESIDUE, NOT A RIBBON.
  *
- * A ribbon of `SAMPLES` past positions, two vertices each, tapering to nothing
- * at the tail. One mesh, one material, no allocation per frame (§22).
+ * It used to be a strip of quads, and a strip of quads is a surface: whatever
+ * it is doing, somewhere on screen there is a straight edge. §131 narrowed it,
+ * §133 capped its angular width, and it was STILL a pink wedge across the view
+ * — because the problem was never the width, it was that a ribbon has edges at
+ * all.
+ *
+ * So there is no ribbon. Flying leaves PARTICLES: signal residue dropped along
+ * the path, scattered off it, drifting and fading. Nothing here can form a
+ * line, at any speed, from any angle — which is the only way this stops coming
+ * back. It is also what §136.13 asks a trail to be: particle residue, not
+ * geometry.
  */
-const SAMPLES = 64;
-/** Distance the orb must travel before the ribbon takes another sample. */
-const SAMPLE_STEP = 0.6;
-/** Half-width at the head, in world units, before speed and growth scale it. */
-const HALF_WIDTH = 0.5;
-/**
- * §133: the trail may never take over the frame.
- *
- * §131 tied the width to the distance from the camera, which stopped the ribbon
- * exploding at the lens but left it with a CONSTANT angular thickness — and the
- * constant it settled on was a quarter radian, a band hundreds of pixels wide
- * straight up the screen whenever the flight path crosses the view. Climb hard
- * and the whole viewport goes pink.
- *
- * So the rule is angular and absolute: however close a rib passes, it may never
- * subtend more than this half-angle. At a 1.05 rad field of view that is ~3% of
- * the screen per side — a jet you see, never a wall you look through. It still
- * collapses to nothing at the lens itself, because the cap scales with distance.
- */
-const MAX_ANGULAR_HALF_WIDTH = 0.03;
 
-/** Half-width of one rib, `age01` 0 at the head and 1 at the tail (§131, §133). */
-export function trailHalfWidth(headHalfWidth: number, age01: number, cameraDistance: number): number {
-  const taper = headHalfWidth * (1 - age01);
-  return Math.min(taper, MAX_ANGULAR_HALF_WIDTH * cameraDistance);
+/** Ring buffer of residue. Old motes are recycled, never accumulated. */
+const MOTES = 700;
+/** Distance the orb must travel before it drops another cluster. */
+const DROP_STEP = 0.5;
+/** Motes dropped per cluster — a puff, not a bead on a string. */
+const PER_DROP = 3;
+/** Seconds a mote takes to fade out. */
+const LIFETIME = 1.5;
+
+interface Mote {
+  x: number;
+  y: number;
+  z: number;
+  /** Drift, world units per second: the residue keeps moving after you leave. */
+  dx: number;
+  dy: number;
+  dz: number;
+  age: number;
+  /** 0..1 how hot it was when it was dropped. */
+  heat: number;
 }
 
 const VERTEX = /* glsl */ `
-attribute float aAge;   // 0 at the head, 1 at the tail
-varying float vAge;
+attribute float aLife;   // 1 fresh, 0 gone
+attribute float aHeat;
+uniform float uSize;
+varying float vLife;
+varying float vHeat;
 void main() {
-  vAge = aAge;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  vLife = aLife;
+  vHeat = aHeat;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  float distance = max(1.0, -mv.z);
+  // Fixed size in the WORLD, so residue shrinks with distance like everything
+  // else and never becomes a smear across the lens.
+  gl_PointSize = clamp(uSize * (0.35 + aLife * 0.65) / distance, 1.0, 9.0);
+  gl_Position = projectionMatrix * mv;
 }
 `;
 
 const FRAGMENT = /* glsl */ `
 uniform vec3 uColor;
 uniform float uIntensity;
-varying float vAge;
+varying float vLife;
+varying float vHeat;
 void main() {
-  // Hot at the orb, gone at the tail — the falloff is what reads as speed.
-  float fade = pow(1.0 - vAge, 2.2);
-  gl_FragColor = vec4(uColor * fade * uIntensity, fade);
+  vec2 d = gl_PointCoord - vec2(0.5);
+  float r2 = dot(d, d);
+  if (r2 > 0.25) discard;
+  float core = exp(-r2 * 9.0);
+  // Fades as it ages, and the hottest motes clip white for a moment.
+  float fade = vLife * vLife;
+  vec3 tint = mix(uColor, vec3(1.0), clamp(vHeat * vLife, 0.0, 1.0) * 0.55);
+  gl_FragColor = vec4(tint * core * fade * uIntensity, 1.0);
 }
 `;
 
 export class OrbTrail {
-  readonly mesh: Mesh;
+  readonly mesh: Points;
   private readonly material: ShaderMaterial;
-  private readonly positions: Float32Array;
   private readonly geometry: BufferGeometry;
-  /** Ring of past positions, newest first. */
-  private readonly history: Vec3Data[] = [];
+  private readonly positions: Float32Array;
+  private readonly lives: Float32Array;
+  private readonly heats: Float32Array;
+  private readonly motes: Mote[] = [];
+  private next = 0;
   private last: Vec3Data = { x: 0, y: 0, z: 0 };
+  private seeded = false;
+  /** Deterministic scatter: the same flight leaves the same residue. */
+  private noise = 1;
 
   constructor() {
+    this.positions = new Float32Array(MOTES * 3);
+    this.lives = new Float32Array(MOTES);
+    this.heats = new Float32Array(MOTES);
     this.geometry = new BufferGeometry();
-    this.positions = new Float32Array(SAMPLES * 2 * 3);
-    const ages = new Float32Array(SAMPLES * 2);
-    const indices: number[] = [];
-    for (let i = 0; i < SAMPLES; i++) {
-      const age = i / (SAMPLES - 1);
-      ages[i * 2] = age;
-      ages[i * 2 + 1] = age;
-      if (i < SAMPLES - 1) {
-        const a = i * 2;
-        indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
-      }
-    }
     this.geometry.setAttribute('position', new BufferAttribute(this.positions, 3));
-    this.geometry.setAttribute('aAge', new BufferAttribute(ages, 1));
-    this.geometry.setIndex(indices);
+    this.geometry.setAttribute('aLife', new BufferAttribute(this.lives, 1));
+    this.geometry.setAttribute('aHeat', new BufferAttribute(this.heats, 1));
+    for (let i = 0; i < MOTES; i++) {
+      this.motes.push({ x: 0, y: 0, z: 0, dx: 0, dy: 0, dz: 0, age: LIFETIME, heat: 0 });
+    }
     this.material = new ShaderMaterial({
       vertexShader: VERTEX,
       fragmentShader: FRAGMENT,
@@ -97,78 +114,98 @@ export class OrbTrail {
       uniforms: {
         uColor: { value: [0.75, 0.9, 1] },
         uIntensity: { value: 0 },
+        uSize: { value: 90 },
       },
     });
-    this.mesh = new Mesh(this.geometry, this.material);
+    this.mesh = new Points(this.geometry, this.material);
     this.mesh.frustumCulled = false;
+  }
+
+  private random(): number {
+    // Cheap deterministic scatter; no allocation, no Math.random in a hot loop.
+    this.noise = (this.noise * 1664525 + 1013904223) >>> 0;
+    return this.noise / 4294967296;
   }
 
   /**
    * `speed01` is 0..1 of full throttle and `growth` 0..1 of the track: a full
-   * track at full speed leaves the longest, widest trail.
+   * track at full speed leaves the densest, hottest residue.
    */
   update(
     position: Vec3Data,
     velocity: Vec3Data,
     speed01: number,
     growth: number,
-    cameraPosition: Vec3Data,
+    dtSeconds: number,
   ): void {
-    const moved = Math.hypot(position.x - this.last.x, position.y - this.last.y, position.z - this.last.z);
-    if (this.history.length === 0 || moved >= SAMPLE_STEP) {
-      this.history.unshift({ ...position });
-      if (this.history.length > SAMPLES) this.history.length = SAMPLES;
+    if (!this.seeded) {
+      this.last = { ...position };
+      this.seeded = true;
+    }
+    const moved = Math.hypot(
+      position.x - this.last.x,
+      position.y - this.last.y,
+      position.z - this.last.z,
+    );
+    if (moved >= DROP_STEP) {
+      // Scatter across the path, not along it: residue is left BESIDE where
+      // you flew, which is what stops it ever reading as a line.
+      const spread = 0.25 + speed01 * 1.1 + growth * 0.4;
+      for (let i = 0; i < PER_DROP; i++) {
+        const mote = this.motes[this.next]!;
+        this.next = (this.next + 1) % MOTES;
+        mote.x = position.x + (this.random() - 0.5) * spread;
+        mote.y = position.y + (this.random() - 0.5) * spread;
+        mote.z = position.z + (this.random() - 0.5) * spread;
+        mote.dx = (this.random() - 0.5) * 1.4 - velocity.x * 0.02;
+        mote.dy = (this.random() - 0.5) * 0.8 + 0.25;
+        mote.dz = (this.random() - 0.5) * 1.4 - velocity.z * 0.02;
+        mote.age = 0;
+        mote.heat = Math.min(1, speed01 * 0.8 + growth * 0.4);
+      }
       this.last = { ...position };
     }
-    // The ribbon faces away from the direction of travel, so it stays visible
-    // from the chase camera whichever way the player turns.
-    const speed = Math.hypot(velocity.x, velocity.y, velocity.z) || 1;
-    const side = normalize({
-      x: velocity.z / speed,
-      y: 0,
-      z: -velocity.x / speed,
-    });
-    const halfWidth = HALF_WIDTH * (0.5 + speed01 * 1.2) * (1 + growth);
-    for (let i = 0; i < SAMPLES; i++) {
-      const point = this.history[Math.min(i, this.history.length - 1)] ?? position;
-      const cameraDistance = Math.hypot(
-        point.x - cameraPosition.x,
-        point.y - cameraPosition.y,
-        point.z - cameraPosition.z,
-      );
-      const taper = trailHalfWidth(halfWidth, i / SAMPLES, cameraDistance);
-      const o = i * 6;
-      this.positions[o] = point.x + side.x * taper;
-      this.positions[o + 1] = point.y + side.y * taper;
-      this.positions[o + 2] = point.z + side.z * taper;
-      this.positions[o + 3] = point.x - side.x * taper;
-      this.positions[o + 4] = point.y - side.y * taper;
-      this.positions[o + 5] = point.z - side.z * taper;
+
+    for (let i = 0; i < MOTES; i++) {
+      const mote = this.motes[i]!;
+      if (mote.age >= LIFETIME) {
+        this.lives[i] = 0;
+        continue;
+      }
+      mote.age += dtSeconds;
+      mote.x += mote.dx * dtSeconds;
+      mote.y += mote.dy * dtSeconds;
+      mote.z += mote.dz * dtSeconds;
+      const life = Math.max(0, 1 - mote.age / LIFETIME);
+      this.positions[i * 3] = mote.x;
+      this.positions[i * 3 + 1] = mote.y;
+      this.positions[i * 3 + 2] = mote.z;
+      this.lives[i] = life;
+      this.heats[i] = mote.heat;
     }
     this.geometry.attributes['position']!.needsUpdate = true;
+    this.geometry.attributes['aLife']!.needsUpdate = true;
+    this.geometry.attributes['aHeat']!.needsUpdate = true;
     // Standing still leaves nothing behind (§42).
-    this.material.uniforms.uIntensity!.value = Math.min(1.6, speed01 * 1.9 + growth * 0.3);
+    this.material.uniforms['uIntensity']!.value = Math.min(1.6, speed01 * 1.9 + growth * 0.3);
   }
 
   /** §33: the trail takes on the colour of the region, like everything else. */
   setColor(color: { r: number; g: number; b: number }): void {
-    const value = this.material.uniforms.uColor!.value as number[];
+    const value = this.material.uniforms['uColor']!.value as number[];
     value[0] = 0.45 + color.r * 0.55;
     value[1] = 0.6 + color.g * 0.4;
     value[2] = 0.7 + color.b * 0.3;
   }
 
   reset(): void {
-    this.history.length = 0;
+    for (const mote of this.motes) mote.age = LIFETIME;
+    this.lives.fill(0);
+    this.seeded = false;
   }
 
   dispose(): void {
     this.geometry.dispose();
     this.material.dispose();
   }
-}
-
-function normalize(v: Vec3Data): Vec3Data {
-  const length = Math.hypot(v.x, v.y, v.z);
-  return length < 1e-6 ? { x: 1, y: 0, z: 0 } : { x: v.x / length, y: v.y / length, z: v.z / length };
 }
