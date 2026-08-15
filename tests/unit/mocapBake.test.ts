@@ -80,6 +80,16 @@ describe('§176 the body', () => {
     expect(classify('LeftHand').region).toBe(classify('lradius_hand').region);
     expect(classify('RightFoot').region).toBe(2);
     expect(classify('Spine1').region).toBe(3);
+    // §177: CMU calls the thigh "LeftUpLeg" and the SHIN "LeftLeg". A rule
+    // looking for "shin" or "calf" matches neither, so every shin quietly fell
+    // through to the thigh and calves were built thigh-thick. The names that
+    // actually appear in the data are the ones under test.
+    expect(classify('LeftUpLeg').radius).toBeGreaterThan(classify('LeftLeg').radius);
+    expect(classify('RightLeg').radius).toBe(classify('LeftLeg').radius);
+    // And the bone out to the shoulder is chest width, not another arm.
+    expect(classify('LeftShoulder').radius).toBeGreaterThan(classify('LeftArm').radius);
+    expect(classify('LeftForeArm').radius).toBeLessThan(classify('LeftArm').radius);
+
     // Perception hangs off hands and heads, so they get more points than a shin.
     expect(classify('LeftHand').weight).toBeGreaterThan(classify('LeftLeg').weight);
     expect(classify('Head').weight).toBeGreaterThan(classify('Spine').weight);

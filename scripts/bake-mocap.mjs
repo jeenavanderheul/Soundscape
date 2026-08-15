@@ -213,10 +213,18 @@ const REGIONS = [
   { match: ['neck'], radius: 0.031, taper: 1, weight: 0.5, region: 0 },
   { match: ['hand', 'finger', 'thumb', 'wrist'], radius: 0.026, taper: 0.7, weight: 2.6, region: 1 },
   { match: ['forearm', 'lowerarm', 'elbow'], radius: 0.028, taper: 0.72, weight: 1.8, region: 1 },
-  { match: ['arm', 'shoulder', 'clavicle'], radius: 0.037, taper: 0.78, weight: 1.8, region: 1 },
+  // The bone from the spine out to the shoulder is not an arm: it is the
+  // width of the chest and the mass of the deltoid, and building it at
+  // upper-arm thickness is why the figures had no shoulders to speak of.
+  { match: ['shoulder', 'clavicle'], radius: 0.058, taper: 0.66, weight: 1.4, region: 1 },
+  { match: ['arm'], radius: 0.037, taper: 0.78, weight: 1.8, region: 1 },
   { match: ['foot', 'toe', 'ankle'], radius: 0.029, taper: 0.8, weight: 1.5, region: 2 },
-  { match: ['shin', 'calf', 'lowerleg'], radius: 0.046, taper: 0.55, weight: 1.2, region: 2 },
-  { match: ['leg', 'knee', 'thigh'], radius: 0.06, taper: 0.75, weight: 1.2, region: 2 },
+  // Thigh before shin, and both matched on what actually distinguishes them.
+  // CMU calls the thigh "LeftUpLeg" and the shin "LeftLeg", so a rule looking
+  // for "shin" or "calf" matched neither and every shin fell through to the
+  // thigh entry — calves were thigh-thick and ankles 80% over.
+  { match: ['upleg', 'upperleg', 'thigh'], radius: 0.06, taper: 0.72, weight: 1.2, region: 2 },
+  { match: ['leg', 'shin', 'calf', 'knee'], radius: 0.046, taper: 0.5, weight: 1.2, region: 2 },
   { match: ['spine', 'chest', 'thorax', 'back'], radius: 0.092, taper: 1.06, weight: 1.0, region: 3 },
   { match: ['hip', 'pelvis', 'root'], radius: 0.085, taper: 0.95, weight: 1.0, region: 3 },
 ];
