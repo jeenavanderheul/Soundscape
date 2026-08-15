@@ -17,11 +17,11 @@ import { DOME_SCANNER_GLSL, type ScannerState } from './domeScanner';
  * actual fixtures, hung in rings around the world, turning with the same
  * signal.
  *
- * §148 (user): they are BARS now, not points. A point at 200 units is a dot
- * however bright you make it; a bar bends with its ring and reads as a fixture
- * hanging in a rig, which is what the user is asking to see. They are still
- * dark most of the time — a cluster lights as the signal passes, the rest sit
- * at an ember, and the ring keeps turning around you.
+ * §148/§149 (user): they are vertical BATTENS now, not points. A point at 200
+ * units is a dot however bright you make it; an upright bar reads as a fixture
+ * hanging in a rig, which is what the user asked to see — the pipe, not the
+ * dash. They are still dark most of the time: a cluster lights as the signal
+ * passes, the rest sit at an ember, and the ring keeps turning around you.
  */
 
 export const DOME_LIGHTS = {
@@ -42,8 +42,15 @@ export const DOME_LIGHTS = {
   ember: 0.22,
   /** Share of the gap between two fixtures that the bar itself fills. */
   fill: 0.62,
-  /** Height of a bar as a share of its length. */
+  /** Width of a batten as a share of its height (§149: they stand upright). */
   aspect: 0.16,
+  /**
+   * §150: how far past the filament the quad reaches, so there is room to draw
+   * the light itself. A fixture that stops at its own edge is a highlight; the
+   * glow around it is what makes it a source.
+   */
+  haloWidth: 6,
+  haloHeight: 2.2,
 } as const;
 
 const VERTEX = /* glsl */ `
@@ -65,9 +72,7 @@ void main() {
   // The rig hangs around the player and travels with them: wherever you fly,
   // the lights are around you.
   float angle = aAngle;
-  vec2 out2 = vec2(cos(angle), sin(angle));
-  vec2 tangent = vec2(-out2.y, out2.x);
-  vec2 ring = out2 * aRadius;
+  vec2 ring = vec2(cos(angle), sin(angle)) * aRadius;
   vec3 centre = vec3(uBeamPlayer.x + ring.x, uPlayerY + aHeight, uBeamPlayer.y + ring.y);
 
   // The same signal that scans the world lights the fixtures. A cluster is
@@ -80,7 +85,6 @@ void main() {
 
   float hot = clamp(${DOME_LIGHTS.ember.toFixed(2)} + band * uBeamIntensity * 2.4 + uPulse * 0.2, 0.0, 2.6);
   vHot = hot;
-  vCorner = aCorner;
   // White at the centre of the band, the region's own colour at the edges —
   // the accent is what is LEFT when the white falls away (§136.2).
   vColor = mix(uTint, vec3(1.0), clamp(band * 1.4, 0.0, 1.0));
@@ -91,9 +95,21 @@ void main() {
   // NOT the word h-a-l-f: that is reserved in GLSL and the whole program fails
   // to link, silently, as 171 identical WebGL warnings and an empty sky.
   float halfLength = aLength * 0.5 * grow;
-  vec3 offset = vec3(tangent.x, 0.0, tangent.y) * (aCorner.x * halfLength)
-    + vec3(0.0, 1.0, 0.0) * (aCorner.y * halfLength * ${DOME_LIGHTS.aspect.toFixed(2)});
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(centre + offset, 1.0);
+
+  // §149 (user): VERTICAL battens — the pipe, not the dash. Built in view
+  // space so a fixture stands upright wherever it hangs on the ring; laid
+  // along the ring's tangent instead, it would turn edge-on at the sides and
+  // collapse into a tick. The long axis runs up the screen and the thin one
+  // across it, and the perspective still shrinks it with distance.
+  vec4 mv = modelViewMatrix * vec4(centre, 1.0);
+  // §150: the quad is bigger than the fixture, so the light has somewhere to
+  // go. vCorner is measured in FILAMENT half-sizes, so the fragment shader can
+  // tell the lamp from its glow: inside 1.0 is the batten, outside it is what
+  // the batten is throwing.
+  mv.x += aCorner.x * halfLength * ${DOME_LIGHTS.aspect.toFixed(2)} * ${DOME_LIGHTS.haloWidth.toFixed(1)};
+  mv.y += aCorner.y * halfLength * ${DOME_LIGHTS.haloHeight.toFixed(1)};
+  vCorner = vec2(aCorner.x * ${DOME_LIGHTS.haloWidth.toFixed(1)}, aCorner.y * ${DOME_LIGHTS.haloHeight.toFixed(1)});
+  gl_Position = projectionMatrix * mv;
 }
 `;
 
@@ -102,11 +118,17 @@ varying vec3 vColor;
 varying float vHot;
 varying vec2 vCorner;
 void main() {
-  // Hot along the middle of the bar, falling off to its ends and edges: a
-  // fixture with a filament, never a glowing cone (§146 light character).
-  float across = 1.0 - vCorner.y * vCorner.y;
-  float along = 1.0 - pow(abs(vCorner.x), 6.0);
-  gl_FragColor = vec4(vColor * across * along * vHot, 1.0);
+  // §150 A LAMP, NOT A HIGHLIGHT. Two things are drawn here: the filament,
+  // which is small and hard and clips white, and the light it is throwing,
+  // which is soft, wide and falls off — that second part is the whole
+  // difference between a shape that is bright and something that is shining.
+  float filament = smoothstep(1.0, 0.45, abs(vCorner.y)) * smoothstep(1.0, 0.25, abs(vCorner.x));
+  // Diffusion: wider across than along, so a batten throws sideways the way a
+  // real one does, and never a hard-edged cone (§146).
+  float glow = exp(-(vCorner.x * vCorner.x * 0.5 + vCorner.y * vCorner.y * 1.35));
+  float light = filament * 1.15 + glow * 0.6;
+  if (light < 0.004) discard;
+  gl_FragColor = vec4(vColor * light * vHot, 1.0);
 }
 `;
 

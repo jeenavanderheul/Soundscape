@@ -1814,3 +1814,23 @@ every time), `spread` adds standing clusters around the ring.
 The fixtures are BARS, not points: a point at 200 units is a dot however bright
 you make it, a bar bends with its ring and reads as something hanging in a rig.
 A lit bar also grows — the fixture opens when the signal reaches it.
+
+## 149. The fixtures stand upright (v15 amendment)
+
+Vertical battens, not horizontal bars: the pipe, not the dash. Built in VIEW
+space, so a fixture stands upright wherever it hangs on the ring — laid along
+the ring's tangent instead, a bar is only horizontal straight ahead of you and
+turns edge-on at the sides, where all that survives is its height and it reads
+as a tick.
+
+## 150. A lamp, not a highlight (v15 amendment)
+
+A fixture that stops at its own edge is a bright shape. A light SOURCE has to
+throw something. Every batten now draws two things: a filament, small and hard
+and clipping white, and the light it is throwing — soft, wide, falling off, and
+wider across than along, the way a real batten spills sideways.
+
+The quad is drawn larger than the fixture so there is room for the glow, and
+the fragment shader is told where the filament ends, so the two can be shaded
+differently. No hard-edged cone (§146 light character); the diffusion is what
+makes it read as a source.
