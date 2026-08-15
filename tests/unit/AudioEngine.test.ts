@@ -1,3 +1,4 @@
+import { FakeAudioParam } from './audioFakes';
 import { describe, expect, it } from 'vitest';
 import { AudioEngine } from '../../src/audio/AudioEngine';
 
@@ -13,7 +14,9 @@ class FakeNode {
 }
 
 class FakeGainNode extends FakeNode {
-  gain = { value: 1 };
+  // §145 ramps the volume rather than setting it, so the fake has to record
+  // the ramp — asserting on `.value` would pass while the real node clicked.
+  gain = new FakeAudioParam(1);
 }
 
 class FakeCompressorNode extends FakeNode {}
@@ -89,15 +92,39 @@ describe('AudioEngine', () => {
     expect(FakeAudioContext.instanceCount).toBe(1);
   });
 
-  it('chains masterGain -> compressor -> destination', async () => {
+  it('chains masterGain -> volume -> compressor -> destination', async () => {
     const { engine, fake } = makeEngine();
     await engine.initialize();
     const ctx = fake();
     const gain = ctx.createdGains[0]!;
+    const volume = ctx.createdGains[1]!;
     const compressor = ctx.createdCompressors[0]!;
     expect(engine.masterGain).toBe(gain as unknown as GainNode);
-    expect(gain.connections).toContain(compressor);
+    // §145: the player's volume is its own node between the bus and the
+    // limiter. It must NOT be the master gain, because the analyser taps that
+    // one — a quiet setting would otherwise darken the world (§136.15).
+    expect(gain.connections).toContain(volume);
+    expect(gain.connections).not.toContain(compressor);
+    expect(volume.connections).toContain(compressor);
     expect(compressor.connections).toContain(ctx.destination);
+  });
+
+  it('puts the volume on that node and nowhere else', async () => {
+    const { engine, fake } = makeEngine();
+    await engine.initialize();
+    const ctx = fake();
+    const gain = ctx.createdGains[0]!;
+    const volume = ctx.createdGains[1]!;
+    engine.setVolume(0.25);
+    // Ramped, never stepped: a keypress must not be a click (§21).
+    expect(volume.gain.calls.at(-1)?.method).toBe('setTargetAtTime');
+    expect(volume.gain.lastRampedValue).toBeCloseTo(0.25);
+    expect(gain.gain.calls).toHaveLength(0);
+    // Out of range is clamped rather than trusted.
+    engine.setVolume(4);
+    expect(volume.gain.lastRampedValue).toBeCloseTo(1);
+    engine.setVolume(-1);
+    expect(volume.gain.lastRampedValue).toBeCloseTo(0);
   });
 
   it('getOutputNode returns the master gain input node', async () => {

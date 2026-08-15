@@ -95,11 +95,14 @@ describe('audio chain integration (Game.unlock wiring)', () => {
     expect(ctx.createdPanners).toHaveLength(7);
   });
 
-  it('master chain ends at the context destination via the compressor', async () => {
+  it('master chain ends at the destination via the volume and the compressor', async () => {
     const { engine, ctx } = await buildWiredEngine();
     const output = engine.getOutputNode() as unknown as FakeNode;
     const compressor = ctx.createdCompressors[0]!;
-    expect(output.connections).toContain(compressor);
+    // §145 put the player's volume between the two; everything the game wires
+    // into getOutputNode still has to arrive at the destination.
+    const volume = output.connections[0] as FakeNode;
+    expect(volume.connections).toContain(compressor);
     expect(compressor.connections).toContain(ctx.destination);
   });
 });

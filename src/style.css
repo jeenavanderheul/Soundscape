@@ -270,3 +270,61 @@ body {
     transform: none;
   }
 }
+
+/**
+ * §145 the volume knob. A slider is the one control in this interface that is
+ * genuinely a control and not a readout, so it is the one place a hairline
+ * becomes a track and a block becomes a handle — sharp, and printed by the
+ * same machine as everything else.
+ */
+.volume-row {
+  display: flex;
+  gap: calc(var(--grid) * 2);
+  align-items: center;
+  margin-top: calc(var(--grid) * 2);
+}
+
+.volume-row .label {
+  font-size: 0.62rem;
+}
+
+.volume-row input[type='range'] {
+  width: 11rem;
+  height: calc(var(--grid) * 2);
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.volume-row input[type='range']::-webkit-slider-runnable-track {
+  height: 1px;
+  background: var(--signal-40);
+}
+
+.volume-row input[type='range']::-moz-range-track {
+  height: 1px;
+  background: var(--signal-40);
+}
+
+.volume-row input[type='range']::-webkit-slider-thumb {
+  width: 3px;
+  height: calc(var(--grid) * 2);
+  margin-top: calc(var(--grid) * -1 + 0.5px);
+  background: var(--signal-100);
+  border: 0;
+  border-radius: 0;
+  appearance: none;
+}
+
+.volume-row input[type='range']::-moz-range-thumb {
+  width: 3px;
+  height: calc(var(--grid) * 2);
+  background: var(--signal-100);
+  border: 0;
+  border-radius: 0;
+}
+
+.volume-row input[type='range']:focus-visible {
+  outline: 1px solid var(--signal-40);
+  outline-offset: 6px;
+}

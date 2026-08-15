@@ -1,3 +1,5 @@
+import { quantizeVolume, VOLUME_STEPS } from '../audio/masterVolume';
+
 /**
  * Minimal Esc pause overlay (spec §5 Esc = pause/settings, MVP item 13).
  * English, keyboard-accessible, deliberately not DAW-like: resume, save track,
@@ -13,12 +15,18 @@ export interface PauseOverlayCallbacks {
   onExportTrack(): string;
   /** Clears every form the player's sound made and starts an empty void. */
   onNewJourney(): void;
+  /** §145: the volume, 0..1. Called on every drag, so it must be cheap. */
+  onVolume(level: number): void;
+  /** What the knob should read when the overlay opens. */
+  volume(): number;
 }
 
 export class PauseOverlay {
   private readonly root: HTMLElement;
   private readonly resumeButton: HTMLButtonElement;
   private readonly status: HTMLElement;
+  private readonly volume: HTMLInputElement;
+  private readonly readVolume: () => number;
 
   constructor(
     callbacks: PauseOverlayCallbacks,
@@ -51,7 +59,33 @@ export class PauseOverlay {
       this.status.textContent = 'New journey. The void is empty again.';
     });
 
-    this.root.append(title, this.resumeButton, saveButton, exportButton, newButton, this.status);
+    // §145: the mouse is captured while flying, so this is where a pointer can
+    // reach the volume at all. The keyboard owns it everywhere else.
+    this.readVolume = callbacks.volume;
+    const volumeRow = document.createElement('label');
+    volumeRow.className = 'volume-row';
+    const volumeLabel = document.createElement('span');
+    volumeLabel.className = 'label';
+    volumeLabel.textContent = 'volume';
+    this.volume = document.createElement('input');
+    this.volume.type = 'range';
+    this.volume.min = '0';
+    this.volume.max = '1';
+    this.volume.step = String(1 / VOLUME_STEPS);
+    this.volume.addEventListener('input', () => {
+      callbacks.onVolume(quantizeVolume(Number(this.volume.value)));
+    });
+    volumeRow.append(volumeLabel, this.volume);
+
+    this.root.append(
+      title,
+      this.resumeButton,
+      saveButton,
+      exportButton,
+      newButton,
+      volumeRow,
+      this.status,
+    );
     parent.appendChild(this.root);
   }
 
@@ -68,6 +102,7 @@ export class PauseOverlay {
   }
 
   show(): void {
+    this.volume.value = String(this.readVolume());
     this.status.textContent = '';
     this.root.hidden = false;
     this.resumeButton.focus();

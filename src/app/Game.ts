@@ -52,6 +52,15 @@ import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer, loadTreeSpecies } from '../rendering/ForestRenderer';
 import { signalDrive } from '../rendering/signalLevel';
+import {
+  DEFAULT_VOLUME,
+  loadVolume,
+  quantizeVolume,
+  saveVolume,
+  stepVolume,
+  volumeToGain,
+} from '../audio/masterVolume';
+import { VolumeReadout } from '../ui/VolumeReadout';
 import { FLIGHT_CONFIG } from '../player/FrequencyController';
 import { ResonatorMarkers } from '../rendering/ResonatorMarkers';
 import { BeaconMarker } from '../rendering/BeaconMarker';
@@ -361,6 +370,10 @@ export class Game {
   /** §136: the last performance mapping, for the visual signal drive. */
   private lastPerformance: ReturnType<typeof performanceFrom> | null = null;
   private signalLevelAttribute = '';
+  /** §145: what the player asked to hear, 0..1, remembered between flights. */
+  private volumeLevel = loadVolume();
+  private readonly volumeReadout = new VolumeReadout();
+  private mutedFrom = DEFAULT_VOLUME;
 
   constructor(private readonly elements: GameElements) {
     this.renderer = new Renderer(elements.container);
@@ -523,6 +536,8 @@ export class Game {
     // lock toggles. The overlay owns its DOM; the Game owns pause semantics.
     this.pauseOverlay = new PauseOverlay({
       onResume: () => this.resume(),
+      onVolume: (level) => this.setVolume(level),
+      volume: () => this.volumeLevel,
       onSaveTrack: () => {
         this.saveManager.save(this.snapshotWorld());
         return 'Track saved. It will be here when you come back.';
@@ -587,6 +602,7 @@ export class Game {
     window.removeEventListener('keydown', this.onRegionKey);
     this.detachPointerLockPause();
     this.pauseOverlay.dispose();
+    this.volumeReadout.dispose();
     this.loop.stop();
     this.pointerLock.exit();
     this.pointerLock.detach();
@@ -1097,7 +1113,37 @@ export class Game {
   };
 
   /** Esc toggles pause when pointer lock isn't holding it (locked Esc arrives as lock release). */
+  /**
+   * §145: one number, eight steps, remembered. The readout is what makes it
+   * playable — the mouse is captured in flight, so without feedback a keypress
+   * is a guess.
+   */
+  private setVolume(level: number): void {
+    this.volumeLevel = quantizeVolume(level);
+    this.audioEngine.setVolume(volumeToGain(this.volumeLevel));
+    saveVolume(this.volumeLevel);
+    this.volumeReadout.show(this.volumeLevel);
+  }
+
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (this.unlocked) {
+      // Everything else in this game is a letter or a click; the volume keeps
+      // the keys every other application uses for it.
+      if (event.key === '-' || event.key === '_') {
+        this.setVolume(stepVolume(this.volumeLevel, -1));
+        return;
+      }
+      if (event.key === '=' || event.key === '+') {
+        this.setVolume(stepVolume(this.volumeLevel, 1));
+        return;
+      }
+      if (event.key === 'm' || event.key === 'M') {
+        // Mute remembers where you were, so unmuting is not a hunt.
+        if (this.volumeLevel > 0) this.mutedFrom = this.volumeLevel;
+        this.setVolume(this.volumeLevel > 0 ? 0 : this.mutedFrom);
+        return;
+      }
+    }
     if (this.unlocked && (event.key === 'p' || event.key === 'P')) {
       // §30: describe a new world mid-flight.
       if (this.promptOverlay.isVisible) {
@@ -1240,6 +1286,9 @@ export class Game {
     unlockButton.disabled = true;
     try {
       await this.audioEngine.initialize();
+      // §145: the knob outlives the flight, so the context inherits it rather
+      // than starting at full and jumping.
+      this.audioEngine.setVolume(volumeToGain(this.volumeLevel));
     } catch (error) {
       unlockButton.disabled = false;
       showOverlayError(overlay, error);
