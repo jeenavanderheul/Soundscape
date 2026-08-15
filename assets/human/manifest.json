@@ -1,0 +1,65 @@
+{
+  "generated": "2026-08-15",
+  "note": "Skin-only meshes. Geen skelet, geen skinning-weights, geen animatie — niet nodig en niet aanwezig.",
+  "models": [
+    {
+      "file": "makehuman_base_body.obj",
+      "label": "MakeHuman hm08 base mesh (huid, getrianguleerd, meters, voeten op y=0)",
+      "recommended": true,
+      "license": "CC0-1.0",
+      "source": "https://github.com/makehumancommunity/makehuman/blob/master/makehuman/data/3dobjs/base.obj",
+      "derived_from": "makehuman_base.obj",
+      "sha256": "a7994000d80b1eedc2409c4acd3063e66c07eee35d28e998546f5ccb6d13583e",
+      "bytes": 868541,
+      "vertices": 13380,
+      "triangles": 26756,
+      "quads_before_triangulation": 13378,
+      "ngons": 0,
+      "units": "meters",
+      "up_axis": "+Y",
+      "forward_axis": "+Z (gezicht kijkt naar +Z)",
+      "feet_at_y_zero": true,
+      "bounding_box": {
+        "min": [-0.4963, 0.0, -0.2115],
+        "max": [0.4963, 1.6659, 0.2115],
+        "size": [0.9926, 1.6659, 0.4230]
+      },
+      "ratio_height_width_depth": [1.0, 0.596, 0.254],
+      "height_meters": 1.666,
+      "pose": "neutraal, staand, A-pose (armen schuin naar beneden-buiten). Volledige spanwijdte 0.99 m bij y=1.00; schouderbreedte 0.48 m bij y=1.33; heup/taille 0.35 m; voeten iets uit elkaar (0.54 m) bij y=0.03.",
+      "symmetry": "100% spiegelsymmetrisch over het x=0-vlak (alle 13380 vertices hebben een exacte spiegelpartner)",
+      "features": "heel lichaam met schouders, taille, kuiten, losse tenen, losse vingers",
+      "rigged": false,
+      "uvs": false,
+      "normals": false,
+      "html_error_page_check": "passed (bestand begint met OBJ-commentaar, geen HTML/DOCTYPE/404)"
+    },
+    {
+      "file": "makehuman_base.obj",
+      "label": "MakeHuman hm08 base mesh — origineel, ongewijzigd (provenance)",
+      "recommended": false,
+      "warning": "Bevat NAAST de huid ook 138 helper- en joint-groepen (5108 quads): helper-tights, helper-skirt, helper-hair, oogbollen, tanden, wimpers en 100+ kubusjes die gewrichten markeren. Niet direct renderen.",
+      "license": "CC0-1.0",
+      "source": "https://raw.githubusercontent.com/makehumancommunity/makehuman/master/makehuman/data/3dobjs/base.obj",
+      "source_commit": "3c701a8e52f09e69922e8b598d23be2d7dfc49e3",
+      "sha256": "8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c",
+      "bytes": 1749303,
+      "vertices": 19158,
+      "triangles": 36972,
+      "quads_before_triangulation": 18486,
+      "ngons": 0,
+      "units": "decimeters",
+      "up_axis": "+Y",
+      "feet_at_y_zero": false,
+      "origin_note": "Oorsprong ligt rond het bekken; voeten liggen op y = -8.4488 dm.",
+      "bounding_box": {
+        "min": [-4.9732, -8.4488, -1.1034],
+        "max": [4.9732, 8.4967, 3.2564],
+        "size": [9.9464, 16.9455, 4.3598]
+      },
+      "ratio_height_width_depth": [1.0, 0.587, 0.257],
+      "rigged": false,
+      "html_error_page_check": "passed"
+    }
+  ]
+}
