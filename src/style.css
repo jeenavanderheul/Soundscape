@@ -90,35 +90,18 @@ body {
 }
 
 /**
- * DEGRADED: one grain field over everything, the world included. Not a filter
- * on the image — a contamination of the whole surface, which is what §136.5
- * asks for and what a filter would only imitate. It steps rather than slides,
- * because analog noise does not interpolate.
+ * §163: THE GRAIN MOVED INTO THE WORLD.
+ *
+ * There used to be a full-screen grain div here, screen-blended. Screen can
+ * only ever ADD light: a screen-blended layer cannot produce a black pixel, by
+ * definition. Measured, it took the darkest 17.5% of the frame and lifted ALL
+ * of it above black — the single biggest reason the world was never dark, in a
+ * treatment whose first rule is that black is active space (§136.14).
+ *
+ * The signal pass (§156) grains the world properly now: inside the render, in
+ * linear light, before the image is encoded. The interface keeps its own
+ * texture through type and hairlines, which is where it belongs.
  */
-#grain {
-  position: fixed;
-  inset: -100%;
-  z-index: 40;
-  pointer-events: none;
-  opacity: var(--grain-opacity);
-  /* Screen, not overlay: on a near-black world the grain has to LIFT the
-     blacks a little, or it is noise you cannot see. Desaturated in the filter
-     itself, because feTurbulence is colour noise and §136.2 allows exactly
-     three accents, none of which is "random". */
-  mix-blend-mode: screen;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-  animation: grain-drift 0.9s steps(6) infinite;
-  transition: opacity 600ms linear;
-}
-
-@keyframes grain-drift {
-  0% { transform: translate(0, 0); }
-  20% { transform: translate(-3%, 2%); }
-  40% { transform: translate(2%, -4%); }
-  60% { transform: translate(-2%, -2%); }
-  80% { transform: translate(3%, 3%); }
-  100% { transform: translate(0, 0); }
-}
 
 /**
  * ANALOG ERROR: the type is printed a hair out of register, in two of the

@@ -39,6 +39,21 @@ function fly(trail: OrbTrail, steps: number, step = 1.2) {
 }
 
 describe('§151 the trail is residue, not a ribbon', () => {
+  it('drops the residue BEHIND the orb, where the chase camera can see it', () => {
+    // §164: motes used to spawn at the orb's own centre, which is exactly
+    // where the camera puts the orb — the trail existed and was invisible.
+    const trail = new OrbTrail();
+    // Flying towards -z, so the residue has to end up at HIGHER z.
+    for (let i = 0; i < 12; i++) {
+      trail.update({ x: 0, y: 20, z: -i * 2 }, { x: 0, y: 0, z: -60 }, 1, 0.5, 1 / 60);
+    }
+    const alive = trailState(trail);
+    expect(alive.length).toBeGreaterThan(4);
+    const behind = alive.filter((m) => m.z > -22 + 1).length;
+    expect(behind / alive.length).toBeGreaterThan(0.7);
+    trail.dispose();
+  });
+
   it('leaves nothing behind when the orb is not moving', () => {
     const trail = new OrbTrail();
     for (let i = 0; i < 60; i++) {
@@ -58,15 +73,17 @@ describe('§151 the trail is residue, not a ribbon', () => {
     const spread = Math.max(...alive.map((m) => Math.abs(m.x)));
     expect(spread).toBeGreaterThan(0.1);
     // And it must not be a wall either: the scatter stays close to the orb.
-    expect(spread).toBeLessThan(6);
+    expect(spread).toBeLessThan(8);
   });
 
   it('never grows without bound, however long the flight', () => {
     const trail = new OrbTrail();
     fly(trail, 4000);
     // The buffer is a ring: old residue is recycled, not accumulated.
-    expect(trail.mesh.geometry.getAttribute('position').count).toBe(700);
-    expect(trailState(trail).length).toBeLessThanOrEqual(700);
+    // §164 widened it to 900 — at the old size a cruise wrapped the whole ring
+    // in 0.88s, so most of the trail was overwritten before it could fade.
+    expect(trail.mesh.geometry.getAttribute('position').count).toBe(900);
+    expect(trailState(trail).length).toBeLessThanOrEqual(900);
     trail.dispose();
   });
 

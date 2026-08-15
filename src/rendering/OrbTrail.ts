@@ -23,14 +23,28 @@ import type { Vec3Data } from '../player/FrequencyState';
  * geometry.
  */
 
-/** Ring buffer of residue. Old motes are recycled, never accumulated. */
-const MOTES = 700;
+/**
+ * §164: an audit looked for this trail at cruise, mid-bank and diving at
+ * hyper, and found nothing at all in any of them. Two reasons, both arithmetic:
+ *
+ * At the old rate — a cluster of three every half unit — a cruise laid down
+ * 790 motes a second into a ring of 700, so the buffer wrapped in 0.88 s while
+ * the motes were supposed to live 1.5. Most of the trail was being overwritten
+ * before it could fade. And every mote spawned at the orb's own centre with
+ * under two units of scatter, which is exactly where the chase camera puts the
+ * orb — so what did survive was hidden behind it.
+ *
+ * Fewer, longer-lived, and dropped BEHIND you.
+ */
+const MOTES = 900;
 /** Distance the orb must travel before it drops another cluster. */
-const DROP_STEP = 0.5;
+const DROP_STEP = 1.4;
 /** Motes dropped per cluster — a puff, not a bead on a string. */
-const PER_DROP = 3;
+const PER_DROP = 2;
 /** Seconds a mote takes to fade out. */
-const LIFETIME = 1.5;
+const LIFETIME = 2.6;
+/** How far behind the orb the residue is laid down, in world units. */
+const DROP_BEHIND = 3.2;
 
 interface Mote {
   x: number;
@@ -149,14 +163,19 @@ export class OrbTrail {
     );
     if (moved >= DROP_STEP) {
       // Scatter across the path, not along it: residue is left BESIDE where
-      // you flew, which is what stops it ever reading as a line.
-      const spread = 0.25 + speed01 * 1.1 + growth * 0.4;
+      // you flew, which is what stops it ever reading as a line. And BEHIND
+      // you, or the chase camera has the orb sitting on top of all of it.
+      const spread = 0.8 + speed01 * 2.4 + growth * 0.8;
+      const speed = Math.hypot(velocity.x, velocity.y, velocity.z) || 1;
+      const backX = (-velocity.x / speed) * DROP_BEHIND;
+      const backY = (-velocity.y / speed) * DROP_BEHIND;
+      const backZ = (-velocity.z / speed) * DROP_BEHIND;
       for (let i = 0; i < PER_DROP; i++) {
         const mote = this.motes[this.next]!;
         this.next = (this.next + 1) % MOTES;
-        mote.x = position.x + (this.random() - 0.5) * spread;
-        mote.y = position.y + (this.random() - 0.5) * spread;
-        mote.z = position.z + (this.random() - 0.5) * spread;
+        mote.x = position.x + backX + (this.random() - 0.5) * spread;
+        mote.y = position.y + backY + (this.random() - 0.5) * spread;
+        mote.z = position.z + backZ + (this.random() - 0.5) * spread;
         mote.dx = (this.random() - 0.5) * 1.4 - velocity.x * 0.02;
         mote.dy = (this.random() - 0.5) * 0.8 + 0.25;
         mote.dz = (this.random() - 0.5) * 1.4 - velocity.z * 0.02;

@@ -307,6 +307,22 @@ export class FrequencyController {
         if (this.velocityVec.y < -allowedDescent) this.velocityVec.y = -allowedDescent;
         // And it is pushed back out, hardest right above the ground.
         this.velocityVec.y += FLIGHT_CONFIG.repelAcceleration * (1 - room) * (1 - room) * dt;
+        // §165: but only as far as the EDGE of the field. Without this the
+        // impulse overshoots, every hill that passes under you adds another
+        // one, and the orb ratchets up to the ceiling over a long flight — the
+        // measured reason altitude did nothing. Enough to clear, never more.
+        const toEdge = Math.max(0, fieldDepth - clearance) / 0.3;
+        if (this.velocityVec.y > toEdge) this.velocityVec.y = toEdge;
+      } else if (this.velocityVec.y > 0 && accelDirection.y <= 0.02) {
+        // §165: the field was a RATCHET. It pushed up near the ground and
+        // nothing ever gave the height back, so flying dead level — direction
+        // y exactly 0 — still climbed 12 units to 24 in eight seconds, and over
+        // a long flight everything ended up pinned at the ceiling. Measured, it
+        // is why altitude did nothing: there was only ever one flying height.
+        //
+        // Once clear of the field, upward speed the PLAYER did not ask for
+        // bleeds away. Ask for it — pitch up — and this does not touch you.
+        this.velocityVec.y *= Math.max(0, 1 - dt * 2.4);
       }
       if (y < floor) {
         y = floor;

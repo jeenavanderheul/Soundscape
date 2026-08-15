@@ -1,4 +1,4 @@
-import { Color, FogExp2, Scene, WebGLRenderer } from 'three';
+import { Color, FogExp2, Scene, SRGBColorSpace, WebGLRenderer } from 'three';
 import { RENDER_CONFIG } from '../app/Config';
 import { Camera } from './Camera';
 import { SignalPass } from './SignalPass';
@@ -66,11 +66,18 @@ export class Renderer {
     // A region has to be nameable at a glance. The world still reads as
     // near-black (§13) — the fog and the sky are what carry the hue, and the
     // scan lines stay bright on top of it.
-    this.fog.color.setRGB(color.r * 0.34, color.g * 0.34, color.b * 0.38);
+    // §163: these are sRGB numbers, and they have to be declared as such.
+    // three treats a bare setRGB as LINEAR light, so the "near-black tint" of
+    // 0.11 was being encoded to 0.347 — about 88/255 on screen — and the fog's
+    // 0.34 to roughly 156/255. An audit measured the empty sky at rgb(39,60,77)
+    // in a world whose clear colour is 0x020202. Nothing in the frame was
+    // black, and §136 asks for 85-95% of it to be.
+    this.fog.color.setRGB(color.r * 0.34, color.g * 0.34, color.b * 0.38, SRGBColorSpace);
     (this.scene.background as Color).setRGB(
       0.004 + color.r * 0.11,
       0.004 + color.g * 0.11,
       0.008 + color.b * 0.13,
+      SRGBColorSpace,
     );
     this.webgl.setClearColor(this.scene.background as Color);
 
