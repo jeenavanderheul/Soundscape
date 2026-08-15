@@ -208,6 +208,8 @@ interface FrequencyDebug {
   resetWorld(): void;
   groundHeightAt(x: number, z: number): number;
   terrainVertexCount(): number;
+  /** §146: what the terrain shader is actually being told about the dome. */
+  beamUniforms(): Record<string, unknown>;
   teleport(x: number, z: number, y?: number): void;
 }
 
@@ -374,6 +376,7 @@ export class Game {
   /** §146: the dome signal, advanced every tick from the music. */
   private scanner: ScannerState = SCANNER_START;
   private lastKickMs = -9999;
+  private signalInstability = 0;
   /** §145: what the player asked to hear, 0..1, remembered between flights. */
   private volumeLevel = loadVolume();
   private readonly volumeReadout = new VolumeReadout();
@@ -585,6 +588,7 @@ export class Game {
         // §138: the LOD field's whole vertex cost, so the budget can be checked
         // from a browser rather than from a comment.
         terrainVertexCount: () => this.terrain.vertexCount,
+        beamUniforms: () => this.terrain.beamUniforms(),
         teleport: (x: number, z: number, y?: number) =>
           this.frequencyStore.setState((s) => ({
             ...s,
@@ -758,26 +762,7 @@ export class Game {
         grit: this.lastPerformance?.grit ?? 0,
       });
       this.terrain.setSignal(drive.intensity, drive.instability);
-      // §146: the dome turns on the track's own clock, in whole bars, and the
-      // section decides how it turns.
-      const analysis = this.audioAnalyser?.snapshot;
-      this.scanner = advanceScanner(
-        this.scanner,
-        {
-          bpm: track.bpm,
-          section: track.form,
-          low: analysis?.lowBand ?? 0,
-          mid: analysis?.midBand ?? 0,
-          high: analysis?.highBand ?? 0,
-          // Same clock the kick was stamped with: the tick's elapsedMs is the
-          // game clock and performance.now() is not, and mixing them makes the
-          // pulse fire at random.
-          sinceKick: (performance.now() - this.lastKickMs) / 1000,
-          instability: drive.instability,
-        },
-        dtSeconds,
-      );
-      this.terrain.setScanner(this.scanner, state.position);
+      this.signalInstability = drive.instability;
       // §143: the interface is part of the instrument. At the top of the range
       // the type comes out of register and the grain thickens; everywhere else
       // this is a no-op, and it only ever writes when the level changes.
@@ -870,6 +855,30 @@ export class Game {
     if (state.amplitude > 0.05) {
       this.terrain.excite('player', state.position, state.hz, state.amplitude * 0.12);
     }
+    // §146: the dome turns EVERY FRAME. It used to be advanced inside the 10 Hz
+    // logic loop while being handed the frame's delta, which made it turn six
+    // times too slowly — one lap every two and a half minutes, which reads as
+    // a shadow rather than as a light. A beam also has to move smoothly: at
+    // 10 Hz it steps.
+    const analysis = this.audioAnalyser?.snapshot;
+    const scannerTrack = this.trackStore.getState();
+    this.scanner = advanceScanner(
+      this.scanner,
+      {
+        bpm: scannerTrack.bpm,
+        section: scannerTrack.form,
+        low: analysis?.lowBand ?? 0,
+        mid: analysis?.midBand ?? 0,
+        high: analysis?.highBand ?? 0,
+        // Same clock the kick was stamped with: the tick's elapsedMs is the
+        // game clock and performance.now() is not, and mixing them makes the
+        // pulse fire at random.
+        sinceKick: (performance.now() - this.lastKickMs) / 1000,
+        instability: this.signalInstability,
+      },
+      dtSeconds,
+    );
+    this.terrain.setScanner(this.scanner, state.position);
     this.terrain.update(dtSeconds, elapsedMs / 1000, state.position);
     this.forest.setDepth(trackGrowth(this.trackStore.getState()));
     this.forest.update(

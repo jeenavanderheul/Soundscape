@@ -434,6 +434,19 @@ export class WaveTerrain {
     centre[1] = player.z;
   }
 
+  /** DEV: what the shader is being told about the dome, for verification. */
+  beamUniforms(): Record<string, unknown> {
+    const u = this.material.uniforms;
+    return {
+      bearing: u['uBeam']!.value,
+      width: u['uBeamWidth']!.value,
+      tail: u['uBeamTail']!.value,
+      intensity: u['uBeamIntensity']!.value,
+      elevation: u['uBeamElevation']!.value,
+      player: [...(u['uBeamPlayer']!.value as number[])],
+    };
+  }
+
   /** BeatSync hook: world pulse ripples through the field (§12). */
   setPulse(value: number): void {
     this.pulse = value;

@@ -52,7 +52,10 @@ const SECTION_MODE: Record<Section, ScannerMode> = {
  * bar per turn at the peak.
  */
 const SECTION_BARS: Record<Section, number> = {
-  none: 8,
+  none: 2,
+  // The intro of a real track is allowed to be slow — that is what an intro
+  // is. The unreadable case was the one BEFORE there is a track at all, and
+  // `orbitSeconds` handles that separately.
   intro: 8,
   groove: 4,
   discovery: 4,
@@ -113,9 +116,13 @@ const wrap = (angle: number): number => ((angle % TAU) + TAU) % TAU;
 
 /** Seconds for one revolution, always a whole number of bars (§146). */
 export function orbitSeconds(bpm: number, section: Section): number {
-  const tempo = bpm > 20 ? bpm : 90;
-  const barSeconds = (60 / tempo) * 4;
-  return barSeconds * SECTION_BARS[section];
+  const hasClock = bpm > 20;
+  const barSeconds = (60 / (hasClock ? bpm : 90)) * 4;
+  // Before there is a track there is nothing to be slow FOR. At eight bars and
+  // a deceleration the first thing a player ever sees was a lap every forty
+  // seconds, which does not read as a light travelling at all — it reads as
+  // the terrain being slightly brighter over there.
+  return barSeconds * (hasClock ? SECTION_BARS[section] : 2);
 }
 
 /**
@@ -166,8 +173,11 @@ export function advanceScanner(
 
   // Each behaviour is a factor on the same orbit, never a different clock.
   let rate = base;
+  // No clock, no slowing down: the signal has to be legible before the music
+  // has anything to say about it.
+  const hasClock = input.bpm > 20;
   if (mode === 'accelerate') rate = base * 1.9;
-  else if (mode === 'decelerate') rate = base * 0.55;
+  else if (mode === 'decelerate') rate = hasClock ? base * 0.55 : base;
   else if (mode === 'hold') rate = 0;
   else if (mode === 'reverse') rate = -base;
   else if (mode === 'drop') rate = base * 1.35;
