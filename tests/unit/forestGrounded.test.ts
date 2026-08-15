@@ -62,9 +62,11 @@ describe('the forest stands on the ground', () => {
       const instances = everyInstance(forest);
       expect(instances.length).toBeGreaterThan(20);
       for (const instance of instances) {
-        // 4 decimals, not more: the matrix round-trips through float32. The bug this
-        // guards against was sixteen units of float, not a millionth.
-        expect(instance.y).toBeCloseTo(ground(instance.x, instance.z), 4);
+        // 3 decimals, not more: the matrix round-trips through float32, and
+        // §179 pushed the forest's coordinates up by GROWTH_SCALE, so float32's
+        // relative error is now worth ~6e-5 instead of ~4e-5. The bug this
+        // guards against was sixteen units of float, not a thousandth.
+        expect(instance.y).toBeCloseTo(ground(instance.x, instance.z), 3);
       }
       forest.dispose();
     }
@@ -79,7 +81,7 @@ describe('the forest stands on the ground', () => {
     lift = 12; // the field swells under the forest
     forest.update({ x: 0, y: 20, z: 0 }, 'techno', undefined, 1);
     for (const instance of everyInstance(forest)) {
-      expect(instance.y).toBeCloseTo(ground(instance.x, instance.z) + 12, 4);
+      expect(instance.y).toBeCloseTo(ground(instance.x, instance.z) + 12, 3);
     }
     forest.dispose();
   });

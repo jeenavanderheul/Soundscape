@@ -14,6 +14,7 @@ import type { Vec3Data } from '../player/FrequencyState';
 import {
   ecologyFor,
   FOREST_GRID,
+  GROWTH_SCALE,
   growthsInCell,
   type Ecology,
   type FormName,
@@ -53,8 +54,15 @@ export const FOREST_RENDER = {
    * their own ecology, so `thinningAt` had to open up as well.
    */
   maxInstances: 920,
-  /** Dim, half-size: what this place COULD give you. */
-  potentialScale: 0.45,
+  /**
+   * Dim, but nearly full height: what this place COULD give you.
+   *
+   * User decision (15 aug): the forest has to read as twice the crowd on sight,
+   * not only once a track has grown into it. Height is therefore almost fully
+   * present from the start and it is BRIGHTNESS that is earned — an unearned
+   * tree is a dim tree now, not a small one.
+   */
+  potentialScale: 0.8,
   potentialBrightness: 0.55,
   swayAmplitude: 0.06,
   /**
@@ -62,7 +70,14 @@ export const FOREST_RENDER = {
    * the distance, so a point is a fixed size in the WORLD and shrinks like
    * everything else. Roughly 4 cm at this scale — fine speckle, never a blob.
    */
-  pointSize: 42,
+  pointSize: 42 * GROWTH_SCALE,
+  /**
+   * §179: both of these are world distances, so they scale with the forest.
+   * Left at 190/240 a tree the size of two dancers would be dropped and faded
+   * to black before you were far enough away to see all of it.
+   */
+  thinDistance: 190 * GROWTH_SCALE,
+  fadeDistance: 240 * GROWTH_SCALE,
 } as const;
 
 /**
@@ -159,11 +174,11 @@ void main() {
   // §136.13: distance costs INFORMATION first. Each point has its own place in
   // the queue, and the far a tree is, the fewer of them are still being sent.
   float keep = fract(sin(dot(position.xz, vec2(12.9898, 78.233)) + iPhase * 31.7) * 43758.5453);
-  vSurvives = step(keep, clamp(1.25 - distance / 190.0, 0.0, 1.0));
+  vSurvives = step(keep, clamp(1.25 - distance / ${FOREST_RENDER.thinDistance.toFixed(1)}, 0.0, 1.0));
   // NOT scaled by the tree: a point is a measurement, always the same size in
   // the world, or a big tree turns into cotton wool.
   gl_PointSize = clamp(uSize / max(1.0, distance), 1.0, 3.5);
-  vFade = clamp(1.0 - distance / 240.0, 0.0, 1.0);
+  vFade = clamp(1.0 - distance / ${FOREST_RENDER.fadeDistance.toFixed(1)}, 0.0, 1.0);
   vTint = iTint;
   gl_Position = projectionMatrix * mv;
 }

@@ -24,7 +24,7 @@ import type { MusicalLayerGraph, ThrowStyle } from '../audio/MusicalPrimitives';
 import { buildWorldLayerGraph, worldBankLabel } from '../audio/WorldLayerGraph';
 import type { SectionStyle } from '../music/ArrangementEngine';
 import { GenreAffinityEngine } from '../genres/GenreAffinityEngine';
-import { dominantZone, setZoneGenres, zoneAffinity } from '../genres/GenreZones';
+import { dominantZone, zoneAffinity } from '../genres/GenreZones';
 import { headingLabel, lookFor, placeName, NEUTRAL_LOOK } from '../genres/ZonePalette';
 import type { GenreEvents } from '../genres/GenreAffinityEngine';
 import { createInitialMusicState, MusicState } from '../music/MusicState';
@@ -87,7 +87,7 @@ import { ParticleSystem } from '../rendering/ParticleSystem';
 import { OrbTrail } from '../rendering/OrbTrail';
 import { PlayerOrb } from '../rendering/PlayerOrb';
 import { Renderer } from '../rendering/Renderer';
-import { SpeedStreaks } from '../rendering/SpeedStreaks';
+import { SpeedStreaks, altitudeBoost } from '../rendering/SpeedStreaks';
 import { StructureRenderer } from '../rendering/StructureRenderer';
 import { HarmonyBridges, MelodyTrail } from '../rendering/TrackVisuals';
 import { WaveTerrain } from '../rendering/WaveTerrain';
@@ -97,10 +97,7 @@ import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { CodeOverlay } from '../ui/CodeOverlay';
 import { ExportOverlay } from '../ui/ExportOverlay';
 import { exportTrack } from '../music/TrackExport';
-import { PromptOverlay } from '../ui/PromptOverlay';
-import { loadApiKey, requestWorld, saveApiKey } from '../ai/WorldPromptClient';
 import type { LayerPatterns } from '../audio/MusicalPrimitives';
-import type { WorldRecipe } from '../ai/WorldRecipe';
 import { Guide } from '../ui/Guide';
 import { Hints } from '../ui/Hints';
 import { LayerCue } from '../ui/LayerCue';
@@ -132,6 +129,12 @@ const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
  */
 const CAMERA_DISTANCE = 3.4;
 const CAMERA_DISTANCE_PER_RADIUS = 2.2;
+/**
+ * How much further back the camera sits at full throttle, on top of the framing
+ * correction. 0.6 puts the orb at about 62% of its resting size — a circle you
+ * are chasing rather than a body filling the frame.
+ */
+const CAMERA_TOP_SPEED_PULLBACK = 0.6;
 const CAMERA_HEIGHT = 0.9;
 const CAMERA_HEIGHT_PER_RADIUS = 0.7;
 /**
@@ -227,6 +230,7 @@ interface FrequencyDebug {
   /** §176: how much crowd is actually being drawn, and how to force it there. */
   crowdStats(): Record<string, unknown>;
   forceCrowd(layers: number | null): void;
+  showForest(on: boolean): void;
 }
 
 type DebugWindow = Window & { __FREQUENCY_DEBUG__?: FrequencyDebug };
@@ -293,28 +297,6 @@ export class Game {
   private readonly exportOverlay = new ExportOverlay();
   /** Flight time so far, for the export header (§32). */
   private flightMs = 0;
-  /** §30: the world the player described, if they described one. */
-  private readonly promptOverlay = new PromptOverlay(
-    {
-      onSubmit: async (description, apiKey) => {
-        const { validation } = await requestWorld(description, apiKey);
-        saveApiKey(apiKey);
-        this.applyRecipe(validation.recipe);
-        this.promptOverlay.hide();
-        this.pointerLock.request();
-        if (validation.rejected.length > 0) {
-          // Honest about what was refused rather than silently dropping it.
-          console.warn('FREQUENCY: rejected generated patterns', validation.rejected);
-        }
-      },
-      onSkip: () => {
-        this.promptOverlay.hide();
-        // The overlay is a mouse surface: pointer lock waits until it is gone.
-        this.pointerLock.request();
-      },
-    },
-    loadApiKey(),
-  );
   private worldPatterns: LayerPatterns = {};
   private readonly layerCue = new LayerCue(this.events);
   private readonly beatSync: BeatSync;
@@ -435,7 +417,10 @@ export class Game {
     // shader that draws it and the collision that stops the orb.
     this.controller.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
     // §36: giants are solid too — you fly around them, never through them.
-    this.controller.setObstacleSource(() => this.forest.solidObstacles());
+    // Hidden trees must not still push the orb aside, or the world lies.
+    this.controller.setObstacleSource(() =>
+      this.forest.group.visible ? this.forest.solidObstacles() : [],
+    );
     this.forest.setGroundSampler((x, z) => this.terrain.groundHeightAt(x, z));
     // §132: the real ground arrives a moment after the void does. Until it
     // lands the world is the generated field; nothing waits on it.
@@ -657,6 +642,10 @@ export class Game {
         terrainVertexCount: () => this.terrain.vertexCount,
         beamUniforms: () => this.terrain.beamUniforms(),
         forceBeam: (intensity: number | null) => this.terrain.forceBeam(intensity),
+        // Look at the world without the forest in front of it.
+        showForest: (on: boolean) => {
+          this.forest.group.visible = on;
+        },
         teleport: (x: number, z: number, y?: number) =>
           this.frequencyStore.setState((s) => ({
             ...s,
@@ -728,7 +717,6 @@ export class Game {
     this.exportOverlay.dispose();
     this.guide.dispose();
     this.streaks.dispose();
-    this.promptOverlay.dispose();
     this.layerCue.dispose();
     this.renderer.scene.remove(this.orb.mesh);
     this.orb.dispose();
@@ -1040,8 +1028,13 @@ export class Game {
       this.trackStore.getState(),
       elapsedMs / 1000,
     );
-    // §36: speed widens the lens.
-    this.renderer.camera.setSpeedFactor(state.energy);
+    // Height above the land, not above zero: what matters is how far the ground
+    // is, because the ground is what makes speed visible.
+    const altitude =
+      state.position.y - this.terrain.groundHeightAt(state.position.x, state.position.z);
+    // §36: speed widens the lens, and widens it further where there is no
+    // ground detail left to sell the speed.
+    this.renderer.camera.setSpeedFactor(state.energy, altitudeBoost(altitude));
     this.markers.update(elapsedMs / 1000);
     this.beaconMarker.update(elapsedMs / 1000, this.renderer.camera.instance.position.y);
     this.updateBeacon(elapsedMs);
@@ -1078,6 +1071,7 @@ export class Game {
         z: state.direction.z * state.velocity,
       },
       dtSeconds,
+      altitude,
     );
     this.guide.update({
       genre: this.trackStore.getState().genre,
@@ -1111,8 +1105,19 @@ export class Game {
     const dirX = this.camDir.x / length;
     const dirY = this.camDir.y / length;
     const dirZ = this.camDir.z / length;
-    // Back off as the orb grows, so it stays a body you are following.
-    const back = CAMERA_DISTANCE + this.orb.radius * CAMERA_DISTANCE_PER_RADIUS;
+    // Back off as the orb grows, so it stays a body you are following. The
+    // framing scale then cancels what the widening lens would have done to the
+    // orb's size, so speed no longer decides how far away it looks — and on top
+    // of that steady frame the throttle adds a deliberate, bounded pull-back,
+    // user (15 aug): "in de snelste mode mag de camera nog iets verder naar
+    // achter dat je de orb ziet als rondje". The floor keeps the camera off the
+    // orb when the lens is at its widest.
+    const back = Math.max(
+      this.orb.radius * 1.9,
+      (CAMERA_DISTANCE + this.orb.radius * CAMERA_DISTANCE_PER_RADIUS) *
+        this.renderer.camera.framingScale() *
+        (1 + Math.min(1, Math.max(0, state.energy)) * CAMERA_TOP_SPEED_PULLBACK),
+    );
     const lift = CAMERA_HEIGHT + this.orb.radius * CAMERA_HEIGHT_PER_RADIUS;
     const camX = position.x - dirX * back;
     const camZ = position.z - dirZ * back;
@@ -1297,7 +1302,7 @@ export class Game {
 
   /** Re-acquire mouse look on canvas click after Esc released the lock (spec §5). */
   private readonly onContainerClick = (): void => {
-    if (this.promptOverlay.isVisible || this.paused) return; // the mouse belongs to the overlay
+    if (this.paused) return; // the mouse belongs to the pause menu
     if (this.unlocked && !this.pointerLock.locked) this.pointerLock.request();
   };
 
@@ -1332,17 +1337,6 @@ export class Game {
         this.setVolume(this.volumeLevel > 0 ? 0 : this.mutedFrom);
         return;
       }
-    }
-    if (this.unlocked && (event.key === 'p' || event.key === 'P')) {
-      // §30: describe a new world mid-flight.
-      if (this.promptOverlay.isVisible) {
-        this.promptOverlay.hide();
-        this.pointerLock.request();
-      } else {
-        this.promptOverlay.show();
-        this.pointerLock.exit(); // give the mouse back to the overlay
-      }
-      return;
     }
     if (event.key !== 'Escape' || !this.unlocked) return;
     if (this.paused) this.resume();
@@ -1525,52 +1519,14 @@ export class Game {
     }
     this.hud.show();
     this.guide.show();
-    // The start screen is clicked, not tabbed: while it is up the cursor stays
-    // free, and pointer lock is taken when the player leaves it.
-    this.promptOverlay.show();
+    // User (15 aug): nothing stands between the click and the flight. A form
+    // asking a visitor for an API key was the first thing this world said to
+    // them; now the world is the first thing. Pause is the only overlay left.
+    this.pointerLock.request();
     this.input.attach();
     this.loop.start();
     this.events.emit('audio:unlocked', null);
     this.events.emit('game:started', null);
-  }
-
-  /**
-   * §30: become the world the player described. Everything here arrives
-   * already validated and clamped by `validateRecipe`.
-   */
-  private applyRecipe(recipe: WorldRecipe): void {
-    setZoneGenres(recipe.zones);
-    this.renderer.setAtmosphere(recipe.fog);
-    this.worldPatterns = recipe.patterns;
-    if (recipe.resonators.length > 0) {
-      const resonators = recipe.resonators.map((entry, index) => {
-        const radians = (entry.angleDeg * Math.PI) / 180;
-        return {
-          id: `world-resonator-${index + 1}`,
-          position: {
-            x: Math.sin(radians) * entry.distance,
-            y: 0,
-            z: -Math.cos(radians) * entry.distance,
-          },
-          baseHz: entry.hz,
-          waveform: entry.waveform,
-          amplitude: 0.35,
-          interactionRadius: 8,
-          audibleRadius: 220,
-          persistenceThreshold: 4,
-          materialProfile: 'glass',
-          spatialProfile: 'omni',
-          active: true,
-        };
-      });
-      this.worldStore.setState((state) => ({ ...state, resonators }));
-      for (const resonator of resonators) {
-        this.spatialAudio?.addResonator(resonator);
-        this.markers.add(resonator);
-      }
-    }
-    this.trackStore.setState((track) => ({ ...track, bpm: recipe.bpm }));
-    this.events.emit('track:genre', { genre: recipe.zones.north, atMs: 0 });
   }
 
   /** §17: place a resonator carrying the player's current sound in empty space. */

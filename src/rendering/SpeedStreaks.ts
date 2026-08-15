@@ -26,7 +26,25 @@ export const STREAK_CONFIG = {
   fullSpeed: 42,
   /** Longest a streak can be drawn, in world units. */
   maxLength: 22,
+  /**
+   * Speed is only visible against something near. Low down that is the ground
+   * and the forest; up high there is nothing left but these streaks, so they
+   * carry more of the work the higher you are. Full lift at this altitude.
+   */
+  altitudeFullLift: 60,
+  /** How much the streaks are allowed to gain from altitude alone. */
+  altitudeLift: 0.55,
 } as const;
+
+/**
+ * How much of the speed cue the streaks must carry at this height. Ground level
+ * leaves them as they were; high up they run longer and brighter for the same
+ * speed, because nothing else is telling you that you are moving.
+ */
+export function altitudeBoost(altitude: number): number {
+  const lift = Math.min(1, Math.max(0, altitude) / STREAK_CONFIG.altitudeFullLift);
+  return 1 + lift * STREAK_CONFIG.altitudeLift;
+}
 
 const VERTEX = /* glsl */ `
 attribute float aSide;      // 0 = head, 1 = tail
@@ -125,9 +143,9 @@ export class SpeedStreaks {
    * Follow the player and recycle whatever fell behind. `velocity` is world
    * units per second; its direction is the direction the streaks stretch in.
    */
-  update(position: Vec3Data, velocity: Vec3Data, dt: number): void {
+  update(position: Vec3Data, velocity: Vec3Data, dt: number, altitude = 0): void {
     const speed = Math.hypot(velocity.x, velocity.y, velocity.z);
-    const target = Math.min(1, speed / STREAK_CONFIG.fullSpeed);
+    const target = Math.min(1, (speed / STREAK_CONFIG.fullSpeed) * altitudeBoost(altitude));
     // Ease so a dash surges and settles instead of snapping.
     this.intensity += (target - this.intensity) * Math.min(1, dt * 3.5);
     this.material.uniforms['uIntensity']!.value = this.intensity;

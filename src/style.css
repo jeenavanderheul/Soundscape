@@ -142,13 +142,18 @@ body {
   display: none;
 }
 
+/* The wordmark is drawn, not set: a white SVG on the void, sized to the
+   viewport but never past its own resolution, and never stretched. */
 #unlock-overlay h1 {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 400;
-  letter-spacing: 0.62em;
-  text-indent: 0.62em;
-  color: var(--signal-100);
+  margin: 0;
+  line-height: 0;
+}
+
+#unlock-logo {
+  display: block;
+  width: min(34vw, 17rem);
+  height: auto;
+  aspect-ratio: 989.2 / 817.54;
 }
 
 /* A rule under the title, thinner than the type it carries. */

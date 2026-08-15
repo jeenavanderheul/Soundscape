@@ -65,32 +65,48 @@ export async function loadCrowdPose(): Promise<{ manifest: CrowdManifest; buffer
 export const CROWD_CONFIG = {
   /**
    * World units a person is tall. The bake normalises every clip to 1.0, so
-   * this is the only place the crowd's scale is decided. Measured against the
-   * orb, which is about eight units: a dancer stands a head and shoulders over
-   * it, the way the reference frame has them.
+   * this is the only place the crowd's scale is decided. At 140 the dancers are
+   * towering figures on the horizon rather than people you stand among; every
+   * distance below is scaled with it so they still read as bodies, not noise.
    */
-  height: 14,
+  height: 140,
   /** How far out dancers are placed, in world units. */
-  radius: 260,
+  radius: 2600,
   /** Nobody stands closer than this to the orb — the crowd is around you, not on you. */
-  clearance: 22,
+  clearance: 220,
   /** Instance capacity per detail tier. Placement never exceeds these. */
   near: 24,
   mid: 90,
   far: 340,
-  nearDistance: 90,
-  midDistance: 220,
+  // The near tier is capped at 24 dancers whatever happens, so reaching further
+  // out costs nothing — it only changes WHICH two dozen get the full body.
+  nearDistance: 1300,
+  midDistance: 2400,
   /** Trail samples on the near tier: current frame plus three older ones. */
   trail: 4,
   /** Points drawn per dancer, per tier. Must match what the bake writes. */
   nearPoints: 2048,
-  midPoints: 384,
-  farPoints: 48,
+  /**
+   * User (15 aug): the dancers dropped out of the picture too quickly with
+   * distance. Nothing was dimming them — a body simply lost 81% of its points
+   * crossing into the mid tier and 97% more crossing into the far one, so it
+   * stopped reading as a person long before it stopped being drawn. Detail now
+   * steps down instead of falling off a cliff; the cost is ~50k points, against
+   * the ~200k the near tier alone already spends.
+   */
+  midPoints: 768,
+  farPoints: 192,
   /** Clusters the crowd forms up into, rather than a uniform scatter. */
   clusters: 9,
-  clusterRadius: 62,
+  clusterRadius: 620,
   /** Loops per second at rest; the beat pulls this around. */
   rate: 0.24,
+  /**
+   * How much crowd stands there before the track has earned anything. Not zero:
+   * the floor is full at the first frame, and what a track earns is how present
+   * the people are, not whether they showed up.
+   */
+  floor: 0.45,
 } as const;
 
 interface Tier {
@@ -216,7 +232,9 @@ void main() {
   // Small on purpose. At five pixels the points of a near dancer overlap into
   // a blob and the body stops reading as a person; the silhouette lives in the
   // gaps between the points, not in the points.
-  gl_PointSize = clamp((190.0 * scale) / distance, 1.0, 2.6);
+  // Tied to uHeight so a taller crowd viewed from further away keeps the same
+  // spacing on screen — 13.6 per unit of height is what read well at 14 units.
+  gl_PointSize = clamp((13.6 * uHeight * scale) / distance, 1.0, 2.6);
   gl_Position = projectionMatrix * mv;
 }
 `;
@@ -392,15 +410,23 @@ export class CrowdField {
 
   /**
    * How much crowd the track has earned. `layers` is the ladder (0-7) and
-   * `intensity` is what is actually sounding right now, so a break empties the
+   * `intensity` is what is actually sounding right now, so a break thins the
    * field just as it empties the terrain.
+   *
+   * User decision (15 aug): the crowd is there from the first second, before a
+   * single layer is earned. What the track earns is how present they are, not
+   * whether anyone came — an empty floor read as a broken world, not a quiet
+   * one. Hence the floor: earned scales from FLOOR to 1, never from 0.
    */
   setSignal(intensity: number, layers: number): void {
-    const earned = Math.min(1, layers / 5);
+    const earned = CROWD_CONFIG.floor + (1 - CROWD_CONFIG.floor) * Math.min(1, layers / 5);
     const present = Math.min(1, earned * (0.35 + intensity * 0.65));
     this.material.uniforms['uIntensity']!.value = present;
-    // §25: nobody shares a beat until the track has something to share.
-    this.material.uniforms['uCoherence']!.value = Math.max(0, (earned - 0.4) / 0.6) * intensity;
+    // §25: nobody shares a beat until the track has something to share. This
+    // reads the ladder itself, not the floored presence — a crowd that is
+    // merely there must still dance out of step until the track earns them.
+    const ladder = Math.min(1, layers / 5);
+    this.material.uniforms['uCoherence']!.value = Math.max(0, (ladder - 0.4) / 0.6) * intensity;
     const total = CROWD_CONFIG.near + CROWD_CONFIG.mid + CROWD_CONFIG.far;
     this.material.uniforms['uRate']!.value = CROWD_CONFIG.rate * (0.8 + intensity * 0.5);
     for (const tier of this.built) tier.points.visible = present > 0.02 && total > 0;

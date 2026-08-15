@@ -88,12 +88,26 @@ describe('§176 the crowd stands on the ground', () => {
 });
 
 describe('§176 the crowd is what the track earned', () => {
-  it('is empty in silence and nobody is drawn', () => {
+  // User decision (15 aug), replacing "empty in silence": the people are on the
+  // floor from the first frame. An empty field read as a world that had not
+  // loaded rather than a track that had not started.
+  it('is already standing there before a single layer is earned', () => {
     const crowd = posed();
     crowd.setSignal(0, 0);
     fly(crowd, 0, 0, 1);
-    expect(crowd.uniformSnapshot()['intensity']).toBe(0);
-    expect(crowd.uniformSnapshot()['visible']).toBe(false);
+    expect(crowd.uniformSnapshot()['intensity'] as number).toBeGreaterThan(0.02);
+    expect(crowd.uniformSnapshot()['visible']).toBe(true);
+    expect(crowd.stats().drawn.reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
+    crowd.dispose();
+  });
+
+  it('still has far more of them once the track is full', () => {
+    const crowd = posed();
+    crowd.setSignal(1, 0);
+    const opening = crowd.uniformSnapshot()['intensity'] as number;
+    crowd.setSignal(1, 5);
+    // Presence is what a track earns, so the gap has to stay worth earning.
+    expect((crowd.uniformSnapshot()['intensity'] as number) / opening).toBeGreaterThan(1.8);
     crowd.dispose();
   });
 
@@ -197,7 +211,10 @@ describe('§176 the crowd is a crowd, not a pattern', () => {
     const spread = [...phases].sort((a, b) => a - b);
     expect(spread[0]!).toBeLessThan(80);
     expect(spread[spread.length - 1]!).toBeGreaterThan(920);
-    expect(phases.size).toBeGreaterThan(count * 0.95);
+    // Rounded to a thousandth, ninety draws from a thousand buckets collide a
+    // handful of times by chance alone; which dancers land in this tier depends
+    // on the placement radius, so 0.95 was measuring the sample, not the spread.
+    expect(phases.size).toBeGreaterThan(count * 0.85);
     expect(maxScale - minScale).toBeGreaterThan(0.1);
     crowd.dispose();
   });

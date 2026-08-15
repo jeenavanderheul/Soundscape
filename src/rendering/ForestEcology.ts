@@ -218,9 +218,77 @@ export function isEarned(role: GrowthRole, track: Readonly<TrackState> | undefin
   return track[layer].unlocked;
 }
 
+/**
+ * §179 (user: "de bomen moeten twee keer zo groot zijn als de mensen").
+ *
+ * The role bases below are written in tree-units: a trunk is 14, a giant is 34,
+ * and those proportions are the forest. This multiplies the whole forest into
+ * world units and is the ONLY place its overall size is decided — every
+ * relative height, radius, spacing and threshold is expressed against it, so
+ * the forest can be resized without any of them drifting apart.
+ *
+ * The number comes from the crowd: a dancer is CROWD_CONFIG.height = 140 world
+ * units and a typical tree has to be twice that, 280.
+ *
+ * Calibrated against what is actually DRAWN, not against a hand-picked trunk:
+ * measured over 343 growths the median raw height is 12.67 per unit of this
+ * constant, and a tree in an untouched world is drawn at potentialScale 0.8 ×
+ * the 0.75 floor of the depth scale. 280 / (12.67 × 0.8 × 0.75) ≈ 37. Picking
+ * the median rather than a trunk matters: an earlier 13 put the typical tree at
+ * 0.7 of a dancer while the arithmetic for one chosen tree said 2.0.
+ *
+ * This is the ratio in a world nothing has been earned in yet. Trees still grow
+ * past it as a track deepens — the forest reaching beyond the crowd is the
+ * reward, not the baseline.
+ */
+export const GROWTH_SCALE = 37;
+
+/**
+ * §179b (user: "alle bomen in elke genre moeten altijd 2:1 verhouding
+ * krijgen").
+ *
+ * A single multiplier could only ever put the MIDDLE of the forest at 2:1.
+ * Measured per world, drawn, against a dancer of 140, that is what it did:
+ * techno sat at a median of 1.92 but percussion-riot at 0.28 and the broken
+ * machine at 0.35, and the small roles — spore (base 2), canopy (5), branch (6)
+ * — were dwarves in every world at 0.13–0.42. Multiplying harder does not fix
+ * that: the distribution is 60:1 wide, so any scale that lifts the smallest
+ * growth above the crowd sends the giants past ten dancers.
+ *
+ * So the height is no longer a multiplication. It is a FLOOR plus what the role
+ * and the world add on top:
+ *
+ *   height = GROWTH_FLOOR + roleAndWorld × GROWTH_VARIATION
+ *
+ * The floor is where 2:1 is guaranteed — every growth, every role, every
+ * ecology, no exceptions and no clamping (a clamp would flatten everything
+ * underneath it into one identical height; an offset keeps every difference,
+ * just above the crowd instead of below it).
+ *
+ * What this costs, said plainly: the forest's internal spread compresses from
+ * about 60:1 to about 3.5:1, and the ten worlds' `heightScale` (0.5–1.6) now
+ * separates their medians by roughly 40% instead of by 7×. Both cannot be had
+ * at once — a guaranteed floor and an untouched spread are the same knob. The
+ * variation weight below is set as high as it can go before the giants stop
+ * being trees, so what is left of the difference is as wide as the floor
+ * allows.
+ */
+/** Drawn at potentialScale 0.8 × the 0.75 floor of the depth scale. */
+const DRAWN_FRACTION = 0.6;
+/** CROWD_CONFIG.height. Copied, not imported: this module must stay free of the renderer. */
+const DANCER_HEIGHT = 140;
+/** The shortest growth that can exist: exactly two dancers once drawn. */
+export const GROWTH_FLOOR = (2 * DANCER_HEIGHT) / DRAWN_FRACTION;
+/** World units added per tree-unit of role × ecology, on top of the floor. */
+export const GROWTH_VARIATION = GROWTH_SCALE * 0.5;
+
 export const FOREST_GRID = {
-  /** World size of one placement cell. */
-  cellSize: 26,
+  /**
+   * World size of one placement cell. Scaled with the forest: trees ten times
+   * bigger standing the same 26 units apart is a wall, not a forest, so the
+   * spacing between them keeps its proportion to their size.
+   */
+  cellSize: 26 * GROWTH_SCALE,
   /**
    * Cells of forest kept around the player in each direction. §140: reaches
    * further than it used to (234 → 416 units) now that the terrain itself
@@ -228,8 +296,12 @@ export const FOREST_GRID = {
    * by a short radius.
    */
   radiusInCells: 16,
-  /** Growths this big or taller are solid obstacles (user decision). */
-  solidHeight: 26,
+  /**
+   * Growths this big or taller are solid obstacles (user decision). Scaled with
+   * the forest so exactly the same formations stay solid — an unscaled
+   * threshold would turn every sapling into a wall the orb bounces off.
+   */
+  solidHeight: 26 * GROWTH_SCALE,
 } as const;
 
 /**
@@ -256,9 +328,15 @@ export function growthsInCell(
     // Role decides the band and the proportions; ecology scales them.
     const base =
       role === 'giant' ? 34 : role === 'trunk' ? 14 : role === 'thin' ? 9 : role === 'canopy' ? 5 : role === 'root' ? 7 : role === 'branch' ? 6 : 2;
-    const height = base * (0.6 + size * 0.8) * ecology.heightScale;
-    const radius =
-      role === 'giant' ? 3.4 : role === 'trunk' ? 1.1 : role === 'thin' ? 0.22 : role === 'canopy' ? 2.6 : role === 'root' ? 0.7 : role === 'branch' ? 0.45 : 0.3;
+    const spread = base * (0.6 + size * 0.8) * ecology.heightScale;
+    const height = GROWTH_FLOOR + spread * GROWTH_VARIATION;
+    // Slenderness, not thickness: how wide this role is PER UNIT OF ITS HEIGHT.
+    // The baked cloud is scaled uniformly by the height, so a fixed radius on a
+    // growth that now starts at the floor would describe a needle where the
+    // screen shows a tree — and it is this radius the orb bounces off.
+    const slenderness =
+      role === 'giant' ? 3.4 / 34 : role === 'trunk' ? 1.1 / 14 : role === 'thin' ? 0.22 / 9 : role === 'canopy' ? 2.6 / 5 : role === 'root' ? 0.7 / 7 : role === 'branch' ? 0.45 / 6 : 0.3 / 2;
+    const radius = height * slenderness;
     growths.push({
       role,
       x: (cx + jx) * FOREST_GRID.cellSize,

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { InstancedBufferAttribute, Points } from 'three';
 
 import { ForestRenderer, thinningAt, type TreeSpecies } from '../../src/rendering/ForestRenderer';
+import { GROWTH_SCALE } from '../../src/rendering/ForestEcology';
 
 declare function require(id: string): {
   readFileSync(p: string, enc?: string): { buffer: ArrayBuffer; byteOffset: number; byteLength: number } & string;
@@ -46,7 +47,12 @@ function distancesFromPlayer(x: number, z: number): number[] {
     const geometry = points.geometry as unknown as { instanceCount: number };
     const offsets = points.geometry.getAttribute('iPosition') as InstancedBufferAttribute;
     for (let i = 0; i < geometry.instanceCount; i++) {
-      out.push(Math.hypot(offsets.getX(i) - x, offsets.getZ(i) - z));
+      // §179: measured in TREE-UNITS, not world units. The forest was scaled up
+      // whole (GROWTH_SCALE) so a tree stands twice a dancer's height, and its
+      // spacing scaled with it; every distance below is a claim about the shape
+      // of the forest — near dense, rim thin — not about absolute metres, so
+      // dividing here keeps the claim and drops the stale unit.
+      out.push(Math.hypot(offsets.getX(i) - x, offsets.getZ(i) - z) / GROWTH_SCALE);
     }
   }
   forest.dispose();
