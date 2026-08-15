@@ -373,16 +373,13 @@ export class ForestRenderer {
    * deterministic — the same trees survive every time you come back.
    */
   private rebuild(track: Readonly<TrackState> | undefined): void {
+    // §162: the disc of cells and the order they are visited in never change —
+    // they are the same lattice around whichever cell the player is standing
+    // in. Building 800 objects and sorting them on the frame you cross a
+    // region boundary was work done over and over for an answer that was
+    // already known.
+    const cells = nearestFirstCells();
     const r = FOREST_GRID.radiusInCells;
-    const cells: { dx: number; dz: number; distance: number }[] = [];
-    for (let dz = -r; dz <= r; dz++) {
-      for (let dx = -r; dx <= r; dx++) {
-        const distance = Math.hypot(dx, dz);
-        if (distance > r) continue; // a disc, not a square
-        cells.push({ dx, dz, distance });
-      }
-    }
-    cells.sort((a, b) => a.distance - b.distance);
 
     const next: Growth[] = [];
     for (const cell of cells) {
@@ -443,6 +440,29 @@ export class ForestRenderer {
     for (const cloud of this.clouds.values()) cloud.geometry.dispose();
     this.material.dispose();
   }
+}
+
+/**
+ * §162: the visiting order, computed once. A disc of offsets sorted by
+ * distance — nearest first, because the instance budget runs out and what it
+ * cuts has to be the farthest (§140).
+ */
+let cellOrder: { dx: number; dz: number; distance: number }[] | null = null;
+
+function nearestFirstCells(): { dx: number; dz: number; distance: number }[] {
+  if (cellOrder) return cellOrder;
+  const r = FOREST_GRID.radiusInCells;
+  const cells: { dx: number; dz: number; distance: number }[] = [];
+  for (let dz = -r; dz <= r; dz++) {
+    for (let dx = -r; dx <= r; dx++) {
+      const distance = Math.hypot(dx, dz);
+      if (distance > r) continue; // a disc, not a square
+      cells.push({ dx, dz, distance });
+    }
+  }
+  cells.sort((a, b) => a.distance - b.distance);
+  cellOrder = cells;
+  return cells;
 }
 
 /**
