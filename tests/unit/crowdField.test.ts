@@ -14,12 +14,12 @@ import { CrowdField, CROWD_CONFIG, type CrowdManifest } from '../../src/renderin
  */
 
 const MANIFEST: CrowdManifest = {
-  points: 1024,
+  points: 2048,
   frames: 128,
   clips: [0, 1, 2].map((i) => ({
     name: `clip-${i}`,
     file: `clip-${i}.vat`,
-    points: 1024,
+    points: 2048,
     frames: 128,
     seconds: 4.3,
   })),

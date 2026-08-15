@@ -2014,3 +2014,40 @@ in the extremities. The mocap stays the mocap.
 Licence: CMU places no restrictions on the data ("free for all uses", including
 commercial products; reselling the dataset itself is excluded), and the BVH
 conversion adds none. Recorded in `assets/mocap/LICENSE.md`.
+
+## 177. The body is a skin, not a cloud (v16 amendment — NORMATIVE)
+
+§176 put real dancers in the world and they read as blobs. Two causes, both in
+the bake, both measured rather than guessed.
+
+**The points were in the volume.** `cbrt(random()) * radius` spreads points
+evenly through the body, and that is precisely the distribution with no edge
+anywhere. Points on the SKIN draw their own outline for free: look at a limb
+and its surface is frontal in the middle and grazing at the rim, so grazing
+surface packs far more points into the same screen space. Measured across the
+torso, the rim is now 2.05× denser than the middle; before it was under 1. This
+is why there is no normal-vector texture — that is the usual way to buy a rim
+light, and it would double the memory to compute something the geometry gives
+away.
+
+**The limbs were more than twice too thick.** The first radii were guessed.
+Against a 1.80 m body the arms were 115% over, the hands 80%, the legs 80%. A
+limb twice as fat as a limb is a sausage however good the motion driving it is.
+Every radius is now a measured fraction of stature, with a taper along the bone
+so a calf is not an ankle, and a bulge profile so a head is an ellipsoid.
+
+Three consequences follow:
+- Points are shared by SURFACE AREA, not by bone length. Once they sit on the
+  skin, a bone's claim is how much skin it has. `weight` stays on top as the
+  §13 perceptual multiplier — hands and heads still get more than their area.
+- Radial offsets are built in an orthonormal frame around the bone. The first
+  pass added a spherical offset in the parent's axes whatever way the bone
+  pointed, which for an arm scattered points along its own length.
+- 2048 points per dancer, and `CROWD_CONFIG.nearPoints` must equal what the
+  bake wrote — the level-of-detail stride assumes it, so a mismatch is a hard
+  failure, not a subtle one.
+
+And the render: a hard dot with a faint bloom instead of a soft ball, and
+presence raised from 66-92% to 93-99%. A third of the torso missing at any
+moment read as noise that happened to be person-shaped. The instability belongs
+in the world around the dancer, not in whether the dancer exists.

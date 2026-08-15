@@ -88,7 +88,7 @@ describe('§176 the body', () => {
   it('fills the texture row exactly, so no dancer has a hole in them', () => {
     const clip = parseBvh(ARM_BVH);
     const body = buildBody(clip, 0.01);
-    expect(body).toHaveLength(1024);
+    expect(body).toHaveLength(2048);
     for (const point of body) {
       expect(point.joint).toBeGreaterThanOrEqual(0);
       expect(point.joint).toBeLessThan(clip.joints.length);

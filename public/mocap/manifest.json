@@ -1,56 +1,56 @@
 {
-  "points": 1024,
+  "points": 2048,
   "frames": 128,
   "clips": [
     {
       "name": "05-02",
       "file": "05-02.vat",
-      "points": 1024,
+      "points": 2048,
       "frames": 128,
       "seconds": 4.3,
       "joints": 38,
       "sourceFrames": 1124,
-      "bytes": 1048576
+      "bytes": 2097152
     },
     {
       "name": "05-12",
       "file": "05-12.vat",
-      "points": 1024,
+      "points": 2048,
       "frames": 128,
       "seconds": 4.3,
       "joints": 38,
       "sourceFrames": 1355,
-      "bytes": 1048576
+      "bytes": 2097152
     },
     {
       "name": "143-35",
       "file": "143-35.vat",
-      "points": 1024,
+      "points": 2048,
       "frames": 128,
       "seconds": 4.3,
       "joints": 38,
       "sourceFrames": 1280,
-      "bytes": 1048576
+      "bytes": 2097152
     },
     {
       "name": "49-09",
       "file": "49-09.vat",
-      "points": 1024,
+      "points": 2048,
       "frames": 128,
       "seconds": 4.3,
       "joints": 38,
       "sourceFrames": 1918,
-      "bytes": 1048576
+      "bytes": 2097152
     },
     {
       "name": "55-02",
       "file": "55-02.vat",
-      "points": 1024,
+      "points": 2048,
       "frames": 128,
       "seconds": 4.3,
       "joints": 38,
       "sourceFrames": 2181,
-      "bytes": 1048576
+      "bytes": 2097152
     }
   ]
 }

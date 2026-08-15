@@ -31,7 +31,7 @@ const OUT_DIR = 'public/mocap';
 /** Texture height. 128 frames at 30fps is a 4.3s loop — long enough not to read as a loop. */
 const FRAMES = 128;
 /** Texture width: body points per dancer. The near-LOD count; mid and far stride over it. */
-const POINTS = 1024;
+const POINTS = 2048;
 /** Frames blended head-to-tail so the loop does not pop. */
 const STITCH = 14;
 /**
@@ -200,16 +200,25 @@ function poseAt(clip, frame) {
  * others. Hands and head carry the read of a dancing body far past the point
  * where the torso has dissolved into noise.
  */
+/**
+ * `radius` is the limb's half-width at the joint it grows FROM, as a fraction
+ * of stature; `taper` is what is left of that by the far end. Both were
+ * measured against a 1.80 m body, because the first pass guessed them and the
+ * arms came out 115% too thick, the hands 80% and the legs 80%. Point clouds
+ * are unforgiving about this: a limb that is twice as fat as a limb reads as a
+ * sausage no matter how good the motion driving it is.
+ */
 const REGIONS = [
-  { match: ['head', 'skull'], radius: 0.085, weight: 3.2, region: 0 },
-  { match: ['neck'], radius: 0.04, weight: 0.5, region: 0 },
-  { match: ['hand', 'finger', 'thumb', 'wrist'], radius: 0.045, weight: 2.6, region: 1 },
-  { match: ['forearm', 'lowerarm', 'elbow'], radius: 0.05, weight: 1.6, region: 1 },
-  { match: ['arm', 'shoulder', 'clavicle'], radius: 0.062, weight: 1.8, region: 1 },
-  { match: ['foot', 'toe', 'ankle'], radius: 0.055, weight: 1.5, region: 2 },
-  { match: ['leg', 'knee', 'shin', 'thigh'], radius: 0.075, weight: 1.2, region: 2 },
-  { match: ['spine', 'chest', 'thorax', 'back'], radius: 0.115, weight: 1.0, region: 3 },
-  { match: ['hip', 'pelvis', 'root'], radius: 0.11, weight: 1.0, region: 3 },
+  { match: ['head', 'skull'], radius: 0.055, taper: 1, bulge: true, weight: 3.2, region: 0 },
+  { match: ['neck'], radius: 0.031, taper: 1, weight: 0.5, region: 0 },
+  { match: ['hand', 'finger', 'thumb', 'wrist'], radius: 0.026, taper: 0.7, weight: 2.6, region: 1 },
+  { match: ['forearm', 'lowerarm', 'elbow'], radius: 0.028, taper: 0.72, weight: 1.8, region: 1 },
+  { match: ['arm', 'shoulder', 'clavicle'], radius: 0.037, taper: 0.78, weight: 1.8, region: 1 },
+  { match: ['foot', 'toe', 'ankle'], radius: 0.029, taper: 0.8, weight: 1.5, region: 2 },
+  { match: ['shin', 'calf', 'lowerleg'], radius: 0.046, taper: 0.55, weight: 1.2, region: 2 },
+  { match: ['leg', 'knee', 'thigh'], radius: 0.06, taper: 0.75, weight: 1.2, region: 2 },
+  { match: ['spine', 'chest', 'thorax', 'back'], radius: 0.092, taper: 1.06, weight: 1.0, region: 3 },
+  { match: ['hip', 'pelvis', 'root'], radius: 0.085, taper: 0.95, weight: 1.0, region: 3 },
 ];
 
 function classify(name) {
@@ -217,7 +226,18 @@ function classify(name) {
   for (const entry of REGIONS) {
     if (entry.match.some((word) => lower.includes(word))) return entry;
   }
-  return { radius: 0.07, weight: 0.8, region: 3 };
+  return { radius: 0.05, taper: 0.85, weight: 0.8, region: 3 };
+}
+
+const cross = (a, b) => [
+  a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2],
+  a[0] * b[1] - a[1] * b[0],
+];
+
+function normalise(v) {
+  const length = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / length, v[1] / length, v[2] / length];
 }
 
 /** Deterministic scatter — the same clip bakes to the same body, every time. */
@@ -250,23 +270,52 @@ function buildBody(clip, scale) {
   }
   if (bones.length === 0) throw new Error('BVH: skeleton has no bones with length');
 
-  const total = bones.reduce((sum, b) => sum + b.weight * b.length, 0);
+  // Share by SURFACE AREA, not by length. Once the points sit on the skin, a
+  // bone's claim on them is how much skin it has — length times girth — and
+  // sharing by length alone starved the torso, which is most of a body's
+  // surface, while a finger bone got the same handful. `weight` stays on top
+  // of that as the perceptual multiplier §13 asks for: hands and heads are
+  // where a moving body is read from, so they still get more than their area.
+  const area = (b) => b.weight * b.length * b.radius * (1 + b.taper) * 0.5;
+  const total = bones.reduce((sum, b) => sum + area(b), 0);
   const points = [];
   for (const bone of bones) {
-    const share = Math.max(1, Math.round((POINTS * bone.weight * bone.length) / total));
+    const share = Math.max(1, Math.round((POINTS * area(bone)) / total));
+    // An orthonormal frame around the bone, so "off the bone" means
+    // perpendicular to it. The first pass added a random spherical offset in
+    // the parent's axes regardless of which way the bone pointed, which for an
+    // arm meant scattering along its own length — limbs came out both fatter
+    // and shorter than the skeleton says they are.
+    const [ax, ay, az] = bone.offset;
+    const length = Math.hypot(ax, ay, az);
+    const dir = [ax / length, ay / length, az / length];
+    const seed = Math.abs(dir[1]) > 0.9 ? [1, 0, 0] : [0, 1, 0];
+    const u = normalise(cross(dir, seed));
+    const v = cross(dir, u);
+
     for (let k = 0; k < share && points.length < POINTS; k++) {
-      // Along the bone, then off it: a capsule of points, not a line of them.
       const t = random();
-      const radial = Math.cbrt(random()) * bone.radius;
+      // The limb's half-width where we are along it. A calf is not an ankle.
+      let width = bone.radius * (1 + (bone.taper - 1) * t);
+      // A head is an ellipsoid, not a tube with a cap.
+      if (bone.bulge) width *= Math.sqrt(Math.max(0.08, 1 - (2 * t - 1) ** 2));
+
+      // THE SURFACE, not the volume. This is what draws the outline: look at a
+      // limb and its surface is frontal in the middle and grazing at the edges,
+      // so grazing surface packs far more points into the same screen space and
+      // the silhouette lights up on its own. Sampling the volume — which is
+      // what `cbrt(random)` did — is precisely the distribution that has no
+      // edge anywhere. A minority stay inside, which is the sparse scatter a
+      // scanned body has under its skin.
+      const depth = random() < 0.84 ? 1 : 0.3 + random() * 0.5;
+      const radial = (width * depth) / scale;
       const theta = random() * Math.PI * 2;
-      const phi = Math.acos(2 * random() - 1);
+      const c = Math.cos(theta) * radial;
+      const s = Math.sin(theta) * radial;
+
       points.push({
         joint: bone.joint,
-        local: [
-          bone.offset[0] * t + (radial * Math.sin(phi) * Math.cos(theta)) / scale,
-          bone.offset[1] * t + (radial * Math.cos(phi)) / scale,
-          bone.offset[2] * t + (radial * Math.sin(phi) * Math.sin(theta)) / scale,
-        ],
+        local: [ax * t + u[0] * c + v[0] * s, ay * t + u[1] * c + v[1] * s, az * t + u[2] * c + v[2] * s],
         region: bone.region,
       });
     }

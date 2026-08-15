@@ -82,10 +82,10 @@ export const CROWD_CONFIG = {
   midDistance: 220,
   /** Trail samples on the near tier: current frame plus three older ones. */
   trail: 4,
-  /** Points drawn per dancer, per tier. The bake writes 1024. */
-  nearPoints: 1024,
-  midPoints: 256,
-  farPoints: 40,
+  /** Points drawn per dancer, per tier. Must match what the bake writes. */
+  nearPoints: 2048,
+  midPoints: 384,
+  farPoints: 48,
   /** Clusters the crowd forms up into, rather than a uniform scatter. */
   clusters: 9,
   clusterRadius: 62,
@@ -193,7 +193,13 @@ void main() {
 
   // §14: readable but unstable. Points come and go; hands and heads survive
   // longest because they are what a body is read from.
-  float steadiness = vRegion < 1.5 ? 0.92 : (vRegion < 2.5 ? 0.74 : 0.66);
+  //
+  // Was 0.66-0.92, which meant a third of the torso was missing at any moment
+  // and the body read as noise that happened to be person-shaped. The
+  // reference stands still and solid: the instability belongs in the world
+  // around the dancer, not in whether the dancer exists. What is left is a
+  // shimmer, and it still dissolves properly when the signal drops.
+  float steadiness = vRegion < 1.5 ? 0.99 : (vRegion < 2.5 ? 0.96 : 0.93);
   float flicker = hash(aPointId + aSeed * 17.0 + floor(uTime * 11.0) * 0.017);
   float present = step(flicker, steadiness * (0.55 + uIntensity * 0.45) + uHigh * 0.2);
 
@@ -226,7 +232,10 @@ void main() {
   vec2 d = gl_PointCoord - vec2(0.5);
   float r2 = dot(d, d);
   if (r2 > 0.25) discard;
-  float core = exp(-r2 * 8.0);
+  // A hard little dot with a faint bloom around it, not a soft ball. At
+  // exp(-r2*8) every point was a smudge and a thousand smudges are a cloud;
+  // the reference is made of pinpricks that happen to be dense along an edge.
+  float core = exp(-r2 * 34.0) + exp(-r2 * 6.0) * 0.16;
 
   // §03: the crowd owns no colour. It is white signal, tinted by the region it
   // is standing in, exactly like everything else in this world.
@@ -334,6 +343,15 @@ export class CrowdField {
   setPose(manifest: CrowdManifest, buffers: ArrayBuffer[]): void {
     if (buffers.length === 0 || buffers.length !== manifest.clips.length) {
       throw new Error('crowd: manifest and baked clips disagree');
+    }
+    // The stride that makes level of detail work assumes the bake wrote
+    // exactly this many points. If the two ever drift apart the shader reads
+    // past the end of a row and dancers quietly turn to noise, so it is a
+    // hard failure rather than a subtle one.
+    if (manifest.points !== CROWD_CONFIG.nearPoints) {
+      throw new Error(
+        `crowd: bake wrote ${manifest.points} points, runtime expects ${CROWD_CONFIG.nearPoints}`,
+      );
     }
     const width = manifest.points;
     const height = manifest.frames * manifest.clips.length;
