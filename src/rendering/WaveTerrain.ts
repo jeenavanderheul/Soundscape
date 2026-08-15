@@ -137,6 +137,7 @@ varying float vRidge;
 varying float vSeed;   // §136.6: which signal state this stretch of line is in
 varying float vFar;    // 0 at the lens, 1 at the edge of the drawn field
 varying float vBeam;   // §146: how hard the dome signal is on this stretch
+varying float vLamp;   // §169: light reaching this ground from the fixtures
 
 ${TERRAIN_FIELD_GLSL}
 ${LAND_FIELD_GLSL}
@@ -182,8 +183,12 @@ void main() {
   // louder the low end the broader and heavier the pass.
   float beam = domeBeam(world);
   h += domeBeamWide(world) * (0.8 + uBass * 2.2);
+  // §169: and this is the rig actually LIGHTING the ground — a pool cast from
+  // where the lit fixtures are standing, not a glow drawn around them. It is
+  // what makes the light look like it is coming out of the lamps.
+  vLamp = domeLampLight(world);
   vBeam = beam;
-  float glow = uBass * 0.25 + beam * 0.5;
+  float glow = uBass * 0.25 + beam * 0.5 + vLamp * 0.6;
   vec3 zone = vec3(0.0);
   for (int i = 0; i < ${TERRAIN_CONFIG.maxSources}; i++) {
     if (i >= uSourceCount) break;
@@ -246,6 +251,7 @@ varying float vRidge;
 varying float vSeed;
 varying float vFar;
 varying float vBeam;
+varying float vLamp;
 
 /**
  * §136.6 A LINE HAS STATES. One perfectly clean wireframe everywhere is what
@@ -296,7 +302,8 @@ void main() {
   // sink back — the world is revealed rather than lit.
   // The beam has to beat the distance fade on its own, or the ring is only
   // ever visible where the world was already bright.
-  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 + vBeam * 2.2 - vSeed - vFar * 1.6;
+  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 + vBeam * 2.2
+    + vLamp * 1.4 - vSeed - vFar * 1.6;
 
   float k;
   if (strength < -0.22) {
@@ -331,7 +338,10 @@ void main() {
   // §146: and it is LIGHT, not only a state. The signal states decide whether
   // a line is drawn cleanly; this is what makes the band read as illumination
   // sweeping over it, white and clipping at the centre.
-  color *= 1.0 + vBeam * 2.6;
+  // §169: lit ground is BRIGHTER ground. The pool from the fixtures lifts the
+  // lines it falls on, which is the whole difference between a lamp that
+  // glows and a lamp that lights something.
+  color *= 1.0 + vBeam * 2.6 + vLamp * 2.2;
   gl_FragColor = vec4(color * k, 1.0);
 }
 `;

@@ -381,6 +381,48 @@ float domeBeamWide(vec2 world) {
   return band * radial * uBeamIntensity;
 }
 
+/**
+ * §169 LIGHT THAT COMES OUT OF THE FIXTURES.
+ *
+ * Everything before this was a glow drawn AROUND the lamps — a sprite hanging
+ * in front of the world, which is why the world underneath never got any
+ * brighter for it. This is the other direction: where are the lit fixtures
+ * standing, and how much of their light reaches this piece of ground.
+ *
+ * The lit cluster sits on the ring at the beam's bearing, so its position is
+ * known exactly. Falloff is inverse-square-ish with a soft knee, which is what
+ * a real fixture does and, more usefully, what makes the pool of light read as
+ * having a SOURCE rather than as a wash.
+ */
+float lampPool(vec2 world, float bearing, float radius, float height, float gain) {
+  vec2 lamp = uBeamPlayer + vec2(cos(bearing), sin(bearing)) * radius;
+  // NOT the word f-l-a-t: it is an interpolation qualifier in GLSL, and naming
+  // a variable with it silently fails the whole program to link. Third time
+  // this class of bug has cost a round here — after backticks in comments and
+  // the word h-a-l-f.
+  vec2 onGround = world - lamp;
+  // Height matters: a fixture 46 units up throws a wider, softer pool than one
+  // at ground level, and the ground right under it is the brightest place.
+  float d2 = dot(onGround, onGround) + height * height;
+  return gain / (1.0 + d2 / 5200.0);
+}
+
+/** Everything the rig is throwing at this point of ground, right now. */
+float domeLampLight(vec2 world) {
+  if (uBeamIntensity <= 0.0) return 0.0;
+  float lit = uBeamIntensity;
+  // The two rings that actually point at the ground; the crown lights the air.
+  float pool = lampPool(world, uBeam, 235.0, 4.0, lit)
+    + lampPool(world, uBeam, 205.0, 46.0, lit * 0.8);
+  if (uBeamCounter >= 0.0) {
+    pool += lampPool(world, uBeamCounter, 235.0, 4.0, lit * 0.7);
+  }
+  if (uBeamGhost >= 0.0) {
+    pool += lampPool(world, uBeamGhost, 235.0, 4.0, lit * 0.35);
+  }
+  return pool;
+}
+
 float domeBeam(vec2 world) {
   vec2 fromPlayer = world - uBeamPlayer;
   float distance = length(fromPlayer);

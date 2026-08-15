@@ -162,7 +162,10 @@ void main() {
   float down = clamp(-vQuad.y, 0.0, 1.0);
   float taper = 1.0 - down * 0.55;
   float shaft = exp(-(vQuad.x * vQuad.x) / max(0.02, taper * taper * 0.32)) * down * (1.0 - down * 0.35);
-  float light = filament * 1.15 + glow * 0.38 + shaft * vHaze * 0.7;
+  // §168 (user): half. Halved on the OUTPUT side rather than in the hot term,
+  // so the ratio between a lit fixture and a resting one is untouched — the
+  // rig gets quieter, not flatter.
+  float light = filament * 0.58 + glow * 0.19 + shaft * vHaze * 0.35;
   if (light < 0.004) discard;
   gl_FragColor = vec4(vColor * light * vHot, 1.0);
 }
