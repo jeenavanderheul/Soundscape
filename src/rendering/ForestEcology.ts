@@ -221,8 +221,13 @@ export function isEarned(role: GrowthRole, track: Readonly<TrackState> | undefin
 export const FOREST_GRID = {
   /** World size of one placement cell. */
   cellSize: 26,
-  /** Cells of forest kept around the player in each direction. */
-  radiusInCells: 9,
+  /**
+   * Cells of forest kept around the player in each direction. §140: reaches
+   * further than it used to (234 → 416 units) now that the terrain itself
+   * reaches a horizon — the budget is protected by thinning with distance, not
+   * by a short radius.
+   */
+  radiusInCells: 16,
   /** Growths this big or taller are solid obstacles (user decision). */
   solidHeight: 26,
 } as const;

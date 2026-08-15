@@ -353,22 +353,47 @@ export class ForestRenderer {
     this.draw();
   }
 
+  /**
+   * §140: fill NEAREST FIRST, and thin with distance.
+   *
+   * This used to walk the disc from dz = -r, so the moment the instance budget
+   * ran out — and it ran out after about a quarter of the cells — every tree
+   * the player had was standing on one far edge of the disc. The forest was
+   * only ever visible on the horizon, and never where you were flying.
+   *
+   * Nearest-first alone would spend the whole budget in a tight ring and leave
+   * the middle distance empty, so cells also keep a shrinking share of their
+   * growths as they get further away: solid around the player, sparse towards
+   * the edge, which is what a forest looks like anyway and what §136.13 asks
+   * of distance. The share is decided by each growth's own phase, so it is
+   * deterministic — the same trees survive every time you come back.
+   */
   private rebuild(track: Readonly<TrackState> | undefined): void {
     const r = FOREST_GRID.radiusInCells;
-    const next: Growth[] = [];
+    const cells: { dx: number; dz: number; distance: number }[] = [];
     for (let dz = -r; dz <= r; dz++) {
       for (let dx = -r; dx <= r; dx++) {
-        if (dx * dx + dz * dz > r * r) continue; // a disc, not a square
-        for (const growth of growthsInCell(
-          this.seedNumber,
-          this.cellX + dx,
-          this.cellZ + dz,
-          this.ecology,
-          track,
-        )) {
-          if (next.length >= FOREST_RENDER.maxInstances) break;
-          next.push(growth);
-        }
+        const distance = Math.hypot(dx, dz);
+        if (distance > r) continue; // a disc, not a square
+        cells.push({ dx, dz, distance });
+      }
+    }
+    cells.sort((a, b) => a.distance - b.distance);
+
+    const next: Growth[] = [];
+    for (const cell of cells) {
+      if (next.length >= FOREST_RENDER.maxInstances) break;
+      const keep = thinningAt(cell.distance / r);
+      for (const growth of growthsInCell(
+        this.seedNumber,
+        this.cellX + cell.dx,
+        this.cellZ + cell.dz,
+        this.ecology,
+        track,
+      )) {
+        if (next.length >= FOREST_RENDER.maxInstances) break;
+        if (growth.phase > keep) continue;
+        next.push(growth);
       }
     }
     this.growths = next;
@@ -414,6 +439,21 @@ export class ForestRenderer {
     for (const cloud of this.clouds.values()) cloud.geometry.dispose();
     this.material.dispose();
   }
+}
+
+/**
+ * Share of a cell's growths that survive, by how far out the cell is (0 at the
+ * player, 1 at the rim). Everything close stands; the rim keeps a sixth.
+ */
+export function thinningAt(distance01: number): number {
+  const t = distance01 < 0 ? 0 : distance01 > 1 ? 1 : distance01;
+  // Steep on purpose. There are ~5600 growths in the disc and room for 460, so
+  // a gentle curve spends the whole budget by half the radius and the far half
+  // of the forest never gets drawn at all — which is the bug this fixes, just
+  // moved outwards. The fifth power averages out to about 8% of them, which is
+  // exactly what fits, and it keeps everything standing near the player.
+  const falloff = (1 - t) ** 5;
+  return 0.035 + 0.965 * falloff;
 }
 
 /**
