@@ -13,6 +13,16 @@
       "bytes": 2097152
     },
     {
+      "name": "05-10",
+      "file": "05-10.vat",
+      "points": 2048,
+      "frames": 128,
+      "seconds": 4.3,
+      "joints": 38,
+      "sourceFrames": 818,
+      "bytes": 2097152
+    },
+    {
       "name": "05-12",
       "file": "05-12.vat",
       "points": 2048,
@@ -20,6 +30,26 @@
       "seconds": 4.3,
       "joints": 38,
       "sourceFrames": 1355,
+      "bytes": 2097152
+    },
+    {
+      "name": "05-20",
+      "file": "05-20.vat",
+      "points": 2048,
+      "frames": 128,
+      "seconds": 4.3,
+      "joints": 38,
+      "sourceFrames": 1096,
+      "bytes": 2097152
+    },
+    {
+      "name": "143-34",
+      "file": "143-34.vat",
+      "points": 2048,
+      "frames": 128,
+      "seconds": 4.3,
+      "joints": 38,
+      "sourceFrames": 784,
       "bytes": 2097152
     },
     {
@@ -43,6 +73,16 @@
       "bytes": 2097152
     },
     {
+      "name": "49-22",
+      "file": "49-22.vat",
+      "points": 2048,
+      "frames": 128,
+      "seconds": 4.3,
+      "joints": 38,
+      "sourceFrames": 1289,
+      "bytes": 2097152
+    },
+    {
       "name": "55-02",
       "file": "55-02.vat",
       "points": 2048,
@@ -50,6 +90,16 @@
       "seconds": 4.3,
       "joints": 38,
       "sourceFrames": 2181,
+      "bytes": 2097152
+    },
+    {
+      "name": "93-03",
+      "file": "93-03.vat",
+      "points": 2048,
+      "frames": 128,
+      "seconds": 3.683,
+      "joints": 38,
+      "sourceFrames": 443,
       "bytes": 2097152
     }
   ]

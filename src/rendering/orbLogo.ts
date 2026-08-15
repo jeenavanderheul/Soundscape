@@ -1,0 +1,185 @@
+import { CanvasTexture, ClampToEdgeWrapping, DataTexture, LinearFilter, RedFormat, Texture } from 'three';
+
+/**
+ * The DEKMANTEL mark as the orb's skin.
+ *
+ * The mark is not a sprite and not a ring: it is printed into the orb's own
+ * surface, so the standing waves that deform the sphere deform the mark with
+ * it. Two decisions make that possible without a texture seam:
+ *
+ * 1. The artwork is rasterised in-process from the SVG path data below with
+ *    Path2D — no image file, no fetch, nothing to load. The game stays offline
+ *    and the mark is available on the first frame.
+ * 2. The mark is projected onto ONE cap of the sphere (azimuthal equidistant
+ *    around a single pole) instead of wrapped equirectangularly. A cap has no
+ *    seam and no polar pinch, and the pole is chosen to face the chase camera.
+ */
+
+/** The viewBox of public/frequency-logo.svg, cropped tight around the mark. */
+export const LOGO_VIEWBOX = { x: 1683.46, y: 307.96, width: 989.2, height: 817.54 } as const;
+
+/** The mark's outlines, verbatim from public/frequency-logo.svg. */
+export const LOGO_PATHS: readonly string[] = [
+  "M2335.87,736.64c1.91-.97.03-5.05-.04-6.96-1.05-27.05-1.92-57.98-.82-84.92.67-16.42,1.99-38.9,22.8-41.48,17.54-2.17,62.05,6.79,79.67,12.49,27.2,8.8,43.65,32.33,66.67,47.9,12.53,8.47,39.32,22.66,54.59,19.26,7.79-1.74,7.79-11.06,14.68-15,11.27-6.44,22.21-.41,33.12,3.84,14.11,5.5,49.78,19.84,60.02,29.01,3.52,3.16,2.44,4.21,3.66,7.87,1.9,5.69,3.02,15.58,2.12,21.85-.35,2.45-1.92,3.39-1.79,6.57.1,2.52,1.47,3.42,1.7,4.97.99,6.68-3.37,20.69-9.1,24.6-22.4,15.26-47.99,25.35-73.27,34.73-3.31-1.34-9.26.57-11.62,0-1.51-.36-7.89-5.2-9.04-6.65-9.05-11.38,2.08-25.59-11.94-38.32-15.07-13.69-64.64-19.92-82.89-11.93-4.77,2.09-12.61,10.2-14.66,15.01-9.61,22.58,6.04,48.65-16.25,66.97-19.42,15.97-84.46,20.86-110.48,22.26-14.08.75-35.95,2.35-48.84-2.35-17.51-6.39-24.07-21.16-44.74-25.32-17.89-3.6-59.5-3.64-77.75-.98-28.86,4.21-40.24,27.44-69.44,29.48-17.89,1.25-37.4-.11-55.24-.89-28.85-1.25-89.57-2.79-101.45-35.4-7.81-21.45,7.32-57.85-16.16-72.83-19.11-12.19-31.19,7.33-47.72,11.5-27.44,6.93-37.58-13.11-58.99-12.88-10.11.11-23.74,6.8-26.42,17.34-2.82,11.11,2.47,23.23-2.72,34.36-5.85,12.54-27.23,6.95-37.41,3.32-14.77-5.27-32.9-14.19-45.73-22.68-2.86-1.89-7.02-2.43-9.35-4.66-5.31-5.11-8.42-16.65-7.38-23.85.19-1.28,1.39-2.28,1.65-4.12,1.46-10.42-3.03-27.65,3.68-36.69,2.08-2.81,11.94-8.02,15.51-10.05,16.23-9.2,57.14-31.49,74.36-31.81,19.38-.36,36.22,12.31,56.08,13.83,59.72,4.55,87.05-48.6,137.08-67.33,27.39-10.26,82.77-25.31,85.99,19.12,1.56,21.49-1.51,46.64-2.54,68.37-.57,12.15-2.08,27.02-1.61,38.76.04,1-.62,3.06.81,2.87l44.09-87.35c11.04-15.68,15.55-40.74,32.88-51.18s61.4-8.08,82.61-7.28c29.23,1.1,47.72-2.27,63.5,26.35,13.62,24.69,25.01,53.05,37.6,78.59,6.83,13.86,14.83,27.3,20.53,41.69ZM2190.52,708.83c-8.14,1.3-17.09,10.08-17.92,18.35-2.9,28.81,35.53,35.6,45.23,11.42,7.2-17.96-9.84-32.55-27.32-29.76Z",
+  "M2056.33,533.99c-.11-.16-2.75,1.71-3.21,2.15-51.69,48.74-133.13,74.86-200.03,97.55-23.26,7.89-48.5,17.13-71.98,23.65-7.86,2.18-17.26,4.81-24.13-.99-2.54-2.15-5.22-6.68-5.67-9.98-2.87-20.83,2.87-48.57-.03-69.17-.26-1.84-1.4-2.76-1.65-4.12-.54-2.98,5.72-24.67,7.48-27.86,8.47-15.33,27.2-37.16,39.45-50.38,51.99-56.11,125.88-111.8,204.22-120.54,16.55-1.85,35.86-2.88,50.99,4.83l1.24-2c-5.39-16.97-10.33-34.56,5.39-47.41,18.27-14.93,72.54-20.48,96.42-21.47,69.59-2.89,185.02,15.8,246.08,49.96,10.31,5.77,17.42,9.87,22.51,21.17,8.46,18.76-6.95,36.25,9.05,60.15,9.47,14.15,38.98,33.47,56.25,31.77,18.17-1.8,4.04-18.24,10.4-27.51,4.89-7.13,9.8-5.12,15.95-1.1,9.74,6.36,15.64,14.73,23.69,22.46,6.18,5.94,13.16,11.43,19.35,17.74,14.09,14.38,27.35,31.67,38.68,48.68,4.66,6.99,9.66,21.69,4.45,29.06-7.97,11.26-21.63-.88-32.02-.27,0,.68-.06,1.37-.02,2.06.42,6.34,16.84,24.93,21.31,31.45,12.86,18.78,17.13,31.59,15.03,55.07-1.58,17.71-18.39,14.24-30.28,9.59-20.89-8.18-62.78-30.13-71.33-51.49-6.09-15.21-.98-29.85-5.04-45.21-6.13-23.17-36.59-44.69-60.35-42.65-5.06.43-10.09,2.43-12.68,7.1-4.67,8.4-.77,34.04-1.73,45.23-1.24,14.53-12.22,20.67-26,20.14-13.17-.51-30.16-4.76-43.83-6.46-70.74-8.79-142.24-12.99-213.44-7.52-17.78,1.37-55.37,9.08-70.69,4.7-3.61-1.03-8.26-3.79-10.4-6.91-.59-.86-3.44-6.78-3.44-7.27v-34.19ZM2210.36,383.48c-9.01.31-22.16.54-29.46,5.99-6.35,4.73-6.56,9.22-.32,14.22,10.04,8.05,27.47,5.85,39.47,6.7,26.35,1.86,52.71,3.97,78.26,10.79,3.08.82,13.88,5.67,15.76,4.17,3.28-2.63,2.84-23.64,0-27.32-4.01-5.19-23.83-7.71-30.78-8.8-22.59-3.53-50.15-6.54-72.92-5.75ZM1951.45,442.79c-37.89,1.73-89.49,53.31-96.75,89.53-4.58,22.84,4.54,35.93,28.82,32.91,36.69-4.57,104.94-65.5,93.44-106.4-2.8-9.95-15.7-16.49-25.5-16.04ZM2218.5,472.52c-9.44.54-30.5,1.9-37.67,7.5-16.68,13.01,12.06,20.32,21.88,21.02,21.9,1.55,45.38.37,67.64,1.62,12.01.68,24.22,2.93,36.21,3.36,3.25.12,8.01,1.04,9.15-2.46.84-2.57.82-21.08.32-24.29-.34-2.15-1.17-3.54-3.37-4.05-18.17-1.79-36.47-1.76-54.74-2.15-13.07-.28-26.37-1.29-39.41-.55Z",
+  "M2552.19,903.33c3.79-3.45,13.21-12.86,18.14-12.43,6.76.58,11.67,11.45,11.23,17.41-.32,4.42-3.25,8.35-4.73,11.81-27.76,64.99-119.03,132.63-182.44,162.08-81.47,37.84-199.51,52.71-287.95,37.27-25.79-4.5-49.81-9.8-50.97-40.51-1.12-29.52,1.49-62.48,1.72-92.26.11-14.78,1.11-32.6,0-47.02-.77-9.88-3.86-12.01-13.61-12.77-20.34-1.59-41.44,1.68-43.35,25.95-1.54,19.6.16,41.33.07,60.95s1.77,43.36-.05,61.81c-3.83,38.73-60.6.35-76.41-9.32-15.18-9.29-28.9-18.56-39.14-33.39-2.52-3.64-3.64-2.12-4.74-8.45-1.02-5.92-2.22-11.38-.04-17.17-1.61-26.85,1.99-55.87-.01-82.45-1.27-16.9-11.12-25.89-23.11-36.23-12.91-11.13-29.15-23.54-42.94-33.71-1.51-1.12-3.57-1.11-4.94-2.48-1.26-1.27-12.65-16.48-12.98-17.51-.53-1.67-1.64-9.29-1.81-11.37-.51-6.49.92-14.19,6.64-18.06,12.68-8.57,28.88,3.71,40.96,8.4,80.57,31.25,176.78,44.53,262.85,51.26,94.29,7.37,182.73,1.21,275.97-14.26,12.19-2.02,26.13-8.13,37.37.26,5.15,3.85,7.37,9.77,7.86,16.03,2.32,29.41-3.35,64.34.06,93.03,3.54,29.79,45.62,6.11,59.53-2.13,25.53-15.11,45.25-35.12,66.83-54.75ZM2307.83,951.24c1.09-5.2,0-18.48,0-24.71,0-.45-1.4-1.31-2.08-1.27-20.58,3.27-41.26,7.06-61.93,9.82-13.5,1.81-49.5,2.47-59.06,9.97-6.26,4.91-5.05,10.25,1.58,13.88,13.25,7.25,51.51,4.08,67.46,2.61,12.04-1.11,25.9-2.99,37.83-5.05,3.23-.56,11.62-1.56,13.95-2.54.88-.37,2.07-1.89,2.24-2.7ZM2318.55,1040.2v-31.3c0-.5-1.34-1.22-2.07-1.28-1.73-.14-16.06,5.33-19.36,6.23-32.6,8.93-61.64,9.86-94.41,14.42-8.85,1.23-39.34,9.1-21.81,20.94,18.91,12.77,88.08,4.08,111.46-.58,5.27-1.05,19.28-3.51,23.38-5.47,1.18-.57,2.55-1.71,2.81-2.96Z",
+];
+
+/** Half-angle of the spherical cap the mark is printed on (radians). */
+export const LOGO_CAP_ANGLE = 0.98;
+
+/** Margin left around the mark on its canvas, so the glow has room to bleed. */
+export const LOGO_PAD = 0.1;
+
+/** How far the mark's glow bleeds past its outline, in viewBox units. */
+export const LOGO_GLOW_SPREAD = 46;
+
+/**
+ * How far above the flight line the cap's pole is lifted, matching the chase
+ * camera's own lift so the mark faces the player rather than the horizon.
+ */
+export const LOGO_CAMERA_LIFT = 0.22;
+
+/** Where the cap sits when the orb has no heading at all. */
+export const LOGO_REST_POLE = { x: 0, y: LOGO_CAMERA_LIFT, z: 1 } as const;
+
+export type Vec3 = { x: number; y: number; z: number };
+
+const norm = (v: Vec3): Vec3 => {
+  const l = Math.hypot(v.x, v.y, v.z) || 1;
+  return { x: v.x / l, y: v.y / l, z: v.z / l };
+};
+
+/**
+ * The world direction the cap must point: back down the flight line towards
+ * the chase camera, lifted the same amount the camera is lifted. The orb's
+ * own quaternion turns this into object space, so the mark never inherits the
+ * arbitrary roll that aiming a sphere along a heading produces.
+ */
+export function logoPoleFor(direction: Readonly<Vec3>): Vec3 {
+  const heading = Math.hypot(direction.x, direction.y, direction.z);
+  if (heading < 1e-6) return norm(LOGO_REST_POLE);
+  return norm({
+    x: -direction.x / heading,
+    y: -direction.y / heading + LOGO_CAMERA_LIFT,
+    z: -direction.z / heading,
+  });
+}
+
+/**
+ * Where to put the viewBox on a square canvas of `size` so the mark is
+ * centred, fills the frame minus `pad`, and keeps its 1.21:1 proportion.
+ */
+export function logoFit(size: number, pad = LOGO_PAD): { scale: number; tx: number; ty: number } {
+  const scale = (size * (1 - 2 * pad)) / Math.max(LOGO_VIEWBOX.width, LOGO_VIEWBOX.height);
+  return {
+    scale,
+    tx: size / 2 - (LOGO_VIEWBOX.x + LOGO_VIEWBOX.width / 2) * scale,
+    ty: size / 2 - (LOGO_VIEWBOX.y + LOGO_VIEWBOX.height / 2) * scale,
+  };
+}
+
+/**
+ * Azimuthal-equidistant projection of a surface direction onto the cap.
+ * Distance from the pole is the ANGLE, not its sine, so the mark keeps its
+ * proportions as it curves away instead of smearing at the rim.
+ * Returns uv in [0,1] inside the cap; outside it the uv leaves the range and
+ * the caller drops it. This mirrors ORB_LOGO_GLSL exactly.
+ */
+export function logoUv(
+  surface: Readonly<Vec3>,
+  pole: Readonly<Vec3>,
+  reference: Readonly<Vec3> = { x: 0, y: 1, z: 0 },
+): { u: number; v: number; cap: number } {
+  const d = norm(surface);
+  const p = norm(pole);
+  // Up is the reference direction flattened onto the cap; right completes a
+  // right-handed frame seen from outside, so the mark can never come out
+  // mirrored however the body is rolled.
+  const along = reference.x * p.x + reference.y * p.y + reference.z * p.z;
+  let up = {
+    x: reference.x - p.x * along,
+    y: reference.y - p.y * along,
+    z: reference.z - p.z * along,
+  };
+  if (Math.hypot(up.x, up.y, up.z) < 1e-4) {
+    // Looking straight up or down the reference: any perpendicular will do.
+    up = { x: -p.y, y: p.x, z: 0 };
+    if (Math.hypot(up.x, up.y, up.z) < 1e-4) up = { x: 1, y: 0, z: 0 };
+  }
+  up = norm(up);
+  const right = {
+    x: up.y * p.z - up.z * p.y,
+    y: up.z * p.x - up.x * p.z,
+    z: up.x * p.y - up.y * p.x,
+  };
+  const theta = Math.acos(Math.min(1, Math.max(-1, d.x * p.x + d.y * p.y + d.z * p.z)));
+  const r = theta / LOGO_CAP_ANGLE;
+  const a = d.x * right.x + d.y * right.y + d.z * right.z;
+  const b = d.x * up.x + d.y * up.y + d.z * up.z;
+  const tangent = Math.hypot(a, b);
+  const nx = tangent > 1e-6 ? a / tangent : 0;
+  const ny = tangent > 1e-6 ? b / tangent : 0;
+  return { u: 0.5 + 0.5 * r * nx, v: 0.5 + 0.5 * r * ny, cap: r };
+}
+
+/**
+ * Rasterise the mark to an alpha mask. Runs entirely in-process on a canvas;
+ * in a non-DOM environment (the test runner) it hands back a 1x1 empty mask so
+ * the orb still constructs.
+ */
+export function createLogoTexture(size = 1024): Texture {
+  if (typeof document === 'undefined') {
+    const empty = new DataTexture(new Uint8Array([0]), 1, 1, RedFormat);
+    empty.needsUpdate = true;
+    return empty;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d')!;
+  const { scale, tx, ty } = logoFit(size);
+  ctx.setTransform(scale, 0, 0, scale, tx, ty);
+  const outlines = LOGO_PATHS.map((d) => new Path2D(d));
+  // Two channels in one raster: red is the mark itself, alpha is the mark plus
+  // the soft bleed around it. The bleed is light the letters give off, not a
+  // line drawn around them — nothing on this orb is ever outlined.
+  ctx.filter = `blur(${LOGO_GLOW_SPREAD * scale}px)`;
+  ctx.fillStyle = 'rgba(0, 255, 0, 1)';
+  for (const p of outlines) ctx.fill(p, 'nonzero');
+  for (const p of outlines) ctx.fill(p, 'nonzero');
+  ctx.filter = 'none';
+  ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+  for (const p of outlines) ctx.fill(p, 'nonzero');
+  const texture = new CanvasTexture(canvas);
+  texture.wrapS = ClampToEdgeWrapping;
+  texture.wrapT = ClampToEdgeWrapping;
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.generateMipmaps = false;
+  return texture;
+}
+
+/**
+ * The projection above, in GLSL. Declares no uniforms of its own — the orb
+ * owns uLogoTex — so it can never collide with another program's names.
+ */
+export const ORB_LOGO_GLSL = /* glsl */ `
+const float LOGO_CAP_ANGLE = ${LOGO_CAP_ANGLE.toFixed(4)};
+
+vec3 logoUv(vec3 surface, vec3 rawPole, vec3 reference) {
+  vec3 dir = normalize(surface);
+  vec3 pole = normalize(rawPole);
+  vec3 up = reference - pole * dot(reference, pole);
+  if (length(up) < 1e-4) up = vec3(-pole.y, pole.x, 0.0);
+  if (length(up) < 1e-4) up = vec3(1.0, 0.0, 0.0);
+  up = normalize(up);
+  vec3 right = cross(up, pole);
+  float theta = acos(clamp(dot(dir, pole), -1.0, 1.0));
+  float r = theta / LOGO_CAP_ANGLE;
+  vec2 tangent = vec2(dot(dir, right), dot(dir, up));
+  float mag = length(tangent);
+  vec2 n = mag > 1e-6 ? tangent / mag : vec2(0.0);
+  return vec3(0.5 + 0.5 * r * n, r);
+}
+`;

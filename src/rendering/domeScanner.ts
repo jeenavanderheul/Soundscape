@@ -192,6 +192,8 @@ export interface ScannerState {
   kickPulse: number;
   /** §170: flips on every snare; ALTERNATE swaps halves with it. */
   flip: number;
+  /** False while a hit is still sounding, so one hit flips the side once. */
+  switchArmed: boolean;
   mode: ScannerMode;
 }
 
@@ -199,6 +201,7 @@ export const SCANNER_START: ScannerState = {
   formation: 'sweep',
   kickPulse: 0,
   flip: 0,
+  switchArmed: true,
   extraBearings: [],
   rawBearing: 0,
   bearing: 0,
@@ -336,7 +339,15 @@ export function advanceScanner(
   }
 
   // DOUBLE: a second signal turning against the first, meeting twice a lap.
-  const counterBearing = mode === 'double' ? wrap(-bearing + Math.PI) : null;
+  //
+  // User (15 aug): "met de lichteffecten wordt nu alleen maar de linker helft
+  // gebruikt". True on the ground, and this line was why — outside a DOUBLE
+  // section there was exactly one lamp pool, sitting on one side of the player,
+  // so half the field never had a source at all. There is now always a second
+  // pool straight across the ring: both halves are lit, both travel, and the
+  // circle reads as a circle instead of as a lamp on the left.
+  const counterBearing =
+    mode === 'double' ? wrap(-bearing + Math.PI) : wrap(bearing + Math.PI);
   // PHASE: a ghost a fifth of a turn behind, faint enough to read as an echo.
   const ghostBearing = mode === 'phase' || mode === 'double'
     ? wrap(bearing - direction * 1.25)
@@ -385,12 +396,25 @@ export function advanceScanner(
         : GENRE_FORMATION[input.genre ?? ''] ?? 'sweep';
   const kickPulse = Math.exp(-Math.max(0, input.sinceKick) * 6.5);
   // The snare is a switch, not a level: it flips a state that stays flipped.
-  const flip = input.sinceSnare < 0.05 ? 1 - previous.flip : previous.flip;
+  //
+  // Two corrections (user, 15 aug: the accent has to keep moving side to side).
+  // First: the snare is the LAST drum a world earns, so until then this never
+  // fired and the accent sat on one side for the whole opening. When no snare
+  // has been heard for a while the kick takes over as the switch.
+  // Second: "< 0.05" is true for several frames in a row, so the state used to
+  // toggle once per FRAME inside that window and where it landed depended on
+  // the frame rate. It now has to be re-armed by the quiet between hits.
+  const onSnare = input.sinceSnare < 0.05;
+  const onKick = input.sinceSnare > 4 && input.sinceKick < 0.05;
+  const switching = onSnare || onKick;
+  const flip = switching && previous.switchArmed ? 1 - previous.flip : previous.flip;
+  const switchArmed = !switching;
 
   return {
     formation,
     kickPulse,
     flip,
+    switchArmed,
     bearing,
     rawBearing,
     extraBearings,
@@ -423,6 +447,10 @@ uniform float uBeamIntensity;
 uniform float uBeamElevation;
 uniform float uBeamDirection;
 uniform vec2 uBeamPlayer;
+// Which side carries the accent right now, 0 or 1. Declared here because every
+// shader that includes this block gets it: an undeclared name does not warn in
+// GLSL, it silently fails to link and the whole surface goes black.
+uniform float uFlip;
 
 float beamBand(float bearing, float beam) {
   float delta = mod(bearing - beam + 3.14159265, 6.28318531) - 3.14159265;
@@ -489,11 +517,17 @@ float lampPool(vec2 world, float bearing, float radius, float height, float gain
 float domeLampLight(vec2 world) {
   if (uBeamIntensity <= 0.0) return 0.0;
   float lit = uBeamIntensity;
+  // The accent walks from one side to the other on every hit while both pools
+  // keep travelling: the circle turns, and the weight inside it swaps. Neither
+  // side ever goes fully dark, or the swap reads as a light failing.
+  float lead = 1.0 - uFlip * 0.45;
+  float trail = 0.55 + uFlip * 0.45;
   // The two rings that actually point at the ground; the crown lights the air.
-  float pool = lampPool(world, uBeam, 235.0, 4.0, lit)
-    + lampPool(world, uBeam, 205.0, 46.0, lit * 0.8);
+  float pool = lampPool(world, uBeam, 235.0, 4.0, lit * lead)
+    + lampPool(world, uBeam, 205.0, 46.0, lit * 0.8 * lead);
   if (uBeamCounter >= 0.0) {
-    pool += lampPool(world, uBeamCounter, 235.0, 4.0, lit * 0.7);
+    pool += lampPool(world, uBeamCounter, 235.0, 4.0, lit * 0.7 * trail);
+    pool += lampPool(world, uBeamCounter, 205.0, 46.0, lit * 0.55 * trail);
   }
   if (uBeamGhost >= 0.0) {
     pool += lampPool(world, uBeamGhost, 235.0, 4.0, lit * 0.35);

@@ -17,6 +17,18 @@
       "description": "Moderne dans: brede, expressieve armbewegingen met een pirouette; duidelijke gewichtsverplaatsing en rotatie van het hele lichaam."
     },
     {
+      "file": "05_10.bvh",
+      "subject": 5,
+      "trial": 10,
+      "frames": 818,
+      "frameTime": 0.0083333,
+      "durationSeconds": 6.82,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Moderne dans, hoge energie: glissade devant en derriere, uitmondend in attitude/arabesque. Springt en verplaatst iets, maar keert steeds terug — de meest uitbundige body in de set."
+    },
+    {
       "file": "05_12.bvh",
       "subject": 5,
       "trial": 12,
@@ -27,6 +39,18 @@
       "channels": 96,
       "rootJoint": "Hips",
       "description": "Moderne dans, grotendeels op de plek: armen hoog boven het hoofd, uitgestrekte voet op de grond, romp draait om zijn as. Sterk leesbaar in silhouet."
+    },
+    {
+      "file": "05_20.bvh",
+      "subject": 5,
+      "trial": 20,
+      "frames": 1096,
+      "frameTime": 0.0083333,
+      "durationSeconds": 9.13,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Moderne dans: attitude/arabesque, jete en tourant en een terugbuigende romp. Grote bovenlichaamsboog, blijft binnen een kleine cirkel."
     },
     {
       "file": "49_09.bvh",
@@ -41,6 +65,18 @@
       "description": "Rustige moderne dans: armen hoog gehouden, zijwaartse arabesque, langzaam uitrekken en balanceren op één been."
     },
     {
+      "file": "49_22.bvh",
+      "subject": 49,
+      "trial": 22,
+      "frames": 1289,
+      "frameTime": 0.0083333,
+      "durationSeconds": 10.74,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Moderne dans, rustig: achteroverleunen op een gebogen been, balanceren, elleboog langs het oor. De trage body in de menigte — niet iedereen gaat hard."
+    },
+    {
       "file": "55_02.bvh",
       "subject": 55,
       "trial": 2,
@@ -51,6 +87,30 @@
       "channels": 96,
       "rootJoint": "Hips",
       "description": "Lambada: ritmisch heupwerk, doorlopende gewichtsverplaatsing van links naar rechts en flink verplaatsen door de ruimte."
+    },
+    {
+      "file": "93_03.bvh",
+      "subject": 93,
+      "trial": 3,
+      "frames": 443,
+      "frameTime": 0.0083333,
+      "durationSeconds": 3.69,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Charleston: snelle kicks en zwaaiende armen op een strakke beat, voeten kruisen in en uit. Verreweg de hoogste bewegingsenergie van de hele set en blijft toch op de plek. Kortste bestand — de bake haalt er 3,68 s uit in plaats van 4,3 s."
+    },
+    {
+      "file": "143_34.bvh",
+      "subject": 143,
+      "trial": 34,
+      "frames": 784,
+      "frameTime": 0.0083333,
+      "durationSeconds": 6.53,
+      "joints": 31,
+      "channels": 96,
+      "rootJoint": "Hips",
+      "description": "Chicken Dance: herhalende choreografie met klappende handen, wapperende ellebogen en een heupwiegel, met een zak-door-de-knieen. Staat vrijwel stil (spreiding 0,08 lichaamslengte)."
     },
     {
       "file": "143_35.bvh",

@@ -7,6 +7,7 @@ import {
   Vector3,
 } from 'three';
 import type { FrequencyState } from '../player/FrequencyState';
+import { ORB_LOGO_GLSL, createLogoTexture, logoPoleFor } from './orbLogo';
 
 /**
  * The player made visible (user decision): a pulsing luminous orb that morphs
@@ -22,6 +23,10 @@ uniform float uHzNorm;
 uniform float uGrowth;
 varying float vFresnel;
 varying float vRipple;
+varying vec3 vLogo;
+uniform vec3 uLogoPole;
+uniform vec3 uLogoUp;
+${ORB_LOGO_GLSL}
 
 void main() {
   // Standing-wave morph: displacement bands travel over the sphere; pitch
@@ -38,6 +43,9 @@ void main() {
     sin(position.x * bands * 6.1 + uTime * 4.3);
   vec3 displaced = position + normal * ripple * uDeform;
   vRipple = ripple;
+  // The mark is fixed to the REST surface, so it rides the vertex wherever the
+  // standing wave throws it: skin, not a sticker projected onto the silhouette.
+  vLogo = logoUv(position, uLogoPole, uLogoUp);
   vec4 mv = modelViewMatrix * vec4(displaced, 1.0);
   vec3 viewNormal = normalize(normalMatrix * normal);
   vFresnel = pow(1.0 - abs(dot(normalize(-mv.xyz), viewNormal)), 2.0);
@@ -48,16 +56,46 @@ void main() {
 const FRAGMENT = /* glsl */ `
 uniform float uGlow;
 uniform float uHzNorm;
+uniform vec3 uZoneTint;
+uniform sampler2D uLogoTex;
 varying float vFresnel;
 varying float vRipple;
+varying vec3 vLogo;
+
+// §3.1 poster palette, the same three colours the ground is drawn in: the orb
+// belongs to the region it is flying through, so it takes the region's colour.
+vec3 orbZoneColor(float hzn) {
+  vec3 red = vec3(1.0, 0.22, 0.18);
+  vec3 purple = vec3(0.62, 0.35, 1.0);
+  vec3 green = vec3(0.45, 1.0, 0.35);
+  return hzn < 0.4 ? mix(red, purple, hzn / 0.4) : mix(purple, green, (hzn - 0.4) / 0.6);
+}
 
 void main() {
-  // Cold white core with a pitch tint: low leans warm, high leans cyan.
-  vec3 low = vec3(1.0, 0.82, 0.72);
-  vec3 high = vec3(0.72, 0.95, 1.0);
-  vec3 tint = mix(low, high, uHzNorm);
-  float core = 0.35 + vFresnel * 1.1 + abs(vRipple) * 0.25;
-  gl_FragColor = vec4(tint * core * uGlow, 1.0);
+  // The region colours the orb, exactly as it colours the terrain, the forest,
+  // the rig and the crowd — one colour handed down from ZonePalette. Until a
+  // region has been named the orb falls back to the player's own pitch through
+  // the poster palette, which is where it started.
+  vec3 tint = uZoneTint.r < 0.0 ? orbZoneColor(uHzNorm) : uZoneTint;
+  // Glass, not a solid ball: the middle is nearly nothing — additive blending
+  // lets the ground read straight through it — and almost all the light is in
+  // the rim, where the surface turns away and the fresnel runs up.
+  float rim = pow(vFresnel, 1.9);
+  float glass = 0.045 + rim * 3.2 + abs(vRipple) * 0.1;
+  // Outside the cap there is no mark at all — one cap means no seam and no
+  // second copy on the far side.
+  vec2 uv = vLogo.xy;
+  float within = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+  // Red is the mark, alpha is the mark plus the light it gives off.
+  vec2 raster = texture2D(uLogoTex, uv).ra * within;
+  float mark = raster.x;
+  float bleed = max(0.0, raster.y - raster.x);
+  vec3 body = tint * glass * uGlow;
+  // The letters are the one solid thing on the orb, and they light their own
+  // surroundings instead of being drawn around.
+  vec3 letters = mix(tint, vec3(1.0), 0.8) * mark * uGlow * (1.5 + rim * 0.5);
+  vec3 halo = tint * bleed * uGlow * 0.7;
+  gl_FragColor = vec4(body + letters + halo, 1.0);
 }
 `;
 
@@ -82,6 +120,9 @@ export class PlayerOrb {
   private climbRate = 0;
   private readonly forward = new Vector3();
   private readonly spin = new Quaternion();
+  /** The DEKMANTEL mark, rasterised in-process — never fetched (§offline). */
+  private readonly logoTexture = createLogoTexture();
+  private readonly logoFrame = new Quaternion();
 
   constructor() {
     this.material = new ShaderMaterial({
@@ -95,6 +136,10 @@ export class PlayerOrb {
         uHzNorm: { value: 0.5 },
         uGlow: { value: 0.6 },
         uGrowth: { value: 0 },
+        uZoneTint: { value: [-1, -1, -1] },
+        uLogoTex: { value: this.logoTexture },
+        uLogoPole: { value: new Vector3(0, 0, 1) },
+        uLogoUp: { value: new Vector3(0, 1, 0) },
       },
     });
     // A single tone is barely anything; a finished track is a body (§29.6).
@@ -125,6 +170,18 @@ export class PlayerOrb {
    */
   setGrowth(value: number): void {
     this.targetGrowth = Math.min(1, Math.max(0, value));
+  }
+
+  /**
+   * The colour of the region being flown through — the same value handed to the
+   * terrain, the forest, the rig and the crowd, so the orb can never disagree
+   * with the world about where it is.
+   */
+  setTint(color: { r: number; g: number; b: number }): void {
+    const value = this.material.uniforms.uZoneTint!.value as number[];
+    value[0] = color.r;
+    value[1] = color.g;
+    value[2] = color.b;
   }
 
   update(state: Readonly<FrequencyState>, rms: number, dt: number, elapsedSeconds: number): void {
@@ -166,6 +223,17 @@ export class PlayerOrb {
     const stretch = 1 + speed01 * 0.85;
     const squeeze = 1 - speed01 * 0.22 - Math.abs(lean) * 0.18;
     this.mesh.scale.set(scale * squeeze, scale * (squeeze + Math.abs(pitchLean) * 0.25), scale * stretch);
+    // The mark lies on the patch of skin turned towards the chase camera, and
+    // its up is the world's up. Aiming a sphere along a heading leaves the roll
+    // about that heading undefined — taking the frame from the world instead of
+    // from the body is what keeps the mark from arriving upside down or
+    // mirrored when the heading happens to be a half turn.
+    this.logoFrame.copy(this.mesh.quaternion).invert();
+    const pole = this.material.uniforms.uLogoPole!.value as Vector3;
+    const up = this.material.uniforms.uLogoUp!.value as Vector3;
+    const aim = logoPoleFor(state.direction);
+    pole.set(aim.x, aim.y, aim.z).applyQuaternion(this.logoFrame);
+    up.set(0, 1, 0).applyQuaternion(this.logoFrame);
     this.material.uniforms.uGrowth!.value = this.growth;
     this.material.uniforms.uTime!.value = elapsedSeconds;
     this.material.uniforms.uDeform!.value = this.deform;
@@ -176,5 +244,6 @@ export class PlayerOrb {
   dispose(): void {
     this.mesh.geometry.dispose();
     this.material.dispose();
+    this.logoTexture.dispose();
   }
 }

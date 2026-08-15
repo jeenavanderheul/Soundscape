@@ -306,6 +306,7 @@ export class CrowdField {
         uBeamElevation: { value: 0.5 },
         uBeamDirection: { value: 1 },
         uBeamPlayer: { value: [0, 0] },
+        uFlip: { value: 0 },
       },
     });
 
@@ -459,6 +460,7 @@ export class CrowdField {
     u['uBeamIntensity']!.value = scanner.intensity;
     u['uBeamElevation']!.value = scanner.elevation;
     u['uBeamDirection']!.value = scanner.mode === 'reverse' ? -1 : 1;
+    u['uFlip']!.value = scanner.flip;
     const centre = u['uBeamPlayer']!.value as number[];
     centre[0] = player.x;
     centre[1] = player.z;

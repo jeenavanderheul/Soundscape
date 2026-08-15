@@ -85,7 +85,9 @@ attribute vec2 aCorner;   // -1..1 across the bar and up it
 uniform float uHaze;      // §155: how thick the air is, 0..1
 uniform float uFormation; // §170: which shape the circle is holding
 uniform float uKick;      // §170: 0..1, how recently the kick landed
-uniform float uFlip;      // §170: flips on every snare
+// uFlip is declared by DOME_SCANNER_GLSL, which is prepended to this shader.
+// Declaring it twice in one program is a link error, and a link error here is
+// a silently black rig.
 uniform float uCount;     // fixtures on this instance's ring
 attribute float aAngle;   // where on its ring this fixture hangs
 attribute float aRing;    // 0..1 from the horizon ring to the crown

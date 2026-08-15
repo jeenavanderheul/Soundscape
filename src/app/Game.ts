@@ -1580,6 +1580,7 @@ export class Game {
     look.relief += (target.relief - look.relief) * k;
     this.renderer.setZoneColor(look.color);
     this.terrain.setZone(look.color, look.relief);
+    this.orb.setTint(look.color);
     this.orbTrail.setColor(look.color);
     this.streaks.setColor(look.color);
     this.forest.setTint(look.color);

@@ -80,9 +80,21 @@ describe('§146 the dome signal', () => {
     expect(reversed.bearing).toBeGreaterThan(Math.PI);
   });
 
-  it('splits into two signals only where the section asks for it', () => {
-    expect(run({ ...quiet, section: 'deep' }, 1).counterBearing).not.toBeNull();
-    expect(run({ ...quiet, section: 'groove' }, 1).counterBearing).toBeNull();
+  it('always keeps a second source across the ring, and turns it against the first in a double', () => {
+    // User (15 aug): only one half of the ground was ever lit. There is now
+    // always a lamp straight across the circle, so both halves have a source
+    // and both travel; DOUBLE is still the one that counter-rotates.
+    const groove = run({ ...quiet, section: 'groove' }, 1);
+    const opposite = Math.abs(
+      Math.atan2(
+        Math.sin(groove.counterBearing! - groove.bearing - Math.PI),
+        Math.cos(groove.counterBearing! - groove.bearing - Math.PI),
+      ),
+    );
+    expect(opposite).toBeLessThan(1e-9);
+    const deep = run({ ...quiet, section: 'deep' }, 1);
+    expect(deep.counterBearing).not.toBeNull();
+    expect(deep.counterBearing).not.toBeCloseTo(groove.counterBearing!, 6);
     expect(run({ ...quiet, section: 'discovery' }, 1).ghostBearing).not.toBeNull();
     expect(run({ ...quiet, section: 'groove' }, 1).ghostBearing).toBeNull();
   });
@@ -228,5 +240,54 @@ describe('§156 the beam is part of the ground it presses on', () => {
     // Ahead of the band, in the dark, nothing has been measured yet.
     expect(terrain.groundHeightAt(-200, 0)).toBeCloseTo(behind, 6);
     terrain.dispose();
+  });
+});
+
+/**
+ * §180 (user: "wissel ook met de rechterhelft, en licht gaat van links naar
+ * rechts in cirkelvorm"). The accent has to keep moving side to side even in a
+ * world that has not earned a snare yet, and one hit must move it exactly once.
+ */
+describe('the accent walks from side to side', () => {
+  const hit = (state: typeof SCANNER_START, input: ScannerInput, frames: number) => {
+    let next = state;
+    for (let i = 0; i < frames; i++) next = advanceScanner(next, input, 1 / 60);
+    return next;
+  };
+
+  it('moves once per hit, not once per frame', () => {
+    // "sinceSnare < 0.05" is true for three frames at 60 fps. The old code
+    // toggled on each of them, so where the accent landed depended on the
+    // frame rate — at 120 fps it would have ended on the other side.
+    const quietState = hit(SCANNER_START, quiet, 60);
+    const struck = hit(quietState, { ...quiet, sinceSnare: 0 }, 6);
+    expect(struck.flip).toBe(1 - quietState.flip);
+    const held = hit(struck, { ...quiet, sinceSnare: 0 }, 20);
+    expect(held.flip).toBe(struck.flip);
+  });
+
+  it('re-arms in the silence between hits, so the next hit moves it back', () => {
+    let state = hit(SCANNER_START, quiet, 60);
+    const first = state.flip;
+    state = hit(state, { ...quiet, sinceSnare: 0 }, 4);
+    state = hit(state, quiet, 30);
+    state = hit(state, { ...quiet, sinceSnare: 0 }, 4);
+    expect(state.flip).toBe(first);
+  });
+
+  it('lets the kick carry the accent while a world has no snare yet', () => {
+    // The snare is the last drum a world earns; until then this never fired and
+    // the light sat on one side for the whole opening.
+    const noSnare: ScannerInput = { ...quiet, sinceSnare: 30, sinceKick: 0 };
+    const before = hit(SCANNER_START, quiet, 60);
+    const after = hit(before, noSnare, 4);
+    expect(after.flip).toBe(1 - before.flip);
+  });
+
+  it('leaves the kick alone once a snare is actually keeping time', () => {
+    // Otherwise both drums fight over the same switch and it stutters.
+    const withSnare: ScannerInput = { ...quiet, sinceSnare: 0.6, sinceKick: 0 };
+    const before = hit(SCANNER_START, quiet, 60);
+    expect(hit(before, withSnare, 6).flip).toBe(before.flip);
   });
 });
