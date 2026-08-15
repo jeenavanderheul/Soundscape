@@ -16,6 +16,7 @@ const FORMATION_INDEX: Record<Formation, number> = {
   quarters: 3,
   opposite: 4,
   ripple: 5,
+  orbit: 6,
 };
 
 /**
@@ -115,7 +116,9 @@ void main() {
   if (uBeamCounter >= 0.0) band = max(band, beamBand(angle, uBeamCounter));
   if (uBeamGhost >= 0.0) band = max(band, beamBand(angle, uBeamGhost) * 0.45);
   // Higher rings answer a little later: the light climbs the dome as it turns.
-  band *= 1.0 - aRing * 0.25;
+  // §175 ORBIT is the exception — there the rings are IN PHASE, so the dome
+  // reads as one circle turning rather than as four rings chasing each other.
+  band *= uFormation > 5.5 ? 1.0 : 1.0 - aRing * 0.25;
 
   // §170 FORMATIONS. The rig is a ring, so everything it can say it says in
   // circles; this is what happens INSIDE one. Each shape belongs to a drum,
@@ -138,10 +141,14 @@ void main() {
     // OPPOSITE: two arcs facing each other, opening with the bass.
     float toAxis = abs(sin(aAngle));
     band = max(band * 0.3, smoothstep(0.75 - uBeamWidth, 1.0, 1.0 - toAxis) * (0.4 + uKick * 0.6));
-  } else if (uFormation > 4.5) {
+  } else if (uFormation < 5.5) {
     // RIPPLE: ring by ring outward, fired by the kick.
     float wave = fract(uKick * 1.2 + aRing * 0.55);
     band = max(band * 0.3, (1.0 - wave) * uKick);
+  } else {
+    // §175 ORBIT: one circle over the whole dome. No trick, no chopping — a
+    // wider band so the turn is unmistakable, and the kick only brightens it.
+    band = min(1.0, band * 1.25 + uKick * 0.25);
   }
 
   // §153: where the band passes, forty fixtures overlap and additive blending

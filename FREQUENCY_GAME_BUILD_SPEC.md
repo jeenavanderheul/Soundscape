@@ -1954,3 +1954,20 @@ the same thing at all:
   now with at least forty degrees between any pair, held by a test, because
   "each world has its own colour" is a claim about DISTANCE between colours and
   nothing else.
+
+## 175. At five layers the rig becomes one circle (v15 amendment — NORMATIVE)
+
+User rule. A track with five of its seven layers standing is a track that has
+ARRIVED, and the light says so by dropping every trick it has and doing the
+simplest thing in the world: turning.
+
+The ORBIT formation runs across every ring AT ONCE. Everywhere else the higher
+rings answer a quarter later, so the light climbs the dome as it goes; here
+they are in phase, and the whole dome reads as one circle turning around you
+rather than four rings chasing each other.
+
+It keeps the speed the rules already give it — whole bars, the section's
+behaviour, the world's own rate — so a drop still turns faster than a groove.
+What it drops is the shape, not the timing. And it outranks the section: at
+five layers a drop is still the circle, because arrival is a bigger fact about
+a track than which phase it is in.

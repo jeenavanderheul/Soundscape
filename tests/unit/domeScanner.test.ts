@@ -25,6 +25,7 @@ const quiet: ScannerInput = {
   high: 0,
   sinceKick: 9,
   sinceSnare: 9,
+  layers: 2,
   instability: 0,
 };
 
@@ -161,6 +162,21 @@ describe('§146 the dome signal', () => {
     // Two families of values: on, and chopped down to a fifth.
     expect(strobed.size).toBeGreaterThan(1);
     expect(Math.min(...strobed)).toBeLessThan(Math.max(...strobed) * 0.3);
+  });
+
+  it('§175 becomes one circle over every ring at five layers', () => {
+    // Below five, the world's own formation holds.
+    expect(run({ ...quiet, genre: 'techno', layers: 4 }, 1).formation).toBe('quarters');
+    // At five, the rig drops every trick and simply turns — and it does so
+    // even where a section would otherwise take the formation over.
+    expect(run({ ...quiet, genre: 'techno', layers: 5 }, 1).formation).toBe('orbit');
+    expect(run({ ...quiet, genre: 'techno', layers: 7, section: 'drop' }, 1).formation).toBe('orbit');
+    expect(run({ ...quiet, genre: 'void-crusher', layers: 6 }, 1).formation).toBe('orbit');
+    // And it keeps the speed the rules give it: a drop still turns faster than
+    // a groove, arrived or not.
+    const groove = run({ ...quiet, layers: 6, section: 'groove' }, 1).rawBearing;
+    const drop = run({ ...quiet, layers: 6, section: 'drop' }, 1).rawBearing;
+    expect(drop).toBeGreaterThan(groove);
   });
 
   it('leaves most of the world dark at any moment', () => {

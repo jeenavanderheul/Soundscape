@@ -102,6 +102,9 @@ export const GENRE_PATTERNS: Record<string, ScannerPattern> = {
   'void-crusher': { rate: 0.45, steps: 0, gate: 0, stutter: 0, spread: 0 },
 };
 
+/** §175: the layer count at which the rig becomes one circle. */
+export const FULL_ORBIT_LAYERS = 5;
+
 const NEUTRAL_PATTERN: ScannerPattern = { rate: 1, steps: 0, gate: 0, stutter: 0, spread: 0 };
 
 export function patternFor(genre: string | null): ScannerPattern {
@@ -125,7 +128,14 @@ export function patternFor(genre: string | null): ScannerPattern {
  * The rule the user set: light only ever makes circles, and the formation is
  * what happens INSIDE one.
  */
-export type Formation = 'sweep' | 'pulse' | 'alternate' | 'quarters' | 'opposite' | 'ripple';
+export type Formation =
+  | 'sweep'
+  | 'pulse'
+  | 'alternate'
+  | 'quarters'
+  | 'opposite'
+  | 'ripple'
+  | 'orbit';
 
 /** Which formation a world reaches for. The section still decides the motion. */
 const GENRE_FORMATION: Record<string, Formation> = {
@@ -153,6 +163,8 @@ export interface ScannerInput {
   sinceSnare: number;
   /** 0..1 how badly the signal is holding together (§136.11). */
   instability: number;
+  /** How many of the seven layers stand (§175). */
+  layers: number;
 }
 
 export interface ScannerState {
@@ -357,11 +369,20 @@ export function advanceScanner(
   // §170: the formation is the world's, except where the music takes it over.
   // A break has nothing to hold a shape with, and a drop is a single event —
   // both of those are the whole circle at once.
-  const formation: Formation = input.section === 'drop'
-    ? 'pulse'
-    : input.section === 'break'
-      ? 'sweep'
-      : GENRE_FORMATION[input.genre ?? ''] ?? 'sweep';
+  // §175 (user rule): at five layers the rig stops holding shapes and becomes
+  // ONE CIRCLE, running across every ring at once. A track with five of seven
+  // standing is a track that has arrived, and the light says so by dropping
+  // every trick and doing the simplest thing in the world — turning. It keeps
+  // the speed the rules already give it: whole bars, the section's behaviour,
+  // the world's own rate.
+  const arrived = input.layers >= FULL_ORBIT_LAYERS;
+  const formation: Formation = arrived
+    ? 'orbit'
+    : input.section === 'drop'
+      ? 'pulse'
+      : input.section === 'break'
+        ? 'sweep'
+        : GENRE_FORMATION[input.genre ?? ''] ?? 'sweep';
   const kickPulse = Math.exp(-Math.max(0, input.sinceKick) * 6.5);
   // The snare is a switch, not a level: it flips a state that stays flipped.
   const flip = input.sinceSnare < 0.05 ? 1 - previous.flip : previous.flip;

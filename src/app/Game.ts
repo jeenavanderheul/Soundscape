@@ -946,6 +946,8 @@ export class Game {
         sinceKick: (performance.now() - this.lastKickMs) / 1000,
         sinceSnare: (performance.now() - this.lastSnareMs) / 1000,
         instability: this.signalInstability,
+        // §175: five of seven standing turns the rig into one circle.
+        layers: countUnlocked(scannerTrack),
       },
       dtSeconds,
     );
