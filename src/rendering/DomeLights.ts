@@ -89,7 +89,11 @@ void main() {
   // Higher rings answer a little later: the light climbs the dome as it turns.
   band *= 1.0 - aRing * 0.25;
 
-  float hot = clamp(${DOME_LIGHTS.ember.toFixed(2)} + band * uBeamIntensity * 2.4 + uPulse * 0.2, 0.0, 2.6);
+  // §153 (user): the throw stays this big, the burn does not. Where the band
+  // passes, forty fixtures overlap and additive blending adds every one of
+  // them, so the per-fixture gain has to be low enough that a CLUSTER reads as
+  // bright rather than as a white hole with a world behind it.
+  float hot = clamp(${DOME_LIGHTS.ember.toFixed(2)} + band * uBeamIntensity * 1.35 + uPulse * 0.16, 0.0, 1.7);
   vHot = hot;
   // White at the centre of the band, the region's own colour at the edges —
   // the accent is what is LEFT when the white falls away (§136.2).
@@ -140,7 +144,7 @@ void main() {
   // Five times the area is roughly five times the light, and additive blending
   // adds it all up where fixtures overlap: at full amplitude the rig burns a
   // white hole through the middle of the world. Bigger throw, softer per pixel.
-  float light = filament * 1.15 + glow * 0.42;
+  float light = filament * 0.85 + glow * 0.16;
   if (light < 0.004) discard;
   gl_FragColor = vec4(vColor * light * vHot, 1.0);
 }
