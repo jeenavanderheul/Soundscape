@@ -11,6 +11,7 @@ import {
 } from 'three';
 import type { Vec3Data } from '../player/FrequencyState';
 import { LAND_FIELD_GLSL, sampleLand, type LandField } from '../world/LandField';
+import { DOME_SCANNER_GLSL, type ScannerState } from './domeScanner';
 import {
   createNoiseTable,
   TERRAIN_FIELD,
@@ -135,9 +136,11 @@ varying vec3 vZone;
 varying float vRidge;
 varying float vSeed;   // §136.6: which signal state this stretch of line is in
 varying float vFar;    // 0 at the lens, 1 at the edge of the drawn field
+varying float vBeam;   // §146: how hard the dome signal is on this stretch
 
 ${TERRAIN_FIELD_GLSL}
 ${LAND_FIELD_GLSL}
+${DOME_SCANNER_GLSL}
 
 vec3 zoneColor(float hzn) {
   // poster palette: low = red mass, high = green detail, mid = purple harmonics
@@ -174,7 +177,13 @@ void main() {
   // two without the other is the §35 bug all over again.
   h += sampleLand(world) * uLandPresent;
   vRidge = relief;
-  float glow = uBass * 0.25;
+  // §146: the beam does not only light the field, it DEFORMS it — a
+  // measurement pressing on what it measures. Bass opens the band, so the
+  // louder the low end the broader and heavier the pass.
+  float beam = domeBeam(world);
+  h += domeBeamWide(world) * (0.8 + uBass * 2.2);
+  vBeam = beam;
+  float glow = uBass * 0.25 + beam * 0.5;
   vec3 zone = vec3(0.0);
   for (int i = 0; i < ${TERRAIN_CONFIG.maxSources}; i++) {
     if (i >= uSourceCount) break;
@@ -227,6 +236,7 @@ void main() {
 `;
 
 const FRAGMENT = /* glsl */ `
+${DOME_SCANNER_GLSL}
 uniform float uTime;
 uniform float uSignal;
 uniform float uUnstable;
@@ -235,6 +245,7 @@ varying vec3 vZone;
 varying float vRidge;
 varying float vSeed;
 varying float vFar;
+varying float vBeam;
 
 /**
  * §136.6 A LINE HAS STATES. One perfectly clean wireframe everywhere is what
@@ -280,7 +291,10 @@ void main() {
   // more signal than the loudest world can supply, so the horizon sinks to the
   // floor — a complete but very faint wireframe, since §142 says the grid may
   // thin towards nothing and never actually reach it.
-  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 - vSeed - vFar * 1.6;
+  // §146: the beam is signal. Where it passes, lines that were sitting at the
+  // floor climb through WEAK and CLEAN into OVERDRIVEN, and behind it they
+  // sink back — the world is revealed rather than lit.
+  float strength = uSignal * 1.45 + min(vGlow, 1.2) * 0.5 + vBeam * 1.1 - vSeed - vFar * 1.6;
 
   float k;
   if (strength < -0.22) {
@@ -364,6 +378,15 @@ export class WaveTerrain {
         uLandPresent: { value: 0 },
         uSignal: { value: 0.35 },
         uUnstable: { value: 0 },
+        uBeam: { value: 0 },
+        uBeamCounter: { value: -1 },
+        uBeamGhost: { value: -1 },
+        uBeamWidth: { value: 0.22 },
+        uBeamTail: { value: 0.9 },
+        uBeamIntensity: { value: 0 },
+        uBeamElevation: { value: 0.5 },
+        uBeamDirection: { value: 1 },
+        uBeamPlayer: { value: [0, 0] },
       },
     });
     this.lines = new LineSegments(geometry, this.material);
@@ -383,6 +406,26 @@ export class WaveTerrain {
   setSignal(intensity: number, instability: number): void {
     this.material.uniforms['uSignal']!.value = Math.min(1, Math.max(0, intensity));
     this.material.uniforms['uUnstable']!.value = Math.min(1, Math.max(0, instability));
+  }
+
+  /**
+   * §146: where the dome signal is, this frame. Negative bearings mean "no
+   * second signal" — a uniform cannot be null, and a sentinel is cheaper than
+   * a branchful of extra uniforms.
+   */
+  setScanner(scanner: ScannerState, player: { x: number; z: number }): void {
+    const u = this.material.uniforms;
+    u['uBeam']!.value = scanner.bearing;
+    u['uBeamCounter']!.value = scanner.counterBearing ?? -1;
+    u['uBeamGhost']!.value = scanner.ghostBearing ?? -1;
+    u['uBeamWidth']!.value = scanner.width;
+    u['uBeamTail']!.value = scanner.tail;
+    u['uBeamIntensity']!.value = scanner.intensity;
+    u['uBeamElevation']!.value = scanner.elevation;
+    u['uBeamDirection']!.value = scanner.mode === 'reverse' ? -1 : 1;
+    const centre = u['uBeamPlayer']!.value as number[];
+    centre[0] = player.x;
+    centre[1] = player.z;
   }
 
   /** BeatSync hook: world pulse ripples through the field (§12). */

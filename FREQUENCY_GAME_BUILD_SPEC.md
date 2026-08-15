@@ -1717,3 +1717,52 @@ How each one is spent, in `src/style.css`:
 - **flat / spatial** — flat panels, lifted only by what is behind them.
 
 Reduced motion stops the grain and squares the buttons.
+
+## 146. The dome — the world is measured by music (v15 amendment — NORMATIVE)
+
+A narrow band of light travels around an invisible hemisphere over the
+playable world. The dome is never drawn. Only what it touches reveals it,
+which is the whole point: a rotating measurement, not a stage light.
+
+> **darkness → moving signal → temporary revelation → afterimage → darkness**
+
+### 146.1 Geometry
+A radar sweep. The signal arrives from one BEARING, and everything whose
+bearing from the player is inside the band is briefly alive — brighter,
+noisier, lifted. Behind it an angular tail decays, so the world fades back
+rather than switching off. The dome travels WITH the player: it is the world
+being scanned, not a rig in a room.
+
+Elevation walks the lit ring in and out: low on the horizon lights the ground
+far away, overhead lights the ground beneath you.
+
+### 146.2 The music turns it
+- **BPM** sets the orbit, always a whole number of bars — 8 in the opening, 4
+  in a groove, 2 in a build, 1 at the peak. An orbit of 3.7 seconds is an
+  orbit nobody can feel.
+- **KICK** punches the intensity, decaying in a fraction of a beat.
+- **BASS** opens the band and deepens the deformation.
+- **MIDS** walk it up and down the dome.
+- **HIGHS** raise the intensity floor and the local noise.
+- **DISTORTION** lengthens the tail: a signal that is coming apart smears.
+
+### 146.3 The eight behaviours belong to sections
+Never random. `intro` decelerates, `groove` runs, `discovery` grows a ghost a
+fifth of a turn behind, `build` accelerates, `drop` takes the signal away for
+the first beat and hands it back at full, `deep` splits into two signals
+turning against each other, `break` holds still, `return` reverses.
+
+### 146.4 What answers it
+The terrain answers first: lines climb from the floor through WEAK and CLEAN
+into OVERDRIVEN as the band passes, and the field is DEFORMED where it goes —
+a measurement pressing on what it measures. What lights and what presses are
+two different bands: the sharp one lit single vertices of the coarse outer
+rings into spikes, because a 45-unit lattice cannot draw a 30-unit hill, so
+the deformation uses a broader one.
+
+Trees, particles and phosphor persistence follow in their own slices.
+
+### 146.5 Never
+A concert spotlight, a laser show, a volumetric cone, a colour beyond the
+three the world already has, or a ring mesh. If the circle is visible as an
+object, this is wrong.

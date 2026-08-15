@@ -52,6 +52,7 @@ import type { BeatEvent } from '../rendering/BeatSync';
 import { InterferenceVisuals } from '../rendering/InterferenceVisuals';
 import { ForestRenderer, loadTreeSpecies } from '../rendering/ForestRenderer';
 import { signalDrive } from '../rendering/signalLevel';
+import { advanceScanner, SCANNER_START, type ScannerState } from '../rendering/domeScanner';
 import {
   DEFAULT_VOLUME,
   loadVolume,
@@ -370,6 +371,9 @@ export class Game {
   /** §136: the last performance mapping, for the visual signal drive. */
   private lastPerformance: ReturnType<typeof performanceFrom> | null = null;
   private signalLevelAttribute = '';
+  /** §146: the dome signal, advanced every tick from the music. */
+  private scanner: ScannerState = SCANNER_START;
+  private lastKickMs = -9999;
   /** §145: what the player asked to hear, 0..1, remembered between flights. */
   private volumeLevel = loadVolume();
   private readonly volumeReadout = new VolumeReadout();
@@ -754,6 +758,26 @@ export class Game {
         grit: this.lastPerformance?.grit ?? 0,
       });
       this.terrain.setSignal(drive.intensity, drive.instability);
+      // §146: the dome turns on the track's own clock, in whole bars, and the
+      // section decides how it turns.
+      const analysis = this.audioAnalyser?.snapshot;
+      this.scanner = advanceScanner(
+        this.scanner,
+        {
+          bpm: track.bpm,
+          section: track.form,
+          low: analysis?.lowBand ?? 0,
+          mid: analysis?.midBand ?? 0,
+          high: analysis?.highBand ?? 0,
+          // Same clock the kick was stamped with: the tick's elapsedMs is the
+          // game clock and performance.now() is not, and mixing them makes the
+          // pulse fire at random.
+          sinceKick: (performance.now() - this.lastKickMs) / 1000,
+          instability: drive.instability,
+        },
+        dtSeconds,
+      );
+      this.terrain.setScanner(this.scanner, state.position);
       // §143: the interface is part of the instrument. At the top of the range
       // the type comes out of register and the grain thickens; everywhere else
       // this is a no-op, and it only ever writes when the level changes.
@@ -1224,6 +1248,7 @@ export class Game {
       switch (note.kind) {
         // §17: kick = a low shockwave through the ground under the player.
         case 'kick':
+          this.lastKickMs = performance.now();
           this.terrain.excite('note-kick', position, 55, 0.22 + note.velocity * 0.22);
           break;
         // Snare and clap = a sharp flash across the field.
