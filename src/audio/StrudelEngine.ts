@@ -32,7 +32,18 @@
  *   While nothing is playing there is no audible grid, so changes apply
  *   immediately. Timing is independent of render FPS.
  */
-import { getSuperdoughAudioController, initStrudel, samples, type StrudelRepl } from '@strudel/web';
+import type { StrudelRepl } from '@strudel/web';
+
+/**
+ * The audio runtime is 951 kB and cannot legally make a sound before the player
+ * has clicked — an AudioContext needs a gesture (§21). So it is not in the
+ * first paint: `initialize()` is the first thing that can possibly need it, and
+ * it is fetched there. Importing it at the top of this file put the whole
+ * runtime in front of the title screen for no reason.
+ */
+async function strudelWeb(): Promise<typeof import('@strudel/web')> {
+  return import('@strudel/web');
+}
 import { guardPattern } from '../ai/PatternGuard';
 import { applyDna } from '../music/TrackDNA';
 import type { Performance } from '../music/Performance';
@@ -1234,7 +1245,11 @@ export class StrudelEngine implements StrudelEnginePort {
     const gain = audioContext.createGain();
     gain.gain.value = STRUDEL_HEADROOM;
     this.outputGain = gain;
+    let initStrudel: (typeof import('@strudel/web'))['initStrudel'];
+    let samples: (typeof import('@strudel/web'))['samples'];
+    let getSuperdoughAudioController: (typeof import('@strudel/web'))['getSuperdoughAudioController'];
     try {
+      ({ initStrudel, samples, getSuperdoughAudioController } = await strudelWeb());
       this.repl = await initStrudel({ audioContext });
     } catch (cause) {
       throw new Error('StrudelEngine: failed to initialize @strudel/web', { cause });

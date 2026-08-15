@@ -28,9 +28,29 @@ export function motionTarget(velocity: number): number {
   return clamp01((velocity - STILL_VELOCITY) / FULL_VELOCITY_SPAN);
 }
 
+/**
+ * How open the world is before the player has ever moved.
+ *
+ * §42 says standing still is silence, and that stays true — but it was written
+ * about STOPPING, and it was being applied to ARRIVING as well. A visitor who
+ * does not yet know that W exists got a world that made no sound at all: 20
+ * seconds in, measured, rms 0.005 and nothing playing. On a music site that
+ * reads as broken rather than as quiet.
+ *
+ * So the world breathes on its own until you first move, and from that moment
+ * §42 governs the rest of the flight: stop, and it falls silent. This does not
+ * unlock a layer or start the track — it is the room, not the record.
+ */
+export const ARRIVAL_LEVEL = 0.4;
+
 /** One step of the gate: fast to open, slow to close. */
-export function nextMotionLevel(current: number, velocity: number, dtSeconds: number): number {
-  const target = motionTarget(velocity);
+export function nextMotionLevel(
+  current: number,
+  velocity: number,
+  dtSeconds: number,
+  floor = 0,
+): number {
+  const target = Math.max(motionTarget(velocity), clamp01(floor));
   const tau = target > current ? ATTACK_TAU_S : RELEASE_TAU_S;
   const alpha = 1 - Math.exp(-Math.max(0, dtSeconds) / tau);
   return clamp01(current + (target - current) * alpha);

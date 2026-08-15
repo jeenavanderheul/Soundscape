@@ -1,6 +1,6 @@
 import { attachAudioAnalyser, AudioAnalyser } from '../audio/AudioAnalyser';
 import { AudioEngine } from '../audio/AudioEngine';
-import { nextMotionLevel } from '../audio/MotionGate';
+import { ARRIVAL_LEVEL, nextMotionLevel } from '../audio/MotionGate';
 import { performanceFrom } from '../music/Performance';
 import { PlayerTone } from '../audio/PlayerTone';
 import { ResonanceAudio } from '../audio/ResonanceAudio';
@@ -16,6 +16,7 @@ import {
   createEmptyLayerGraph,
   diffLayerGraph,
   genreGrammar,
+  regionBpm,
   throwStyleFor,
   voiceLabels,
   voiceSections,
@@ -346,6 +347,8 @@ export class Game {
   private readonly startupLoadInfo: LoadInfo;
   /** §42 gate: starts closed, so a flight begins in silence. */
   private motionLevel = 0;
+  /** Has the player flown at all yet? Arriving is not the same as stopping. */
+  private hasFlown = false;
   /** Smoothed chase direction: the camera follows, it is never aimed. */
   private readonly camDir = { x: 0, y: 0, z: -1 };
   /** The grammar the last applied graph was written in (§60). */
@@ -738,6 +741,12 @@ export class Game {
   /** One frame: input snapshot → controller → store → audio + particles + camera (spec §15, §16). */
   private readonly tick = (deltaMs: number, elapsedMs: number): void => {
     const snapshot = this.input.snapshot();
+    // The player has flown once they have ASKED to. Velocity was the obvious
+    // signal and the wrong one: a restored save arrives already moving, so the
+    // arrival was over before the visitor had touched anything.
+    if (snapshot.axes.moveZ !== 0 || snapshot.axes.moveX !== 0 || snapshot.buttons.windHold) {
+      this.hasFlown = true;
+    }
     this.controller.update(snapshot, deltaMs);
     // §3.3: timed excitations (LMB release, Space) are the rhythm onsets.
     // §11: reveal the pattern the world wrote — read-only, never a REPL.
@@ -930,7 +939,14 @@ export class Game {
       this.saveManager.save(this.snapshotWorld());
     }
     // §42: one gate, read by the track, the tone and the drones alike.
-    this.motionLevel = nextMotionLevel(this.motionLevel, state.velocity, dtSeconds);
+    // The room is audible until the player first flies; after that, stopping is
+    // silence exactly as §42 says.
+    this.motionLevel = nextMotionLevel(
+      this.motionLevel,
+      state.velocity,
+      dtSeconds,
+      this.hasFlown ? 0 : ARRIVAL_LEVEL,
+    );
     this.playerTone?.update(state, dtSeconds, this.motionLevel);
     this.spatialAudio?.setMotion(this.motionLevel);
     this.spatialAudio?.setListenerPose(state.position, state.direction, WORLD_UP);
@@ -1193,6 +1209,17 @@ export class Game {
     this.lastPerformance = performance;
     // §118: which reading of this world track N is.
     next.dna = this.trackBuilder.dna;
+    // A world with no clock cannot make a sound: cpm 0 means no pattern ever
+    // advances, and an arriving visitor who has not worked out that W exists
+    // gets literal silence (measured: rms 0.005 after twenty seconds). Until
+    // the first flight the region's own resting tempo runs the atmosphere.
+    //
+    // Deliberately here and NOT in TrackBuilder: giving the builder a clock
+    // let a rung unlock before the kick, because time is what its patience is
+    // made of. This touches what is HEARD, never what is earned.
+    if (next.bpm <= 0 && !this.hasFlown) {
+      next.bpm = regionBpm(genreGrammar(this.placeGenre));
+    }
     // §91: nothing outside the world may touch the clock. Height is colour.
     // Endless journey: which variation each layer is playing right now.
     next.variations = this.trackBuilder.variations;

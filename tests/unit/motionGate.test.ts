@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ARRIVAL_LEVEL,
   RESONATOR_SILENCE_FLOOR,
   motionTarget,
   nextMotionLevel,
@@ -81,3 +82,37 @@ describe('§42 gate applied to the voices', () => {
 function last<T>(calls: readonly T[]): T {
   return calls[calls.length - 1]!;
 }
+
+/**
+ * §184: arriving is not the same as stopping. §42 (standing still is silence)
+ * was written about a player who has been flying and lets go; it was also
+ * governing the visitor who has not moved yet, and gave them a world that made
+ * no sound at all — measured at rms 0.005 twenty seconds in.
+ */
+describe('the world breathes before you have flown', () => {
+  it('opens the gate on arrival even at a standstill', () => {
+    expect(nextMotionLevel(0, 0, 1 / 60, ARRIVAL_LEVEL)).toBeGreaterThan(0);
+  });
+
+  it('reaches the arrival level and stops there, without flying', () => {
+    let level = 0;
+    for (let i = 0; i < 300; i++) level = nextMotionLevel(level, 0, 1 / 60, ARRIVAL_LEVEL);
+    expect(level).toBeCloseTo(ARRIVAL_LEVEL, 3);
+  });
+
+  it('still lets flying open it further than arriving does', () => {
+    let level = ARRIVAL_LEVEL;
+    for (let i = 0; i < 300; i++) level = nextMotionLevel(level, 20, 1 / 60, ARRIVAL_LEVEL);
+    // Asymptotic: it approaches wide open, it never lands on it exactly.
+    expect(level).toBeGreaterThan(0.99);
+  });
+
+  it('falls to full silence once the floor is withdrawn', () => {
+    // Which is what happens the moment the player first touches the controls:
+    // from then on §42 governs the whole flight.
+    let level = 1;
+    // Five seconds is the claim that matters: by then it is inaudible.
+    for (let i = 0; i < 300; i++) level = nextMotionLevel(level, 0, 1 / 60, 0);
+    expect(level).toBeLessThan(0.04);
+  });
+});
