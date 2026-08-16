@@ -23,11 +23,6 @@ export class Renderer {
    * the player is left looking at a frozen black canvas with no way back —
    * the browser will not even try to restore unless the default is prevented.
    */
-  /** The picture itself, for the demo recorder (§191). */
-  get canvas(): HTMLCanvasElement {
-    return this.webgl.domElement;
-  }
-
   private readonly onContextLost = (event: Event): void => {
     event.preventDefault();
     this.contextLost = true;

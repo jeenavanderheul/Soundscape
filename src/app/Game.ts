@@ -11,7 +11,6 @@ import { createRng } from '../core/rng';
 import { createEventBus, EventBus } from '../core/EventBus';
 import { createStore, Store } from '../core/stores';
 import { InputManager } from '../input/InputManager';
-import { DemoRecorder } from './DemoRecorder';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
 import {
   createEmptyLayerGraph,
@@ -301,8 +300,6 @@ export class Game {
   private readonly guide = new Guide();
   private readonly codeOverlay = new CodeOverlay();
   private readonly exportOverlay = new ExportOverlay();
-  /** §191: R records the flight, picture and sound together. */
-  private readonly recorder = new DemoRecorder();
   /** Flight time so far, for the export header (§32). */
   private flightMs = 0;
   private worldPatterns: LayerPatterns = {};
@@ -729,7 +726,6 @@ export class Game {
     this.hints.dispose();
     this.codeOverlay.dispose();
     this.exportOverlay.dispose();
-    this.recorder.dispose();
     this.guide.dispose();
     this.streaks.dispose();
     this.layerCue.dispose();
@@ -1354,21 +1350,6 @@ export class Game {
    * playable — the mouse is captured in flight, so without feedback a keypress
    * is a guess.
    */
-  /** §191: start a take, or finish one and hand the file to the player. */
-  private async toggleRecording(): Promise<void> {
-    if (this.recorder.recording) {
-      await this.recorder.stop(this.elements.container);
-      // The save panel needs the mouse; flight can have it back afterwards.
-      this.pointerLock.exit();
-      return;
-    }
-    this.recorder.start(
-      this.renderer.canvas,
-      this.audioEngine.createRecordingStream(),
-      this.elements.container,
-    );
-  }
-
   private setVolume(level: number): void {
     this.volumeLevel = quantizeVolume(level);
     this.audioEngine.setVolume(volumeToGain(this.volumeLevel));
@@ -1386,11 +1367,6 @@ export class Game {
       }
       if (event.key === '=' || event.key === '+') {
         this.setVolume(stepVolume(this.volumeLevel, 1));
-        return;
-      }
-      if (event.key === 'r' || event.key === 'R') {
-        // §191: R records the flight — picture and sound in one file.
-        void this.toggleRecording();
         return;
       }
       if (event.key === 'm' || event.key === 'M') {
