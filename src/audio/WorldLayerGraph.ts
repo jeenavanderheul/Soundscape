@@ -30,6 +30,12 @@ export interface WorldLayerGraphInput {
   performance?: Readonly<Performance> | undefined;
   /** The genre lab's per-layer trim. The game never sets it. */
   mix?: Partial<Record<LayerName, number>> | undefined;
+  /**
+   * §209: whether locked groove's own 32-cycle arrangement still decides when a
+   * voice belongs. False on a phone, where the track is shorter than the
+   * document and the two came apart — see LockedGroovePresetControls.
+   */
+  masks?: boolean | undefined;
 }
 
 
@@ -43,6 +49,7 @@ export function buildWorldLayerGraph(input: WorldLayerGraphInput): MusicalLayerG
       ...(input.energy === undefined ? {} : { energy: input.energy }),
       ...(input.performance === undefined ? {} : { performance: input.performance }),
       ...(input.mix === undefined ? {} : { mix: input.mix }),
+      ...(input.masks === undefined ? {} : { masks: input.masks }),
     });
   }
   const document = {

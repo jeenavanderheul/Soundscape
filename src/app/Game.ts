@@ -1264,6 +1264,11 @@ export class Game {
       energy: clamp01(flight.amplitude),
       // §81: height and wind, for the grammars that write themselves from it.
       performance,
+      // §209: locked groove arranges itself over 32 cycles, and a phone's whole
+      // track is 26. The document outlived the track, so a player saw 4/7 and
+      // heard two voices. On touch the ladder is the arrangement — as it
+      // already is in the five worlds that never had masks.
+      masks: !isTouchDevice(),
     });
     next.performance = performance;
     this.lastPerformance = performance;

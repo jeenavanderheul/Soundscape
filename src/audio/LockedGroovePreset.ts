@@ -38,6 +38,26 @@ export interface LockedGroovePresetControls {
   performance?: Readonly<Performance>;
   energy?: number;
   mix?: Partial<Record<LayerName, number>>;
+  /**
+   * §209 (user decision, phone only): whether this world's own 32-cycle
+   * arrangement still decides WHEN a voice belongs.
+   *
+   * On a desk it must — it is the composition. On a phone it cannot, and the
+   * arithmetic is why: the masks span 32 cycles, a phone's whole track is 46
+   * seconds ≈ 26 cycles, and §205 made the ladder faster without making the
+   * document shorter. So the melody is EARNED at cycle 13 while `signal`
+   * (`<0!22 1!10>`) does not open until 22. The screen said 4/7 and two voices
+   * were sounding — the ladder and the document had come apart.
+   *
+   * With this off the phone works like the other five worlds, which have no
+   * masks at all: the ladder IS the arrangement, and what you earned, you hear.
+   */
+  masks?: boolean;
+}
+
+/** §209: strip this world's own arrangement, leaving the ladder in charge. */
+function unmask(code: string, controls: LockedGroovePresetControls): string {
+  return controls.masks === false ? code.replace(/\.mask\("[^"]*"\)/g, '') : code;
 }
 
 /** §110: the arrangement, exactly as the preset writes it. */
@@ -244,7 +264,7 @@ export function buildLockedGrooveGraph(controls: LockedGroovePresetControls = {}
     const trim = Math.max(0, controls.mix?.[part.layer] ?? 1);
     const level = part.gain * motion * trim;
     if (level <= 0) continue;
-    const primitive = voice(part.id, part.kind, part.layer, part.code(g3(level)));
+    const primitive = voice(part.id, part.kind, part.layer, unmask(part.code(g3(level)), controls));
     primitive.parameters['section'] = part.section;
     graph.layers[part.layer].primitives.push(primitive);
   }

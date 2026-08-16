@@ -81,12 +81,17 @@ describe('§205 a whole track fits in a phone-sized flight', () => {
     }
   });
 
-  it('is meaningfully faster than the desktop writing, not a rounding change', () => {
-    for (const world of SECTORS) {
-      const phone = secondsToFullTrack(world, 'a', THUMB_DOWN, MOBILE_TRACK_PACING)!;
-      const desk = secondsToFullTrack(world, 'a', THUMB_DOWN, TRACK_BUILDER_CONFIG)!;
-      expect(phone, world).toBeLessThan(desk * 0.8);
-    }
+  it('takes about the same time in every world', () => {
+    // §205 asked for "faster than the desktop", which §209 replaced: the phone
+    // no longer uses the worlds' written curves at all, so a world that was
+    // quick on a desk (heavy signal) is now the same length as a slow one. That
+    // is the trade — a phone gives up the shape of a world's patience and gets
+    // a build it can rely on. What has to hold is that no world is an outlier.
+    const times = SECTORS.map((w) => secondsToFullTrack(w, 'a', THUMB_DOWN, MOBILE_TRACK_PACING)!);
+    expect(Math.max(...times) / Math.min(...times)).toBeLessThan(1.2);
+    // And the desktop still spends its worlds' patience differently.
+    const desk = SECTORS.map((w) => secondsToFullTrack(w, 'a', THUMB_DOWN, TRACK_BUILDER_CONFIG)!);
+    expect(Math.max(...desk) / Math.min(...desk)).toBeGreaterThan(1.2);
   });
 
   it('leaves the desktop writing exactly where it was', () => {

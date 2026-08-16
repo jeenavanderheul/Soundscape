@@ -6,7 +6,14 @@ import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { ArrangementEngine, ARRANGEMENT_CONFIG, CYCLES_PER_PHASE, rungsDueAt } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
 import { curveFor, layerUnlocked, nextStep, type LadderStep } from './GenreLadder';
-import { fixedFormFor, formFor, isPlayableOrder, TRACK_LAYERS, type TrackForm } from './TrackForm';
+import {
+  fixedFormFor,
+  formFor,
+  isPlayableOrder,
+  stageRungs,
+  TRACK_LAYERS,
+  type TrackForm,
+} from './TrackForm';
 import { HarmonyEngine } from './HarmonyEngine';
 import { MelodyTracker } from './MelodyTracker';
 import type { MusicState } from './MusicState';
@@ -110,6 +117,21 @@ export interface TrackBuilderConfig {
    */
   holdsFullMixWhenComplete: boolean;
   /**
+   * §209: paced ms between rungs, evenly. 0 keeps the world's written curve.
+   *
+   * The curve's SHAPE is a world's character — where it makes you wait. On a
+   * phone it produced a 29-second hole between 3/7 and 4/7 and then four rungs
+   * in seventeen seconds, because the ladder and the arc were both deciding.
+   * An even step is the thing a two-minute session can actually be built on.
+   */
+  rungIntervalMs: number;
+  /**
+   * §209: whether the arc may withhold a rung whose phase it has not reached
+   * (§92). Two clocks decided a rung; on a phone they came apart, and §56 says
+   * there is only ever one authority.
+   */
+  arcGatesRungs: boolean;
+  /**
    * §107/§108: how far into a rung's own PHASE the world gives it away, as a
    * fraction. This is the window in which your flying is what earns it — and
    * because it scales with the phase it stays the same shape at any tempo,
@@ -188,6 +210,8 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   clockRunsAtRest: false,
   keepsTrackAcrossWorlds: false,
   holdsFullMixWhenComplete: false,
+  rungIntervalMs: 0,
+  arcGatesRungs: true,
   // §108 (user decision): the opening may come up twice as fast, so the gift
   // lands near the MIDDLE of its phase rather than at the end. You still have
   // most of the first half to go and earn it yourself, and a passive flight
@@ -258,6 +282,12 @@ export const MOBILE_TRACK_PACING: TrackBuilderConfig = {
   clockRunsAtRest: true,
   keepsTrackAcrossWorlds: true,
   holdsFullMixWhenComplete: true,
+  // §209: one clock, even steps. The first rung is the arrival itself, so rung
+  // N sits at N-1 intervals: 4.8 s of paced time is 7.5 s of real flying and
+  // 16 s at rest, putting 7/7 at ~45 s and ~96 s — the same totals §205
+  // measured, but arriving one at a time, evenly, instead of in a lump.
+  rungIntervalMs: 4800,
+  arcGatesRungs: false,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -291,6 +321,10 @@ function prune(times: number[], nowMs: number, windowMs: number): void {
 }
 
 /** Fold a midi note into [low, high] by octaves so any pitch stays playable. */
+/** §208: a layer as it stands on a stage you just walked onto, or does not. */
+const layerAt = (standing: boolean): { unlocked: boolean; level: number } =>
+  standing ? { unlocked: true, level: LEVEL_EARNED } : { unlocked: false, level: 0 };
+
 export function foldToRange(midi: number, low: number, high: number): number {
   let note = Math.round(midi);
   while (note > high) note -= 12;
@@ -327,6 +361,8 @@ export class TrackBuilder {
   private awayMs = 0;
   private trackNumberValue = 1;
   private turn = 0;
+  /** §208: how many stages the player has walked onto this session. */
+  private crossings = 0;
   private layerVariations: LayerVariations = {};
   /** True once the finished track has reached a drop and is waiting to hand over. */
   private handingOver = false;
@@ -431,6 +467,44 @@ export class TrackBuilder {
     }
     if (section === 'return') return; // still in it — let the finale land
     this.startNextTrack(nowMs);
+  }
+
+  /**
+   * §208 (user decision, phone only): you did not restart the music — you
+   * walked to another stage, and that one has been running without you.
+   *
+   * What stands when you arrive is the first N rungs of THIS world's order, and
+   * N is what `stageRungs` says the night is at. It can be fewer than you were
+   * carrying, and that is the point (user decision): a set that is always at
+   * least as far along as the last one is not a set, it is your own progress
+   * wearing six costumes. Inside a world the count still only ever climbs.
+   */
+  private arriveMidSet(genre: TrackGenre, nowMs: number): void {
+    this.crossings += 1;
+    const wanted = stageRungs(this.activeMs, this.crossings);
+    const standing = new Set(this.ladder(genre).slice(0, wanted).map((step) => step.layer));
+    const before = this.store.getState();
+    this.store.setState((t) => ({
+      ...t,
+      drums: {
+        kick: layerAt(standing.has('kick')),
+        snare: layerAt(standing.has('snare')),
+        hats: layerAt(standing.has('hats')),
+      },
+      bass: layerAt(standing.has('bass')),
+      harmony: layerAt(standing.has('harmony')),
+      melody: layerAt(standing.has('melody')),
+      texture: layerAt(standing.has('texture')),
+    }));
+    // The §82 settling gap starts again here: the set you joined has just been
+    // handed to you whole, and the next rung is the first thing you earn on it.
+    this.lastRungMs = this.activeMs;
+    this.dueSinceMs = null;
+    // Only what is NEW is announced. Everything else was already playing when
+    // you walked up, and a stage does not introduce what it started with.
+    for (const layer of standing) {
+      if (!layerUnlocked(before, layer)) this.bus.emit('track:layer', { layer, atMs: nowMs });
+    }
   }
 
   private isComplete(track: Readonly<TrackState>): boolean {
@@ -708,15 +782,24 @@ export class TrackBuilder {
         // startNextTrack — the genre simply resolves — so it would have been
         // the one track that opened on silence. Arriving in a world always
         // gives you that world's first rung, at once.
-        const opening = this.ladder(genre)[0];
-        // §207: when the track survives the crossing, the gift of a first rung
-        // only makes sense while there is nothing yet — otherwise wiggling
-        // across a border would hand out layers, and the build would be a
-        // steering trick instead of a build.
-        const bare = config.keepsTrackAcrossWorlds ? earned === 0 : true;
-        if (bare && genre !== null && opening && !layerUnlocked(this.store.getState(), opening.layer)) {
-          this.lastRungMs = this.activeMs;
-          this.unlock(opening.layer, nowMs);
+        // §209: a stage you WALK ONTO is already playing (§208) — but the first
+        // world of a session is not walked onto, it is where you woke up. That
+        // one starts at 1/7, or the build you came for is three rungs over
+        // before you have touched anything.
+        if (config.keepsTrackAcrossWorlds && track.genre !== null) {
+          this.arriveMidSet(genre, nowMs);
+        } else if (config.keepsTrackAcrossWorlds) {
+          const opening = this.ladder(genre)[0];
+          if (genre !== null && opening) {
+            this.lastRungMs = this.activeMs;
+            this.unlock(opening.layer, nowMs);
+          }
+        } else {
+          const opening = this.ladder(genre)[0];
+          if (genre !== null && opening && !layerUnlocked(this.store.getState(), opening.layer)) {
+            this.lastRungMs = this.activeMs;
+            this.unlock(opening.layer, nowMs);
+          }
         }
       }
       if (section !== track.form) this.bus.emit('track:section', { section, atMs: nowMs });
@@ -758,7 +841,7 @@ export class TrackBuilder {
     const earnedRungs = ladder.filter((rung) => layerUnlocked(current, rung.layer)).length;
     // Only WIDTH is gated. Depth has to keep going once the arc has handed out
     // everything it owes, or a track stops growing the moment it is wide.
-    const rungDue = earnedRungs < rungsDueAt(section, ladder);
+    const rungDue = !config.arcGatesRungs || earnedRungs < rungsDueAt(section, ladder);
     // §98: remember WHEN the world became willing, so patience can wait a
     // beat behind it. Without this the free rung landed the instant its phase
     // opened, and the beacon you flew to never actually gave you anything.
@@ -788,13 +871,27 @@ export class TrackBuilder {
     const offeredFreelyAt =
       (this.dueSinceMs ?? this.activeMs)
       + barMs * config.cyclesPerPhase * Math.min(0.9, config.patienceOfPhase * formPace);
-    const patience = step === null ? 0 : Math.max(step.atMs * patienceFactor, offeredFreelyAt);
+    // §209: on an even ladder the step time IS the answer. Mixing in the arc's
+    // phase window is what let the two clocks disagree in the first place.
+    const patience =
+      step === null
+        ? 0
+        : config.rungIntervalMs > 0
+          ? step.atMs
+          : Math.max(step.atMs * patienceFactor, offeredFreelyAt);
     // §82: whatever earns it, a layer only lands once the previous one has had
     // room to be heard. Without this, patience and behaviour fired on
     // consecutive ticks and the track arrived in a lump.
     const settled =
       this.activeMs - this.lastRungMs >= config.rungGapMs * formPace * config.curveScale;
-    if (rungDue && step !== null && settled && (this.intent(step.layer) || this.activeMs >= patience)) {
+    // §209: on an even ladder the CLOCK is the only thing that lands a rung.
+    // Behaviour could otherwise pull each one forward to the settling gap, and
+    // seven layers arriving in nineteen seconds is not a build either.
+    const earnedNow =
+      config.rungIntervalMs > 0
+        ? this.activeMs >= patience
+        : this.intent(step?.layer ?? 'kick') || this.activeMs >= patience;
+    if (rungDue && step !== null && settled && earnedNow) {
       this.lastRungMs = this.activeMs;
       this.unlock(step.layer, nowMs);
       return;
@@ -838,7 +935,11 @@ export class TrackBuilder {
     const curve = curveFor(genre);
     return form.order.map((layer, index) => ({
       layer,
-      atMs: Math.round((curve[index] ?? 40_000) * form.paceScale * this.config.curveScale),
+      // §209: an even step, or the world's own curve stretched by its patience.
+      atMs:
+        this.config.rungIntervalMs > 0
+          ? index * this.config.rungIntervalMs
+          : Math.round((curve[index] ?? 40_000) * form.paceScale * this.config.curveScale),
     }));
   }
 

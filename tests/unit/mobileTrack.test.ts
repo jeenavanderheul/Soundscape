@@ -11,7 +11,14 @@ import {
   TrackBuilder,
   TRACK_BUILDER_CONFIG,
 } from '../../src/music/TrackBuilder';
-import { fixedFormFor, isPlayableOrder, TRACK_LAYERS } from '../../src/music/TrackForm';
+import {
+  fixedFormFor,
+  isPlayableOrder,
+  STAGE_MAX_RUNGS,
+  STAGE_MIN_RUNGS,
+  stageRungs,
+  TRACK_LAYERS,
+} from '../../src/music/TrackForm';
 import {
   createInitialTrackState,
   type TrackEvents,
@@ -39,6 +46,7 @@ const layersOf = (t: Readonly<TrackState>): number =>
 
 interface Run {
   layers: number[];
+  states: TrackState[];
   forms: string[];
   genres: (string | null)[];
   newTracks: number;
@@ -54,12 +62,16 @@ function fly(options: {
   crossAtSeconds?: number;
   config?: typeof TRACK_BUILDER_CONFIG;
   seed?: string;
+  /** Keep every frame's full state — only worth the memory when asserted on. */
+  keep?: boolean;
 }): Run {
   const { world, velocity, seconds = 200, crossTo, crossAtSeconds = 0 } = options;
   const config = options.config ?? TRACK_BUILDER_CONFIG;
   const store = createStore<TrackState>(createInitialTrackState());
   const bus = createEventBus<TrackEvents>();
-  const run: Run = { layers: [], forms: [], genres: [], newTracks: 0, order: [], secondsToFull: null };
+  const run: Run = {
+    layers: [], states: [], forms: [], genres: [], newTracks: 0, order: [], secondsToFull: null,
+  };
   bus.on('track:new', () => {
     run.newTracks += 1;
   });
@@ -74,6 +86,7 @@ function fly(options: {
     builder.tick(now, music, { velocity, hz: 220, energy: 0.5, altitude: 60 } as never, at(here));
     const state = store.getState();
     run.layers.push(layersOf(state));
+    if (options.keep === true) run.states.push(state);
     run.forms.push(state.form);
     run.genres.push(state.genre);
     if (run.secondsToFull === null && layersOf(state) === 7) run.secondsToFull = now / 1000;
@@ -122,10 +135,10 @@ describe('§207 one build, seven layers, in the order the world is written', () 
     expect(flown.secondsToFull!).toBeLessThan(still.secondsToFull!);
   });
 
-  it('recolours on a crossing instead of starting over', () => {
+  it('walks onto a stage that is already playing, never back to 1/7', () => {
     // The desktop rule is that a world IS a track (§53/§54), so arriving
-    // somewhere else puts you back at 1/7. On a phone that was most of what a
-    // player ever heard.
+    // somewhere else puts you back at 1/7 and starts the climb again. On a
+    // phone that was most of what a player ever heard.
     const run = fly({
       world: 'locked-groove',
       crossTo: 'sub-pressure',
@@ -134,11 +147,82 @@ describe('§207 one build, seven layers, in the order the world is written', () 
       config: MOBILE_TRACK_PACING,
     });
     expect(run.newTracks).toBe(0);
-    const atCross = run.layers[Math.floor(25 * 30)]!;
-    expect(atCross).toBeGreaterThan(0);
-    expect(Math.min(...run.layers.slice(Math.floor(25 * 30)))).toBeGreaterThanOrEqual(atCross);
+    const after = run.layers.slice(Math.floor(25 * 30));
+    // §208: the set you joined is somewhere in its middle — never at its start,
+    // never already over.
+    expect(Math.min(...after)).toBeGreaterThanOrEqual(STAGE_MIN_RUNGS);
     expect(run.genres[run.genres.length - 1]).toBe('sub-pressure');
+    // …and from there it still builds to the end.
     expect(run.layers[run.layers.length - 1]).toBe(7);
+  });
+
+  it('makes the stage decide, even when you were further along', () => {
+    // §208 (user decision): 6/7 walking into a stage at 4/7 hears 4/7. A set
+    // that is always at least as far as your last one is not a set — it is your
+    // own progress wearing six costumes.
+    const seen = new Set<number>();
+    for (const at of [20, 30, 40, 50, 60, 75, 90, 110, 140, 170]) {
+      const run = fly({
+        world: 'locked-groove',
+        crossTo: 'percussion-riot',
+        crossAtSeconds: at,
+        velocity: 66,
+        config: MOBILE_TRACK_PACING,
+      });
+      const arrived = run.layers[Math.floor(at * 30) + 2]!;
+      seen.add(arrived);
+      expect(arrived, `crossing at ${at}s`).toBeGreaterThanOrEqual(STAGE_MIN_RUNGS);
+      expect(arrived, `crossing at ${at}s`).toBeLessThanOrEqual(STAGE_MAX_RUNGS);
+      // Crossing at 170 s means you were long since at 7/7 — and you still
+      // arrive on whatever that stage is playing, which is fewer.
+      if (at >= 60) expect(arrived, `crossing at ${at}s`).toBeLessThan(7);
+    }
+    // Not one number ten times over: stages differ from each other.
+    expect(seen.size).toBeGreaterThan(1);
+  });
+
+  it('spreads stages across the whole range of a session', () => {
+    // Asserted on the rule itself rather than through a flight: the integration
+    // above can only ever show one crossing per run, and what matters is that
+    // over a session the stages are not all the same number.
+    const seen = new Set<number>();
+    for (let crossing = 1; crossing <= 12; crossing += 1) {
+      for (const pacedMs of [0, 20_000, 40_000, 60_000, 80_000, 120_000, 400_000]) {
+        const n = stageRungs(pacedMs, crossing);
+        expect(n).toBeGreaterThanOrEqual(STAGE_MIN_RUNGS);
+        expect(n).toBeLessThanOrEqual(STAGE_MAX_RUNGS);
+        seen.add(n);
+      }
+    }
+    expect([...seen].sort()).toEqual([3, 4, 5, 6]);
+    // Two stages in a row are not always the same reading of the night.
+    const row = Array.from({ length: 12 }, (_, i) => stageRungs(60_000, i + 1));
+    expect(new Set(row).size).toBeGreaterThan(1);
+    // A stage is never over when you get there — there is always something left
+    // to build, or walking up to it is pointless.
+    expect(stageRungs(9_999_999, 3)).toBeLessThan(7);
+  });
+
+  it('drops what the new stage is not playing, and stands what it is', () => {
+    // Arriving is not additive: you hear that stage's opening N rungs, whatever
+    // you were carrying. Otherwise crossing would be a way to collect layers.
+    const run = fly({
+      world: 'sub-pressure',
+      crossTo: 'percussion-riot',
+      crossAtSeconds: 120,
+      velocity: 66,
+      config: MOBILE_TRACK_PACING,
+      keep: true,
+    });
+    const arrived = run.states[Math.floor(120 * 30) + 2]!;
+    const standing = new Set(
+      (['kick', 'snare', 'hats'] as const).filter((k) => arrived.drums[k].unlocked) as string[],
+    );
+    for (const k of ['bass', 'harmony', 'melody', 'texture'] as const) {
+      if (arrived[k].unlocked) standing.add(k);
+    }
+    const written = fixedFormFor('percussion-riot').order;
+    expect([...standing].sort()).toEqual([...written.slice(0, standing.size)].sort());
   });
 
   it('takes nothing away once all seven are standing', () => {

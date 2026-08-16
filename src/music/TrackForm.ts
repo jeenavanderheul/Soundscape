@@ -197,6 +197,34 @@ export function fixedFormFor(genre: TrackGenre): TrackForm {
 }
 
 /**
+ * §208 (user decision, phone only): EVERY STAGE IS ALREADY PLAYING.
+ *
+ * Walking up to another stage at a festival does not put you at the start of a
+ * set — that DJ has been on for a while, and how long is different at every
+ * tent. §189 gave the desktop a fixed three rungs on arrival, which reads as an
+ * arrival exactly once and then reads as a rule.
+ *
+ * So the number varies: a stage is further along the longer the night has been
+ * going, with a lean either way so two crossings in a row are never the same.
+ * Never seven — a set you can only watch end is not one you can join — and
+ * never below three, or you have walked into a soundcheck.
+ */
+export const STAGE_MIN_RUNGS = 3;
+export const STAGE_MAX_RUNGS = 6;
+
+export function stageRungs(sessionMs: number, crossing: number): number {
+  // `sessionMs` is PACED time (§46), not the wall clock — the same time the
+  // build itself runs on, so a night gets later faster when you fly harder.
+  // 25 s of it per rung puts the whole range inside a two-minute session, which
+  // is what a phone session is; 45 s meant the last stage never happened.
+  const grown =
+    STAGE_MIN_RUNGS
+    + Math.min(STAGE_MAX_RUNGS - STAGE_MIN_RUNGS, Math.floor(Math.max(0, sessionMs) / 25_000));
+  const lean = Math.floor(stream(seedOf(`stage|${crossing}`))() * 3) - 1;
+  return Math.min(STAGE_MAX_RUNGS, Math.max(STAGE_MIN_RUNGS, grown + lean));
+}
+
+/**
  * §128: the form of track N of this world, on this journey.
  *
  * Track 1 of a journey is NOT special — §118 keeps the sound of a first track
