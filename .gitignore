@@ -10,7 +10,10 @@ dist
 # `npm run sounds:vendor:used` fetches 296 MB from a third party, which is not
 # something a build should depend on. Re-vendor it locally and compress it with
 # scripts/compress-samples.mjs if it ever needs rebuilding.
-public/land/
+# public/land/ is COMMITTED since the first deploy: it is the real Amsterdam
+# terrain, and without it a deployed build quietly falls back to generated
+# waves — a different world than the one that was tested. 20 MB, rebuildable
+# with `npm run land:bake`.
 
 # subagent worktrees: copies of this repo, never part of it
 .claude/worktrees/

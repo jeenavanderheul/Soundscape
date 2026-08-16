@@ -1,0 +1,17 @@
+{
+  "label": "Amsterdam",
+  "layer": "dsm_05m",
+  "size": 2048,
+  "rd": {
+    "minX": 116000,
+    "minY": 482000,
+    "maxX": 126000,
+    "maxY": 492000
+  },
+  "metresPerSample": 4.8828125,
+  "lowest": -10.922778129577637,
+  "highest": 175.7623748779297,
+  "waterFraction": 0.13361859321594238,
+  "source": "AHN via PDOK (open data)",
+  "attribution": "© AHN / PDOK"
+}
