@@ -1,0 +1,14 @@
+# What Vercel needs is the source and public/ — it installs and builds the rest
+# itself. Without this it tries to upload the whole working directory, which
+# here is 3.4 GB of node_modules, rendered audio and git history, and the
+# upload simply aborts.
+node_modules
+dist
+exports
+.git
+.playwright-mcp
+.claude
+docs
+tests
+scripts/probe-mesh-bind.mjs
+*.log
