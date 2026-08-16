@@ -99,19 +99,11 @@ export class Hints {
     this.root.setAttribute('role', 'status');
     this.root.setAttribute('aria-live', 'polite');
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // §197: the box is in the stylesheet (.hud-hints); what MOVES stays here.
+    this.root.className = 'hud-hints';
     Object.assign(this.root.style, {
-      position: 'fixed',
-      bottom: '48px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      color: 'rgba(215, 228, 230, 0.75)',
-      font: '13px/1.6 var(--font-mono)',
-      letterSpacing: '0.12em',
-      pointerEvents: 'none',
       opacity: '0',
       transition: this.reducedMotion ? 'none' : 'opacity 1.2s ease',
-      textShadow: '0 0 8px rgba(160, 220, 230, 0.3)',
-      zIndex: '10',
     });
     container.appendChild(this.root);
   }

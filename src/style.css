@@ -251,6 +251,157 @@ body {
 }
 
 /**
+ * §197 THE READOUTS.
+ *
+ * Every block of the HUD used to carry its box inline, in the module that drew
+ * it, which meant not one of them could be reached by a media query: on a
+ * 390x844 handset the top-left readout was still 254px wide (65% of the
+ * picture) and on a 844x390 one it was still 184px tall (47% of the height).
+ * The boxes live here now — the same values, to the pixel, so the desk is
+ * untouched — and the phone block further down shrinks all of them at once.
+ *
+ * What stays in the modules is what MOVES: opacity, transitions, display.
+ */
+.hud-readout {
+  position: fixed;
+  top: 16px;
+  left: 18px;
+  z-index: 10;
+  color: rgb(220 230 232 / 82%);
+  font: 12px/1.7 var(--font-mono);
+  letter-spacing: 0.08em;
+  white-space: pre;
+  pointer-events: none;
+  text-shadow: 0 0 6px rgb(160 220 230 / 35%);
+}
+
+.hud-hints {
+  position: fixed;
+  bottom: 48px;
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  color: rgb(215 228 230 / 75%);
+  font: 13px/1.6 var(--font-mono);
+  letter-spacing: 0.12em;
+  pointer-events: none;
+  text-shadow: 0 0 8px rgb(160 220 230 / 30%);
+}
+
+.hud-track-strip {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  z-index: 10;
+  transform: translateX(-50%);
+  color: rgb(226 240 244 / 82%);
+  font: 12px/1.7 var(--font-mono);
+  letter-spacing: 0.08em;
+  white-space: pre;
+  text-align: center;
+  pointer-events: none;
+  text-shadow: 0 0 12px rgb(0 0 0 / 80%);
+}
+
+.hud-guide {
+  position: fixed;
+  right: 18px;
+  bottom: 16px;
+  z-index: 10;
+  color: rgb(200 216 220 / 55%);
+  font: 11px/1.9 var(--font-mono);
+  letter-spacing: 0.06em;
+  white-space: pre;
+  text-align: right;
+  pointer-events: none;
+}
+
+.hud-volume {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 12;
+  color: var(--signal-80);
+  font: 12px/1.6 var(--font-display);
+  letter-spacing: 0.24em;
+  white-space: pre;
+  pointer-events: none;
+}
+
+.hud-layer-cue {
+  position: fixed;
+  top: 38%;
+  left: 50%;
+  z-index: 11;
+  transform: translateX(-50%);
+  color: rgb(235 245 246 / 92%);
+  font: 30px/1 var(--font-display);
+  letter-spacing: 0.5em;
+  pointer-events: none;
+}
+
+.hud-intro-hint {
+  position: fixed;
+  right: 0;
+  bottom: 12vh;
+  left: 0;
+  margin: 0;
+  color: #9a9a9a;
+  font: 400 0.9rem/1.5 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-align: center;
+  pointer-events: none;
+}
+
+/**
+ * §197 THE MENU BUTTON (user: "een menu bar rechts boven waar overlay komt met
+ * de menu opties net zoals de desktop versie").
+ *
+ * It is a door, not a menu. Escape and this button call the same method, so
+ * there is exactly one menu and it cannot drift into two (§56). Shown only on
+ * touch — a desk already has Escape, and the desktop picture is approved.
+ *
+ * It sits in the RIGHT half, which on touch is the wind. It lives outside
+ * #app, where TouchControls listens, and TouchControls additionally refuses
+ * any touch that landed on [data-ui-control]. Two locks on the same door.
+ */
+#menu-button {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 8px);
+  right: calc(env(safe-area-inset-right) + 8px);
+  z-index: 30;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 calc(var(--grid) * 1.5);
+  color: var(--signal-80);
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  text-transform: uppercase;
+  background: rgb(2 2 2 / 55%);
+  border: 1px solid var(--hair);
+  cursor: pointer;
+  /* ACCIDENT: the same fraction of a degree every other button here is off by. */
+  transform: rotate(-0.18deg);
+  /* No 300ms tap delay, and no double-tap zoom on the one thing you must hit. */
+  touch-action: manipulation;
+}
+
+#menu-button[hidden] {
+  display: none;
+}
+
+#menu-button:hover,
+#menu-button:focus-visible {
+  color: var(--void);
+  background: var(--signal-100);
+  border-color: var(--signal-100);
+  outline: 1px solid var(--signal-40);
+  outline-offset: 4px;
+}
+
+/**
  * §196 the pattern readout, top right. Its box lives here rather than inline
  * so the phone rules below can reach it — see CodeOverlay.ts.
  */
@@ -274,12 +425,97 @@ body {
 @media (max-width: 560px), (max-height: 480px) {
   .code-overlay {
     right: calc(env(safe-area-inset-right) + 8px);
-    top: calc(env(safe-area-inset-top) + 8px);
+    /* §197: the menu button owns the corner now, so the readout starts under it. */
+    top: calc(env(safe-area-inset-top) + 60px);
     max-width: min(30ch, 26vw);
     max-height: 42dvh;
     font-size: 8.5px;
     line-height: 1.5;
     padding-left: 6px;
+  }
+}
+
+/**
+ * §197 THE HUD ON A PHONE (user: "alle HUD meeschalen en veel kleiner op de
+ * telefoon"). Every block stays — nothing is dropped, because each of them is
+ * the answer to a question the player is allowed to ask at any moment — but
+ * all of them give up roughly a third of their size at once.
+ *
+ * Type comes down first, then line-height, then tracking. Tracking is what
+ * makes this typography wide, so it is reduced and never removed: Departure
+ * Mono in caps with a hair of tracking is still this interface (§195).
+ *
+ * The offsets move onto the safe area: 18px from the edge of the GLASS is not
+ * 18px from the edge of the PICTURE on a notched phone.
+ */
+@media (max-width: 560px), (max-height: 480px) {
+  .hud-readout {
+    top: calc(env(safe-area-inset-top) + 8px);
+    left: calc(env(safe-area-inset-left) + 8px);
+    font-size: 8.5px;
+    line-height: 1.5;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 4px rgb(160 220 230 / 35%);
+  }
+
+  /**
+   * §197 (user, second pass: "maak ook de onderste tekst klein op de mobiele
+   * versie, die onderin staat is nog heel groot"). The floor of the screen
+   * carries three separate readouts — the hint, the bearing, the layer strip —
+   * and stacked at desk sizes they were eating 130px of a 390px-tall landscape
+   * picture. They are the smallest type in the interface now, and none of them
+   * was dropped: each is the answer to a question the player may ask at any
+   * moment, and a question you cannot ask is worse than small type.
+   */
+  .hud-hints {
+    /* The floor stacks: layer strip at 6, bearing at 22, hint clear above both. */
+    bottom: calc(env(safe-area-inset-bottom) + 60px);
+    max-width: 86vw;
+    font-size: 8px;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
+    text-align: center;
+    text-shadow: 0 0 5px rgb(160 220 230 / 30%);
+  }
+
+  .hud-track-strip {
+    bottom: calc(env(safe-area-inset-bottom) + 6px);
+    max-width: 96vw;
+    font-size: 7.5px;
+    line-height: 1.4;
+    letter-spacing: 0.02em;
+  }
+
+  .hud-guide {
+    right: calc(env(safe-area-inset-right) + 8px);
+    bottom: calc(env(safe-area-inset-bottom) + 22px);
+    font-size: 7px;
+    line-height: 1.45;
+    letter-spacing: 0.02em;
+  }
+
+  .hud-volume {
+    right: calc(env(safe-area-inset-right) + 8px);
+    bottom: calc(env(safe-area-inset-bottom) + 6px);
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  /* The one moment the interface speaks. It may still be the biggest thing on
+     the screen — but not wider than the screen. */
+  .hud-layer-cue {
+    max-width: 92vw;
+    font-size: 16px;
+    letter-spacing: 0.28em;
+    text-align: center;
+  }
+
+  .hud-intro-hint {
+    bottom: 16dvh;
+    padding: 0 calc(var(--grid) * 2);
+    font-size: 0.6rem;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
   }
 }
 
@@ -399,6 +635,7 @@ body {
 
   #unlock-button,
   #demo-button,
+  #menu-button,
   #pause-overlay button {
     transform: none;
   }

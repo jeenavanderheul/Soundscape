@@ -76,20 +76,9 @@ export class TrackStrip {
   private readonly layers = document.createElement('div');
 
   constructor(container: HTMLElement) {
-    Object.assign(this.root.style, {
-      position: 'absolute',
-      left: '50%',
-      bottom: '18px',
-      transform: 'translateX(-50%)',
-      color: 'rgba(226, 240, 244, 0.82)',
-      font: '12px/1.7 var(--font-mono)',
-      letterSpacing: '0.08em',
-      whiteSpace: 'pre',
-      textAlign: 'center',
-      pointerEvents: 'none',
-      textShadow: '0 0 12px rgba(0, 0, 0, 0.8)',
-      zIndex: '10',
-    });
+    // §197: the box is in the stylesheet (.hud-track-strip) so a phone can
+    // shrink it; only the visibility toggle stays here.
+    this.root.className = 'hud-track-strip';
     this.layers.style.opacity = '0.78';
     this.root.append(this.layers);
     container.appendChild(this.root);

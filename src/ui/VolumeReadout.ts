@@ -21,20 +21,13 @@ export class VolumeReadout {
     this.root = document.createElement('div');
     this.root.setAttribute('role', 'status');
     this.root.setAttribute('aria-live', 'polite');
+    // §197: the box is in the stylesheet (.hud-volume); the fade stays here.
+    this.root.className = 'hud-volume';
     Object.assign(this.root.style, {
-      position: 'fixed',
-      right: '18px',
-      bottom: '18px',
-      color: 'var(--signal-80)',
-      font: '12px/1.6 var(--font-display)',
-      letterSpacing: '0.24em',
-      whiteSpace: 'pre',
-      pointerEvents: 'none',
       opacity: '0',
       transition: window.matchMedia('(prefers-reduced-motion: reduce)').matches
         ? 'none'
         : 'opacity 420ms linear',
-      zIndex: '12',
     });
     container.appendChild(this.root);
   }

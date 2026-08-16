@@ -108,6 +108,7 @@ import { scoreHeader } from '../ui/ScoreHeader';
 import { HUD } from '../ui/HUD';
 import { attachIntroHint } from '../ui/Intro';
 import { PauseOverlay } from '../ui/PauseOverlay';
+import { MenuButton, menuButtonVisible } from '../ui/MenuButton';
 import { pilotCommand } from './demoFlight';
 import { FormEmergence } from '../world/FormEmergence';
 import { loadLandField } from '../world/LandField';
@@ -350,6 +351,8 @@ export class Game {
   /** Periodic flush while structures exist (§18); reuses the tested interval gate. */
   private readonly autosaveInterval = new LogicInterval(AUTOSAVE_INTERVAL_MS);
   private readonly pauseOverlay: PauseOverlay;
+  /** §197: the touch entrance to that same overlay. */
+  private readonly menuButton: MenuButton;
   private readonly detachPointerLockPause: () => void;
   private readonly startupLoadInfo: LoadInfo;
   /** §42 gate: starts closed, so a flight begins in silence. */
@@ -631,6 +634,9 @@ export class Game {
         this.startDemo();
       },
     });
+    // §197: one menu, two entrances — Escape and this button run the SAME
+    // method, so they can never come to mean two different things (§56).
+    this.menuButton = new MenuButton(() => this.toggleMenu());
     this.detachPointerLockPause = this.pointerLockBus.on('pointerlock:released', () => {
       // §195: the demo steers itself, so it deliberately holds no pointer
       // lock — and a lock it never asked for must not be able to end it or
@@ -706,6 +712,7 @@ export class Game {
     window.removeEventListener('keydown', this.onRegionKey);
     this.detachPointerLockPause();
     this.pauseOverlay.dispose();
+    this.menuButton.dispose();
     this.volumeReadout.dispose();
     this.loop.stop();
     this.touchControls?.detach();
@@ -1486,6 +1493,15 @@ export class Game {
       }
     }
     if (event.key !== 'Escape' || !this.unlocked) return;
+    this.toggleMenu();
+  };
+
+  /**
+   * §197: what Escape does, and what the touch menu button does. One method,
+   * so the keyboard and the thumb can never disagree about what "menu" means.
+   */
+  private toggleMenu(): void {
+    if (!this.unlocked) return;
     // §195 (user decision): Esc ends the demo and hands the controls over —
     // mouse look included, which is why the lock is asked for here.
     if (this.demoActive) {
@@ -1495,7 +1511,18 @@ export class Game {
     }
     if (this.paused) this.resume();
     else this.pause();
-  };
+  }
+
+  /** §197: the door is only there when there is a room behind it. */
+  private syncMenuButton(): void {
+    this.menuButton.setVisible(
+      menuButtonVisible({
+        touch: this.touchControls !== null,
+        unlocked: this.unlocked,
+        paused: this.paused,
+      }),
+    );
+  }
 
   /**
    * §33: banking hard throws one gesture into the track — a delay throw, a
@@ -1620,6 +1647,7 @@ export class Game {
     this.loop.stop();
     void this.audioEngine.suspend().catch(reportAudioLifecycleError);
     this.pauseOverlay.show();
+    this.syncMenuButton();
     this.events.emit('game:suspended', null);
   }
 
@@ -1627,6 +1655,7 @@ export class Game {
     if (!this.paused) return;
     this.paused = false;
     this.pauseOverlay.hide();
+    this.syncMenuButton();
     void this.audioEngine.resume().catch(reportAudioLifecycleError);
     this.loop.start();
     // Button click / Esc keydown is a user gesture, so mouse look may re-lock.
@@ -1649,6 +1678,7 @@ export class Game {
       return;
     }
     this.unlocked = true;
+    this.syncMenuButton();
     overlay.hidden = true;
     const output = this.audioEngine.getOutputNode();
     this.playerTone = new PlayerTone(this.audioEngine.context, output);

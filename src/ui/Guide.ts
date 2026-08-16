@@ -149,18 +149,8 @@ export class Guide {
     this.tick.hidden = true;
     this.root = document.createElement('div');
     this.root.setAttribute('aria-hidden', 'true');
-    Object.assign(this.root.style, {
-      position: 'fixed',
-      right: '18px',
-      bottom: '16px',
-      textAlign: 'right',
-      color: 'rgba(200, 216, 220, 0.55)',
-      font: '11px/1.9 var(--font-mono)',
-      letterSpacing: '0.06em',
-      whiteSpace: 'pre',
-      pointerEvents: 'none',
-      zIndex: '10',
-    });
+    // §197: the box is in the stylesheet (.hud-guide) so a phone can shrink it.
+    this.root.className = 'hud-guide';
     this.root.hidden = true;
     container.appendChild(this.root);
   }

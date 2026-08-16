@@ -1,6 +1,12 @@
 import type { InputManager } from './InputManager';
 import { lookDeltaPerFrame, stickDeflection, touchZone } from './touch';
 
+/** A touch that landed on a piece of interface (the menu button), not on the world. */
+function isChromeTouch(touch: Touch): boolean {
+  const target = touch.target;
+  return target instanceof Element && target.closest('[data-ui-control]') !== null;
+}
+
 /** Touch hardware present — pointer lock and mouse look are skipped then. */
 export function isTouchDevice(): boolean {
   if (typeof window === 'undefined') return false;
@@ -59,8 +65,16 @@ export class TouchControls {
   }
 
   private readonly onStart = (event: Event): void => {
+    // §197: the menu button sits top RIGHT, which is the wind's half of the
+    // screen. A touch that landed on interface chrome is not a control input,
+    // and — crucially — must NOT be preventDefault'd, or the browser never
+    // synthesises the click that opens the menu.
+    const touches = Array.from((event as TouchEvent).changedTouches).filter(
+      (touch) => !isChromeTouch(touch),
+    );
+    if (touches.length === 0) return;
     event.preventDefault();
-    for (const touch of Array.from((event as TouchEvent).changedTouches)) {
+    for (const touch of touches) {
       if (touchZone(touch.clientX, window.innerWidth) === 'flight') {
         if (this.flightId !== null) continue;
         this.flightId = touch.identifier;

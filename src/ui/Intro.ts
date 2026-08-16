@@ -20,19 +20,9 @@ export function attachIntroHint(
   // The live region must exist before text is inserted so it is announced.
   const hint = document.createElement('p');
   hint.setAttribute('aria-live', 'polite');
-  hint.style.cssText = [
-    'position:fixed',
-    'left:0',
-    'right:0',
-    'bottom:12vh',
-    'margin:0',
-    'text-align:center',
-    'font:400 0.9rem/1.5 var(--font-mono)',
-    'letter-spacing:0.08em',
-    'color:#9a9a9a',
-    'pointer-events:none',
-    'opacity:1',
-  ].join(';');
+  // §197: the box is in the stylesheet (.hud-intro-hint) so a phone can shrink it.
+  hint.className = 'hud-intro-hint';
+  hint.style.opacity = '1';
   parent.appendChild(hint);
 
   let showTimer: ReturnType<typeof setTimeout> | undefined;

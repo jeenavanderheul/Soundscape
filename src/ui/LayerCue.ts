@@ -13,21 +13,12 @@ export class LayerCue {
     this.root.setAttribute('aria-live', 'assertive');
     // §143: the one moment the interface speaks is the one moment it is
     // printed out of register — control and accident in the same word.
-    this.root.className = 'misregistered';
+    // §197: the box is in the stylesheet (.hud-layer-cue); the fade stays here.
+    this.root.className = 'misregistered hud-layer-cue';
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     Object.assign(this.root.style, {
-      position: 'fixed',
-      top: '38%',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      color: 'rgba(235, 245, 246, 0.92)',
-      font: '30px/1 var(--font-display)',
-      letterSpacing: '0.5em',
-      pointerEvents: 'none',
       opacity: '0',
       transition: reduced ? 'none' : 'opacity 0.5s ease',
-
-      zIndex: '11',
     });
     container.appendChild(this.root);
     const offs = [
