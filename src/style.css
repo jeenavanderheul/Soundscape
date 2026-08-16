@@ -251,6 +251,39 @@ body {
 }
 
 /**
+ * §196 the pattern readout, top right. Its box lives here rather than inline
+ * so the phone rules below can reach it — see CodeOverlay.ts.
+ */
+.code-overlay {
+  position: fixed;
+  right: 18px;
+  top: 16px;
+  max-width: min(44ch, 34vw);
+  max-height: 60vh;
+  font: 11px/1.65 var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+/**
+ * §196 (user: on mobile the right-hand panel may be smaller still, in the 16:9
+ * experience). On a 844x390 handset the readout was claiming 287px of width
+ * and 234px of height — a third of the picture and more than half of what
+ * little height a landscape phone has. It is a readout you glance at, not the
+ * thing you came for, so on a phone it gives way to the world.
+ */
+@media (max-width: 560px), (max-height: 480px) {
+  .code-overlay {
+    right: calc(env(safe-area-inset-right) + 8px);
+    top: calc(env(safe-area-inset-top) + 8px);
+    max-width: min(30ch, 26vw);
+    max-height: 42dvh;
+    font-size: 8.5px;
+    line-height: 1.5;
+    padding-left: 6px;
+  }
+}
+
+/**
  * §195 THE OVERLAYS ON A PHONE (user: "het past niet op het scherm, het is te
  * groot"). The interface was drawn for a desk and had no responsive layer at
  * all — one media query in the whole sheet, and it was for reduced motion.

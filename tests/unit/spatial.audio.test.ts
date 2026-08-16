@@ -3,6 +3,7 @@ import { SpatialAudio } from '../../src/audio/SpatialAudio';
 import { createFirstResonator } from '../../src/world/Resonator';
 import type { ResonatorData } from '../../src/world/Resonator';
 import { FakeAudioContext, asContext, asOutput } from './audioFakes';
+import { DRONE_HEADROOM } from '../../src/audio/SpatialAudio';
 
 function makeSpatial(): { spatial: SpatialAudio; ctx: FakeAudioContext } {
   const ctx = new FakeAudioContext();
@@ -65,7 +66,10 @@ describe('SpatialAudio', () => {
     expect(gain.value).toBe(0);
     const call = gain.calls.at(-1)!;
     expect(call.method).toBe('setTargetAtTime');
-    expect(call.value).toBeCloseTo(0.5);
+    // Its own amplitude, under §196's drone headroom — the claim here is the
+    // ramp, not the level.
+    expect(call.value).toBeCloseTo(0.5 * DRONE_HEADROOM, 5);
+    expect(call.value).toBeGreaterThan(0);
   });
 
   it('ignores a duplicate resonator id', () => {

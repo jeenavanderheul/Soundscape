@@ -11,6 +11,24 @@ import { oscillatorType } from './PlayerTone';
 const REF_DISTANCE = 5;
 const ROLLOFF = 1;
 const LISTENER_SMOOTHING_S = 0.02;
+/**
+ * §196 (user: "de piep die je hoort als je stilstaat is veel te luid en
+ * overheersend"). A resonator drone is a RAW SINE, and a raw sine at the same
+ * number as a mixed drum bus is far louder than that number suggests: at
+ * amplitude 0.5 the first waypoint was arriving at about -10 dB, against an
+ * arrival atmosphere sitting near -28. It was the loudest thing in the world
+ * and it was a test tone.
+ *
+ * §184 had just made it worse without anyone noticing: giving arrival a motion
+ * floor of 0.4 lifted the standstill drone level from 0.35 to 0.61, so the
+ * first thing a visitor heard nearly doubled.
+ *
+ * This is the headroom every drone is multiplied by. It keeps §P1 — you can
+ * still stop and listen for where something is — while putting the cue under
+ * the music instead of over it.
+ */
+export const DRONE_HEADROOM = 0.22;
+
 const FADE_SMOOTHING_S = 0.15;
 const RELEASE_S = 0.6;
 
@@ -46,7 +64,7 @@ export class SpatialAudio {
     const level = resonatorLevel(motion);
     const now = this.context.currentTime;
     for (const source of this.sources.values()) {
-      source.gain.gain.setTargetAtTime(source.amplitude * level, now, FADE_SMOOTHING_S);
+      source.gain.gain.setTargetAtTime(source.amplitude * level * DRONE_HEADROOM, now, FADE_SMOOTHING_S);
     }
   }
 
@@ -95,7 +113,7 @@ export class SpatialAudio {
     panner.connect(this.output);
     oscillator.start();
     gain.gain.setTargetAtTime(
-      data.amplitude * resonatorLevel(this.motion),
+      data.amplitude * resonatorLevel(this.motion) * DRONE_HEADROOM,
       this.context.currentTime,
       FADE_SMOOTHING_S,
     );

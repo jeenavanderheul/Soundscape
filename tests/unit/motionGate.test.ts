@@ -11,6 +11,7 @@ import { SpatialAudio } from '../../src/audio/SpatialAudio';
 import { createInitialFrequencyState } from '../../src/player/FrequencyState';
 import { createFirstResonator } from '../../src/world/Resonator';
 import { FakeAudioContext, asContext, asOutput } from './audioFakes';
+import { DRONE_HEADROOM } from '../../src/audio/SpatialAudio';
 
 /** Runs the gate at 60 fps for `seconds` at a fixed velocity. */
 function settle(level: number, velocity: number, seconds: number): number {
@@ -69,13 +70,17 @@ describe('§42 gate applied to the voices', () => {
     const resonator = createFirstResonator();
     spatial.addResonator(resonator);
     const gain = ctx.createdGains[0]!;
+    // The RATIO between rest and motion is the claim; the absolute level is
+    // DRONE_HEADROOM's business (§196 — a raw sine at the same number as a
+    // mixed bus is far louder than the number suggests).
     spatial.setMotion(0);
-    expect(last(gain.gain.calls).value).toBeCloseTo(
-      resonator.amplitude * RESONATOR_SILENCE_FLOOR,
-      5,
-    );
+    const atRest = last(gain.gain.calls).value;
     spatial.setMotion(1);
-    expect(last(gain.gain.calls).value).toBeCloseTo(resonator.amplitude, 5);
+    const moving = last(gain.gain.calls).value;
+    expect(atRest / moving).toBeCloseTo(RESONATOR_SILENCE_FLOOR, 5);
+    expect(moving).toBeCloseTo(resonator.amplitude * DRONE_HEADROOM, 5);
+    // And the cue stays well under the music it is a waypoint for.
+    expect(moving).toBeLessThan(0.2);
   });
 });
 

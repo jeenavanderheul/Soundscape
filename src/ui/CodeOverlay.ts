@@ -103,17 +103,15 @@ export class CodeOverlay {
   constructor(container: HTMLElement = document.body) {
     this.root = document.createElement('pre');
     this.root.setAttribute('aria-hidden', 'true');
+    // §196: the BOX lives in the stylesheet — position, size and type — so a
+    // media query can shrink it on a phone. Inline styles cannot be reached by
+    // one, and on a landscape handset this panel was claiming a third of the
+    // width and more than half the height.
+    this.root.className = 'code-overlay';
     Object.assign(this.root.style, {
-      position: 'fixed',
-      right: '18px',
-      top: '16px',
       margin: '0',
-      maxWidth: 'min(44ch, 34vw)',
-      maxHeight: '60vh',
       overflow: 'hidden',
       color: TOKEN_COLORS.plain,
-      font: '11px/1.65 var(--font-mono)',
-      letterSpacing: '0.02em',
       whiteSpace: 'pre-wrap',
       // Pattern code has no spaces to break at: wrap anywhere rather than clip.
       overflowWrap: 'anywhere',
