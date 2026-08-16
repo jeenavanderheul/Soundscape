@@ -1,0 +1,66 @@
+/**
+ * Touch mapping (pure). This game is "hold W and steer with your look", so
+ * touch keeps that shape with two thumbs: the LEFT half is one thumb that is
+ * both throttle and look (touching = W held; dragging from where you landed =
+ * steering, like the mouse), and the RIGHT half is the wind (hold = LMB held,
+ * release = the timed pulse). A separate strafe stick would add a control the
+ * flight model barely uses — heading comes from look, not from moveX.
+ *
+ * Everything here is pure geometry so it can be unit-tested without a DOM;
+ * TouchControls.ts owns the events, InputManager owns the snapshot.
+ */
+
+export const TOUCH_CONFIG = {
+  /** Fraction of the viewport width that belongs to the flight thumb. */
+  zoneSplit: 0.5,
+  /** Full deflection is reached this many px from where the thumb landed. */
+  stickRadiusPx: 70,
+  /** Below this deflection the thumb is considered resting (no steering). */
+  deadzone: 0.12,
+  /**
+   * Synthetic mouse pixels per frame at full deflection. 10 px/frame at
+   * LOOK_CONFIG.radiansPerPixel (0.0022) ≈ 1.3 rad/s yaw at 60 fps.
+   */
+  lookPxPerFrame: { x: 10, y: 6 },
+} as const;
+
+export type TouchZone = 'flight' | 'wind';
+
+/** Which control a touch that lands at clientX belongs to. */
+export function touchZone(clientX: number, viewportWidth: number): TouchZone {
+  return clientX < viewportWidth * TOUCH_CONFIG.zoneSplit ? 'flight' : 'wind';
+}
+
+/**
+ * Thumb deflection from its landing point, each axis −1..1 with deadzone.
+ * x is right-positive, y is UP-positive (screen y inverted).
+ */
+export function stickDeflection(
+  originX: number,
+  originY: number,
+  x: number,
+  y: number,
+): { x: number; y: number } {
+  const clamp = (v: number): number => Math.max(-1, Math.min(1, v));
+  const dead = (v: number): number => (Math.abs(v) < TOUCH_CONFIG.deadzone ? 0 : v);
+  return {
+    x: dead(clamp((x - originX) / TOUCH_CONFIG.stickRadiusPx)),
+    y: dead(clamp((originY - y) / TOUCH_CONFIG.stickRadiusPx)),
+  };
+}
+
+/**
+ * Deflection → synthetic mouseDelta pixels for one frame. Drag right turns
+ * right (positive mouseDelta.x yaws right via the −x in the controller — same
+ * sign as moving the mouse right); drag up climbs (negative mouseDelta.y).
+ */
+export function lookDeltaPerFrame(deflection: { x: number; y: number }): {
+  x: number;
+  y: number;
+} {
+  return {
+    x: deflection.x * TOUCH_CONFIG.lookPxPerFrame.x,
+    // `0 +` folds the −0 a negated zero deflection would produce.
+    y: 0 + -deflection.y * TOUCH_CONFIG.lookPxPerFrame.y,
+  };
+}

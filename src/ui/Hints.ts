@@ -1,6 +1,7 @@
 import type { MusicState } from '../music/MusicState';
 import type { FrequencyState } from '../player/FrequencyState';
 import type { ResonatorData } from '../world/Resonator';
+import { isTouchDevice } from '../input/TouchControls';
 
 /**
  * Context hints (user decision): tiny one-time monospace lines that appear at
@@ -65,6 +66,23 @@ const HINTS: HintDef[] = [
   },
 ];
 
+/**
+ * Touch has no scroll wheel, C key or spacebar; those hints would teach
+ * controls that do not exist there. The two that survive get thumb words.
+ */
+const TOUCH_TEXT: Record<string, string> = {
+  wind: 'hold the RIGHT half — breathe wind',
+  gear: 'left thumb: fly & steer · right half: the wind',
+};
+
+function hintsFor(touch: boolean): HintDef[] {
+  if (!touch) return HINTS;
+  return HINTS.filter((hint) => hint.id in TOUCH_TEXT || hint.id === 'resonator').map((hint) => {
+    const text = TOUCH_TEXT[hint.id];
+    return text === undefined ? hint : { ...hint, text };
+  });
+}
+
 const VISIBLE_MS = 6_000;
 
 export class Hints {
@@ -73,8 +91,10 @@ export class Hints {
   private readonly memory: HintMemory = { everWind: false, everTuned: false };
   private readonly reducedMotion: boolean;
   private hideAt = 0;
+  private readonly defs: HintDef[];
 
-  constructor(container: HTMLElement = document.body) {
+  constructor(container: HTMLElement = document.body, touch: boolean = isTouchDevice()) {
+    this.defs = hintsFor(touch);
     this.root = document.createElement('div');
     this.root.setAttribute('role', 'status');
     this.root.setAttribute('aria-live', 'polite');
@@ -105,7 +125,7 @@ export class Hints {
       this.hideAt = 0;
     }
     if (this.hideAt > 0) return; // one hint at a time
-    for (const hint of HINTS) {
+    for (const hint of this.defs) {
       if (this.shown.has(hint.id)) continue;
       if (!hint.when(ctx, this.memory)) continue;
       this.shown.add(hint.id);

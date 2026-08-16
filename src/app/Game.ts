@@ -12,6 +12,7 @@ import { createEventBus, EventBus } from '../core/EventBus';
 import { createStore, Store } from '../core/stores';
 import { InputManager } from '../input/InputManager';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
+import { TouchControls, isTouchDevice } from '../input/TouchControls';
 import {
   createEmptyLayerGraph,
   diffLayerGraph,
@@ -263,6 +264,8 @@ export class Game {
   private readonly pointerLockBus: EventBus<PointerLockEvents> =
     createEventBus<PointerLockEvents>();
   private readonly pointerLock: PointerLock;
+  /** Touch sensor layer feeding the same InputManager; null on desktop. */
+  private readonly touchControls: TouchControls | null;
   private readonly controller: FrequencyController;
   private readonly particles: ParticleSystem;
   private readonly detachIntroHint: () => void;
@@ -417,6 +420,10 @@ export class Game {
     this.renderer = new Renderer(elements.container);
     this.loop = new GameLoop(new Clock(), this.tick);
     this.input = new InputManager(elements.container, window);
+    // Touch is a sensor layer over the same InputManager — one snapshot, one
+    // truth. Pointer lock does not exist on touch, so look never locks there
+    // and the lock-loss pause never fires (lock is never acquired).
+    this.touchControls = isTouchDevice() ? new TouchControls(elements.container, this.input) : null;
     this.pointerLock = new PointerLock(elements.container, this.pointerLockBus);
     this.pointerLock.attach();
     this.controller = new FrequencyController(this.frequencyStore);
@@ -680,6 +687,7 @@ export class Game {
     this.pauseOverlay.dispose();
     this.volumeReadout.dispose();
     this.loop.stop();
+    this.touchControls?.detach();
     this.pointerLock.exit();
     this.pointerLock.detach();
     this.input.detach();
@@ -1341,8 +1349,13 @@ export class Game {
   /** Re-acquire mouse look on canvas click after Esc released the lock (spec §5). */
   private readonly onContainerClick = (): void => {
     if (this.paused) return; // the mouse belongs to the pause menu
-    if (this.unlocked && !this.pointerLock.locked) this.pointerLock.request();
+    if (this.unlocked && !this.pointerLock.locked) this.requestLook();
   };
+
+  /** Mouse look wants pointer lock; on touch there is nothing to lock. */
+  private requestLook(): void {
+    if (this.touchControls === null) this.pointerLock.request();
+  }
 
   /** Esc toggles pause when pointer lock isn't holding it (locked Esc arrives as lock release). */
   /**
@@ -1514,7 +1527,7 @@ export class Game {
     void this.audioEngine.resume().catch(reportAudioLifecycleError);
     this.loop.start();
     // Button click / Esc keydown is a user gesture, so mouse look may re-lock.
-    this.pointerLock.request();
+    this.requestLook();
     this.events.emit('game:resumed', null);
   }
 
@@ -1560,8 +1573,9 @@ export class Game {
     // User (15 aug): nothing stands between the click and the flight. A form
     // asking a visitor for an API key was the first thing this world said to
     // them; now the world is the first thing. Pause is the only overlay left.
-    this.pointerLock.request();
+    this.requestLook();
     this.input.attach();
+    this.touchControls?.attach();
     this.loop.start();
     this.events.emit('audio:unlocked', null);
     this.events.emit('game:started', null);

@@ -1,6 +1,7 @@
 import type { TrackLayerName } from '../music/TrackState';
 import { zoneGenres } from '../genres/GenreZones';
 import type { TrackGenre } from '../music/TrackState';
+import { isTouchDevice } from '../input/TouchControls';
 
 /**
  * §67/§91 the guide (user request): where to fly to get the next layer.
@@ -77,7 +78,7 @@ export function onTarget(state: GuideState): boolean {
 }
 
 /** The advice itself, as pure text — testable without a DOM. */
-export function guideLines(state: GuideState): string[] {
+export function guideLines(state: GuideState, touch = false): string[] {
   const home = homePoint(state.genre);
   const target =
     state.beacon === null
@@ -93,7 +94,10 @@ export function guideLines(state: GuideState): string[] {
       : state.heading.startsWith(home)
         ? `stay on ${home} · this is where your track grows`
         : `turn to ${home} · leaving ends this track`;
-  const push = state.energy < 0.55 ? 'hold W · speed is what builds it' : 'pushing · it is building';
+  const push =
+    state.energy < 0.55
+      ? `${touch ? 'hold your left thumb' : 'hold W'} · speed is what builds it`
+      : 'pushing · it is building';
   return [target, place, push];
 }
 
@@ -104,8 +108,10 @@ export class Guide {
   private readonly tick: HTMLDivElement;
   private last = '';
   private lastTick = '';
+  private readonly touch: boolean;
 
-  constructor(container: HTMLElement = document.body) {
+  constructor(container: HTMLElement = document.body, touch: boolean = isTouchDevice()) {
+    this.touch = touch;
     this.cross = document.createElement('div');
     this.cross.setAttribute('aria-hidden', 'true');
     Object.assign(this.cross.style, {
@@ -192,7 +198,7 @@ export class Guide {
       this.tick.style.marginLeft = settled ? '-6.5px' : '-13px';
       this.cross.style.opacity = settled ? '1' : '0.45';
     }
-    const text = guideLines(state).join('\n');
+    const text = guideLines(state, this.touch).join('\n');
     if (text === this.last) return;
     this.last = text;
     this.root.textContent = text;

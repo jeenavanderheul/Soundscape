@@ -1,5 +1,6 @@
 import { EventBus } from '../core/EventBus';
 import { DEFAULT_BINDINGS, DesktopBindings, KeyAction } from './bindings';
+import { lookDeltaPerFrame } from './touch';
 
 /** Per-frame typed input snapshot (spec §6: systems consume snapshots, not DOM events). */
 
@@ -48,6 +49,11 @@ export class InputManager {
   private wheelDelta = 0;
   private mouseDeltaX = 0;
   private mouseDeltaY = 0;
+  // Touch layer (TouchControls): same snapshot, different sensors. The thumb
+  // holds a LEVEL (deflection, throttle) rather than emitting deltas, so it
+  // persists across snapshots instead of resetting with the frame state.
+  private touchThrottle = false;
+  private touchLook = { x: 0, y: 0 };
 
   constructor(
     private readonly pointerTarget: EventTarget,
@@ -78,7 +84,30 @@ export class InputManager {
     this.pointerTarget.removeEventListener('wheel', this.onWheel);
     this.heldKeys.clear();
     this.windHold = false;
+    this.touchThrottle = false;
+    this.touchLook = { x: 0, y: 0 };
     this.resetFrameState();
+  }
+
+  /** Touch flight thumb: touching = throttle held (this game's W). */
+  setTouchThrottle(on: boolean): void {
+    this.touchThrottle = on;
+  }
+
+  /** Touch flight thumb deflection (−1..1 per axis) → steady look rate. */
+  setTouchLook(x: number, y: number): void {
+    this.touchLook = { x, y };
+  }
+
+  /** Touch wind zone pressed — same meaning as LMB down. */
+  touchWindPress(): void {
+    this.windHold = true;
+  }
+
+  /** Touch wind zone released — the timed pulse, same as LMB up. */
+  touchWindRelease(): void {
+    if (this.windHold) this.windReleased = true;
+    this.windHold = false;
   }
 
   /** Returns the current snapshot and resets per-frame accumulators. */
@@ -86,13 +115,23 @@ export class InputManager {
     const snap: InputSnapshot = {
       axes: {
         moveX: this.axisValue('moveRight') - this.axisValue('moveLeft'),
-        moveZ: this.axisValue('moveForward') - this.axisValue('moveBackward'),
+        // The touch thumb is this game's W: it both opens the throttle
+        // (accelerate below) and points the thrust forward, exactly as W does.
+        moveZ: Math.max(
+          -1,
+          Math.min(
+            1,
+            this.axisValue('moveForward') -
+              this.axisValue('moveBackward') +
+              (this.touchThrottle ? 1 : 0),
+          ),
+        ),
       },
       buttons: {
         // §129: W IS the throttle. The wind used to open it too, which meant
         // you could not sound a long tone without also flying off, and could
         // not fly without sounding. One hand flies, the other plays.
-        accelerate: this.isActionHeld('moveForward'),
+        accelerate: this.isActionHeld('moveForward') || this.touchThrottle,
         windHold: this.windHold,
         hyper: this.isActionHeld('hyperBoost'),
       },
@@ -103,7 +142,12 @@ export class InputManager {
       trackExported: this.trackExported,
       guideToggled: this.guideToggled,
       wheelDelta: this.wheelDelta,
-      mouseDelta: { x: this.mouseDeltaX, y: this.mouseDeltaY },
+      // A held thumb is a steady turn: the deflection re-enters every frame
+      // as synthetic mouse pixels on top of whatever the mouse produced.
+      mouseDelta: {
+        x: this.mouseDeltaX + lookDeltaPerFrame(this.touchLook).x,
+        y: this.mouseDeltaY + lookDeltaPerFrame(this.touchLook).y,
+      },
     };
     this.resetFrameState();
     return snap;

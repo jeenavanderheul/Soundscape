@@ -1,5 +1,6 @@
 import type { EventBus } from '../core/EventBus';
 import type { GameEvents } from '../app/Game';
+import { isTouchDevice } from '../input/TouchControls';
 
 /**
  * Headphone onboarding hint (spec M1, §23). After the unlock overlay is
@@ -8,6 +9,7 @@ import type { GameEvents } from '../app/Game';
  */
 
 const HINT_TEXT = 'Use headphones. Move with WASD. Listen.';
+const HINT_TEXT_TOUCH = 'Use headphones. Left thumb flies. Listen.';
 const VISIBLE_MS = 5000;
 const FADE_MS = 2000;
 
@@ -43,7 +45,7 @@ export function attachIntroHint(
   };
 
   const unsubscribe = events.on('audio:unlocked', () => {
-    hint.textContent = HINT_TEXT;
+    hint.textContent = isTouchDevice() ? HINT_TEXT_TOUCH : HINT_TEXT;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     showTimer = setTimeout(() => {
       if (reducedMotion) {
