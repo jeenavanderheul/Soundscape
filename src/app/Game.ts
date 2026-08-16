@@ -236,6 +236,7 @@ interface FrequencyDebug {
   /** §176: how much crowd is actually being drawn, and how to force it there. */
   crowdStats(): Record<string, unknown>;
   forceCrowd(layers: number | null): void;
+  face(bearing: number): void;
   showForest(on: boolean): void;
 }
 
@@ -664,6 +665,7 @@ export class Game {
         showForest: (on: boolean) => {
           this.forest.group.visible = on;
         },
+        face: (bearing: number) => this.controller.face(bearing),
         teleport: (x: number, z: number, y?: number) =>
           this.frequencyStore.setState((s) => ({
             ...s,

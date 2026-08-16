@@ -382,6 +382,16 @@ export class FrequencyController {
   }
 
   /** True on the frame the orb is resting on the landscape. */
+  /**
+   * Dev-only, for the debug API: aim the flight at a bearing, the way the
+   * mouse would. Headless test drivers have no pointer lock, and §56 decides
+   * the world from where you LOOK — so without this, a scripted flight can
+   * only ever fly north.
+   */
+  face(bearing: number): void {
+    this.yaw = bearing;
+  }
+
   get onGround(): boolean {
     return this.grounded;
   }
