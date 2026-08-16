@@ -20,3 +20,4 @@ dist
 .playwright-mcp/
 exports/
 node-compile-cache/
+.vercel
