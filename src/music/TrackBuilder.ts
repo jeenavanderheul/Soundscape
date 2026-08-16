@@ -215,6 +215,8 @@ export class TrackBuilder {
   private readonly lowActions: number[] = [];
   private readonly highActions: number[] = [];
   private readonly strongActions: number[] = [];
+  /** Last pitch-class root seen, so only a CHANGE of tone claims the key. */
+  private lastPitchRoot: number | null = null;
   private activeMs = 0;
   private lowRegisterMs = 0;
   private groundMs = 0;
@@ -291,6 +293,7 @@ export class TrackBuilder {
 
   /** Reset world (§17): the ladder starts over with the void. */
   reset(): void {
+    this.lastPitchRoot = null;
     this.lowActions.length = 0;
     this.highActions.length = 0;
     this.strongActions.length = 0;
@@ -485,7 +488,18 @@ export class TrackBuilder {
     const tempoExists = nextBpm > 0;
 
     // --- Fase 4/5 content: what the player's resonances and flight built.
-    const rootMidi = 36 + (((Math.round(hzToMidi(Math.max(music.pitchCenter, 20))) % 12) + 12) % 12);
+    //
+    // The key belongs to the JOURNEY until the player takes it. This used to
+    // assign the pitch-derived root every tick, which meant the related key a
+    // finished track hands to the next one (§128, user decision) survived
+    // exactly one tick before the player's resting 220 Hz stamped it back to
+    // A — measured: three tracks deep in every world, root 45 throughout, the
+    // whole journey in one key. Holding a tone is not choosing a key; TURNING
+    // the wheel is. So the pitch only claims the root when its class changes.
+    const pitchRoot = 36 + (((Math.round(hzToMidi(Math.max(music.pitchCenter, 20))) % 12) + 12) % 12);
+    const rootMidi =
+      this.lastPitchRoot !== null && pitchRoot !== this.lastPitchRoot ? pitchRoot : track.rootMidi;
+    this.lastPitchRoot = pitchRoot;
     const intervals = this.harmony.chordIntervals();
     // While the melody is not earned, whatever is in there stays: on a fresh
     // track that is nothing, and on the next track of the journey it is the

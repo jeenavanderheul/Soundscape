@@ -17,7 +17,6 @@
     "mocap:bake": "node scripts/bake-mocap.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.116.0",
     "@strudel/soundfonts": "1.3.0",
     "@strudel/web": "1.3.0",
     "three": "0.185.1"

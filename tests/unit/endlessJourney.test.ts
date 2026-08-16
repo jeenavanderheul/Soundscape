@@ -87,10 +87,13 @@ describe('the endless journey (user decision)', () => {
     // finished, so watch the state right up to the handover.
     let lastBefore = before;
     let after = before;
-    const unsubscribe = store.subscribe((state) => {
-      if (state.melody.unlocked) lastBefore = state;
-    });
     let sawNewTrack = false;
+    const unsubscribe = store.subscribe((state) => {
+      // Only while the OLD track is playing: if the next track happens to open
+      // on melody, this would otherwise capture the post-handover state and
+      // compare the new key against itself.
+      if (!sawNewTrack && state.melody.unlocked) lastBefore = state;
+    });
     let openedWith: string[] = [];
     bus.on('track:new', () => {
       after = store.getState();
@@ -115,12 +118,15 @@ describe('the endless journey (user decision)', () => {
     // …and at the instant of the handover itself the new track is still empty,
     // so nothing can attribute that opening rung to the track that just ended.
     expect(unlockedLayers(after)).toHaveLength(0);
-    expect(after.rootMidi).not.toBe(before.rootMidi); // a related key, not the same
+    // Related to the key the track HELD at the handover. `before` was the
+    // fixture's key, and now that a steady tone no longer rewrites the root
+    // every tick, those two are not interchangeable anymore.
+    expect(after.rootMidi).not.toBe(lastBefore.rootMidi); // a related key, not the same
     // §91: the clock belongs to the WORLD, so the next track inherits the one
     // the last track was actually running on — not the tempo the player had
     // tapped, which no longer moves it at all.
     expect(after.bpm).toBe(lastBefore.bpm);
-    const shift = after.rootMidi - before.rootMidi;
+    const shift = after.rootMidi - lastBefore.rootMidi;
     expect(after.melodyNotes.length).toBeGreaterThan(0);
     expect(after.melodyNotes).toEqual(lastBefore.melodyNotes.map((n) => n + shift));
     expect(builder.trackNumber).toBe(2);

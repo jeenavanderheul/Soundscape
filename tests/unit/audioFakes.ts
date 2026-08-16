@@ -87,7 +87,7 @@ export class FakePannerNode extends FakeNode {
   orientationZ = new FakeAudioParam(0);
 }
 
-export class FakeAudioListener {
+class FakeAudioListener {
   positionX = new FakeAudioParam(0);
   positionY = new FakeAudioParam(0);
   positionZ = new FakeAudioParam(0);
