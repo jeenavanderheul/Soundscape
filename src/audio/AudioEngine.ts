@@ -8,6 +8,7 @@ export class AudioEngine {
   private audioContext: AudioContext | null = null;
   private gain: GainNode | null = null;
   private volume: GainNode | null = null;
+  private compressor: DynamicsCompressorNode | null = null;
   /** Kept until there is a context to put it on (the knob outlives the audio). */
   private pendingVolume = 1;
 
@@ -39,6 +40,7 @@ export class AudioEngine {
     this.audioContext = context;
     this.gain = gain;
     this.volume = volume;
+    this.compressor = compressor;
     volume.gain.value = this.pendingVolume;
   }
 
@@ -47,6 +49,20 @@ export class AudioEngine {
       throw new Error('AudioEngine is not initialized. Call initialize() after a user gesture.');
     }
     return this.audioContext;
+  }
+
+  /**
+   * §191: a stream carrying exactly what the speakers get — tapped AFTER the
+   * player's volume and the safety limiter, so a recording is the mix as
+   * heard, never hotter than it.
+   */
+  createRecordingStream(): MediaStream {
+    if (this.compressor === null || this.audioContext === null) {
+      throw new Error('AudioEngine is not initialized. Call initialize() after a user gesture.');
+    }
+    const destination = this.audioContext.createMediaStreamDestination();
+    this.compressor.connect(destination);
+    return destination.stream;
   }
 
   get masterGain(): GainNode {
