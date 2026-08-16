@@ -71,7 +71,7 @@ export class GenreAffinityEngine {
    * weight — flying north leans LOCKED GROOVE, and playing LOCKED GROOVE-like there makes
    * it unmistakable. Both are gated by whether any music exists at all.
    */
-  update(nowMs: number, music: Readonly<MusicState>, zone?: GenreAffinity): void {
+  update(nowMs: number, music: Readonly<MusicState>, zone?: GenreAffinity, motion = 0): void {
     if (this.lastEvalMs !== null && nowMs - this.lastEvalMs < this.config.intervalMs) return;
     const deltaSec =
       this.lastEvalMs === null ? this.config.intervalMs / 1000 : (nowMs - this.lastEvalMs) / 1000;
@@ -85,7 +85,14 @@ export class GenreAffinityEngine {
       ...base,
     };
     // Silence has no genre: the world only colours music that is playing.
-    const audible = Math.min(1, Math.max(music.dynamics * 2, music.bpm > 0 ? 1 : 0));
+    //
+    // §189 (user): "playing" is MOVING, not blowing. This gate used to read
+    // only the wind hand (dynamics) and tapped tempo, so a player flying on W
+    // alone saw the region's name in the HUD while the music refused to adopt
+    // it — the genre appeared to unlock on the left mouse button. The §42
+    // motion gate is the one source of "is the world audible", so it is what
+    // is read here.
+    const audible = Math.min(1, Math.max(music.dynamics * 2, music.bpm > 0 ? 1 : 0, motion));
     const raw = { ...behaviour };
     if (zone) {
       for (const key of Object.keys(raw) as (keyof GenreAffinity)[]) {

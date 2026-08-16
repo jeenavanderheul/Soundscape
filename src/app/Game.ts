@@ -806,7 +806,7 @@ export class Game {
       // player is flying decides the region; the distance from spawn still
       // gates it, so the start is neutral until a direction has been chosen.
       const zone = zoneAffinity(state.position, this.flightHeading(state));
-      this.genreEngine.update(elapsedMs, this.musicStore.getState(), zone);
+      this.genreEngine.update(elapsedMs, this.musicStore.getState(), zone, this.motionLevel);
       const genre = this.genreEngine.current;
       // §29: the Track Builder interprets intent into layers. Flight speed is
       // the tempo; energy drives the arrangement (§29.7).

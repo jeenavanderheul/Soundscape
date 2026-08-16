@@ -408,7 +408,16 @@ export class TrackBuilder {
     // announced `hats` at 18s and again at 95.7s inside "track 1". Anything
     // labelling events by the track that is playing filed it under the wrong
     // one: the cue, the HUD, the strip.
-    if (first) this.unlock(first.layer, nowMs);
+    //
+    // §189 (user): a stage you wander onto is ALREADY PLAYING. Crossing into a
+    // region hands you its track mid-set — the first three rungs of ITS drawn
+    // order standing at once (locked groove's world rule keeps the kick among
+    // them), and the arc starting at the groove instead of an intro. Staying
+    // somewhere keeps the full 1-of-7 climb: only travel gets the festival
+    // arrival, or building would never mean anything.
+    const opening = travelled ? this.ladder(bornIn).slice(0, 3) : first ? [first] : [];
+    if (travelled) this.arrangement.beginMidSet();
+    for (const step of opening) this.unlock(step.layer, nowMs);
   }
 
   /** Input pulses and wind releases, tagged with the player's current sound. */

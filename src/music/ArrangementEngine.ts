@@ -344,6 +344,22 @@ export class ArrangementEngine {
     this.riserDue = false;
   }
 
+  /**
+   * §189: a stage you wander onto is MID-SET. A track born by travelling must
+   * not open on an intro — nobody walks up to a festival stage that is just
+   * starting for them — so the arc begins one phase in, at the groove. Only
+   * the clock is moved; the next tick enters the section through the normal
+   * path, so the section event still fires.
+   */
+  beginMidSet(): void {
+    this.arcMs = this.barMs * CYCLES_PER_PHASE;
+    // Out of 'none' by hand: the first tick treats 'none' as "start the intro
+    // and zero the arc", which would undo this. The phase matching the arc
+    // position is entered directly, so the tick's own transition logic agrees
+    // with the clock instead of resetting it.
+    this.section = arcFor(this.style)[1] ?? 'groove';
+  }
+
   private enter(section: Section): void {
     this.section = section;
     this.highEnergyMs = 0;

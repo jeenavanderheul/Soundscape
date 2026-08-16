@@ -7,6 +7,8 @@ import { curveFor } from '../../src/music/GenreLadder';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { TrackBuilder } from '../../src/music/TrackBuilder';
 import { formFor } from '../../src/music/TrackForm';
+import { GenreAffinityEngine } from '../../src/genres/GenreAffinityEngine';
+import { CYCLES_PER_PHASE } from '../../src/music/ArrangementEngine';
 import {
   createInitialTrackState,
   type TrackEvents,
@@ -137,5 +139,47 @@ describe('§188 the machine world leads with its pulse', () => {
       orders.add(formFor('journey-vast', 'locked-groove', track).order.join('>'));
     }
     expect(orders.size).toBeGreaterThan(4);
+  });
+});
+
+describe('§189 flying is enough — the wind unlocks nothing', () => {
+  it('adopts the region while flying on W alone, and refuses it standing still', () => {
+    // The audibility gate used to read only the wind hand and tapped tempo, so
+    // the HUD named a region the music would not adopt until the left mouse
+    // button. Motion is the §42 gate's job, and the gate now reads it.
+    const engine = new GenreAffinityEngine(createEventBus());
+    const still = { ...createInitialMusicState(), dynamics: 0, bpm: 0 };
+    const zone = { ...zoneAffinity({ x: 0, y: 20, z: 0 }), 'sub-pressure': 1 };
+    for (let t = 0; t <= 3000; t += 100) engine.update(t, still, zone, 1);
+    expect(engine.current!.affinity['sub-pressure']).toBeGreaterThan(0.5);
+    const parked = new GenreAffinityEngine(createEventBus());
+    for (let t = 0; t <= 3000; t += 100) parked.update(t, still, zone, 0);
+    expect(parked.current!.affinity['sub-pressure']).toBe(0);
+  });
+
+  it('arrives at a stage that is already playing: three rungs standing, no intro', () => {
+    const store = createStore<TrackState>(createInitialTrackState());
+    const bus = createEventBus<TrackEvents>();
+    const builder = new TrackBuilder(store, bus, undefined, 'festival');
+    const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0 };
+    const at = (world: string) =>
+      ({ ...zoneAffinity({ x: 0, y: 20, z: 0 }), [world]: 1 }) as never;
+    let now = 0;
+    const tick = (world: string) => {
+      now += 1000 / 30;
+      builder.tick(now, music, { velocity: 13, hz: 220, energy: 0.5, altitude: 60 } as never, at(world));
+    };
+    // Long enough in the first world to be mid-build, then cross.
+    while (now < 30_000) tick('locked-groove');
+    const crossedAt = now;
+    while (now < crossedAt + 3000) tick('sub-pressure');
+    const t = store.getState();
+    expect(t.genre).toBe('sub-pressure');
+    const standing = (['kick', 'hats', 'snare'] as const).filter((k) => t.drums[k].unlocked).length
+      + (['bass', 'harmony', 'melody', 'texture'] as const).filter((k) => t[k].unlocked).length;
+    // Three rungs of the NEW track's own order, immediately — the stage was on.
+    expect(standing).toBeGreaterThanOrEqual(3);
+    // And it is mid-set, not an intro: the arc starts a phase in.
+    expect(builder.arrangement.cycle).toBeGreaterThanOrEqual(CYCLES_PER_PHASE - 1);
   });
 });
