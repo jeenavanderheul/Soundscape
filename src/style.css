@@ -223,7 +223,8 @@ body {
  * Touch never sees this: none of it is true there (the left half of the screen
  * is the throttle, the right half is the wind), and the room is not there.
  */
-.controls {
+.controls,
+.touch-controls {
   display: grid;
   gap: calc(var(--grid) * 1.25);
   margin: 0;
@@ -231,7 +232,8 @@ body {
   text-align: left;
 }
 
-.controls > div {
+.controls > div,
+.touch-controls > div {
   display: grid;
   grid-template-columns: 7.5rem 1fr;
   gap: calc(var(--grid) * 2);
@@ -240,11 +242,13 @@ body {
   border-bottom: 1px solid var(--hair);
 }
 
-.controls > div:last-child {
+.controls > div:last-child,
+.touch-controls > div:last-child {
   border-bottom: 0;
 }
 
-.controls dt {
+.controls dt,
+.touch-controls dt {
   font-family: var(--font-display);
   font-size: 0.66rem;
   letter-spacing: 0.2em;
@@ -252,11 +256,76 @@ body {
   color: var(--signal-100);
 }
 
-.controls dd {
+.controls dd,
+.touch-controls dd {
   margin: 0;
   font-size: 0.72rem;
   letter-spacing: 0.04em;
   color: var(--signal-60);
+}
+
+/**
+ * §219 THE TOUCH LIST. Mirror image of `.controls`: that one is hidden wherever
+ * a thumb might be, this one is hidden everywhere else. Default is `none`, so a
+ * desktop — however narrow the window, however small the phone emulator's
+ * viewport — never sees it. Only a device that reports BOTH no hover AND a
+ * coarse pointer turns it on, and that pair is what a touchscreen is; a mouse
+ * in a 380px window still hovers with a fine pointer.
+ */
+.touch-controls {
+  display: none;
+  max-width: 26rem;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .touch-controls {
+    display: grid;
+    /* Portrait phones are NARROW: the label column has to give first, and
+       "Double tap" is the longest thing that has to survive on one line. */
+    gap: var(--grid);
+    max-width: min(26rem, 100%);
+  }
+
+  .touch-controls > div {
+    grid-template-columns: 6.25rem 1fr;
+    gap: var(--grid);
+    padding-bottom: var(--grid);
+  }
+
+  .touch-controls dt {
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+  }
+
+  .touch-controls dd {
+    font-size: 0.68rem;
+    line-height: 1.35;
+  }
+}
+
+/**
+ * Landscape on a phone is 390px of HEIGHT for a wordmark, two buttons, this
+ * list and the licence. Measured: four stacked rows overflow it. There is
+ * width to spare instead, so the list becomes two columns of two and the rows
+ * lose the hairline they no longer need to be separated by.
+ */
+@media (hover: none) and (pointer: coarse) and (max-height: 480px) and (orientation: landscape) {
+  .touch-controls {
+    grid-template-columns: 1fr 1fr;
+    column-gap: calc(var(--grid) * 3);
+    row-gap: calc(var(--grid) * 0.75);
+    max-width: min(44rem, 100%);
+  }
+
+  .touch-controls > div {
+    grid-template-columns: 5.75rem 1fr;
+    padding-bottom: calc(var(--grid) * 0.75);
+    border-bottom: 0;
+  }
+
+  .touch-controls dd {
+    font-size: 0.62rem;
+  }
 }
 
 /*

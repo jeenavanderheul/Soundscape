@@ -40,6 +40,29 @@
         <div><dt>Esc</dt><dd>pause</dd></div>
       </dl>
       <!--
+        §219 (user): the mirror image of the list above, for the two thumbs that
+        actually fly this on a phone. Same place as the desktop list — on the
+        title screen, before ENTER — because that is the one moment a player is
+        reading rather than flying, and it costs no extra tap.
+
+        Every line below was read off src/input/TouchControls.ts and
+        src/input/touch.ts, not from memory: the zone split (touch.ts
+        `touchZone`, half the viewport width), throttle-on-touch and
+        drag-to-steer (`setSyntheticThrottle` + `stickDeflection`), the origin
+        creeping after the thumb so a still thumb flies straight (§206
+        `driftOrigin`), the double-tap latch (§203 `isDoubleTap`), and the wind
+        on hold/release (`syntheticWindPress` / `syntheticWindRelease`).
+
+        Shown ONLY where both hover is absent and the pointer is coarse — a
+        narrow desktop window is still a desktop.
+      -->
+      <dl class="touch-controls" aria-label="Touch controls">
+        <div><dt>Left half</dt><dd>touch to fly · drag to steer, hold still to fly straight</dd></div>
+        <div><dt>Double tap</dt><dd>hyperspeed, on the left half — it latches until you tap twice again</dd></div>
+        <div><dt>Right half</dt><dd>the wind — hold it, and let go for the pulse</dd></div>
+        <div><dt>Top right</dt><dd>the menu</dd></div>
+      </dl>
+      <!--
         AGPL-3.0 §13: this page ships a copy of Strudel to everyone who opens
         it, so everyone who opens it is owed the source of the whole thing.
         That is what this line is — not a credit, an obligation, and the
