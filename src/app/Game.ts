@@ -1357,7 +1357,9 @@ export class Game {
   /** §191: start a take, or finish one and hand the file to the player. */
   private async toggleRecording(): Promise<void> {
     if (this.recorder.recording) {
-      await this.recorder.stop();
+      await this.recorder.stop(this.elements.container);
+      // The save panel needs the mouse; flight can have it back afterwards.
+      this.pointerLock.exit();
       return;
     }
     this.recorder.start(

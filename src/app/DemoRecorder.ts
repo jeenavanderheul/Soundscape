@@ -32,6 +32,7 @@ export class DemoRecorder {
   private recorder: MediaRecorder | null = null;
   private chunks: Blob[] = [];
   private badge: HTMLDivElement | null = null;
+  private panel: HTMLDivElement | null = null;
   private mime = '';
 
   get recording(): boolean {
@@ -64,8 +65,14 @@ export class DemoRecorder {
     return true;
   }
 
-  /** Resolves once the last chunk has landed, and hands the take to the user. */
-  async stop(): Promise<void> {
+  /**
+   * Resolves once the last chunk has landed, then offers the take from a
+   * visible panel rather than force-clicking a download. A synthetic click
+   * fired after the async stop has no user activation left — Chrome quietly
+   * drops it, which read as "R does nothing". The panel's save link is the
+   * player's OWN click, and that one is always honoured.
+   */
+  async stop(container: HTMLElement): Promise<void> {
     const recorder = this.recorder;
     if (recorder === null) return;
     this.recorder = null;
@@ -77,12 +84,39 @@ export class DemoRecorder {
     });
     const blob = new Blob(this.chunks, { type: this.mime });
     this.chunks = [];
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = recordingFilename(this.mime, new Date());
-    link.click();
-    // Give the click a beat before the URL is torn down under it.
-    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    this.showPanel(blob, container);
+  }
+
+  private showPanel(blob: Blob, container: HTMLElement): void {
+    this.panel?.remove();
+    const panel = document.createElement('div');
+    panel.style.cssText =
+      'position:absolute;bottom:18px;right:18px;z-index:60;padding:12px 14px;' +
+      'background:rgba(0,0,0,0.85);border:1px solid rgba(255,255,255,0.25);' +
+      'color:#eee;font:12px/1.7 monospace;letter-spacing:0.08em;pointer-events:auto;';
+    const name = recordingFilename(this.mime, new Date());
+    const size = (blob.size / (1024 * 1024)).toFixed(1);
+    const url = URL.createObjectURL(blob);
+    const save = document.createElement('a');
+    save.href = url;
+    save.download = name;
+    save.textContent = `save take · ${size} MB`;
+    save.style.cssText = 'color:#7fd4ff;text-decoration:underline;cursor:pointer;display:block;';
+    const discard = document.createElement('a');
+    discard.textContent = 'discard';
+    discard.style.cssText = 'color:#888;text-decoration:underline;cursor:pointer;display:block;';
+    const close = () => {
+      panel.remove();
+      this.panel = null;
+      // The blob stays reachable until the panel goes, so save can be clicked
+      // as often as it takes; only closing releases the memory.
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    };
+    discard.onclick = close;
+    save.onclick = () => setTimeout(close, 300);
+    panel.append(name, save, discard);
+    this.panel = panel;
+    container.appendChild(panel);
   }
 
   dispose(): void {
@@ -90,5 +124,7 @@ export class DemoRecorder {
     this.recorder = null;
     this.badge?.remove();
     this.badge = null;
+    this.panel?.remove();
+    this.panel = null;
   }
 }
