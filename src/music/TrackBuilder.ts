@@ -5,7 +5,7 @@ import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { ArrangementEngine, CYCLES_PER_PHASE, rungsDueAt } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
-import { ladderFor, layerUnlocked, nextStep, type LadderStep } from './GenreLadder';
+import { curveFor, layerUnlocked, nextStep, type LadderStep } from './GenreLadder';
 import { formFor, isPlayableOrder, TRACK_LAYERS, type TrackForm } from './TrackForm';
 import { HarmonyEngine } from './HarmonyEngine';
 import { MelodyTracker } from './MelodyTracker';
@@ -380,7 +380,6 @@ export class TrackBuilder {
     // air at full speed and twenty at cruise before there was a beat — long
     // enough that a player cannot tell whether anything is coming.
     const first = this.ladder(bornIn)[0];
-    if (first) this.unlock(first.layer, nowMs);
     this.activeMs = 0;
     this.lastDeepenMs = 0;
     this.lastRungMs = this.activeMs;
@@ -400,6 +399,13 @@ export class TrackBuilder {
     // crossing entirely. You saw TRACK 02 and were never told where you were.
     if (travelled) this.bus.emit('track:genre', { genre: bornIn, atMs: nowMs });
     this.bus.emit('track:new', { number: this.trackNumberValue, atMs: nowMs });
+    // The opening rung is announced AFTER the handover, not before it. It was
+    // emitted while the previous track was still the current one, so the event
+    // stream read as that track earning an eighth layer — measured: techno
+    // announced `hats` at 18s and again at 95.7s inside "track 1". Anything
+    // labelling events by the track that is playing filed it under the wrong
+    // one: the cue, the HUD, the strip.
+    if (first) this.unlock(first.layer, nowMs);
   }
 
   /** Input pulses and wind releases, tagged with the player's current sound. */
@@ -681,10 +687,10 @@ export class TrackBuilder {
    */
   private ladder(genre: TrackGenre): readonly LadderStep[] {
     const form = this.formOf(genre);
-    const written = ladderFor(genre);
+    const curve = curveFor(genre);
     return form.order.map((layer, index) => ({
       layer,
-      atMs: Math.round((written[index]?.atMs ?? 40_000) * form.paceScale),
+      atMs: Math.round((curve[index] ?? 40_000) * form.paceScale),
     }));
   }
 

@@ -9,7 +9,8 @@ vi.mock('@strudel/web', () => ({
 import { buildWorldLayerGraph } from '../../src/audio/WorldLayerGraph';
 import { genreGrammar, regionBpm } from '../../src/audio/MusicalPrimitives';
 import { buildPatternCode, setSamplesLoaded } from '../../src/audio/StrudelEngine';
-import { ladderFor } from '../../src/music/GenreLadder';
+import { curveFor } from '../../src/music/GenreLadder';
+import { TRACK_LAYERS } from '../../src/music/TrackForm';
 import { rungsDueAt, type Section } from '../../src/music/ArrangementEngine';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { LEVEL_DEEP, createInitialTrackState, type TrackGenre } from '../../src/music/TrackState';
@@ -29,7 +30,9 @@ const WORLDS: Exclude<TrackGenre, null>[] = ['techno', 'sub-pressure'];
 /** How many voices this world renders at that point in the arc. */
 function voicesAt(genre: Exclude<TrackGenre, null>, form: Section): number {
   setSamplesLoaded(true);
-  const steps = ladderFor(genre);
+  // Order is drawn per track now; what matters here is HOW MANY rungs stand
+  // by this point in the arc, so the canonical layer list is the right stand-in.
+  const steps = TRACK_LAYERS.map((layer, i) => ({ layer, atMs: curveFor(genre)[i] ?? 0 }));
   let track = {
     ...createInitialTrackState(),
     genre, form,
@@ -90,7 +93,9 @@ describe.each(WORLDS)('%s builds like one track', (genre) => {
 
   it('never changes its own clock — no tempo transform anywhere (§91)', () => {
     for (const form of PHASES) {
-      const steps = ladderFor(genre);
+      // Order is drawn per track now; what matters here is HOW MANY rungs stand
+  // by this point in the arc, so the canonical layer list is the right stand-in.
+  const steps = TRACK_LAYERS.map((layer, i) => ({ layer, atMs: curveFor(genre)[i] ?? 0 }));
       let track = {
         ...createInitialTrackState(), genre, form,
         bpm: regionBpm(genreGrammar(genre)), rootMidi: 45,

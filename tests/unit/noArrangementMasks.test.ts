@@ -9,7 +9,8 @@ vi.mock('@strudel/web', () => ({
 import { buildWorldLayerGraph } from '../../src/audio/WorldLayerGraph';
 import { genreGrammar, regionBpm } from '../../src/audio/MusicalPrimitives';
 import { buildPatternCode, setSamplesLoaded } from '../../src/audio/StrudelEngine';
-import { ladderFor } from '../../src/music/GenreLadder';
+import { curveFor } from '../../src/music/GenreLadder';
+import { TRACK_LAYERS } from '../../src/music/TrackForm';
 import { rungsDueAt, type Section } from '../../src/music/ArrangementEngine';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { LEVEL_DEEP, createInitialTrackState } from '../../src/music/TrackState';
@@ -79,7 +80,7 @@ describe('presence is the arc’s job, never a template’s', () => {
   for (const genre of WORLDS) {
     it(`${genre} renders no arrangement mask in any phase`, () => {
       setSamplesLoaded(true);
-      const steps = ladderFor(genre);
+      const steps = TRACK_LAYERS.map((layer, i) => ({ layer, atMs: curveFor(genre)[i] ?? 0 }));
       for (const form of PHASES) {
         let track = {
           ...createInitialTrackState(),

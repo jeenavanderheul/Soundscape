@@ -3,16 +3,21 @@ import type { TrackGenre, TrackLayerName, TrackState } from './TrackState';
 /**
  * §31: GENRE IS A COMPOSITIONAL GRAMMAR, NOT A PLAYLIST.
  *
- * Every genre builds a track in its own order. Techno starts from a pulse and
- * stacks on top of it; Ambient starts from space and may never earn a kick;
- * Jazz starts from harmony because the conversation needs something to talk
- * about; Drum & Bass starts from the sub and the break. The player still earns
- * every layer through flight — the region only decides WHICH layer is next and
- * how long the world waits before offering it.
+ * This file used to carry a layer ORDER per genre as well as the timings, and
+ * that order stopped being true at §128, when the order started being drawn per
+ * track from the journey seed (`TrackForm`). The tables still said techno opens
+ * on a kick; measured, it opened on a snare and the kick arrived third. Two
+ * answers to one question is what §56 forbids, so the order is gone from here:
+ * `TrackForm` says WHICH layer is next, this file says WHEN the world offers a
+ * rung if the player has not earned it, and `WORLD_PACE` stretches the whole
+ * curve to the world's own patience.
+ *
+ * A curve is seven arrival times in seconds of active roaming, and its SHAPE is
+ * the world's character. They used to be one shape scaled six ways, so every
+ * world built in the same rhythm at a different speed. What differs now is
+ * where a world spends its waiting: up front, in the middle, or at the end.
  *
  * An earned layer is never taken away (user decision: layers persist and morph).
- * Flying from Techno into DnB keeps the kick you built and rewrites it as a
- * break; the ladder simply continues in the new order from whatever is left.
  */
 
 export interface LadderStep {
@@ -21,78 +26,49 @@ export interface LadderStep {
   atMs: number;
 }
 
-/** Techno: repetition creates the machine — the pulse comes first. */
-const TECHNO: readonly LadderStep[] = [
-  { layer: 'kick', atMs: 3000 },
-  { layer: 'hats', atMs: 7000 },
-  { layer: 'snare', atMs: 11_000 },
-  { layer: 'bass', atMs: 16_000 },
-  { layer: 'harmony', atMs: 23_000 },
-  { layer: 'melody', atMs: 31_000 },
-  { layer: 'texture', atMs: 40_000 },
-];
+const seconds = (...values: number[]): readonly number[] => values.map((v) => v * 1000);
 
 /**
- * §108: this world OPENS ON HATS, not on texture.
- *
- * Its preset lists atmosphere first, and that was taken literally — the first
- * rung was `texture`. But §94 made the air of a world free, so that rung spent
- * itself on the bytebeat and arriving gave you no RHYTHM at all: the first
- * beat waited for rung two, most of a minute in. A world has to sound like
- * something the moment you get there (§100), and for this one that is the
- * shuffle. Texture moves to the end, where it is the last thing that finishes
- * the track rather than the first thing that fails to start it.
+ * THE MACHINE: even spacing that widens slightly. Nothing is hurried and
+ * nothing is withheld — the reference curve the others are heard against.
  */
-const SUB_PRESSURE: readonly LadderStep[] = [
-  { layer: 'hats', atMs: 3000 },
-  { layer: 'kick', atMs: 7000 },
-  { layer: 'snare', atMs: 11_000 },
-  { layer: 'bass', atMs: 15_000 },
-  { layer: 'harmony', atMs: 20_000 },
-  { layer: 'melody', atMs: 27_000 },
-  { layer: 'texture', atMs: 35_000 },
-];
-const HEAVY_SIGNAL: readonly LadderStep[] = [
-  { layer: 'hats', atMs: 3000 },
-  { layer: 'kick', atMs: 7000 },
-  { layer: 'snare', atMs: 11000 },
-  { layer: 'bass', atMs: 15000 },
-  { layer: 'harmony', atMs: 20000 },
-  { layer: 'melody', atMs: 27000 },
-  { layer: 'texture', atMs: 35000 },
-];
+const TECHNO = seconds(3, 7, 11, 16, 23, 31, 40);
 
-const BROKEN_MACHINE: readonly LadderStep[] = [
-  { layer: 'hats', atMs: 3000 },
-  { layer: 'kick', atMs: 7000 },
-  { layer: 'snare', atMs: 11000 },
-  { layer: 'bass', atMs: 15000 },
-  { layer: 'harmony', atMs: 20000 },
-  { layer: 'melody', atMs: 27000 },
-  { layer: 'texture', atMs: 35000 },
-];
+/**
+ * THE REDLINE: everything arrives at once and then the world makes you wait
+ * for the last two. Front-loaded, because this world is about pressure, not
+ * patience.
+ */
+const HEAVY_SIGNAL = seconds(2, 4, 7, 11, 18, 25, 33);
 
-const PERCUSSION_RIOT: readonly LadderStep[] = [
-  { layer: 'hats', atMs: 3000 },
-  { layer: 'snare', atMs: 7000 },
-  { layer: 'kick', atMs: 11000 },
-  { layer: 'bass', atMs: 15000 },
-  { layer: 'harmony', atMs: 20000 },
-  { layer: 'melody', atMs: 27000 },
-  { layer: 'texture', atMs: 35000 },
-];
+/**
+ * THE BROKEN MACHINE: irregular gaps. Two rungs land together, then nothing
+ * for a while, then two more — the build itself stutters the way its rhythms do.
+ */
+const BROKEN_MACHINE = seconds(3, 5, 12, 15, 24, 28, 40);
 
-const VOID_CRUSHER: readonly LadderStep[] = [
-  { layer: 'melody', atMs: 3000 },
-  { layer: 'kick', atMs: 7000 },
-  { layer: 'snare', atMs: 11000 },
-  { layer: 'bass', atMs: 15000 },
-  { layer: 'harmony', atMs: 20000 },
-  { layer: 'hats', atMs: 27000 },
-  { layer: 'texture', atMs: 35000 },
-];
+/**
+ * THE RIOT: dense and fast, everything inside the first half minute, then one
+ * long tail. You are in it immediately and it keeps adding.
+ */
+const PERCUSSION_RIOT = seconds(2, 4, 6, 9, 14, 20, 33);
 
-export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderStep[]> = {
+/**
+ * SUB PRESSURE: slow to reveal, and the gaps GROW. Weight takes its time; the
+ * last rung arrives long after you stopped waiting for it.
+ */
+const SUB_PRESSURE = seconds(4, 9, 15, 21, 28, 35, 44);
+
+/**
+ * THE VOID: the sparsest world, and it was the only one a cruising player never
+ * heard finish — measured at 6 of 7 layers after three minutes, because its
+ * curve was the shared one and `WORLD_PACE` then stretched it half again. The
+ * curve is its own now and starts tighter, so the world still feels unhurried
+ * while a track actually completes.
+ */
+const VOID_CRUSHER = seconds(3, 6, 10, 15, 20, 26, 34);
+
+export const GENRE_CURVES: Record<Exclude<TrackGenre, null>, readonly number[]> = {
   techno: TECHNO,
   'sub-pressure': SUB_PRESSURE,
   'heavy-signal': HEAVY_SIGNAL,
@@ -102,8 +78,8 @@ export const GENRE_LADDERS: Record<Exclude<TrackGenre, null>, readonly LadderSte
 };
 
 /** The neutral void builds like Techno: a pulse you can immediately feel. */
-export function ladderFor(genre: TrackGenre): readonly LadderStep[] {
-  return genre === null ? TECHNO : GENRE_LADDERS[genre];
+export function curveFor(genre: TrackGenre): readonly number[] {
+  return genre === null ? TECHNO : GENRE_CURVES[genre];
 }
 
 export function layerUnlocked(track: Readonly<TrackState>, layer: TrackLayerName): boolean {
@@ -113,8 +89,8 @@ export function layerUnlocked(track: Readonly<TrackState>, layer: TrackLayerName
 
 /**
  * The only layer the world is currently willing to give. Everything earlier in
- * this genre's order is already earned, so the track can only grow in the
- * grammar of the region the player is flying through.
+ * this track's order is already earned, so the track can only grow in the shape
+ * this reading of the world was drawn with.
  */
 export function nextStep(
   track: Readonly<TrackState>,

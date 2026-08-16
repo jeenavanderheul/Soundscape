@@ -905,6 +905,7 @@ export class Game {
           performance: this.lastLayerGraph?.performance,
           energy: clamp01(state.amplitude),
           bank: worldBankLabel(playingTrack),
+          order: this.trackBuilder.order,
         }),
         this.lastLayerGraph ? voiceSections(this.lastLayerGraph) : [],
       );

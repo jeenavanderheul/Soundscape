@@ -13,7 +13,7 @@ import { sectionMix } from '../../src/music/ArrangementEngine';
 import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
 import { CallResponse, respondTo } from '../../src/music/CallResponse';
-import { GENRE_LADDERS } from '../../src/music/GenreLadder';
+import { GENRE_CURVES } from '../../src/music/GenreLadder';
 import { createInitialMusicState, type GenreAffinity } from '../../src/music/MusicState';
 import { TrackBuilder } from '../../src/music/TrackBuilder';
 import { LEVEL_DEEP, createInitialTrackState, TrackEvents, type TrackGenre } from '../../src/music/TrackState';
@@ -29,11 +29,22 @@ function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
 
 /** Fly for `seconds` inside one region and report the order layers arrived in. */
 describe('§31 genre ladders — every grammar builds a track in its own order', () => {
-  it('covers all seven layers exactly once per genre', () => {
-    for (const [genre, ladder] of Object.entries(GENRE_LADDERS)) {
-      const layers = ladder.map((step) => step.layer);
-      expect(new Set(layers).size, genre).toBe(7);
+  it('gives every world seven rungs, rising, in its own shape', () => {
+    // The layer ORDER lives in TrackForm now — this file only says WHEN a world
+    // offers a rung. What has to hold is that there are seven of them, that
+    // they only ever move forward, and that no two worlds wait the same way:
+    // one shape scaled six times is what made every world build alike.
+    const shapes = new Set<string>();
+    for (const [genre, curve] of Object.entries(GENRE_CURVES)) {
+      expect(curve.length, genre).toBe(7);
+      for (let i = 1; i < curve.length; i++) {
+        expect(curve[i]!, `${genre} rung ${i}`).toBeGreaterThan(curve[i - 1]!);
+      }
+      // Normalised against its own last rung: this is the world's shape, with
+      // its overall speed divided out.
+      shapes.add(curve.map((t) => (t / curve[curve.length - 1]!).toFixed(2)).join(','));
     }
+    expect(shapes.size).toBe(Object.keys(GENRE_CURVES).length);
   });
 
 });

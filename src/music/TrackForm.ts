@@ -43,13 +43,26 @@ const MELODIC: ReadonlySet<TrackLayerName> = new Set(['harmony', 'melody', 'text
  * of the user's decision — PERCUSSION RIOT should feel urgent and VOID CRUSHER
  * should take its time, and that difference has to survive every track.
  */
+/**
+ * How patient a world is, as a multiple of the base pacing.
+ *
+ * The slow end used to reach 1.5, and multiplied by a track's own draw (up to
+ * 1.35) and by the standstill pace, that put a whole rung beyond the end of a
+ * flight: measured, a cruising player in the void had 6 of 7 layers after FOUR
+ * MINUTES and never heard a track finish. A world is allowed to be unhurried;
+ * it is not allowed to be unfinishable.
+ *
+ * The range is narrower now (0.62–1.15) because a world's character moved into
+ * the SHAPE of its curve — where it makes you wait — rather than into how slow
+ * it is overall. Measured after: every world completes at cruise.
+ */
 const WORLD_PACE: Record<Exclude<TrackGenre, null>, number> = {
   'percussion-riot': 0.62,
   'broken-machine': 0.78,
   techno: 1,
-  'heavy-signal': 1.12,
-  'sub-pressure': 1.3,
-  'void-crusher': 1.5,
+  'heavy-signal': 0.95,
+  'sub-pressure': 1.1,
+  'void-crusher': 1.05,
 };
 
 /** Names for how wide a reading sits, so the strip can say what it is. */

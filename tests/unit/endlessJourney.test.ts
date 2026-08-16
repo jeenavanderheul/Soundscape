@@ -90,8 +90,15 @@ describe('the endless journey (user decision)', () => {
     const unsubscribe = store.subscribe((state) => {
       if (state.melody.unlocked) lastBefore = state;
     });
+    let sawNewTrack = false;
+    let openedWith: string[] = [];
     bus.on('track:new', () => {
       after = store.getState();
+      sawNewTrack = true;
+    });
+    bus.on('track:layer', () => {
+      // The FIRST layer announced after the handover is the new track's opener.
+      if (sawNewTrack && openedWith.length === 0) openedWith = unlockedLayers(store.getState());
     });
     flyThroughADrop(builder, 0);
     unsubscribe();
@@ -99,7 +106,15 @@ describe('the endless journey (user decision)', () => {
     // §100/§128: every track opens on its first rung at once, so the next
     // track starts with sound rather than silence. WHICH rung that is is drawn
     // per track now, so the invariant is "exactly one, immediately".
-    expect(unlockedLayers(after)).toHaveLength(1);
+    //
+    // Read after the handover, not during it: the opening rung is announced
+    // AFTER `track:new` on purpose, so that the event stream cannot read as the
+    // OLD track earning an eighth layer. `after` is the snapshot taken inside
+    // the handler, which is mid-handover by design.
+    expect(openedWith).toHaveLength(1);
+    // …and at the instant of the handover itself the new track is still empty,
+    // so nothing can attribute that opening rung to the track that just ended.
+    expect(unlockedLayers(after)).toHaveLength(0);
     expect(after.rootMidi).not.toBe(before.rootMidi); // a related key, not the same
     // §91: the clock belongs to the WORLD, so the next track inherits the one
     // the last track was actually running on — not the tempo the player had

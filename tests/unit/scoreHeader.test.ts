@@ -6,6 +6,7 @@ vi.mock('@strudel/web', () => ({
   samples: vi.fn(async () => undefined),
 }));
 
+import { TRACK_LAYERS } from '../../src/music/TrackForm';
 import { scoreHeader } from '../../src/ui/ScoreHeader';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { performanceFrom } from '../../src/music/Performance';
@@ -30,7 +31,7 @@ describe('the score reads like the preset it came from', () => {
   const state = (over: Partial<Parameters<typeof scoreHeader>[0]> = {}) =>
     scoreHeader({
       track: base, cycle: 5, style: 'driven', trackNumber: 2,
-      energy: 0.5, bank: 'RolandTR909', ...over,
+      energy: 0.5, bank: 'RolandTR909', order: TRACK_LAYERS, ...over,
     });
 
   it('names the world, the track and its tempo', () => {
@@ -39,9 +40,14 @@ describe('the score reads like the preset it came from', () => {
     expect(text).toContain('setcpm(134 / 4)');
   });
 
-  it('shows the ladder in this world’s order, with what you hold', () => {
+  it('shows the ladder in THIS TRACK’s order, with what you hold', () => {
+    // Was asserting the written ladder's order. That order stopped being the
+    // one that plays at §128, so the header on screen was listing rungs the
+    // music was not following; it is handed the live order now.
     const text = state();
-    expect(text).toContain('kick → hats → clap/snare → sub/bass → rave stab → signal → texture');
+    expect(text).toContain('kick → clap/snare → hats → sub/bass → rave stab → signal → texture');
+    const shuffled = state({ order: ['texture', 'kick', 'hats', 'snare', 'bass', 'harmony', 'melody'] });
+    expect(shuffled).toContain('texture → kick → hats → clap/snare');
     // Deep, earned, not yet — in the ladder's order, under the names.
     const held = text.split('\n').find((l) => l.includes('●'))!;
     expect(held.indexOf('●●')).toBeLessThan(held.indexOf('○○'));

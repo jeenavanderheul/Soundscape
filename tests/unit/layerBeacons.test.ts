@@ -11,7 +11,7 @@ import { zoneAffinity } from '../../src/genres/GenreZones';
 import { createEventBus } from '../../src/core/EventBus';
 import { createStore } from '../../src/core/stores';
 import { beaconAt, beaconIsStale, placeBeacon, remainingLayers } from '../../src/world/LayerBeacons';
-import { ladderFor } from '../../src/music/GenreLadder';
+import { TRACK_LAYERS } from '../../src/music/TrackForm';
 import { TrackBuilder } from '../../src/music/TrackBuilder';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import {
@@ -27,17 +27,21 @@ import {
 describe('a beacon is the next rung, standing somewhere you have to fly to', () => {
   const here = { x: 0, y: 10, z: 0 };
 
-  it('offers the ladder in order, and nothing that is already earned', () => {
+  it("offers THIS TRACK's order, and nothing that is already earned", () => {
+    // The order is handed in now rather than looked up from a written ladder:
+    // since §128 draws a fresh order per track, a beacon that read the table
+    // could send you after a layer that was not next.
     const track = { ...createInitialTrackState(), genre: 'techno' as const };
-    expect(remainingLayers(track, 'techno')).toEqual(ladderFor('techno').map((s) => s.layer));
+    const order = TRACK_LAYERS;
+    expect(remainingLayers(track, order)).toEqual(order);
     track.drums.kick = { unlocked: true, level: 0.5 };
-    expect(remainingLayers(track, 'techno')).not.toContain('kick');
+    expect(remainingLayers(track, order)).not.toContain('kick');
   });
 
   it('stands ahead of the flight but never straight ahead', () => {
     const rng = createRng('beacons');
-    const beacon = placeBeacon(ladderFor('techno')[0]!.layer, here, 0, rng, 1)!;
-    expect(beacon.layer).toBe(ladderFor('techno')[0]!.layer);
+    const beacon = placeBeacon(TRACK_LAYERS[0]!, here, 0, rng, 1)!;
+    expect(beacon.layer).toBe(TRACK_LAYERS[0]!);
     // Ahead: heading 0 is -z.
     expect(beacon.position.z).toBeLessThan(here.z);
     // …and off to one side, or you would collect it by not steering.
@@ -90,8 +94,8 @@ describe('flying through one earns that layer, there and then', () => {
   });
 
   it('but never out of order — the world is still assembled by its ladder', () => {
-    const { store, builder } = setup();
-    const ladder = ladderFor(store.getState().genre).map((s) => s.layer);
+    const { builder } = setup();
+    const ladder = TRACK_LAYERS;
     const outOfOrder = ladder[ladder.length - 1]!;
     expect(builder.collectBeacon(outOfOrder, 21_000)).toBe(false);
   });

@@ -1,6 +1,5 @@
 import { ARC_PHASES, CYCLES_PER_PHASE, arcFor, sectionLabel } from '../music/ArrangementEngine';
 import type { SectionStyle } from '../music/ArrangementEngine';
-import { ladderFor } from '../music/GenreLadder';
 import type { Performance } from '../music/Performance';
 import { LEVEL_DEEP } from '../music/TrackState';
 import type { TrackLayerName, TrackState } from '../music/TrackState';
@@ -47,6 +46,12 @@ export interface ScoreHeaderState {
   /** 0..1 movement energy — the wind, which is what the patterns spend (§105). */
   energy: number;
   bank: string;
+  /**
+   * The order THIS track is climbing. The header used to read the written
+   * ladder, and since §128 draws a fresh order per track that meant the score
+   * on screen listed its rungs in an order the music was not following.
+   */
+  order: readonly TrackLayerName[];
 }
 
 const RULE = '═'.repeat(60);
@@ -58,9 +63,9 @@ export function scoreHeader(state: ScoreHeaderState): string {
   const arc = arcFor(state.style);
   const phase = arc[Math.floor(state.cycle / CYCLES_PER_PHASE) % ARC_PHASES] ?? 'groove';
 
-  // The ladder in this world's own order, with what you hold marked under it.
-  const rungs = ladderFor(track.genre).map(({ layer }) => SHORT[layer]);
-  const held = ladderFor(track.genre).map(({ layer }) => {
+  // This track's own order, with what you hold marked under it.
+  const rungs = state.order.map((layer) => SHORT[layer]);
+  const held = state.order.map((layer) => {
     const level = levelOf(track, layer);
     const mark = level >= LEVEL_DEEP ? '●●' : level > 0 ? '●○' : '○○';
     return mark.padEnd(SHORT[layer].length, ' ');

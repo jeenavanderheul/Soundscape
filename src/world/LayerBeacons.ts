@@ -1,6 +1,6 @@
 import type { Rng } from '../core/rng';
-import { ladderFor, layerUnlocked } from '../music/GenreLadder';
-import type { TrackGenre, TrackLayerName, TrackState } from '../music/TrackState';
+import { layerUnlocked } from '../music/GenreLadder';
+import type { TrackLayerName, TrackState } from '../music/TrackState';
 import type { Vec3Data } from '../player/FrequencyState';
 
 /**
@@ -39,28 +39,38 @@ const FAR = 190;
  * means it visibly, instead of through an invisible rule that handed you a
  * layer for holding an altitude long enough.
  *
- * The spread is deliberately wide: 4 to 58 is most of the flyable column, so
- * two consecutive rungs are a real journey rather than a nudge on the stick.
+ * The spread is deliberately wide, so two consecutive rungs are a real journey
+ * rather than a nudge on the stick.
+ *
+ * Rescaled with the world (was 4–58, written when the sky was 70 units tall and
+ * a tree was thirty). At a 1200-unit ceiling those all sat on the deck, so
+ * every beacon was a dive and the airy layers never asked you to climb. The
+ * column now spans 20–300, which brackets AIR_ALTITUDE: the kick is below the
+ * point where the filter starts opening, the texture well above it.
  */
 const HEIGHT: Record<TrackLayerName, number> = {
-  kick: 4,
-  bass: 7,
-  snare: 20,
-  harmony: 28,
-  melody: 38,
-  hats: 48,
-  texture: 58,
+  kick: 20,
+  bass: 36,
+  snare: 105,
+  harmony: 145,
+  melody: 200,
+  hats: 250,
+  texture: 300,
 };
 const RADIUS = 9;
 
-/** Which rungs of this world's ladder are still to be earned, in order. */
+/**
+ * Which rungs are still to be earned, in the order THIS track is climbing.
+ *
+ * The order used to come from the written ladder, which stopped being the order
+ * that plays at §128 — the beacon could send you after a layer that was not
+ * next. It is handed the live order now.
+ */
 export function remainingLayers(
   track: Readonly<TrackState>,
-  genre: TrackGenre,
+  order: readonly TrackLayerName[],
 ): readonly TrackLayerName[] {
-  return ladderFor(genre)
-    .map((step) => step.layer)
-    .filter((layer) => !layerUnlocked(track, layer));
+  return order.filter((layer) => !layerUnlocked(track, layer));
 }
 
 /**
