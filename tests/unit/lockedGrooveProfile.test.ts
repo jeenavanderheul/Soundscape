@@ -72,9 +72,11 @@ describe('GenreAffinityEngine (§9)', () => {
     expect(Object.isFrozen(snap)).toBe(true);
     expect(Object.isFrozen(snap.affinity)).toBe(true);
     expect(engine.history.length).toBeLessThanOrEqual(4);
-    // Affinity decays when the music stops being locked groove-like.
+    // Affinity decays when the music stops being locked groove-like WHILE the
+    // player keeps moving (motion 1). Without motion this same fade was the
+    // §194 bug: standing still erased the world you were in.
     const silent = createInitialMusicState();
-    for (let t = 2100; t <= 4000; t += 100) engine.update(t, silent);
+    for (let t = 2100; t <= 4000; t += 100) engine.update(t, silent, undefined, 1);
     expect(engine.current!.affinity['locked-groove']).toBeLessThan(0.2);
   });
 });

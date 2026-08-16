@@ -116,3 +116,60 @@ describe('§126 a crossing is heard inside two seconds — at every speed', () =
     expect(Math.abs(secondAtRest! - secondAtSpeed!)).toBeLessThan(0.2);
   });
 });
+
+/**
+ * §194 (user, hard rule): once you are in a world you stay in it until you
+ * yourself fly somewhere else. Stopping is silence (§42) — it is not leaving.
+ */
+describe('§194 standing still does not send you back to the void', () => {
+  const flyInThenStop = (stopSeconds: number) => {
+    const engine = new GenreAffinityEngine(createEventBus());
+    const music = { ...createInitialMusicState(), dynamics: 0, bpm: 0 };
+    const pos = { x: Math.sin(Math.PI / 3) * 900, y: 20, z: -Math.cos(Math.PI / 3) * 900 };
+    let now = 0;
+    // Fly in the sector for 10s (motion 1), then stand still (motion 0, no sound).
+    for (; now < 10_000; now += 100) engine.update(now, music, zoneAffinity(pos), 1);
+    const flying = engine.current;
+    for (const end = now + stopSeconds * 1000; now < end; now += 100) {
+      engine.update(now, music, zoneAffinity(pos), 0);
+    }
+    return { flying, stopped: engine.current };
+  };
+
+  it('keeps the world you stopped in, however long you stand there', () => {
+    const { flying, stopped } = flyInThenStop(60);
+    expect(flying?.dominant).toBe('heavy-signal');
+    // The map froze where you stopped: still dominant, not decayed to nothing.
+    expect(stopped?.dominant).toBe('heavy-signal');
+    expect(stopped!.affinity['heavy-signal']).toBeGreaterThan(0.5);
+  });
+
+  it('still adopts nothing from silence alone', () => {
+    // A fresh arrival who has not moved gets no world pushed on them — the
+    // same gate that now freezes also still refuses to adopt.
+    const engine = new GenreAffinityEngine(createEventBus());
+    const music = { ...createInitialMusicState(), dynamics: 0, bpm: 0 };
+    const pos = { x: 600, y: 20, z: -600 };
+    for (let now = 0; now < 20_000; now += 100) engine.update(now, music, zoneAffinity(pos), 0);
+    expect(engine.current?.dominant ?? null).toBeNull();
+  });
+
+  it('resumes normal adoption the moment you move again', () => {
+    const engine = new GenreAffinityEngine(createEventBus());
+    const music = { ...createInitialMusicState(), dynamics: 0, bpm: 0 };
+    const east = { x: Math.sin(Math.PI / 3) * 900, y: 20, z: -Math.cos(Math.PI / 3) * 900 };
+    const south = { x: 0, y: 20, z: 900 };
+    let now = 0;
+    for (; now < 10_000; now += 100) engine.update(now, music, zoneAffinity(east), 1);
+    for (const end = now + 30_000; now < end; now += 100) engine.update(now, music, zoneAffinity(east), 0);
+    // Fly off to sub-pressure: the frozen map must yield within §126's window.
+    const start = now;
+    let adopted: number | null = null;
+    for (const end = now + 10_000; now < end; now += 100) {
+      engine.update(now, music, zoneAffinity(south), 1);
+      if (adopted === null && engine.current?.dominant === 'sub-pressure') adopted = now - start;
+    }
+    expect(adopted).not.toBeNull();
+    expect(adopted!).toBeLessThan(2000);
+  });
+});

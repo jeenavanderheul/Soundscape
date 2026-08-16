@@ -101,11 +101,19 @@ export class GenreAffinityEngine {
         // would otherwise keep the same grammar everywhere.
         raw[key] = Math.min(
           1,
-          (BEHAVIOURAL.has(key) ? behaviour[key] * 0.3 + zone[key] * 0.7 : zone[key]) * audible,
+          BEHAVIOURAL.has(key) ? behaviour[key] * 0.3 + zone[key] * 0.7 : zone[key],
         );
       }
     }
-    const blend = 1 - Math.exp(-this.config.smoothingRate * deltaSec);
+    // §194 (user, hard rule): once you are in a world you STAY in it until you
+    // yourself fly somewhere else. The gate used to multiply the VALUE, so a
+    // standstill decayed the whole map to zero and the world forgot where you
+    // were — measured: heavy-signal 0.94 while flying, 0.16 six seconds after
+    // stopping, dominant null, and everything hanging off the engine (colours,
+    // kit, atmosphere) fell back to the void. Gating the RATE instead means
+    // silence adopts nothing AND erases nothing: the map freezes where you
+    // stopped, and moving again resumes normal §189 adoption.
+    const blend = (1 - Math.exp(-this.config.smoothingRate * deltaSec)) * audible;
     for (const key of Object.keys(this.affinity) as (keyof GenreAffinity)[]) {
       this.affinity[key] += (raw[key] - this.affinity[key]) * blend;
     }
