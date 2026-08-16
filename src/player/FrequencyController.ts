@@ -389,7 +389,9 @@ export class FrequencyController {
    * only ever fly north.
    */
   face(bearing: number): void {
-    this.yaw = bearing;
+    // Yaw counts the other way round than a compass bearing does — measured:
+    // yaw=+1.05 flew NW. The API promises a bearing, so it converts.
+    this.yaw = -bearing;
   }
 
   get onGround(): boolean {
