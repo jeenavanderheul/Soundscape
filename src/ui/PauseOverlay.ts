@@ -57,6 +57,18 @@ export class PauseOverlay {
       this.status.textContent = callbacks.onExportTrack();
     });
     const demoButton = this.button('Demo flight', () => callbacks.onDemoFlight());
+    /**
+     * §200 (user): the genre lab reachable from the menu. It opens in its own
+     * tab rather than navigating away, because navigating away tears down the
+     * AudioContext and the flight with it — you would lose the track you are
+     * standing in to go and look at how its world is written.
+     */
+    const labLink = document.createElement('a');
+    labLink.href = '/genres/';
+    labLink.target = '_blank';
+    labLink.rel = 'noopener';
+    labLink.textContent = 'Genre lab';
+    labLink.className = 'pause-link';
     const newButton = this.button('New journey', () => {
       callbacks.onNewJourney();
       this.status.textContent = 'New journey. The void is empty again.';
@@ -86,6 +98,7 @@ export class PauseOverlay {
       saveButton,
       exportButton,
       demoButton,
+      labLink,
       newButton,
       volumeRow,
       this.status,

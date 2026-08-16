@@ -168,7 +168,8 @@ body {
 
 #unlock-button,
 #demo-button,
-#pause-overlay button {
+#pause-overlay button,
+#pause-overlay .pause-link {
   padding: calc(var(--grid) * 1.5) calc(var(--grid) * 3);
   font-family: var(--font-display);
   font-size: 0.78rem;
@@ -583,7 +584,8 @@ body {
 
   #unlock-button,
   #demo-button,
-  #pause-overlay button {
+  #pause-overlay button,
+  #pause-overlay .pause-link {
     /* Never wider than the screen, and still a 44px touch target. */
     max-width: 100%;
     padding: calc(var(--grid) * 1.25) calc(var(--grid) * 2);
@@ -722,4 +724,11 @@ body {
 .volume-row input[type='range']:focus-visible {
   outline: 1px solid var(--signal-40);
   outline-offset: 6px;
+}
+
+/* §200: the lab entry is an anchor so it can open a tab, but it is a button to
+   look at — anchors bring their own underline and text colour. */
+#pause-overlay .pause-link {
+  display: inline-block;
+  text-decoration: none;
 }
