@@ -237,6 +237,31 @@ export function stageRungs(journeySeed: string, crossing: number): number {
 }
 
 /**
+ * §216 (user decision, desktop): the NEXT track in the same world does not have
+ * to start over.
+ *
+ * Staying somewhere long enough to finish a track and hear the world hand you
+ * another one is the reward for not flying off — and it used to pay out with
+ * 1/7 and the whole climb again, every time. Now it is drawn, 1 through 7: you
+ * might rebuild from nothing, you might come out of the drop with almost
+ * everything standing. One in seven is still a clean start, so that possibility
+ * is not lost, it is just no longer the only one.
+ *
+ * Both halves of the same draw, so a track's opening and its key are one
+ * decision rather than two: `.rungs` is 1..7, `.key` is 0..1 for `nextRootMidi`.
+ */
+export function nextTrackStart(journeySeed: string, trackNumber: number): {
+  rungs: number;
+  key: number;
+} {
+  const next = stream(seedOf(`track|${journeySeed}|${trackNumber}`));
+  return {
+    rungs: Math.min(TRACK_LAYERS.length, 1 + Math.floor(next() * TRACK_LAYERS.length)),
+    key: next(),
+  };
+}
+
+/**
  * §128: the form of track N of this world, on this journey.
  *
  * Track 1 of a journey is NOT special — §118 keeps the sound of a first track

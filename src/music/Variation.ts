@@ -42,8 +42,17 @@ export function rotateVariations(
 /** The key the next track lands in: related, never the same, always in steps. */
 const KEY_STEPS: readonly number[] = [-5, 3, 2, -3, 5, -2];
 
-export function nextRootMidi(rootMidi: number, trackNumber: number): number {
-  const step = KEY_STEPS[trackNumber % KEY_STEPS.length]!;
+/**
+ * §216 (user decision, desktop): the next key is DRAWN from the related steps
+ * rather than walked through them in order. Six tracks used to march -5, +3,
+ * +2, -3, +5, -2 and then repeat, so a long stay in one world was a fixed
+ * modulation loop. Passing a draw makes it a related key you did not see
+ * coming; the steps themselves are unchanged, so it is still never the same key
+ * and never an unrelated one.
+ */
+export function nextRootMidi(rootMidi: number, trackNumber: number, draw?: number): number {
+  const index = draw === undefined ? trackNumber : Math.floor(draw * KEY_STEPS.length);
+  const step = KEY_STEPS[Math.min(KEY_STEPS.length - 1, index) % KEY_STEPS.length]!;
   let root = rootMidi + step;
   // Keep the root inside the octave the bass is written for.
   while (root > 48) root -= 12;

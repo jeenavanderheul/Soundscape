@@ -10,6 +10,7 @@ import {
   fixedFormFor,
   formFor,
   isPlayableOrder,
+  nextTrackStart,
   stageRungs,
   TRACK_LAYERS,
   type TrackForm,
@@ -551,7 +552,17 @@ export class TrackBuilder {
     const previous = this.store.getState();
     this.trackNumberValue += 1;
     this.handingOver = false;
-    const rootMidi = nextRootMidi(previous.rootMidi, this.trackNumberValue);
+    // §216 (user decision, desktop): how the next track in this world opens —
+    // how many rungs already stand, and which related key it lands in — is one
+    // draw rather than a fixed march through the steps.
+    //
+    // This is desktop-only by construction, not by a flag: a phone never gets
+    // here, because `holdsFullMixWhenComplete` skips the handover entirely and
+    // `keepsTrackAcrossWorlds` skips the travelled path. The mobile build is
+    // approved and frozen (user, 16 aug), and this is the check that keeps it
+    // that way — if either of those ever changes, this arrives on a phone too.
+    const start = nextTrackStart(this.seed, this.trackNumberValue);
+    const rootMidi = nextRootMidi(previous.rootMidi, this.trackNumberValue, start.key);
     // The next track is born in the region the player is in RIGHT NOW (§47).
     const bornIn = this.lastRegion ?? previous.genre;
     const shift = rootMidi - previous.rootMidi;
@@ -577,7 +588,6 @@ export class TrackBuilder {
     // once. Waiting for the arc to reach DISCOVERY I meant eleven seconds of
     // air at full speed and twenty at cruise before there was a beat — long
     // enough that a player cannot tell whether anything is coming.
-    const first = this.ladder(bornIn)[0];
     this.activeMs = 0;
     this.lastDeepenMs = 0;
     this.lastRungMs = this.activeMs;
@@ -610,7 +620,12 @@ export class TrackBuilder {
     // them), and the arc starting at the groove instead of an intro. Staying
     // somewhere keeps the full 1-of-7 climb: only travel gets the festival
     // arrival, or building would never mean anything.
-    const opening = travelled ? this.ladder(bornIn).slice(0, 3) : first ? [first] : [];
+    // §216: a finished track hands over to one that may already be under way.
+    // Travelling still gives §189's three — that path only survives where
+    // §213's stage draw is off.
+    const opening = travelled
+      ? this.ladder(bornIn).slice(0, 3)
+      : this.ladder(bornIn).slice(0, Math.max(1, start.rungs));
     if (travelled) this.arrangement.beginMidSet();
     for (const step of opening) this.unlock(step.layer, nowMs);
   }

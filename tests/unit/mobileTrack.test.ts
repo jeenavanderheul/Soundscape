@@ -15,6 +15,7 @@ import {
   fixedFormFor,
   isPlayableOrder,
   STAGE_MAX_RUNGS,
+  nextTrackStart,
   STAGE_MIN_RUNGS,
   stageRungs,
   TRACK_LAYERS,
@@ -351,5 +352,65 @@ describe('§215 standing at the gate is not travelling', () => {
     const counts = atTheGate({ flyFirst: true });
     const afterFlying = counts.slice(5);
     expect(afterFlying.some((n) => n >= STAGE_MIN_RUNGS), `saw ${counts.join(', ')}`).toBe(true);
+  });
+});
+
+describe('§216 the next track in the same world is drawn, not restarted', () => {
+  it('opens somewhere between 1/7 and 7/7, and reaches all of them', () => {
+    // User decision: staying put long enough to finish a track used to pay out
+    // with the whole climb again, every time. One in seven is still a clean
+    // start — it is just no longer the only one.
+    const seen = new Set<number>();
+    for (let n = 2; n <= 200; n += 1) {
+      const { rungs, key } = nextTrackStart('een-lange-avond', n);
+      expect(rungs).toBeGreaterThanOrEqual(1);
+      expect(rungs).toBeLessThanOrEqual(7);
+      expect(key).toBeGreaterThanOrEqual(0);
+      expect(key).toBeLessThan(1);
+      seen.add(rungs);
+    }
+    expect([...seen].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
+  it('stays in the same world and keeps the count where the draw put it', () => {
+    // The world may not change just because a track finished — only flying
+    // somewhere else does that (§47/§213).
+    const store = createStore<TrackState>(createInitialTrackState());
+    const bus = createEventBus<TrackEvents>();
+    const builder = new TrackBuilder(store, bus, TRACK_BUILDER_CONFIG, 'blijven');
+    const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0 };
+    const region = { ...zoneAffinity({ x: 0, y: 20, z: 0 }), 'locked-groove': 1 } as never;
+    const openings: number[] = [];
+    const keys: number[] = [];
+    // `track:new` fires BEFORE the opening rungs are unlocked, so reading the
+    // state in the handler measures zero every time. Sample a few ticks later.
+    let settle = 0;
+    bus.on('track:new', () => {
+      settle = 3;
+      keys.push(store.getState().rootMidi);
+      expect(store.getState().genre, 'a finished track may not move you').toBe('locked-groove');
+    });
+    let now = 0;
+    while (now < 400_000) {
+      now += 1000 / 30;
+      builder.tick(now, music, { velocity: 66, hz: 220, energy: 0.5, altitude: 60 } as never, region);
+      if (settle > 0 && --settle === 0) openings.push(layersOf(store.getState()));
+    }
+    expect(openings.length, 'several tracks in one world').toBeGreaterThan(2);
+    // Not every handover lands on the same number — that was the complaint.
+    expect(new Set(openings).size).toBeGreaterThan(1);
+    // §216: the key is drawn too, and a track never lands in the one before it.
+    for (let i = 1; i < keys.length; i += 1) expect(keys[i]).not.toBe(keys[i - 1]);
+  });
+
+  it('never reaches a phone, because a phone never hands over', () => {
+    // The mobile build is approved and frozen (user, 16 aug). This is the check
+    // that keeps it that way: `holdsFullMixWhenComplete` skips the handover and
+    // `keepsTrackAcrossWorlds` skips the travelled path, so §216 cannot arrive
+    // there by accident. If either flips, this test says so.
+    expect(MOBILE_TRACK_PACING.holdsFullMixWhenComplete).toBe(true);
+    expect(MOBILE_TRACK_PACING.keepsTrackAcrossWorlds).toBe(true);
+    const run = fly({ world: 'locked-groove', velocity: 66, seconds: 300, config: MOBILE_TRACK_PACING });
+    expect(run.newTracks).toBe(0);
   });
 });
