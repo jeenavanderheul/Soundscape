@@ -87,31 +87,36 @@ describe('arriving somewhere new starts a track in that world', () => {
     return from + seconds * 1000;
   }
 
-  it('flying into another world ends the old track and starts one there', () => {
+  it('flying into another world puts you on ITS set, already running', () => {
+    // §213 (user decision) retires §53/§54, which had a crossing END the track
+    // you were building and start a clean one at 1/7. It is a festival now: you
+    // walk to another tent and that DJ has been on for a while. §212 draws how
+    // long — 3 to 7 rungs of that world's own order, at its own tempo.
     const store = createStore(createInitialTrackState());
     const bus = createEventBus<TrackEvents>();
     const born: (string | null)[] = [];
+    const named: (string | null)[] = [];
     bus.on('track:new', () => born.push(store.getState().genre));
+    bus.on('track:genre', ({ genre }) => named.push(genre));
     const builder = new TrackBuilder(store, bus);
 
     let t = fly('locked-groove', 20, builder, 0);
     expect(store.getState().genre).toBe('locked-groove');
-    const lockedGrooveTrack = store.getState();
-    // §128: the OPENING rung is drawn per track (user decision), so what has
-    // to hold is that the world gave you something to hear — a track never
-    // opens on silence — not that it is always the kick.
-    expect(unlockedLayers(lockedGrooveTrack).length).toBeGreaterThan(0);
+    expect(unlockedLayers(store.getState()).length).toBeGreaterThan(0);
 
     t = fly('sub-pressure', 8, builder, t + 250);
-    expect(born).toEqual(['sub-pressure']);
     const pressureTrack = store.getState();
+    // No new track: what you built is not thrown away, it is replaced by what
+    // that stage is playing.
+    expect(born).toEqual([]);
+    expect(builder.trackNumber).toBe(1);
+    // The crossing still announces itself, and still on the new world's tempo
+    // (§126) — a set you walk onto does not slew up to speed.
+    expect(named).toContain('sub-pressure');
     expect(pressureTrack.genre).toBe('sub-pressure');
     expect(pressureTrack.bpm).toBe(Math.round(genreGrammar('sub-pressure').bpmCentre));
-    expect(builder.trackNumber).toBe(2);
-    // §58/§128: you land on 1/7 of the new world, never on nothing — a rung is
-    // given the moment you arrive, so the crossing announces itself. WHICH rung
-    // is drawn for that track, so sound arriving is the promise, not its name.
-    expect(unlockedLayers(pressureTrack).length).toBeGreaterThan(0);
+    // …and it is mid-set, not an opening: never fewer than three rungs.
+    expect(unlockedLayers(pressureTrack).length).toBeGreaterThanOrEqual(3);
   });
 
   it('§91 height is colour, not a tape: the track stays in tune and in time', () => {

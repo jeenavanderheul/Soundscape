@@ -208,7 +208,14 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   cyclesPerPhase: CYCLES_PER_PHASE,
   fixedOrderPerWorld: false,
   clockRunsAtRest: false,
-  keepsTrackAcrossWorlds: false,
+  // §213 (user decision): the stage draw is EVERYWHERE now, so this is on for
+  // the desktop too. It retires §53/§54 — "a world is a track" — which had
+  // crossing end the track you were building and start a clean one. What
+  // replaces it is §208's festival: you walk onto a set that is already
+  // running, at a drawn point in its build. A track still ENDS the way it
+  // always did, by being finished (§87 hands over after DROP II); it just no
+  // longer ends because you turned.
+  keepsTrackAcrossWorlds: true,
   holdsFullMixWhenComplete: false,
   rungIntervalMs: 0,
   arcGatesRungs: true,
@@ -486,6 +493,11 @@ export class TrackBuilder {
     const before = this.store.getState();
     this.store.setState((t) => ({
       ...t,
+      genre,
+      // §126: a stage you walk onto is playing at ITS tempo, and you hear that
+      // the moment you arrive. Slewing (§ bpmSlewPerSecond) is for a track
+      // being carried into another grammar; this is a different set entirely.
+      bpm: genre === null ? t.bpm : regionBpm(genreGrammar(genre)),
       drums: {
         kick: layerAt(standing.has('kick')),
         snare: layerAt(standing.has('snare')),
@@ -500,6 +512,11 @@ export class TrackBuilder {
     // handed to you whole, and the next rung is the first thing you earn on it.
     this.lastRungMs = this.activeMs;
     this.dueSinceMs = null;
+    // §54 still holds, only about the STAGE now: this set has to be allowed to
+    // exist before another world may take it, or circling a border would
+    // re-draw it every second.
+    this.trackStartedMs = nowMs;
+    if (genre !== before.genre) this.bus.emit('track:genre', { genre, atMs: nowMs });
     // Only what is NEW is announced. Everything else was already playing when
     // you walked up, and a stage does not introduce what it started with.
     for (const layer of standing) {
@@ -656,9 +673,9 @@ export class TrackBuilder {
     // touches the clock.
     // §207: when the build runs at rest the clock has to exist at rest too, or
     // the unlock path below (`tempoExists`) never runs and the promise is empty.
-    const heard = config.keepsTrackAcrossWorlds
-      ? (this.dominant(affinity) ?? track.genre)
-      : (track.genre ?? this.dominant(affinity));
+    // §213: a track still keeps the grammar it was born in (§47) — what changed
+    // is that ARRIVING somewhere recolours it in place instead of ending it.
+    const heard = track.genre ?? this.dominant(affinity);
     const placeBpm = moving || config.clockRunsAtRest ? regionBpm(genreGrammar(heard)) : 0;
     // An earned track keeps its clock through stillness.
     const targetBpm = placeBpm > 0 ? placeBpm : track.bpm;
@@ -714,12 +731,18 @@ export class TrackBuilder {
     const away = this.lastRegion !== null && track.genre !== null && this.lastRegion !== track.genre;
     this.awayMs = away ? this.awayMs + delta : 0;
     const lived = nowMs - this.trackStartedMs;
-    if (
-      !config.keepsTrackAcrossWorlds
-      && this.awayMs >= config.regionSwitchMs
-      && lived >= config.minTrackLifeMs
-    ) {
+    if (this.awayMs >= config.regionSwitchMs && lived >= config.minTrackLifeMs) {
       this.awayMs = 0;
+      // §213: the world takes over WITHOUT ending what you have. §53/§54 used
+      // to start a clean track here; now you walk onto that world's set, which
+      // is already running at a drawn point in its own build (§208/§212).
+      // Everything protecting the old rule still applies — a twitch across a
+      // border cannot do this, because it has to be away for `regionSwitchMs`
+      // and the stage you are on has to have lived `minTrackLifeMs`.
+      if (config.keepsTrackAcrossWorlds) {
+        this.arriveMidSet(this.lastRegion, nowMs);
+        return;
+      }
       // §54: a world is a track. Arrive somewhere else and you start there —
       // from the first layer, at that world's tempo, with nothing carried over.
       this.startNextTrack(nowMs, 'travelled');
@@ -782,24 +805,14 @@ export class TrackBuilder {
         // startNextTrack — the genre simply resolves — so it would have been
         // the one track that opened on silence. Arriving in a world always
         // gives you that world's first rung, at once.
-        // §209: a stage you WALK ONTO is already playing (§208) — but the first
-        // world of a session is not walked onto, it is where you woke up. That
-        // one starts at 1/7, or the build you came for is three rungs over
-        // before you have touched anything.
-        if (config.keepsTrackAcrossWorlds && track.genre !== null) {
-          this.arriveMidSet(genre, nowMs);
-        } else if (config.keepsTrackAcrossWorlds) {
-          const opening = this.ladder(genre)[0];
-          if (genre !== null && opening) {
-            this.lastRungMs = this.activeMs;
-            this.unlock(opening.layer, nowMs);
-          }
-        } else {
-          const opening = this.ladder(genre)[0];
-          if (genre !== null && opening && !layerUnlocked(this.store.getState(), opening.layer)) {
-            this.lastRungMs = this.activeMs;
-            this.unlock(opening.layer, nowMs);
-          }
+        // §209: this only ever fires for the FIRST world of a session, where
+        // the genre resolves out of nothing — every later change of world is a
+        // crossing and goes through the arrival gate above. The first world is
+        // not walked onto, it is where you woke up, so it opens at 1/7.
+        const opening = this.ladder(genre)[0];
+        if (genre !== null && opening && !layerUnlocked(this.store.getState(), opening.layer)) {
+          this.lastRungMs = this.activeMs;
+          this.unlock(opening.layer, nowMs);
         }
       }
       if (section !== track.form) this.bus.emit('track:section', { section, atMs: nowMs });

@@ -275,19 +275,29 @@ describe('§207 one build, seven layers, in the order the world is written', () 
     expect(run.layers[run.layers.length - 1]).toBe(7);
   });
 
-  it('leaves every one of those four rules standing on the desktop', () => {
+  it('leaves the desktop its own writing, and shares only the stage draw', () => {
+    // Three of the four overrules are the PHONE's alone — the desktop keeps its
+    // drawn order, its §42 gate and its breathing arc. The fourth, §213, the
+    // user moved to everywhere: a crossing is a stage you walk onto, not a
+    // track that ends.
     expect(TRACK_BUILDER_CONFIG.fixedOrderPerWorld).toBe(false);
     expect(TRACK_BUILDER_CONFIG.clockRunsAtRest).toBe(false);
-    expect(TRACK_BUILDER_CONFIG.keepsTrackAcrossWorlds).toBe(false);
     expect(TRACK_BUILDER_CONFIG.holdsFullMixWhenComplete).toBe(false);
-    // Crossing still ends the track a desktop player was building…
+    expect(TRACK_BUILDER_CONFIG.keepsTrackAcrossWorlds).toBe(true);
+    // Crossing no longer throws a desktop player's track away. The flight is
+    // cut off before the track could FINISH, because finishing still hands over
+    // to the next one (§87) — that is not what this is about.
     const crossed = fly({
       world: 'locked-groove',
       crossTo: 'sub-pressure',
       crossAtSeconds: 25,
+      seconds: 45,
       velocity: 66,
     });
-    expect(crossed.newTracks).toBeGreaterThan(0);
+    expect(crossed.newTracks).toBe(0);
+    expect(Math.min(...crossed.layers.slice(Math.floor(25 * 30) + 2))).toBeGreaterThanOrEqual(
+      STAGE_MIN_RUNGS,
+    );
     // …and the arc still breathes rather than parking at full.
     const long = fly({ world: 'locked-groove', velocity: 66, seconds: 300 });
     expect(new Set(long.forms).size).toBeGreaterThan(3);
