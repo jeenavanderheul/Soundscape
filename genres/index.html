@@ -34,9 +34,20 @@
         max-height: 42vh; overflow: auto;
       }
       #status { color: var(--dim); margin-left: 10px; }
+      /* §201: the way back. The lab opens in its own tab from the pause menu,
+         but it is also a URL someone can land on cold, and then there has to be
+         a door. Top right, out of the way of the controls. */
+      #back {
+        position: fixed; top: 22px; right: 26px; z-index: 5;
+        color: var(--text); text-decoration: none;
+        border: 1px solid rgba(223, 232, 234, 0.35); padding: 7px 12px;
+        letter-spacing: 0.14em;
+      }
+      #back:hover { background: rgba(223, 232, 234, 0.1); }
     </style>
   </head>
   <body>
+    <a id="back" href="/">&larr; back to the game</a>
     <h1>GENRE LAB</h1>
     <p class="sub">
       Every world, played as a FINISHED track — all seven layers earned and grown deep, so what

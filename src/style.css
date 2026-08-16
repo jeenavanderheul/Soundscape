@@ -142,18 +142,22 @@ body {
   display: none;
 }
 
-/* The wordmark is drawn, not set: a white SVG on the void, sized to the
-   viewport but never past its own resolution, and never stretched. */
+/**
+ * §201 (user): no logo on the way in. The wordmark is SET, not drawn — the
+ * same Departure Mono in caps as every label in this interface, with the
+ * tracking opened up because a title is the one place this typography is
+ * allowed to take its time. The mark still lives on the orb, where it is skin
+ * rather than a splash screen.
+ */
 #unlock-overlay h1 {
   margin: 0;
-  line-height: 0;
-}
-
-#unlock-logo {
-  display: block;
-  width: min(34vw, 17rem);
-  height: auto;
-  aspect-ratio: 989.2 / 817.54;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 400;
+  letter-spacing: 0.6em;
+  text-indent: 0.6em;
+  text-transform: uppercase;
+  color: var(--signal-100);
 }
 
 /* A rule under the title, thinner than the type it carries. */
@@ -574,8 +578,10 @@ body {
   }
 
   /* The wordmark is the first thing that can afford to give up room. */
-  #unlock-logo {
-    width: min(46vw, 9rem);
+  #unlock-overlay h1 {
+    font-size: 0.95rem;
+    letter-spacing: 0.4em;
+    text-indent: 0.4em;
   }
 
   #unlock-overlay h1::after {
@@ -638,8 +644,10 @@ body {
     bottom: calc(env(safe-area-inset-bottom) + 106px);
   }
 
-  #unlock-logo {
-    width: min(22vw, 6.5rem);
+  #unlock-overlay h1 {
+    font-size: 0.82rem;
+    letter-spacing: 0.32em;
+    text-indent: 0.32em;
   }
 
   #unlock-overlay,
