@@ -24,7 +24,15 @@ export interface HudPlace {
  */
 export class HUD {
   private readonly root: HTMLDivElement;
+  /**
+   * §203: hyper is the one flight state you cannot see in the world — the
+   * streaks lengthen, but so do they when you simply fly fast. On touch it is
+   * LATCHED rather than held, so nothing in your hand tells you either. This
+   * says it plainly, near the thumb that switched it on.
+   */
+  private readonly hyperMark: HTMLDivElement;
   private lastText = '';
+  private lastHyper: boolean | null = null;
 
   constructor(container: HTMLElement = document.body) {
     this.root = document.createElement('div');
@@ -34,6 +42,13 @@ export class HUD {
     this.root.className = 'hud-readout';
     this.root.hidden = true;
     container.appendChild(this.root);
+
+    this.hyperMark = document.createElement('div');
+    this.hyperMark.setAttribute('aria-hidden', 'true');
+    this.hyperMark.className = 'hud-hyper';
+    this.hyperMark.textContent = 'HYPER ×2';
+    this.hyperMark.hidden = true;
+    container.appendChild(this.hyperMark);
   }
 
   show(): void {
@@ -53,6 +68,11 @@ export class HUD {
           `\ntrack ${String(place.track).padStart(2, '0')} · ${place.trackGenre} · ${place.layers}/${place.maxLayers} layers` +
           `\n\nflying: ${place.heading}\nhere:   ${place.biome}`;
     const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
+    const hyper = place?.hyper === true;
+    if (hyper !== this.lastHyper) {
+      this.lastHyper = hyper;
+      this.hyperMark.hidden = !hyper;
+    }
     if (text === this.lastText) return;
     this.lastText = text;
     this.root.textContent = text;
@@ -60,6 +80,7 @@ export class HUD {
 
   dispose(): void {
     this.root.remove();
+    this.hyperMark.remove();
   }
 }
 

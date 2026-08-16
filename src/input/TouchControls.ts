@@ -1,5 +1,5 @@
 import type { InputManager } from './InputManager';
-import { lookDeltaPerFrame, stickDeflection, touchZone } from './touch';
+import { isDoubleTap, lookDeltaPerFrame, stickDeflection, touchZone } from './touch';
 
 /** A touch that landed on a piece of interface (the menu button), not on the world. */
 function isChromeTouch(touch: Touch): boolean {
@@ -24,6 +24,9 @@ export class TouchControls {
   private flightId: number | null = null;
   private windId: number | null = null;
   private origin = { x: 0, y: 0 };
+  /** §203: the previous tap in the flight zone, for the double-tap latch. */
+  private lastTap: { atMs: number; x: number; y: number } | null = null;
+  private hyper = false;
 
   constructor(
     private readonly element: HTMLElement,
@@ -81,6 +84,17 @@ export class TouchControls {
         this.origin = { x: touch.clientX, y: touch.clientY };
         this.input.setSyntheticThrottle(true);
         this.input.setSyntheticLook(0, 0);
+        // §203: two taps in the same spot latch hyper on, the next two let it
+        // go. Landing the thumb is what counts, not lifting it, so it engages
+        // on the way in and you keep flying through it.
+        const tap = { atMs: event.timeStamp, x: touch.clientX, y: touch.clientY };
+        if (isDoubleTap(this.lastTap, tap)) {
+          this.hyper = !this.hyper;
+          this.input.setSyntheticHyper(this.hyper);
+          this.lastTap = null;
+        } else {
+          this.lastTap = tap;
+        }
       } else if (this.windId === null) {
         this.windId = touch.identifier;
         this.input.syntheticWindPress();

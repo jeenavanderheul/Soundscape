@@ -53,6 +53,7 @@ export class InputManager {
   // rather than emitting deltas, so it persists across snapshots instead of
   // resetting with the frame state.
   private syntheticThrottle = false;
+  private syntheticHyper = false;
   private syntheticLook = { x: 0, y: 0 };
 
   constructor(
@@ -86,6 +87,7 @@ export class InputManager {
     this.windHold = false;
     this.syntheticThrottle = false;
     this.syntheticLook = { x: 0, y: 0 };
+    this.syntheticHyper = false;
     this.resetFrameState();
   }
 
@@ -97,6 +99,15 @@ export class InputManager {
   /** Synthetic look, in mouse pixels per frame, re-applied until cleared. */
   setSyntheticLook(x: number, y: number): void {
     this.syntheticLook = { x, y };
+  }
+
+  /**
+   * §203: hyper LATCHED by touch. Shift is a hold, and two thumbs cannot hold a
+   * third thing, so on a phone a double tap latches it and the next one lets it
+   * go. The controller never learns which it was — it reads one boolean.
+   */
+  setSyntheticHyper(on: boolean): void {
+    this.syntheticHyper = on;
   }
 
   /** Synthetic wind pressed — same meaning as LMB down. */
@@ -133,7 +144,7 @@ export class InputManager {
         // not fly without sounding. One hand flies, the other plays.
         accelerate: this.isActionHeld('moveForward') || this.syntheticThrottle,
         windHold: this.windHold,
-        hyper: this.isActionHeld('hyperBoost'),
+        hyper: this.isActionHeld('hyperBoost') || this.syntheticHyper,
       },
       windReleased: this.windReleased,
       resonancePulse: this.resonancePulse,

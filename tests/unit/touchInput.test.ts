@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TOUCH_CONFIG, lookDeltaPerFrame, stickDeflection, touchZone } from '../../src/input/touch';
+import { TOUCH_CONFIG, isDoubleTap, lookDeltaPerFrame, stickDeflection, touchZone } from '../../src/input/touch';
 import { InputManager } from '../../src/input/InputManager';
 import { guideLines, type GuideState } from '../../src/ui/Guide';
 
@@ -112,5 +112,35 @@ describe('guideLines on touch', () => {
   it('speaks thumb instead of W', () => {
     expect(guideLines(state, true)[2]).toBe('hold your left thumb · speed is what builds it');
     expect(guideLines(state, false)[2]).toBe('hold W · speed is what builds it');
+  });
+});
+
+/**
+ * §203: hyper on a phone. Shift is a hold and two thumbs cannot hold a third
+ * thing, so a double tap of the flight zone latches it instead.
+ */
+describe('a double tap latches hyper', () => {
+  const tap = (atMs: number, x = 100, y = 400) => ({ atMs, x, y });
+
+  it('is not a double tap when there is no tap before it', () => {
+    expect(isDoubleTap(null, tap(0))).toBe(false);
+  });
+
+  it('takes two taps close in time and place', () => {
+    expect(isDoubleTap(tap(0), tap(200))).toBe(true);
+  });
+
+  it('ignores a second tap that came too late', () => {
+    // Two separate landings while flying must not switch anything.
+    expect(isDoubleTap(tap(0), tap(TOUCH_CONFIG.doubleTapMs + 50))).toBe(false);
+  });
+
+  it('ignores a thumb that travelled — that is steering, not tapping', () => {
+    expect(isDoubleTap(tap(0, 100, 400), tap(150, 100 + TOUCH_CONFIG.doubleTapSlopPx + 20, 400)))
+      .toBe(false);
+  });
+
+  it('allows the small wobble a real thumb has', () => {
+    expect(isDoubleTap(tap(0, 100, 400), tap(150, 112, 409))).toBe(true);
   });
 });

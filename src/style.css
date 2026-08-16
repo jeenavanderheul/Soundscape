@@ -773,3 +773,51 @@ body {
     letter-spacing: 0.1em;
   }
 }
+
+/**
+ * §203 the hyper mark. Bottom right, above the bearing line, in the accent the
+ * rest of the interface reserves for something that is actually happening. It
+ * is only in the picture while hyper is on, so it may be the one loud thing.
+ */
+.hud-hyper {
+  position: fixed;
+  right: 18px;
+  /* Clear of the intro line, which sits at 12vh — on a tall desktop window that
+     lands at exactly this height, and the two were overlapping by 108x12px. */
+  bottom: calc(12vh + 34px);
+  z-index: 12;
+  padding: 4px 9px;
+  border: 1px solid var(--acid-red);
+  color: var(--acid-red);
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  pointer-events: none;
+}
+
+.hud-hyper[hidden] {
+  display: none;
+}
+
+/* The phone stack is strip 6 / bearing 26 / volume 60 / hints 84, so hyper
+   takes the next lane up and stays clear of all four. */
+@media (max-width: 560px), (max-height: 480px) {
+  .hud-hyper {
+    right: calc(env(safe-area-inset-right) + 8px);
+    bottom: calc(env(safe-area-inset-bottom) + 108px);
+    padding: 3px 7px;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-indent: 0.18em;
+  }
+}
+
+/* A landscape phone has 390px of height and the intro line already sits at
+   106; hyper goes left of it rather than on top of it. */
+@media (max-height: 480px) and (orientation: landscape) {
+  .hud-hyper {
+    bottom: calc(env(safe-area-inset-bottom) + 60px);
+    right: calc(env(safe-area-inset-right) + 96px);
+  }
+}

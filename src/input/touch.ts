@@ -22,6 +22,18 @@ export const TOUCH_CONFIG = {
    * LOOK_CONFIG.radiansPerPixel (0.0022) ≈ 1.3 rad/s yaw at 60 fps.
    */
   lookPxPerFrame: { x: 10, y: 6 },
+  /**
+   * §203 HYPER ON A PHONE. On a desk it is Shift — "a burst you hold, not a
+   * gear you shift into" (§129). Two thumbs cannot hold a third thing: the left
+   * one is flying and the right one is the wind. So on touch it LATCHES on a
+   * double tap of the flight zone and latches off on the next one, and the HUD
+   * says so, because a state you cannot feel in your hand has to be visible.
+   *
+   * 320 ms is the window a second tap has to land in, and 40 px is how far it
+   * may stray — beyond that it is a thumb repositioning to steer, not a tap.
+   */
+  doubleTapMs: 320,
+  doubleTapSlopPx: 40,
 } as const;
 
 export type TouchZone = 'flight' | 'wind';
@@ -63,4 +75,18 @@ export function lookDeltaPerFrame(deflection: { x: number; y: number }): {
     // `0 +` folds the −0 a negated zero deflection would produce.
     y: 0 + -deflection.y * TOUCH_CONFIG.lookPxPerFrame.y,
   };
+}
+
+/**
+ * Was this tap the second half of a double tap? Pure so the rule can be tested
+ * without a DOM: the caller keeps the previous tap and asks.
+ */
+export function isDoubleTap(
+  previous: { atMs: number; x: number; y: number } | null,
+  tap: { atMs: number; x: number; y: number },
+): boolean {
+  if (previous === null) return false;
+  const withinTime = tap.atMs - previous.atMs <= TOUCH_CONFIG.doubleTapMs;
+  const moved = Math.hypot(tap.x - previous.x, tap.y - previous.y);
+  return withinTime && moved <= TOUCH_CONFIG.doubleTapSlopPx;
 }
