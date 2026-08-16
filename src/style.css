@@ -740,3 +740,36 @@ body {
   display: inline-block;
   text-decoration: none;
 }
+
+/**
+ * §202: the colophon. AGPL-3.0 obliges this page to offer its source to
+ * everyone it is served to, so the link is part of the front door rather than
+ * buried — set as quietly as the rest of the furniture, at the size the
+ * interface uses when it is not talking to you.
+ */
+.colophon {
+  margin: calc(var(--grid) * 2) 0 0;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: var(--signal-40);
+}
+
+.colophon a {
+  color: var(--signal-60);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hair);
+}
+
+.colophon a:hover,
+.colophon a:focus-visible {
+  color: var(--signal-100);
+}
+
+@media (max-width: 560px), (max-height: 480px) {
+  .colophon {
+    margin-top: var(--grid);
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
+  }
+}

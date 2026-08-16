@@ -1,27 +1,8 @@
-import { rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig } from 'vite';
 
-/**
- * `npm run sounds:vendor` puts a gigabyte of drum machines in public/samples so
- * the game plays offline while it is being built. Vite copies everything under
- * public/ verbatim, which made `dist` 1.2 GB — a build nobody can deploy. The
- * engine already probes for the local kit and falls back to the network one, so
- * the deployed build simply does not carry it. public/mocap and public/land are
- * a different matter: the crowd and the terrain have no fallback, so they ship.
- */
-function leaveTheSampleLibraryBehind(): Plugin {
-  return {
-    name: 'frequency:no-vendored-samples',
-    apply: 'build',
-    async closeBundle() {
-      await rm(resolve(__dirname, 'dist/samples'), { recursive: true, force: true });
-    },
-  };
-}
 
 export default defineConfig({
-  plugins: [leaveTheSampleLibraryBehind()],
   test: {
     // Git worktrees live inside the project, so their tests would otherwise be
     // collected here — main's suite must never depend on a scratch branch.
