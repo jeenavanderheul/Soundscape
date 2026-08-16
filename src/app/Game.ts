@@ -33,7 +33,7 @@ import { createInitialMusicState, MusicState } from '../music/MusicState';
 import type { GenreAffinity } from '../music/MusicState';
 import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
 import { RhythmDetector } from '../music/RhythmDetector';
-import { TrackBuilder } from '../music/TrackBuilder';
+import { MOBILE_TRACK_PACING, TrackBuilder } from '../music/TrackBuilder';
 import { createInitialTrackState, trackGrowth, TrackEvents, TrackState } from '../music/TrackState';
 import type { TrackGenre, TrackLayerName } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
@@ -328,10 +328,17 @@ export class Game {
   private readonly genreEngine = new GenreAffinityEngine(this.events);
   /** §29: what is actually IN the track; built by intent, saved, visualized. */
   private readonly trackStore: Store<TrackState> = createStore(createInitialTrackState());
+  /**
+   * §205: a phone plays the same composition written narrower. One thumb does
+   * throttle AND steering, so it comes off constantly and the paced clock
+   * falls back to its floor — measured, locked groove needed 80 seconds of
+   * unbroken full throttle to reach its seventh layer, and 140 on the widest
+   * draw. Nobody holds that on a phone, so a third of every world went unheard.
+   */
   private readonly trackBuilder = new TrackBuilder(
     this.trackStore,
     this.events,
-    undefined,
+    isTouchDevice() ? MOBILE_TRACK_PACING : undefined,
     WORLD_SEED,
   );
   /** Dev diagnostics: how often each pulse source fired this session. */

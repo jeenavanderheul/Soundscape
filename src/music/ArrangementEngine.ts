@@ -28,6 +28,13 @@ export interface ArrangementConfig {
   peakMinTrackMs: number;
   /** How long a drop holds before it settles back into the groove. */
   dropMs: number;
+  /**
+   * §205: bars in one phase of the arc. Four is the written form; a phone gets
+   * three, because the seventh rung is not DUE until `deep` (§92) and at four
+   * bars a phase that is 36 seconds of paced clock away — longer than a phone
+   * session holds a straight line.
+   */
+  cyclesPerPhase: number;
 }
 
 export const ARRANGEMENT_CONFIG: ArrangementConfig = {
@@ -38,6 +45,7 @@ export const ARRANGEMENT_CONFIG: ArrangementConfig = {
   peakMinLayers: 4,
   peakMinTrackMs: 60_000,
   dropMs: 20_000,
+  cyclesPerPhase: 4,
 };
 
 /** Per-section layer gain multipliers (0 = muted for this section). */
@@ -181,7 +189,8 @@ const STYLE_OVERRIDES: Record<SectionStyle, Partial<Record<Section, Partial<Sect
  * biome, so a second lap is a second track being built, not a second arrival.
  */
 export const ARC_PHASES = 8;
-export const CYCLES_PER_PHASE = 4;
+/** The written form. §205 lets a device narrow it; this stays what a bar is. */
+export const CYCLES_PER_PHASE = ARRANGEMENT_CONFIG.cyclesPerPhase;
 
 const ARC: readonly Section[] = [
   'intro', 'groove', 'discovery', 'build', 'drop', 'deep', 'break', 'return',
@@ -310,7 +319,7 @@ export class ArrangementEngine {
     this.highEnergyMs = energy >= config.highEnergy ? this.highEnergyMs + deltaMs : 0;
 
     const arc = arcFor(this.style);
-    const phaseMs = this.barMs * CYCLES_PER_PHASE;
+    const phaseMs = this.barMs * this.config.cyclesPerPhase;
     const lapMs = phaseMs * ARC_PHASES;
     const before = this.cycleAt(this.arcMs);
     let next = this.arcMs + Math.max(0, deltaMs);
@@ -324,15 +333,15 @@ export class ArrangementEngine {
 
     const cycle = this.cycleAt(this.arcMs);
     if (cycle !== before) {
-      const nextPhase = arc[Math.floor((cycle + 1) / CYCLES_PER_PHASE) % ARC_PHASES];
-      const thisPhase = arc[Math.floor(cycle / CYCLES_PER_PHASE) % ARC_PHASES];
+      const nextPhase = arc[Math.floor((cycle + 1) / this.config.cyclesPerPhase) % ARC_PHASES];
+      const thisPhase = arc[Math.floor(cycle / this.config.cyclesPerPhase) % ARC_PHASES];
       // The lift belongs to the cycle BEFORE the floor lands.
       if (thisPhase !== nextPhase && (nextPhase === 'drop' || nextPhase === 'return')) {
         this.riserDue = true;
       }
     }
 
-    const phase = arc[Math.floor(cycle / CYCLES_PER_PHASE) % ARC_PHASES] ?? 'groove';
+    const phase = arc[Math.floor(cycle / this.config.cyclesPerPhase) % ARC_PHASES] ?? 'groove';
     if (phase !== this.section) this.enter(phase);
     return this.section;
   }
@@ -352,7 +361,7 @@ export class ArrangementEngine {
    * path, so the section event still fires.
    */
   beginMidSet(): void {
-    this.arcMs = this.barMs * CYCLES_PER_PHASE;
+    this.arcMs = this.barMs * this.config.cyclesPerPhase;
     // Out of 'none' by hand: the first tick treats 'none' as "start the intro
     // and zero the arc", which would undo this. The phase matching the arc
     // position is entered directly, so the tick's own transition logic agrees

@@ -163,6 +163,13 @@ export function formFor(
   journeySeed: string,
   genre: TrackGenre,
   track: number,
+  /**
+   * §205: the widest reading this device is allowed to draw. A phone caps it,
+   * so the slow-burn end of the range — the one a thumb never flies to the end
+   * of — simply never comes up. The ORDER is drawn first and is untouched, so
+   * the same journey code writes the same composition everywhere.
+   */
+  maxPaceScale = Infinity,
 ): TrackForm {
   const base = seedOf(`${journeySeed}|${genre ?? 'void'}|${track}`);
   const next = stream(base);
@@ -188,7 +195,7 @@ export function formFor(
   // is wide enough to be heard as a different build and narrow enough that a
   // world keeps its character (user decision: per world AND per track).
   const world = genre === null ? 1 : WORLD_PACE[genre];
-  const paceScale = Number((world * (0.65 + next() * 0.7)).toFixed(3));
+  const paceScale = Number(Math.min(world * (0.65 + next() * 0.7), maxPaceScale).toFixed(3));
   const shape = SHAPES.find((s) => paceScale <= s.upTo)!.name;
   return { order, paceScale, shape };
 }

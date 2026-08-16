@@ -3,7 +3,7 @@ import type { GenreAffinity } from './MusicState';
 import type { EventBus } from '../core/EventBus';
 import type { Store } from '../core/stores';
 import type { ResonanceEvent } from '../resonance/ResonanceEvent';
-import { ArrangementEngine, CYCLES_PER_PHASE, rungsDueAt } from './ArrangementEngine';
+import { ArrangementEngine, ARRANGEMENT_CONFIG, CYCLES_PER_PHASE, rungsDueAt } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
 import { curveFor, layerUnlocked, nextStep, type LadderStep } from './GenreLadder';
 import { formFor, isPlayableOrder, TRACK_LAYERS, type TrackForm } from './TrackForm';
@@ -63,6 +63,26 @@ export interface TrackBuilderConfig {
   patienceFactor: number;
   /** §82: paced time a rung must settle before the next layer may arrive. */
   rungGapMs: number;
+  /**
+   * §205: how WIDE this build is written, as a multiple. 1 is the desktop
+   * writing; a phone gets less, because one thumb cannot hold a straight line
+   * at full throttle for the ninety seconds the desktop curve assumes.
+   * Multiplies the ladder and the settling gap together, so patience and
+   * spacing stay in the same proportion.
+   */
+  curveScale: number;
+  /**
+   * §205: the widest reading a track may be drawn with. The per-track draw is
+   * ±35% on top of the world's own patience, and the top of that range is
+   * exactly the track a phone never reaches the end of.
+   */
+  maxPaceScale: number;
+  /**
+   * §205: bars per phase of the arc (§84). This is the real ceiling on a whole
+   * track — the seventh rung is not DUE until `deep`, five phases in — so a
+   * shorter ladder alone changes nothing.
+   */
+  cyclesPerPhase: number;
   /**
    * §107/§108: how far into a rung's own PHASE the world gives it away, as a
    * fraction. This is the window in which your flying is what earns it — and
@@ -135,6 +155,9 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // (§46): ~5.5s of real time at full speed, ~12s at a crawl. Seven layers
   // then stand complete around cycle 14, just before DROP I pays them off.
   rungGapMs: 3500,
+  curveScale: 1,
+  maxPaceScale: Infinity,
+  cyclesPerPhase: CYCLES_PER_PHASE,
   // §108 (user decision): the opening may come up twice as fast, so the gift
   // lands near the MIDDLE of its phase rather than at the end. You still have
   // most of the first half to go and earn it yourself, and a passive flight
@@ -171,6 +194,32 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   // Long enough that a twitch of the mouse cannot wipe a track, short enough
   // that a deliberate turn is heard well inside the two seconds §126 promises.
   minTrackLifeMs: 1200,
+};
+
+/**
+ * §205: THE SAME TRACK, WRITTEN NARROWER, FOR ONE THUMB.
+ *
+ * A phone plays the identical composition — same seven layers, same drawn
+ * order, same grammar and tempo. What changes is how much flying it costs to
+ * hear all of it. On a desktop that is W held down while the mouse steers; on
+ * a phone one thumb does both, so it comes off constantly and the paced clock
+ * (§46) falls back to its floor every time.
+ *
+ * Measured before: locked groove reached its seventh layer at 85 seconds of
+ * unbroken full throttle, and 155 on the widest draw. A phone session is not
+ * that, so a third of every world's voices were content nobody on a phone ever
+ * heard — the same failure §185 fixed for the void, arriving through a
+ * different door.
+ */
+export const MOBILE_TRACK_PACING: TrackBuilderConfig = {
+  ...TRACK_BUILDER_CONFIG,
+  curveScale: 0.6,
+  // No slow burns. The draw still varies the reading track to track — it just
+  // stops at the width a thumb can fly to the end of.
+  maxPaceScale: 0.95,
+  // Three bars a phase instead of four. The arc keeps all eight phases in the
+  // same order, so nothing is skipped; each one is simply a bar shorter.
+  cyclesPerPhase: 3,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -246,7 +295,7 @@ export class TrackBuilder {
   readonly conversation = new CallResponse();
   readonly harmony = new HarmonyEngine();
   readonly melody = new MelodyTracker();
-  readonly arrangement = new ArrangementEngine();
+  readonly arrangement: ArrangementEngine;
   /** §118: the reading of this world the current track is (genre, number). */
   get dna(): TrackDNA {
     return dnaFor(this.store.getState().genre, this.trackNumberValue);
@@ -258,7 +307,14 @@ export class TrackBuilder {
     private readonly config: TrackBuilderConfig = TRACK_BUILDER_CONFIG,
     /** Journey seed: the same flight always writes the same tracks (§25.16). */
     private readonly seed = 'frequency',
-  ) {}
+  ) {
+    // §205: the arc has to be written as narrow as the ladder, or the phone's
+    // shorter ladder just waits for a phase that has not opened yet.
+    this.arrangement = new ArrangementEngine({
+      ...ARRANGEMENT_CONFIG,
+      cyclesPerPhase: config.cyclesPerPhase,
+    });
+  }
 
   /** 1-based; the journey never ends, it just moves on to the next track. */
   get trackNumber(): number {
@@ -663,12 +719,13 @@ export class TrackBuilder {
     const formPace = this.formOf(genre).paceScale;
     const offeredFreelyAt =
       (this.dueSinceMs ?? this.activeMs)
-      + barMs * CYCLES_PER_PHASE * Math.min(0.9, config.patienceOfPhase * formPace);
+      + barMs * config.cyclesPerPhase * Math.min(0.9, config.patienceOfPhase * formPace);
     const patience = step === null ? 0 : Math.max(step.atMs * patienceFactor, offeredFreelyAt);
     // §82: whatever earns it, a layer only lands once the previous one has had
     // room to be heard. Without this, patience and behaviour fired on
     // consecutive ticks and the track arrived in a lump.
-    const settled = this.activeMs - this.lastRungMs >= config.rungGapMs * formPace;
+    const settled =
+      this.activeMs - this.lastRungMs >= config.rungGapMs * formPace * config.curveScale;
     if (rungDue && step !== null && settled && (this.intent(step.layer) || this.activeMs >= patience)) {
       this.lastRungMs = this.activeMs;
       this.unlock(step.layer, nowMs);
@@ -713,7 +770,7 @@ export class TrackBuilder {
     const curve = curveFor(genre);
     return form.order.map((layer, index) => ({
       layer,
-      atMs: Math.round((curve[index] ?? 40_000) * form.paceScale),
+      atMs: Math.round((curve[index] ?? 40_000) * form.paceScale * this.config.curveScale),
     }));
   }
 
@@ -722,7 +779,7 @@ export class TrackBuilder {
     const key = `${genre ?? 'void'}|${this.trackNumberValue}`;
     if (key !== this.formKey || this.form === null) {
       this.formKey = key;
-      this.form = formFor(this.seed, genre, this.trackNumberValue);
+      this.form = formFor(this.seed, genre, this.trackNumberValue, this.config.maxPaceScale);
     }
     return this.form;
   }
@@ -842,7 +899,10 @@ export class TrackBuilder {
    */
   collectBeacon(layer: TrackLayerName, nowMs: number): boolean {
     if (this.offeredLayer() !== layer) return false;
-    const gap = this.config.rungGapMs * this.formOf(this.store.getState().genre).paceScale;
+    const gap =
+      this.config.rungGapMs
+      * this.formOf(this.store.getState().genre).paceScale
+      * this.config.curveScale;
     if (this.activeMs - this.lastRungMs < gap) return false;
     this.lastRungMs = this.activeMs;
     this.unlock(layer, nowMs);
