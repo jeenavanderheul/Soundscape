@@ -9,9 +9,7 @@ export const FREQUENCY_CONFIG = {
   minHz: 30,
   maxHz: 8000,
   /** One 100-delta wheel notch ≈ a semitone (logarithmic pitch space). */
-  octavesPerWheelDelta: 1 / 1200,
   /** Rate limit: caps the pitch jump a single frame can cause. */
-  maxWheelDeltaPerUpdate: 600,
 } as const;
 
 export const AMPLITUDE_CONFIG = {
@@ -68,18 +66,6 @@ export const LOOK_CONFIG = {
 
 const clamp = (value: number, min: number, max: number): number =>
   Math.min(Math.max(value, min), max);
-
-/** Logarithmic wheel → frequency mapping, clamped to the playable range. */
-export function mapWheelToHz(
-  hz: number,
-  wheelDelta: number,
-  config = FREQUENCY_CONFIG,
-): number {
-  const limited = clamp(wheelDelta, -config.maxWheelDeltaPerUpdate, config.maxWheelDeltaPerUpdate);
-  // Scroll up (negative deltaY) raises pitch.
-  const next = hz * 2 ** (-limited * config.octavesPerWheelDelta);
-  return clamp(next, config.minHz, config.maxHz);
-}
 
 /**
  * Time-based exponential attack/release smoothing, bounded to [0, 1].
@@ -359,7 +345,6 @@ export class FrequencyController {
       }
       return {
         ...state,
-        hz: mapWheelToHz(state.hz, input.wheelDelta),
         amplitude: smoothAmplitude(state.amplitude, input.buttons.windHold ? 1 : 0, deltaMs),
         velocity: speed,
         energy: clamp(speed / FLIGHT_CONFIG.maxSpeed, 0, 1),

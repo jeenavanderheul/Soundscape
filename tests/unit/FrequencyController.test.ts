@@ -5,13 +5,11 @@ import type { InputSnapshot } from '../../src/input/InputManager';
 import {
   AMPLITUDE_CONFIG,
   FLIGHT_CONFIG,
-  FREQUENCY_CONFIG,
   CRUISE_SPEED,
   FULL_SPEED,
   THROTTLE_NOTCHES,
   FrequencyController,
   directionFromLook,
-  mapWheelToHz,
   smoothAmplitude,
   stepVelocity,
 } from '../../src/player/FrequencyController';
@@ -26,40 +24,12 @@ function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
     trackExported: false,
     guideToggled: false,
     codeToggled: false,
-    wheelDelta: 0,
     mouseDelta: { x: 0, y: 0 },
     ...partial,
     ...(partial.axes ? { axes: partial.axes } : {}),
     ...(partial.buttons ? { buttons: partial.buttons } : {}),
   };
 }
-
-describe('mapWheelToHz', () => {
-  it('is monotonic: scrolling up (negative deltaY) raises frequency', () => {
-    const deltas = [-300, -100, 0, 100, 300];
-    const results = deltas.map((d) => mapWheelToHz(440, d));
-    for (let i = 1; i < results.length; i++) {
-      expect(results[i]).toBeLessThan(results[i - 1]!);
-    }
-    expect(mapWheelToHz(440, -100)).toBeGreaterThan(440);
-    expect(mapWheelToHz(440, 100)).toBeLessThan(440);
-  });
-
-  it('clamps to the configured frequency range', () => {
-    let hz = 440;
-    for (let i = 0; i < 200; i++) hz = mapWheelToHz(hz, -600);
-    expect(hz).toBeLessThanOrEqual(FREQUENCY_CONFIG.maxHz);
-    for (let i = 0; i < 400; i++) hz = mapWheelToHz(hz, 600);
-    expect(hz).toBeGreaterThanOrEqual(FREQUENCY_CONFIG.minHz);
-  });
-
-  it('rate-limits a single enormous wheel delta', () => {
-    const maxJump =
-      2 ** (FREQUENCY_CONFIG.maxWheelDeltaPerUpdate * FREQUENCY_CONFIG.octavesPerWheelDelta);
-    expect(mapWheelToHz(440, -1e6)).toBeLessThanOrEqual(440 * maxJump + 1e-9);
-    expect(mapWheelToHz(440, 1e6)).toBeGreaterThanOrEqual((440 / maxJump) - 1e-9);
-  });
-});
 
 describe('smoothAmplitude', () => {
   it('converges toward the target and stays bounded in [0, 1]', () => {
@@ -138,16 +108,6 @@ describe('FrequencyController', () => {
     expect(store.getState().position.z).toBeLessThan(0);
   });
 
-  it('maps wheel input to frequency inside the store', () => {
-    const store = createStore(createInitialFrequencyState());
-    const controller = new FrequencyController(store);
-    const startHz = store.getState().hz;
-    controller.update(snapshot({ wheelDelta: -100 }), 16);
-    const raised = store.getState().hz;
-    expect(raised).toBeGreaterThan(startHz);
-    controller.update(snapshot({ wheelDelta: 200 }), 16);
-    expect(store.getState().hz).toBeLessThan(raised);
-  });
 
   it('builds amplitude while wind is held and releases it after', () => {
     const store = createStore(createInitialFrequencyState());

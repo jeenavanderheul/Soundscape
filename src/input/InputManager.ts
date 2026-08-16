@@ -19,8 +19,6 @@ export interface InputSnapshot {
   trackExported: boolean;
   /** §67: G shows or hides the guide. */
   guideToggled: boolean;
-  /** Accumulated wheel deltaY since the last snapshot. */
-  wheelDelta: number;
   /** Accumulated pointer movement since the last snapshot. */
   mouseDelta: { x: number; y: number };
 }
@@ -45,7 +43,6 @@ export class InputManager {
   private codeToggled = false;
   private trackExported = false;
   private guideToggled = false;
-  private wheelDelta = 0;
   private mouseDeltaX = 0;
   private mouseDeltaY = 0;
   // Synthetic sensors (touch thumbs, §195 demo autopilot): the same snapshot,
@@ -71,7 +68,6 @@ export class InputManager {
     this.pointerTarget.addEventListener('mousedown', this.onMouseDown);
     this.pointerTarget.addEventListener('mouseup', this.onMouseUp);
     this.pointerTarget.addEventListener('mousemove', this.onMouseMove);
-    this.pointerTarget.addEventListener('wheel', this.onWheel);
   }
 
   detach(): void {
@@ -82,7 +78,6 @@ export class InputManager {
     this.pointerTarget.removeEventListener('mousedown', this.onMouseDown);
     this.pointerTarget.removeEventListener('mouseup', this.onMouseUp);
     this.pointerTarget.removeEventListener('mousemove', this.onMouseMove);
-    this.pointerTarget.removeEventListener('wheel', this.onWheel);
     this.heldKeys.clear();
     this.windHold = false;
     this.syntheticThrottle = false;
@@ -152,7 +147,6 @@ export class InputManager {
       codeToggled: this.codeToggled,
       trackExported: this.trackExported,
       guideToggled: this.guideToggled,
-      wheelDelta: this.wheelDelta,
       // A held thumb or a flying autopilot is a steady turn: its pixels
       // re-enter every frame on top of whatever the mouse produced.
       mouseDelta: {
@@ -171,7 +165,6 @@ export class InputManager {
     this.codeToggled = false;
     this.trackExported = false;
     this.guideToggled = false;
-    this.wheelDelta = 0;
     this.mouseDeltaX = 0;
     this.mouseDeltaY = 0;
   }
@@ -229,7 +222,4 @@ export class InputManager {
     this.mouseDeltaY += movementY;
   };
 
-  private readonly onWheel = (event: Event): void => {
-    this.wheelDelta += (event as WheelEvent).deltaY;
-  };
 }

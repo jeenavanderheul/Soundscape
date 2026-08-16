@@ -21,7 +21,6 @@ function snapshot(partial: Partial<InputSnapshot> = {}): InputSnapshot {
     trackExported: false,
     guideToggled: false,
     codeToggled: false,
-    wheelDelta: 0,
     mouseDelta: { x: 0, y: 0 },
     ...partial,
   };

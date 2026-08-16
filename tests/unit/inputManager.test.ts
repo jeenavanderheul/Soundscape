@@ -59,20 +59,6 @@ describe('InputManager', () => {
     manager.detach();
   });
 
-  it('accumulates wheel and mouse deltas and resets them per snapshot', () => {
-    const { pointer, manager } = setup();
-    pointer.dispatchEvent(Object.assign(new Event('wheel'), { deltaY: 100 }));
-    pointer.dispatchEvent(Object.assign(new Event('wheel'), { deltaY: -40 }));
-    pointer.dispatchEvent(Object.assign(new Event('mousemove'), { movementX: 5, movementY: -3 }));
-    pointer.dispatchEvent(Object.assign(new Event('mousemove'), { movementX: 2, movementY: 1 }));
-    const snap = manager.snapshot();
-    expect(snap.wheelDelta).toBe(60);
-    expect(snap.mouseDelta).toEqual({ x: 7, y: -2 });
-    const next = manager.snapshot();
-    expect(next.wheelDelta).toBe(0);
-    expect(next.mouseDelta).toEqual({ x: 0, y: 0 });
-    manager.detach();
-  });
 
   it('emits a resonance pulse event on Space, ignoring key repeat', () => {
     const { keyboard, bus, manager } = setup();
@@ -131,9 +117,7 @@ describe('InputManager', () => {
     expect(snap.axes.moveZ).toBe(0);
     expect(snap.buttons.windHold).toBe(false);
     keyboard.dispatchEvent(key('keydown', 'KeyD'));
-    pointer.dispatchEvent(Object.assign(new Event('wheel'), { deltaY: 100 }));
     const after = manager.snapshot();
     expect(after.axes.moveX).toBe(0);
-    expect(after.wheelDelta).toBe(0);
   });
 });

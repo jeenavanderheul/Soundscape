@@ -24,7 +24,6 @@ interface HintDef {
 
 interface HintMemory {
   everWind: boolean;
-  everTuned: boolean;
 }
 
 const HINTS: HintDef[] = [
@@ -32,11 +31,6 @@ const HINTS: HintDef[] = [
     id: 'wind',
     text: 'hold LEFT MOUSE — breathe wind',
     when: (ctx, mem) => ctx.elapsedMs > 6_000 && !mem.everWind,
-  },
-  {
-    id: 'tune',
-    text: 'scroll to tune your frequency',
-    when: (ctx, mem) => ctx.elapsedMs > 22_000 && !mem.everTuned,
   },
   {
     id: 'gear',
@@ -88,7 +82,7 @@ const VISIBLE_MS = 6_000;
 export class Hints {
   private readonly root: HTMLDivElement;
   private readonly shown = new Set<string>();
-  private readonly memory: HintMemory = { everWind: false, everTuned: false };
+  private readonly memory: HintMemory = { everWind: false };
   private readonly reducedMotion: boolean;
   private hideAt = 0;
   private readonly defs: HintDef[];
@@ -111,7 +105,6 @@ export class Hints {
   /** Logic-loop rate. Tracks what the player already discovered by doing. */
   update(ctx: HintContext): void {
     if (ctx.state.amplitude > 0.3) this.memory.everWind = true;
-    if (Math.abs(ctx.state.hz - 220) > 5) this.memory.everTuned = true;
     if (this.hideAt > 0 && ctx.elapsedMs >= this.hideAt) {
       this.root.style.opacity = '0';
       this.hideAt = 0;

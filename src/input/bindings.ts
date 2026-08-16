@@ -20,7 +20,6 @@ export type KeyAction =
  * the speed are two hands doing two things.
  */
 export type MouseButtonAction = 'windHold';
-export type WheelAction = 'frequencyFocus';
 export type MouseMoveAction = 'look';
 
 export interface DesktopBindings {
@@ -28,7 +27,6 @@ export interface DesktopBindings {
   keys: Readonly<Record<string, KeyAction>>;
   /** MouseEvent.button → action. Holding wind builds amplitude; release is the pulse. */
   mouseButtons: Readonly<Record<number, MouseButtonAction>>;
-  wheel: WheelAction;
   mouseMove: MouseMoveAction;
 }
 
@@ -49,6 +47,5 @@ export const DEFAULT_BINDINGS: DesktopBindings = {
   mouseButtons: {
     0: 'windHold',
   },
-  wheel: 'frequencyFocus',
   mouseMove: 'look',
 };

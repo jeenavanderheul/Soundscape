@@ -12,7 +12,6 @@ describe('DEFAULT_BINDINGS', () => {
     expect(DEFAULT_BINDINGS.keys['Escape']).toBe('pause');
     // §129 (user decision): left is ONLY the wind now — W flies, Shift is hyper.
     expect(DEFAULT_BINDINGS.mouseButtons[0]).toBe('windHold');
-    expect(DEFAULT_BINDINGS.wheel).toBe('frequencyFocus');
     expect(DEFAULT_BINDINGS.mouseMove).toBe('look');
   });
 
