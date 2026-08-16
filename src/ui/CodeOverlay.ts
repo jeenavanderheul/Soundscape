@@ -179,6 +179,51 @@ export class CodeOverlay {
     if (this.visible) this.render(annotated);
   }
 
+  /**
+   * §204: on a phone the full pattern cannot be shown and pretending otherwise
+   * is worse than not showing it. Measured on a 844x390 landscape screen: the
+   * pattern is 1364 px of wrapped text with 164 px to put it in, so you were
+   * reading 12% of it and the rest was simply cut. Even at 5.5 px type — which
+   * nobody reads — it still needs twice the height there is.
+   *
+   * So a small screen gets the SCORE rather than the source: one line per
+   * voice, its sound and how loud, plus the banners that say which role it is.
+   * That is what the readout was for — knowing what is sounding — and it fits.
+   */
+  private condense(code: string): string {
+    const out: string[] = [];
+    for (const raw of code.split('\n')) {
+      const line = raw.trim();
+      if (line === '' || line === 'stack(' || line === ')') continue;
+      if (line.startsWith('//')) {
+        const said = line.replace(/^\/\/\s*/, '').trim();
+        // The score header carries a ladder diagram, a 32-cycle ruler and rules
+        // drawn out of box characters. On a wide screen that IS the score; at
+        // 154 px it is eight wrapped lines of decoration for every line of
+        // fact, and the facts are what a phone has room for.
+        if (said === '' || /^[═─·.∞○●\s]+$/.test(said)) continue;
+        if (/^(LADDER|32 CYCLES)/.test(said)) continue;
+        out.push(said);
+        continue;
+      }
+      // Voices arrive as `$: s("bd*4").bank(…)`, so the label has to come off
+      // before anything can be read — matching without it produced `$: s("bro`.
+      const body = line.replace(/^\$:\s*/, '');
+      if (body.startsWith('setcpm')) continue; // the tempo is already in the header
+      const sound =
+        body.match(/^s\("([^"]+)"\)/)?.[1] ??
+        body.match(/^note\("([^"]*)"/)?.[1] ??
+        (body.startsWith('note(') ? 'note' : body.slice(0, 14));
+      const gain = body.match(/\.gain\(([\d.]+)\)/)?.[1];
+      const bank = body.match(/\.bank\("([^"]+)"\)/)?.[1];
+      // The pattern string IS the useful half of a voice: "bd*4" says the
+      // rhythm, so it is kept whole where it fits and cut on a whole token.
+      const shown = sound.length > 20 ? `${sound.slice(0, 19).trimEnd()}…` : sound;
+      out.push(`  ${shown}${bank ? ` ${bank}` : ''}${gain ? ` ${gain}` : ''}`);
+    }
+    return out.join('\n');
+  }
+
   private render(code: string): void {
     this.root.replaceChildren();
     const header = document.createElement('span');
@@ -188,7 +233,10 @@ export class CodeOverlay {
         ? `// the void is silent\n${this.lastStatus ? `// ${this.lastStatus}\n` : ''}`
         : `// your world is playing\n${this.lastStatus ? `// ${this.lastStatus}\n` : ''}`;
     this.root.appendChild(header);
-    for (const token of tokenize(code)) {
+    // The breakpoint is the stylesheet's (§195); asking the layout keeps the
+    // two from drifting apart.
+    const small = window.matchMedia('(max-width: 560px), (max-height: 480px)').matches;
+    for (const token of tokenize(small ? this.condense(code) : code)) {
       if (token.kind === 'plain') {
         this.root.appendChild(document.createTextNode(token.text));
         continue;

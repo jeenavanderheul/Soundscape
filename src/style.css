@@ -432,9 +432,11 @@ body {
     right: calc(env(safe-area-inset-right) + 8px);
     /* §197: the menu button owns the corner now, so the readout starts under it. */
     top: calc(env(safe-area-inset-top) + 60px);
-    max-width: min(30ch, 26vw);
+    /* §204: wider is what stops the wrapping — at 26vw a 60-character score
+       line became eight lines of text and the readout showed 12% of itself. */
+    max-width: min(46ch, 40vw);
     max-height: 42dvh;
-    font-size: 8.5px;
+    font-size: 7px;
     line-height: 1.5;
     padding-left: 6px;
   }
@@ -819,5 +821,21 @@ body {
   .hud-hyper {
     bottom: calc(env(safe-area-inset-bottom) + 60px);
     right: calc(env(safe-area-inset-right) + 96px);
+  }
+}
+
+/**
+ * §204: a landscape phone has one free band on the right — under the menu
+ * button, above the bottom stack — and 42dvh of 390 px was less than half of
+ * it. The readout takes the whole band instead, and goes wider still, because
+ * width is what stops the wrapping.
+ */
+@media (max-height: 480px) and (orientation: landscape) {
+  .code-overlay {
+    top: calc(env(safe-area-inset-top) + 52px);
+    max-width: min(58ch, 44vw);
+    max-height: calc(100dvh - 175px);
+    font-size: 6.5px;
+    line-height: 1.35;
   }
 }
