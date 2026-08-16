@@ -32,6 +32,10 @@ owe them the source of the whole thing; that is what the `source` link on the
 title screen is for.
 
 The mocap crowd comes from the CMU Motion Capture Database (free for any use,
-provenance in `assets/mocap/LICENSE.md`). The body mesh is CC0. The sample kit
-is vendored from [dough-samples](https://github.com/felixroos/dough-samples) at
-install time and is not in this repository.
+provenance in `assets/mocap/LICENSE.md`). The body mesh is CC0.
+
+The sample kit in `public/samples` is vendored from
+[dough-samples](https://github.com/felixroos/dough-samples) — the same index
+strudel.cc loads. The instruments are CC0 (VCSL); the drum machines come from a
+collection that **states no licence at all**, which is written down honestly in
+`public/samples/PROVENANCE.md` rather than left for someone to discover.
