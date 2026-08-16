@@ -79,6 +79,8 @@ export interface StrudelEnginePort {
   start(): Promise<void>;
   stop(): void;
   setLayerGraph(graph: MusicalLayerGraph, boundary?: 'beat' | 'bar'): void;
+  /** §211: re-evaluate the current pattern, unchanged, to revive dead voices. */
+  refresh(): void;
   setParameter(name: MusicParameter, value: number): void;
   schedule(event: MusicalAction, boundary: 'beat' | 'bar'): void;
   /** Subscribe to beat boundaries while a pattern is playing; returns detach. */
@@ -1233,6 +1235,8 @@ export class StrudelEngine implements StrudelEnginePort {
   private playing = false;
 
   private pendingGraph: MusicalLayerGraph | null = null;
+  /** §211: force one re-evaluation even when the graph has not changed. */
+  private refreshPending = false;
   private pendingActions: MusicalAction[] = [];
   private revertPending = false;
   private boundaryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1250,6 +1254,24 @@ export class StrudelEngine implements StrudelEnginePort {
     let getSuperdoughAudioController: (typeof import('@strudel/web'))['getSuperdoughAudioController'];
     try {
       ({ initStrudel, samples, getSuperdoughAudioController } = await strudelWeb());
+      // §211: ONE AUDIO CONTEXT. Measured: there were two.
+      //
+      // superdough keeps a module-level context and creates one lazily the
+      // first time anything asks — and something asked before `initStrudel`
+      // could hand ours over. So its AudioWorklets were loaded onto one
+      // context while the voices were built on the other, and every voice that
+      // needs a worklet threw `AudioWorkletNode cannot be created`. Which
+      // voices? bass, the supersaw stab, the bytebeat texture — while the
+      // drums, being samples, played perfectly. A player heard a kick and a
+      // hat, the screen said 4/7, and the only thing that ever helped was
+      // clicking, because a click pushed superdough's own first-gesture
+      // initialisation through on the context it was actually using.
+      //
+      // Claiming the context BEFORE anything can ask means it never makes a
+      // second one, so the worklets and the voices are on the same context by
+      // construction rather than by luck.
+      const { setAudioContext } = await import('superdough');
+      setAudioContext(audioContext);
       this.repl = await initStrudel({ audioContext });
     } catch (cause) {
       throw new Error('StrudelEngine: failed to initialize @strudel/web', { cause });
@@ -1422,6 +1444,29 @@ export class StrudelEngine implements StrudelEnginePort {
     this.scheduleApply(boundary);
   }
 
+  /**
+   * §211: play the current pattern again from scratch, even though nothing
+   * about it has changed.
+   *
+   * superdough loads its AudioWorklets asynchronously, and a voice triggered
+   * before they exist throws `AudioWorkletNode cannot be created` and is gone.
+   * Everything above this layer then conspires to keep it gone: §11 only
+   * re-sends the graph when it CHANGES, and `applyPending` below only
+   * re-evaluates when the diff is non-empty. So the synth voices lost at
+   * startup — bass, the supersaw stab, the bytebeat texture — stayed lost for
+   * the whole session, while the drums, being samples, played on.
+   *
+   * The one thing that ever brought them back was holding the wind, because a
+   * wind pulse arrives as an ACTION, and an action sets `dirty` whether or not
+   * the graph moved. That is the trigger a player found by accident. This is
+   * the same thing on purpose, and without a sound of its own.
+   */
+  refresh(): void {
+    if (this.repl === null) return;
+    this.refreshPending = true;
+    this.scheduleApply('bar');
+  }
+
   setParameter(name: MusicParameter, value: number): void {
     finite(value, name);
     const repl = this.requireRepl();
@@ -1541,7 +1586,8 @@ export class StrudelEngine implements StrudelEnginePort {
     const revert = this.revertPending;
     this.revertPending = false;
 
-    let dirty = revert;
+    let dirty = revert || this.refreshPending;
+    this.refreshPending = false;
     if (next !== null && diffLayerGraph(this.appliedGraph, next).length > 0) {
       if (next.bpm > 0 && next.bpm !== this.appliedGraph.bpm) {
         repl.setCps(bpmToCps(next.bpm));

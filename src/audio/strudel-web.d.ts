@@ -74,6 +74,11 @@ declare module '@strudel/soundfonts' {
  * node_modules/superdough/superdough.mjs (`export async function initAudio`).
  */
 declare module 'superdough' {
+  /**
+   * §211: claim the context before superdough lazily creates its own. Without
+   * this there were two, and the AudioWorklets landed on the wrong one.
+   */
+  export function setAudioContext(context: AudioContext): AudioContext;
   export function initAudio(options?: {
     disableWorklets?: boolean;
     maxPolyphony?: number;

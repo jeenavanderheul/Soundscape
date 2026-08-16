@@ -1312,11 +1312,15 @@ export class Game {
     // a timer, so it repaired itself every few seconds by accident.
     //
     // These re-sends are that accident, made deliberate and finite.
-    const repairing = this.graphRepairs < GRAPH_REPAIRS && this.flightMs >= GRAPH_REPAIR_MS[this.graphRepairs]!;
-    if (repairing) this.graphRepairs += 1;
-    if (!repairing && this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) {
-      return;
+    // Re-SENDING the same graph does nothing — StrudelEngine diffs it too, and
+    // an identical graph is not dirty. The engine has to be told to play what
+    // it already has, which is exactly what a wind pulse does by arriving as an
+    // action. `refresh()` is that, without the sound.
+    if (this.graphRepairs < GRAPH_REPAIRS && this.flightMs >= GRAPH_REPAIR_MS[this.graphRepairs]!) {
+      this.graphRepairs += 1;
+      this.strudelEngine.refresh();
     }
+    if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
     // §60: arriving in another world lands on the next BEAT, not the next bar.
     // At 132 bpm a bar is 1.8s and a beat 0.45s, so a crossing is unmistakable
     // inside the three seconds the player is given to notice it.
