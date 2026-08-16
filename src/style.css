@@ -213,6 +213,64 @@ body {
   cursor: wait;
 }
 
+/**
+ * §217 (user): the controls, on the title screen, before anyone has to guess.
+ *
+ * Two columns on a hairline grid — the key on the left in the same caps as
+ * every label in this interface, what it does on the right in sentence case,
+ * because one is a thing you press and the other is a thing that happens.
+ *
+ * Touch never sees this: none of it is true there (the left half of the screen
+ * is the throttle, the right half is the wind), and the room is not there.
+ */
+.controls {
+  display: grid;
+  gap: calc(var(--grid) * 1.25);
+  margin: 0;
+  max-width: 30rem;
+  text-align: left;
+}
+
+.controls > div {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: calc(var(--grid) * 2);
+  align-items: baseline;
+  padding-bottom: calc(var(--grid) * 1.25);
+  border-bottom: 1px solid var(--hair);
+}
+
+.controls > div:last-child {
+  border-bottom: 0;
+}
+
+.controls dt {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--signal-100);
+}
+
+.controls dd {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--signal-60);
+}
+
+/*
+ * A phone is flown with two thumbs, not with any of the above. The height rule
+ * is measured, not guessed: at 560 px the list ends exactly on the bottom edge,
+ * so anything shorter clips the colophon — and a licence you cannot read is
+ * worse than no controls list.
+ */
+@media (hover: none), (pointer: coarse), (max-width: 640px), (max-height: 600px) {
+  .controls {
+    display: none;
+  }
+}
+
 [data-unlock-error] {
   max-width: 32rem;
   color: var(--acid-red);
