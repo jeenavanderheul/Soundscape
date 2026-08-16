@@ -34,6 +34,23 @@ export const TOUCH_CONFIG = {
    */
   doubleTapMs: 320,
   doubleTapSlopPx: 40,
+  /**
+   * §206: how fast the thumb's landing point creeps after the thumb, in
+   * seconds. This is what makes a still thumb fly STRAIGHT.
+   *
+   * The stick steered on position and re-applied those pixels every frame, so
+   * a thumb parked 12 px out turned through a whole 60° world every 4.6
+   * seconds, forever — and the world is the heading you travel (§56), so a
+   * phone player emigrated continuously and no track ever passed its opening.
+   * The demo flight steers on heading ERROR, settles, and therefore hears a
+   * whole build; that gap was this number missing.
+   *
+   * The mouse never had the problem: moving it turns you, holding it still
+   * does not. With the origin creeping after the thumb, dragging holds full
+   * authority (a second of ordinary drag still crosses a border) and stopping
+   * spends the last of the turn and straightens out.
+   */
+  centreTauS: 0.7,
 } as const;
 
 export type TouchZone = 'flight' | 'wind';
@@ -74,6 +91,23 @@ export function lookDeltaPerFrame(deflection: { x: number; y: number }): {
     x: deflection.x * TOUCH_CONFIG.lookPxPerFrame.x,
     // `0 +` folds the −0 a negated zero deflection would produce.
     y: 0 + -deflection.y * TOUCH_CONFIG.lookPxPerFrame.y,
+  };
+}
+
+/**
+ * §206: the landing point creeps toward where the thumb actually is, so the
+ * deflection that steers you decays to nothing once the thumb stops moving.
+ * Exponential, so it never overshoots and a zero step changes nothing.
+ */
+export function driftOrigin(
+  origin: { x: number; y: number },
+  thumb: { x: number; y: number },
+  dtSeconds: number,
+): { x: number; y: number } {
+  const alpha = 1 - Math.exp(-Math.max(0, dtSeconds) / TOUCH_CONFIG.centreTauS);
+  return {
+    x: origin.x + (thumb.x - origin.x) * alpha,
+    y: origin.y + (thumb.y - origin.y) * alpha,
   };
 }
 

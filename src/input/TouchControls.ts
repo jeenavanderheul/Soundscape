@@ -1,5 +1,5 @@
 import type { InputManager } from './InputManager';
-import { isDoubleTap, lookDeltaPerFrame, stickDeflection, touchZone } from './touch';
+import { driftOrigin, isDoubleTap, lookDeltaPerFrame, stickDeflection, touchZone } from './touch';
 
 /** A touch that landed on a piece of interface (the menu button), not on the world. */
 function isChromeTouch(touch: Touch): boolean {
@@ -24,6 +24,8 @@ export class TouchControls {
   private flightId: number | null = null;
   private windId: number | null = null;
   private origin = { x: 0, y: 0 };
+  /** §206: where the flight thumb is right now, so the origin can creep to it. */
+  private thumb = { x: 0, y: 0 };
   /** §203: the previous tap in the flight zone, for the double-tap latch. */
   private lastTap: { atMs: number; x: number; y: number } | null = null;
   private hyper = false;
@@ -82,6 +84,7 @@ export class TouchControls {
         if (this.flightId !== null) continue;
         this.flightId = touch.identifier;
         this.origin = { x: touch.clientX, y: touch.clientY };
+        this.thumb = { x: touch.clientX, y: touch.clientY };
         this.input.setSyntheticThrottle(true);
         this.input.setSyntheticLook(0, 0);
         // §203: two taps in the same spot latch hyper on, the next two let it
@@ -106,11 +109,31 @@ export class TouchControls {
     event.preventDefault();
     for (const touch of Array.from((event as TouchEvent).changedTouches)) {
       if (touch.identifier !== this.flightId) continue;
-      const d = stickDeflection(this.origin.x, this.origin.y, touch.clientX, touch.clientY);
-      const px = lookDeltaPerFrame(d);
-      this.input.setSyntheticLook(px.x, px.y);
+      this.thumb = { x: touch.clientX, y: touch.clientY };
+      this.steer();
     }
   };
+
+  /**
+   * §206: one frame of steering. The landing point creeps after the thumb, so
+   * holding it still spends the last of the turn and then flies STRAIGHT —
+   * which is what the mouse has always done, and what the touch stick did not:
+   * it re-applied a rate every frame, and any thumb outside 8.4 px of an
+   * invisible point turned you through a whole world every few seconds. The
+   * world is the heading you travel (§56), so a phone player emigrated
+   * continuously and no track survived its opening.
+   */
+  update(dtSeconds: number): void {
+    if (this.flightId === null) return;
+    this.origin = driftOrigin(this.origin, this.thumb, dtSeconds);
+    this.steer();
+  }
+
+  private steer(): void {
+    const d = stickDeflection(this.origin.x, this.origin.y, this.thumb.x, this.thumb.y);
+    const px = lookDeltaPerFrame(d);
+    this.input.setSyntheticLook(px.x, px.y);
+  }
 
   private readonly onEnd = (event: Event): void => {
     for (const touch of Array.from((event as TouchEvent).changedTouches)) {

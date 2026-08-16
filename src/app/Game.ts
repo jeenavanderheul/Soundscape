@@ -787,6 +787,11 @@ export class Game {
     // the same InputManager, so everything below this line cannot tell the
     // difference between a demo and a pair of hands (§56).
     if (this.demoActive) this.steerDemo(elapsedMs);
+    // §206: the thumb's landing point creeps after the thumb, so a thumb that
+    // stops moving flies straight instead of turning forever. It has to happen
+    // per FRAME — a touchmove only fires while the thumb is actually moving,
+    // which is exactly the case this fixes.
+    this.touchControls?.update(deltaMs / 1000);
     const snapshot = this.input.snapshot();
     // The player has flown once they have ASKED to. Velocity was the obvious
     // signal and the wrong one: a restored save arrives already moving, so the
