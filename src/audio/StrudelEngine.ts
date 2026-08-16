@@ -1254,6 +1254,34 @@ export class StrudelEngine implements StrudelEnginePort {
     } catch (cause) {
       throw new Error('StrudelEngine: failed to initialize @strudel/web', { cause });
     }
+    // §211: WAIT FOR THE WORKLETS, OR HALF THE INSTRUMENTS NEVER EXIST.
+    //
+    // `initStrudel` resolves as soon as the repl is built; superdough goes on
+    // loading its AudioWorklets afterwards and nothing waits for them. Measured
+    // on the deployed build, in this order:
+    //
+    //   [getTrigger] error: Failed to construct 'AudioWorkletNode' … (×3)
+    //   [superdough] AudioWorklets loaded
+    //
+    // Every voice triggered inside that window dies. Which voices? The SYNTHS —
+    // bass, the supersaw stab, the bytebeat texture — while the drums, being
+    // samples, play normally. So a player heard a kick and a hat and nothing
+    // else, and the screen said 4/7.
+    //
+    // It survived because of §11: the graph is only re-sent when it CHANGES,
+    // so the voices that failed stayed failed. Holding the wind moved a
+    // performance constant, which rebuilt the graph, which re-triggered them —
+    // by then the worklets existed. That is the whole reason the track "only
+    // played with the left mouse button down", and why the demo flight, which
+    // holds the wind on a timer, sounded complete throughout.
+    //
+    // A few milliseconds at unlock buys every instrument in the game.
+    try {
+      const { initAudio } = await import('superdough');
+      await initAudio();
+    } catch (cause) {
+      console.warn('StrudelEngine: AudioWorklets unavailable; synth voices may be silent', cause);
+    }
     // The drum machines (strudel.cc/learn/samples § Sound Banks). This map is
     // what `${drumBank}` resolves against — WITHOUT it every banked
     // template is silent, and oh/rim do not exist at all. Dirt-Samples alone

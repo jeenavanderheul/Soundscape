@@ -14,6 +14,22 @@ export function isTouchDevice(): boolean {
 }
 
 /**
+ * §210: does this session get the PHONE's music (§205-§209) — the even ladder,
+ * the fixed order, no masks?
+ *
+ * Normally that is exactly "is this a touch device". `?phone=1` forces it on
+ * anything, because the phone build could not otherwise be observed: every
+ * report about it arrived as a description of a sound, and every answer was a
+ * guess about which of two systems produced it. The touch INPUT layer is
+ * deliberately not included — this is about what you hear, not how you steer.
+ */
+export function isPhoneProfile(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (window.location.search.includes('phone=1')) return true;
+  return isTouchDevice();
+}
+
+/**
  * Touch sensor layer (mobile). Translates touches into the SAME InputManager
  * the keyboard and mouse feed — one snapshot, one truth (§56). Left half of
  * the screen: one thumb that is throttle + look (see touch.ts). Right half:

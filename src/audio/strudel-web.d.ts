@@ -65,3 +65,19 @@ declare module '@strudel/soundfonts' {
   /** The GM registry itself: name → sample list. */
   export const gm: Record<string, unknown>;
 }
+
+/**
+ * §211: superdough@1.3.0 ships no types either. Only `initAudio` is declared,
+ * because that is the one call StrudelEngine needs — `initStrudel` resolves
+ * before the AudioWorklets are loaded, and every synth voice triggered in that
+ * window fails to construct. Verified against
+ * node_modules/superdough/superdough.mjs (`export async function initAudio`).
+ */
+declare module 'superdough' {
+  export function initAudio(options?: {
+    disableWorklets?: boolean;
+    maxPolyphony?: number;
+    audioDeviceName?: string;
+    multiChannelOrbits?: boolean;
+  }): Promise<void>;
+}

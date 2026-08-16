@@ -12,7 +12,7 @@ import { createEventBus, EventBus } from '../core/EventBus';
 import { createStore, Store } from '../core/stores';
 import { InputManager } from '../input/InputManager';
 import { PointerLock, PointerLockEvents } from '../input/PointerLock';
-import { TouchControls, isTouchDevice } from '../input/TouchControls';
+import { TouchControls, isPhoneProfile, isTouchDevice } from '../input/TouchControls';
 import {
   createEmptyLayerGraph,
   diffLayerGraph,
@@ -136,6 +136,15 @@ const clamp01 = (v: number): number => Math.min(1, Math.max(0, v));
 // so raising it moves the whole range back without touching the framing
 // correction or the throttle pull-back.
 const CAMERA_DISTANCE = 4.8;
+/**
+ * §211: flight-time marks at which the layer graph is re-sent even when it has
+ * not changed, so voices that failed while superdough was still loading its
+ * AudioWorklets are rebuilt. Three is enough to cover a slow phone and few
+ * enough that it is not a policy of re-sending — the last one is at half a
+ * minute, by which point anything still broken is broken for another reason.
+ */
+const GRAPH_REPAIR_MS = [4000, 12_000, 30_000] as const;
+const GRAPH_REPAIRS = GRAPH_REPAIR_MS.length;
 const CAMERA_DISTANCE_PER_RADIUS = 2.2;
 /**
  * How much further back the camera sits at full throttle, on top of the framing
@@ -324,6 +333,8 @@ export class Game {
   private readonly musicAnalyzer = new MusicStateAnalyzer(this.musicStore, this.rhythmDetector);
   /** Last graph handed to Strudel; setLayerGraph only on real changes (§11 diffs). */
   private lastLayerGraph: MusicalLayerGraph | null = null;
+  /** §211: how many startup repairs have been spent (see setLayerGraph). */
+  private graphRepairs = 0;
   /** §9/§20 M5: genre affinity evaluated in the logic loop, never per frame. */
   private readonly genreEngine = new GenreAffinityEngine(this.events);
   /** §29: what is actually IN the track; built by intent, saved, visualized. */
@@ -338,7 +349,7 @@ export class Game {
   private readonly trackBuilder = new TrackBuilder(
     this.trackStore,
     this.events,
-    isTouchDevice() ? MOBILE_TRACK_PACING : undefined,
+    isPhoneProfile() ? MOBILE_TRACK_PACING : undefined,
     WORLD_SEED,
   );
   /** Dev diagnostics: how often each pulse source fired this session. */
@@ -1268,7 +1279,7 @@ export class Game {
       // track is 26. The document outlived the track, so a player saw 4/7 and
       // heard two voices. On touch the ladder is the arrangement — as it
       // already is in the five worlds that never had masks.
-      masks: !isTouchDevice(),
+      masks: !isPhoneProfile(),
     });
     next.performance = performance;
     this.lastPerformance = performance;
@@ -1288,7 +1299,24 @@ export class Game {
     // §91: nothing outside the world may touch the clock. Height is colour.
     // Endless journey: which variation each layer is playing right now.
     next.variations = this.trackBuilder.variations;
-    if (this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) return;
+    // §211: A VOICE THAT FAILED TO START MUST GET A SECOND CHANCE.
+    //
+    // superdough loads its AudioWorklets asynchronously and a voice triggered
+    // before they exist throws `AudioWorkletNode cannot be created`. §11 then
+    // makes that permanent: the graph is only re-sent when it CHANGES, so the
+    // voices lost at startup stayed lost for the rest of the session. Measured
+    // on the deployed build — a player heard a kick and a hat, the screen said
+    // 4/7, and the only thing that ever brought the rest back was holding the
+    // wind, because that moved a performance constant and rebuilt the graph.
+    // That is also why the demo flight sounded complete: it holds the wind on
+    // a timer, so it repaired itself every few seconds by accident.
+    //
+    // These re-sends are that accident, made deliberate and finite.
+    const repairing = this.graphRepairs < GRAPH_REPAIRS && this.flightMs >= GRAPH_REPAIR_MS[this.graphRepairs]!;
+    if (repairing) this.graphRepairs += 1;
+    if (!repairing && this.lastLayerGraph && diffLayerGraph(this.lastLayerGraph, next).length === 0) {
+      return;
+    }
     // §60: arriving in another world lands on the next BEAT, not the next bar.
     // At 132 bpm a bar is 1.8s and a beat 0.45s, so a crossing is unmistakable
     // inside the three seconds the player is given to notice it.
