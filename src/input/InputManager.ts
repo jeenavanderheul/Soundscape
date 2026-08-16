@@ -1,6 +1,5 @@
 import { EventBus } from '../core/EventBus';
 import { DEFAULT_BINDINGS, DesktopBindings, KeyAction } from './bindings';
-import { lookDeltaPerFrame } from './touch';
 
 /** Per-frame typed input snapshot (spec §6: systems consume snapshots, not DOM events). */
 
@@ -49,11 +48,12 @@ export class InputManager {
   private wheelDelta = 0;
   private mouseDeltaX = 0;
   private mouseDeltaY = 0;
-  // Touch layer (TouchControls): same snapshot, different sensors. The thumb
-  // holds a LEVEL (deflection, throttle) rather than emitting deltas, so it
-  // persists across snapshots instead of resetting with the frame state.
-  private touchThrottle = false;
-  private touchLook = { x: 0, y: 0 };
+  // Synthetic sensors (touch thumbs, §195 demo autopilot): the same snapshot,
+  // different hands. They hold a LEVEL — throttle open, look pixels per frame —
+  // rather than emitting deltas, so it persists across snapshots instead of
+  // resetting with the frame state.
+  private syntheticThrottle = false;
+  private syntheticLook = { x: 0, y: 0 };
 
   constructor(
     private readonly pointerTarget: EventTarget,
@@ -84,28 +84,28 @@ export class InputManager {
     this.pointerTarget.removeEventListener('wheel', this.onWheel);
     this.heldKeys.clear();
     this.windHold = false;
-    this.touchThrottle = false;
-    this.touchLook = { x: 0, y: 0 };
+    this.syntheticThrottle = false;
+    this.syntheticLook = { x: 0, y: 0 };
     this.resetFrameState();
   }
 
-  /** Touch flight thumb: touching = throttle held (this game's W). */
-  setTouchThrottle(on: boolean): void {
-    this.touchThrottle = on;
+  /** Synthetic throttle: held = this game's W (touch thumb, autopilot). */
+  setSyntheticThrottle(on: boolean): void {
+    this.syntheticThrottle = on;
   }
 
-  /** Touch flight thumb deflection (−1..1 per axis) → steady look rate. */
-  setTouchLook(x: number, y: number): void {
-    this.touchLook = { x, y };
+  /** Synthetic look, in mouse pixels per frame, re-applied until cleared. */
+  setSyntheticLook(x: number, y: number): void {
+    this.syntheticLook = { x, y };
   }
 
-  /** Touch wind zone pressed — same meaning as LMB down. */
-  touchWindPress(): void {
+  /** Synthetic wind pressed — same meaning as LMB down. */
+  syntheticWindPress(): void {
     this.windHold = true;
   }
 
-  /** Touch wind zone released — the timed pulse, same as LMB up. */
-  touchWindRelease(): void {
+  /** Synthetic wind released — the timed pulse, same as LMB up. */
+  syntheticWindRelease(): void {
     if (this.windHold) this.windReleased = true;
     this.windHold = false;
   }
@@ -115,7 +115,7 @@ export class InputManager {
     const snap: InputSnapshot = {
       axes: {
         moveX: this.axisValue('moveRight') - this.axisValue('moveLeft'),
-        // The touch thumb is this game's W: it both opens the throttle
+        // A synthetic throttle is this game's W: it both opens the throttle
         // (accelerate below) and points the thrust forward, exactly as W does.
         moveZ: Math.max(
           -1,
@@ -123,7 +123,7 @@ export class InputManager {
             1,
             this.axisValue('moveForward') -
               this.axisValue('moveBackward') +
-              (this.touchThrottle ? 1 : 0),
+              (this.syntheticThrottle ? 1 : 0),
           ),
         ),
       },
@@ -131,7 +131,7 @@ export class InputManager {
         // §129: W IS the throttle. The wind used to open it too, which meant
         // you could not sound a long tone without also flying off, and could
         // not fly without sounding. One hand flies, the other plays.
-        accelerate: this.isActionHeld('moveForward') || this.touchThrottle,
+        accelerate: this.isActionHeld('moveForward') || this.syntheticThrottle,
         windHold: this.windHold,
         hyper: this.isActionHeld('hyperBoost'),
       },
@@ -142,11 +142,11 @@ export class InputManager {
       trackExported: this.trackExported,
       guideToggled: this.guideToggled,
       wheelDelta: this.wheelDelta,
-      // A held thumb is a steady turn: the deflection re-enters every frame
-      // as synthetic mouse pixels on top of whatever the mouse produced.
+      // A held thumb or a flying autopilot is a steady turn: its pixels
+      // re-enter every frame on top of whatever the mouse produced.
       mouseDelta: {
-        x: this.mouseDeltaX + lookDeltaPerFrame(this.touchLook).x,
-        y: this.mouseDeltaY + lookDeltaPerFrame(this.touchLook).y,
+        x: this.mouseDeltaX + this.syntheticLook.x,
+        y: this.mouseDeltaY + this.syntheticLook.y,
       },
     };
     this.resetFrameState();

@@ -108,6 +108,7 @@ import { scoreHeader } from '../ui/ScoreHeader';
 import { HUD } from '../ui/HUD';
 import { attachIntroHint } from '../ui/Intro';
 import { PauseOverlay } from '../ui/PauseOverlay';
+import { pilotCommand } from './demoFlight';
 import { FormEmergence } from '../world/FormEmergence';
 import { loadLandField } from '../world/LandField';
 import type { StructureEvents } from '../world/FormEmergence';
@@ -246,6 +247,8 @@ export interface GameElements {
   container: HTMLElement;
   overlay: HTMLElement;
   unlockButton: HTMLButtonElement;
+  /** §195: the second way in — watch the tour instead of flying it yourself. */
+  demoButton?: HTMLButtonElement;
 }
 
 /**
@@ -378,6 +381,11 @@ export class Game {
   private resonanceAudio: ResonanceAudio | null = null;
   private unlocked = false;
   private paused = false;
+  /** §195: the autopilot is flying. It steers by feeding the ONE snapshot. */
+  private demoActive = false;
+  private demoStartMs: number | null = null;
+  private demoWindHeld = false;
+  private demoHint: HTMLElement | null = null;
   private disposed = false;
   /** §136: the last performance mapping, for the visual signal drive. */
   private lastPerformance: ReturnType<typeof performanceFrom> | null = null;
@@ -618,8 +626,16 @@ export class Game {
         return 'Strudel code shown — E closes it.';
       },
       onNewJourney: () => this.resetWorld(),
+      onDemoFlight: () => {
+        this.resume();
+        this.startDemo();
+      },
     });
     this.detachPointerLockPause = this.pointerLockBus.on('pointerlock:released', () => {
+      // §195: the demo steers itself, so it deliberately holds no pointer
+      // lock — and a lock it never asked for must not be able to end it or
+      // pause it (browsers drop the lock on their own, measured).
+      if (this.demoActive) return;
       if (this.unlocked && !this.paused) this.pause();
     });
     window.addEventListener('keydown', this.onKeyDown);
@@ -675,6 +691,7 @@ export class Game {
     }
     elements.container.addEventListener('click', this.onContainerClick);
     elements.unlockButton.addEventListener('click', this.onUnlockClick);
+    elements.demoButton?.addEventListener('click', this.onDemoClick);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
@@ -682,6 +699,8 @@ export class Game {
     this.disposed = true;
     this.elements.container.removeEventListener('click', this.onContainerClick);
     this.elements.unlockButton.removeEventListener('click', this.onUnlockClick);
+    this.elements.demoButton?.removeEventListener('click', this.onDemoClick);
+    this.stopDemo();
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keydown', this.onRegionKey);
@@ -750,6 +769,10 @@ export class Game {
 
   /** One frame: input snapshot → controller → store → audio + particles + camera (spec §15, §16). */
   private readonly tick = (deltaMs: number, elapsedMs: number): void => {
+    // §195: the autopilot is a sensor like the touch thumbs — it writes into
+    // the same InputManager, so everything below this line cannot tell the
+    // difference between a demo and a pair of hands (§56).
+    if (this.demoActive) this.steerDemo(elapsedMs);
     const snapshot = this.input.snapshot();
     // The player has flown once they have ASKED to. Velocity was the obvious
     // signal and the wrong one: a restored save arrives already moving, so the
@@ -1348,6 +1371,73 @@ export class Game {
     void this.unlock();
   };
 
+  /** §195: the start screen's second door — watch it before you fly it. */
+  private readonly onDemoClick = (): void => {
+    void this.unlock().then(() => this.startDemo());
+  };
+
+  /**
+   * §195 DEMO FLIGHT: hands the controls to the autopilot. It tours the six
+   * worlds at one constant speed and loops forever; Esc takes over.
+   */
+  private startDemo(): void {
+    if (!this.unlocked || this.demoActive) return;
+    this.demoActive = true;
+    // Nothing to look with: the autopilot writes the look itself. Letting the
+    // lock go is also what makes Esc arrive as a plain key again.
+    this.pointerLock.exit();
+    this.demoStartMs = null;
+    this.demoWindHeld = false;
+    this.demoHint = document.createElement('p');
+    this.demoHint.setAttribute('aria-live', 'polite');
+    this.demoHint.textContent = 'DEMO FLIGHT — press ESC to take the controls';
+    this.demoHint.style.cssText = [
+      'position:fixed',
+      'left:0',
+      'right:0',
+      'bottom:4vh',
+      'margin:0',
+      'text-align:center',
+      'font:400 0.8rem/1.5 var(--font-mono)',
+      'letter-spacing:0.14em',
+      'color:#9a9a9a',
+      'pointer-events:none',
+    ].join(';');
+    document.body.appendChild(this.demoHint);
+  }
+
+  /** Gives the controls back: the synthetic channel is emptied, not frozen. */
+  private stopDemo(): void {
+    if (!this.demoActive) return;
+    this.demoActive = false;
+    this.demoStartMs = null;
+    this.input.setSyntheticThrottle(false);
+    this.input.setSyntheticLook(0, 0);
+    if (this.demoWindHeld) this.input.syntheticWindRelease();
+    this.demoWindHeld = false;
+    this.demoHint?.remove();
+    this.demoHint = null;
+  }
+
+  /** One frame of autopilot: what it senses in, what a hand would do out. */
+  private steerDemo(elapsedMs: number): void {
+    if (this.demoStartMs === null) this.demoStartMs = elapsedMs;
+    const state = this.frequencyStore.getState();
+    const command = pilotCommand(elapsedMs - this.demoStartMs, {
+      heading: this.flightHeading(state),
+      altitude:
+        state.position.y - this.terrain.groundHeightAt(state.position.x, state.position.z),
+      climbRate: this.controller.climbRate,
+    });
+    this.input.setSyntheticThrottle(true);
+    this.input.setSyntheticLook(command.look.x, command.look.y);
+    if (command.windHold !== this.demoWindHeld) {
+      this.demoWindHeld = command.windHold;
+      if (command.windHold) this.input.syntheticWindPress();
+      else this.input.syntheticWindRelease();
+    }
+  }
+
   /** Re-acquire mouse look on canvas click after Esc released the lock (spec §5). */
   private readonly onContainerClick = (): void => {
     if (this.paused) return; // the mouse belongs to the pause menu
@@ -1392,6 +1482,13 @@ export class Game {
       }
     }
     if (event.key !== 'Escape' || !this.unlocked) return;
+    // §195 (user decision): Esc ends the demo and hands the controls over —
+    // mouse look included, which is why the lock is asked for here.
+    if (this.demoActive) {
+      this.stopDemo();
+      this.requestLook();
+      return;
+    }
     if (this.paused) this.resume();
     else this.pause();
   };

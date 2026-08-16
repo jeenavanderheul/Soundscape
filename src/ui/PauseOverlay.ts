@@ -15,6 +15,8 @@ export interface PauseOverlayCallbacks {
   onExportTrack(): string;
   /** Clears every form the player's sound made and starts an empty void. */
   onNewJourney(): void;
+  /** §195: hand the controls to the autopilot and watch the six worlds. */
+  onDemoFlight(): void;
   /** §145: the volume, 0..1. Called on every drag, so it must be cheap. */
   onVolume(level: number): void;
   /** What the knob should read when the overlay opens. */
@@ -54,6 +56,7 @@ export class PauseOverlay {
     const exportButton = this.button('Export Strudel code', () => {
       this.status.textContent = callbacks.onExportTrack();
     });
+    const demoButton = this.button('Demo flight', () => callbacks.onDemoFlight());
     const newButton = this.button('New journey', () => {
       callbacks.onNewJourney();
       this.status.textContent = 'New journey. The void is empty again.';
@@ -82,6 +85,7 @@ export class PauseOverlay {
       this.resumeButton,
       saveButton,
       exportButton,
+      demoButton,
       newButton,
       volumeRow,
       this.status,

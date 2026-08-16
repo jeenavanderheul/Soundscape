@@ -1,5 +1,5 @@
 import type { InputManager } from './InputManager';
-import { stickDeflection, touchZone } from './touch';
+import { lookDeltaPerFrame, stickDeflection, touchZone } from './touch';
 
 /** Touch hardware present — pointer lock and mouse look are skipped then. */
 export function isTouchDevice(): boolean {
@@ -48,14 +48,14 @@ export class TouchControls {
 
   private releaseFlight(): void {
     this.flightId = null;
-    this.input.setTouchThrottle(false);
-    this.input.setTouchLook(0, 0);
+    this.input.setSyntheticThrottle(false);
+    this.input.setSyntheticLook(0, 0);
   }
 
   private releaseWind(): void {
     if (this.windId === null) return;
     this.windId = null;
-    this.input.touchWindRelease();
+    this.input.syntheticWindRelease();
   }
 
   private readonly onStart = (event: Event): void => {
@@ -65,11 +65,11 @@ export class TouchControls {
         if (this.flightId !== null) continue;
         this.flightId = touch.identifier;
         this.origin = { x: touch.clientX, y: touch.clientY };
-        this.input.setTouchThrottle(true);
-        this.input.setTouchLook(0, 0);
+        this.input.setSyntheticThrottle(true);
+        this.input.setSyntheticLook(0, 0);
       } else if (this.windId === null) {
         this.windId = touch.identifier;
-        this.input.touchWindPress();
+        this.input.syntheticWindPress();
       }
     }
   };
@@ -79,7 +79,8 @@ export class TouchControls {
     for (const touch of Array.from((event as TouchEvent).changedTouches)) {
       if (touch.identifier !== this.flightId) continue;
       const d = stickDeflection(this.origin.x, this.origin.y, touch.clientX, touch.clientY);
-      this.input.setTouchLook(d.x, d.y);
+      const px = lookDeltaPerFrame(d);
+      this.input.setSyntheticLook(px.x, px.y);
     }
   };
 

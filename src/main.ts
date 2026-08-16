@@ -14,6 +14,7 @@ try {
     container: requireElement<HTMLElement>('#app'),
     overlay: requireElement<HTMLElement>('#unlock-overlay'),
     unlockButton: requireElement<HTMLButtonElement>('#unlock-button'),
+    demoButton: requireElement<HTMLButtonElement>('#demo-button'),
   });
 } catch (error) {
   console.error('FREQUENCY: failed to start', error);

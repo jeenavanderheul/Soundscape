@@ -56,12 +56,12 @@ describe('InputManager touch layer', () => {
 
   it('touch throttle is this game\'s W: accelerate AND forward thrust, persisting', () => {
     const input = make();
-    input.setTouchThrottle(true);
+    input.setSyntheticThrottle(true);
     const snap = input.snapshot();
     expect(snap.buttons.accelerate).toBe(true);
     expect(snap.axes.moveZ).toBe(1);
     expect(input.snapshot().axes.moveZ).toBe(1);
-    input.setTouchThrottle(false);
+    input.setSyntheticThrottle(false);
     const off = input.snapshot();
     expect(off.buttons.accelerate).toBe(false);
     expect(off.axes.moveZ).toBe(0);
@@ -69,19 +69,19 @@ describe('InputManager touch layer', () => {
 
   it('a held deflection keeps steering every frame', () => {
     const input = make();
-    input.setTouchLook(1, 0);
+    input.setSyntheticLook(TOUCH_CONFIG.lookPxPerFrame.x, 0);
     expect(input.snapshot().mouseDelta.x).toBe(TOUCH_CONFIG.lookPxPerFrame.x);
     expect(input.snapshot().mouseDelta.x).toBe(TOUCH_CONFIG.lookPxPerFrame.x);
-    input.setTouchLook(0, 0);
+    input.setSyntheticLook(0, 0);
     expect(input.snapshot().mouseDelta.x).toBe(0);
   });
 
   it('wind press/release behaves like LMB: hold then a single timed pulse', () => {
     const input = make();
-    input.touchWindPress();
+    input.syntheticWindPress();
     expect(input.snapshot().buttons.windHold).toBe(true);
     expect(input.snapshot().windReleased).toBe(false);
-    input.touchWindRelease();
+    input.syntheticWindRelease();
     const released = input.snapshot();
     expect(released.buttons.windHold).toBe(false);
     expect(released.windReleased).toBe(true);
@@ -90,15 +90,15 @@ describe('InputManager touch layer', () => {
 
   it('release without a press is not a pulse', () => {
     const input = make();
-    input.touchWindRelease();
+    input.syntheticWindRelease();
     expect(input.snapshot().windReleased).toBe(false);
   });
 
   it('detach clears the touch state', () => {
     const input = make();
     input.attach();
-    input.setTouchThrottle(true);
-    input.setTouchLook(1, 1);
+    input.setSyntheticThrottle(true);
+    input.setSyntheticLook(1, 1);
     input.detach();
     const snap = input.snapshot();
     expect(snap.buttons.accelerate).toBe(false);
