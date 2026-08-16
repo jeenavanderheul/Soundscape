@@ -193,11 +193,13 @@ export class PlayerOrb {
     // a stretched oval and a lean — not from a churning skin (user decision).
     const targetDeform = Math.min(
       0.1 + this.growth * 0.05,
-      0.02 + state.amplitude * 0.05 + rms * 0.07 + this.pulse * 0.04 + this.growth * 0.04,
+      // §190 (user): wind deserves to be SEEN. The amplitude terms carry more
+      // of the breath than they did; the caps above still keep it an orb.
+      0.02 + state.amplitude * 0.09 + rms * 0.07 + this.pulse * 0.04 + this.growth * 0.04,
     );
     const targetGlow = Math.min(
       1.5 + this.growth * 0.5,
-      0.55 + state.amplitude * 0.45 + rms * 0.6 + this.pulse * 0.3 + this.growth * 0.45,
+      0.55 + state.amplitude * 0.75 + rms * 0.6 + this.pulse * 0.3 + this.growth * 0.45,
     );
     const blend = 1 - Math.exp(-8 * dt);
     this.deform += (targetDeform - this.deform) * blend;

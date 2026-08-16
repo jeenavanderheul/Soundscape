@@ -14,6 +14,7 @@ const base: SmokeInput = {
   sinceKick: 9,
   layerEarned: false,
   trackChanged: false,
+  wind: 0,
 };
 
 function run(input: SmokeInput, seconds: number, from = SMOKE_START) {
@@ -86,5 +87,27 @@ describe('§154 smoke follows the arrangement', () => {
     expect(hot.density).toBeLessThanOrEqual(1);
     expect(hot.density).toBeGreaterThanOrEqual(0);
     expect(hot.blast).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('§190 the wind blows smoke into the room', () => {
+  it('thickens the air while the wind is held', () => {
+    let calm = SMOKE_START;
+    let blowing = SMOKE_START;
+    for (let i = 0; i < 300; i++) {
+      calm = advanceSmoke(calm, base, 1 / 60);
+      blowing = advanceSmoke(blowing, { ...base, wind: 1 }, 1 / 60);
+    }
+    expect(blowing.density).toBeGreaterThan(calm.density + 0.2);
+  });
+
+  it('clears again quickly once the breath stops', () => {
+    let s = SMOKE_START;
+    for (let i = 0; i < 300; i++) s = advanceSmoke(s, { ...base, wind: 1 }, 1 / 60);
+    const held = s.density;
+    for (let i = 0; i < 120; i++) s = advanceSmoke(s, base, 1 / 60);
+    // Two seconds after letting go, most of the exhale is gone — that fast
+    // clear is what makes the smoke read as YOURS rather than as weather.
+    expect(s.density).toBeLessThan(held - 0.2);
   });
 });

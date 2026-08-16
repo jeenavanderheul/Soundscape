@@ -44,6 +44,8 @@ export interface SmokeInput {
   layerEarned: boolean;
   /** True on the frame a new track began. */
   trackChanged: boolean;
+  /** 0..1 the wind the player is holding — breath blown into the room (§190). */
+  wind: number;
 }
 
 export interface SmokeState {
@@ -73,7 +75,14 @@ export function advanceSmoke(
 ): SmokeState {
   // The air thickens slowly and clears fast: smoke takes time to build and a
   // break has to feel like the room emptying, not like a fade.
-  const target = SECTION_HAZE[input.section] * (0.55 + clamp01(input.intensity) * 0.75);
+  // §190 (user): the left mouse button blows smoke into the world. The breath
+  // rides ON TOP of what the arrangement asks for, so a break still empties
+  // the room the moment you stop blowing — the fast clear-rate below is what
+  // makes the exhale legible as YOURS rather than as weather.
+  const target = clamp01(
+    SECTION_HAZE[input.section] * (0.55 + clamp01(input.intensity) * 0.75) +
+      clamp01(input.wind) * 0.4,
+  );
   const rate = target > previous.density ? 0.55 : 1.9;
   const density = clamp01(previous.density + (target - previous.density) * Math.min(1, dtSeconds * rate));
 

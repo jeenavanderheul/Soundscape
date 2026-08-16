@@ -34,6 +34,12 @@ export const STREAK_CONFIG = {
   altitudeFullLift: 60,
   /** How much the streaks are allowed to gain from altitude alone. */
   altitudeLift: 0.55,
+  /**
+   * §190 (user): the wind you hold has to be VISIBLE. Holding it adds this
+   * much to the streak intensity on top of what speed earns, so blowing reads
+   * as air rushing past even before the boost has spun up.
+   */
+  windLift: 0.45,
 } as const;
 
 /**
@@ -143,9 +149,13 @@ export class SpeedStreaks {
    * Follow the player and recycle whatever fell behind. `velocity` is world
    * units per second; its direction is the direction the streaks stretch in.
    */
-  update(position: Vec3Data, velocity: Vec3Data, dt: number, altitude = 0): void {
+  update(position: Vec3Data, velocity: Vec3Data, dt: number, altitude = 0, wind = 0): void {
     const speed = Math.hypot(velocity.x, velocity.y, velocity.z);
-    const target = Math.min(1, (speed / STREAK_CONFIG.fullSpeed) * altitudeBoost(altitude));
+    const target = Math.min(
+      1,
+      (speed / STREAK_CONFIG.fullSpeed) * altitudeBoost(altitude) +
+        Math.max(0, Math.min(1, wind)) * STREAK_CONFIG.windLift,
+    );
     // Ease so a dash surges and settles instead of snapping.
     this.intensity += (target - this.intensity) * Math.min(1, dt * 3.5);
     this.material.uniforms['uIntensity']!.value = this.intensity;

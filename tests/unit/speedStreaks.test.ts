@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { STREAK_CONFIG, altitudeBoost } from '../../src/rendering/SpeedStreaks';
+import { SpeedStreaks, STREAK_CONFIG, altitudeBoost } from '../../src/rendering/SpeedStreaks';
 
 describe('speed reads the same high as it does low', () => {
   it('leaves the streaks alone on the deck', () => {
@@ -33,5 +33,26 @@ describe('speed reads the same high as it does low', () => {
     const upHigh = (speed: number, alt: number) =>
       Math.min(1, (speed / STREAK_CONFIG.fullSpeed) * altitudeBoost(alt));
     expect(upHigh(20, STREAK_CONFIG.altitudeFullLift)).toBeGreaterThan(onTheDeck(20));
+  });
+});
+
+describe('§190 the wind you hold is visible', () => {
+  const streaksIntensity = (wind: number, speed: number): number => {
+    const s = new SpeedStreaks('test');
+    for (let i = 0; i < 120; i++) {
+      s.update({ x: 0, y: 10, z: 0 }, { x: 0, y: 0, z: -speed }, 1 / 60, 0, wind);
+    }
+    const value = (s.lines.material as unknown as { uniforms: Record<string, { value: number }> }).uniforms['uIntensity']!.value;
+    s.dispose();
+    return value;
+  };
+
+  it('lifts the streaks while blowing, even at the same speed', () => {
+    expect(streaksIntensity(1, 10)).toBeGreaterThan(streaksIntensity(0, 10) + 0.3);
+  });
+
+  it('does not let wind alone read as full speed', () => {
+    // Blowing at a standstill stirs the air; it must not impersonate flight.
+    expect(streaksIntensity(1, 0)).toBeLessThan(0.6);
   });
 });

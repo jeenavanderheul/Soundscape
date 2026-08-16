@@ -957,7 +957,8 @@ export class Game {
     // Visual world: the player's wind excites the field directly — the first
     // cause-effect the eye gets, before any resonator is found.
     if (state.amplitude > 0.05) {
-      this.terrain.excite('player', state.position, state.hz, state.amplitude * 0.12);
+      // §190: the wind you hold presses visibly on the field (was 0.12).
+      this.terrain.excite('player', state.position, state.hz, state.amplitude * 0.2);
     }
     // §146: the dome turns EVERY FRAME. It used to be advanced inside the 10 Hz
     // logic loop while being handed the frame's delta, which made it turn six
@@ -1006,6 +1007,7 @@ export class Game {
         sinceKick: (performance.now() - this.lastKickMs) / 1000,
         layerEarned: this.layerEarnedFrame,
         trackChanged: this.trackChangedFrame,
+        wind: state.amplitude,
       },
       dtSeconds,
     );
@@ -1096,6 +1098,7 @@ export class Game {
       },
       dtSeconds,
       altitude,
+      state.amplitude,
     );
     this.guide.update({
       genre: this.trackStore.getState().genre,
