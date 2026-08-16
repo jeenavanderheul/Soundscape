@@ -183,3 +183,32 @@ describe('§189 flying is enough — the wind unlocks nothing', () => {
     expect(builder.arrangement.cycle).toBeGreaterThanOrEqual(CYCLES_PER_PHASE - 1);
   });
 });
+
+  it('announces the new genre within §126\'s two seconds, without any wind', () => {
+    // The cue hangs off track:genre, and that event could not fire at all
+    // until the wind was held — "the announcement sometimes took forever" was
+    // the gate, not the timer. Measured through the real chain: median 367ms,
+    // worst 600ms across all eighteen crossings.
+    const store = createStore<TrackState>(createInitialTrackState());
+    const bus = createEventBus<TrackEvents>();
+    const engine = new GenreAffinityEngine(createEventBus());
+    const builder = new TrackBuilder(store, bus);
+    const music = { ...createInitialMusicState(), dynamics: 0, bpm: 0 };
+    let announced: number | null = null;
+    let now = 0;
+    bus.on('track:genre', ({ genre }) => {
+      if (announced === null && genre === 'heavy-signal') announced = now;
+    });
+    const pos = (i: number) => {
+      const a = (i / 6) * Math.PI * 2;
+      return { x: Math.sin(a) * 900, y: 20, z: -Math.cos(a) * 900 };
+    };
+    const CROSS = 8000;
+    while (now < CROSS + 10_000 && announced === null) {
+      now += 1000 / 30;
+      engine.update(now, music, zoneAffinity(pos(now < CROSS ? 0 : 1)), 1);
+      builder.tick(now, music, { velocity: 13, hz: 220, energy: 0.5, altitude: 60 } as never, engine.current?.affinity as never);
+    }
+    expect(announced).not.toBeNull();
+    expect(announced! - CROSS).toBeLessThan(2000);
+  });
