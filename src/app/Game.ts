@@ -34,6 +34,7 @@ import type { GenreAffinity } from '../music/MusicState';
 import { MusicStateAnalyzer } from '../music/MusicStateAnalyzer';
 import { RhythmDetector } from '../music/RhythmDetector';
 import { MOBILE_TRACK_PACING, TrackBuilder } from '../music/TrackBuilder';
+import { formatDistance, metresBetween } from '../player/Odometer';
 import { createInitialTrackState, trackGrowth, TrackEvents, TrackState } from '../music/TrackState';
 import type { TrackGenre, TrackLayerName } from '../music/TrackState';
 import { SaveManager } from '../persistence/SaveManager';
@@ -335,6 +336,9 @@ export class Game {
   private lastLayerGraph: MusicalLayerGraph | null = null;
   /** §211: how many startup repairs have been spent (see setLayerGraph). */
   private graphRepairs = 0;
+  /** §220: metres covered on this flight, and where the last one was measured. */
+  private metresFlown = 0;
+  private lastOdometerPoint: { x: number; y: number; z: number } | null = null;
   /** §9/§20 M5: genre affinity evaluated in the logic loop, never per frame. */
   private readonly genreEngine = new GenreAffinityEngine(this.events);
   /** §29: what is actually IN the track; built by intent, saved, visualized. */
@@ -816,6 +820,14 @@ export class Game {
     if (snapshot.codeToggled) this.codeOverlay.toggle();
     if (snapshot.guideToggled) this.guide.toggle();
     this.flightMs += deltaMs;
+    // §220: the odometer. Every metre of the path, bends and climbs included —
+    // fly a circle and it keeps going up, because it is a distance travelled
+    // and not a distance from home. Per flight; a reload starts at nought.
+    const here = this.frequencyStore.getState().position;
+    if (this.lastOdometerPoint !== null) {
+      this.metresFlown += metresBetween(this.lastOdometerPoint, here);
+    }
+    this.lastOdometerPoint = { x: here.x, y: here.y, z: here.z };
     // §32: hand the finished track back as source.
     if (snapshot.trackExported) this.exportOverlay.toggle(this.exportedTrack());
     const deliberateRelease =
@@ -1182,6 +1194,7 @@ export class Game {
       trackGenre: this.trackStore.getState().genre ?? 'forming',
       layers: countUnlocked(this.trackStore.getState()),
       maxLayers: 7,
+      flown: formatDistance(this.metresFlown),
     });
     // Chase camera (user decision): it sits behind the orb and follows it. The
     // player never aims the camera — they fly, and the camera comes along, so

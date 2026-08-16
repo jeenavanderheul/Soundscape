@@ -16,6 +16,8 @@ export interface HudPlace {
   trackGenre: string;
   layers: number;
   maxLayers: number;
+  /** §220: metres covered on this flight, already formatted for the readout. */
+  flown: string;
 }
 
 /**
@@ -66,7 +68,7 @@ export class HUD {
         ? ''
         : `\n\nspeed ${bar(place.speed)}${place.hyper === true ? '  HYPER ×2' : ''}` +
           `\ntrack ${String(place.track).padStart(2, '0')} · ${place.trackGenre} · ${place.layers}/${place.maxLayers} layers` +
-          `\n\nflying: ${place.heading}\nhere:   ${place.biome}`;
+          `\n\nflying: ${place.heading}\nhere:   ${place.biome}\nflown:  ${place.flown}`;
     const text = `freq: ${state.hz.toFixed(0)} hz\namp:  ${state.amplitude.toFixed(2)}\nwave: ${state.waveform}${where}`;
     const hyper = place?.hyper === true;
     if (hyper !== this.lastHyper) {
