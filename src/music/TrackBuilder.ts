@@ -6,7 +6,7 @@ import type { ResonanceEvent } from '../resonance/ResonanceEvent';
 import { ArrangementEngine, ARRANGEMENT_CONFIG, CYCLES_PER_PHASE, rungsDueAt } from './ArrangementEngine';
 import { CallResponse } from './CallResponse';
 import { curveFor, layerUnlocked, nextStep, type LadderStep } from './GenreLadder';
-import { formFor, isPlayableOrder, TRACK_LAYERS, type TrackForm } from './TrackForm';
+import { fixedFormFor, formFor, isPlayableOrder, TRACK_LAYERS, type TrackForm } from './TrackForm';
 import { HarmonyEngine } from './HarmonyEngine';
 import { MelodyTracker } from './MelodyTracker';
 import type { MusicState } from './MusicState';
@@ -84,6 +84,32 @@ export interface TrackBuilderConfig {
    */
   cyclesPerPhase: number;
   /**
+   * §207: one fixed opening per world instead of a fresh draw per track. On a
+   * desk the draw is the point — no two journeys build the same way. In a hand,
+   * for two minutes, a player needs the world to be the same shape every time
+   * they arrive, or there is nothing to learn.
+   */
+  fixedOrderPerWorld: boolean;
+  /**
+   * §207: the build carries on while you are not flying. Speed still decides
+   * how FAST (§46) — this only says it never stops.
+   */
+  clockRunsAtRest: boolean;
+  /**
+   * §207: crossing into another world changes the colour, never the count. The
+   * desktop rule (§53/§54) is that a world is a track, so arriving somewhere
+   * else starts you at 1/7. On a phone that is most of what you ever hear.
+   */
+  keepsTrackAcrossWorlds: boolean;
+  /**
+   * §207: at 7/7 nothing may be taken away again. The arc's next phase after
+   * the seventh rung lands is `break`, which pulls the drums to 0.4 and the
+   * bass to 0.35 — so the moment the track was finally whole was the moment
+   * its bottom left. The desktop hears it come back in DROP II; a phone was
+   * never getting there.
+   */
+  holdsFullMixWhenComplete: boolean;
+  /**
    * §107/§108: how far into a rung's own PHASE the world gives it away, as a
    * fraction. This is the window in which your flying is what earns it — and
    * because it scales with the phase it stays the same shape at any tempo,
@@ -158,6 +184,10 @@ export const TRACK_BUILDER_CONFIG: TrackBuilderConfig = {
   curveScale: 1,
   maxPaceScale: Infinity,
   cyclesPerPhase: CYCLES_PER_PHASE,
+  fixedOrderPerWorld: false,
+  clockRunsAtRest: false,
+  keepsTrackAcrossWorlds: false,
+  holdsFullMixWhenComplete: false,
   // §108 (user decision): the opening may come up twice as fast, so the gift
   // lands near the MIDDLE of its phase rather than at the end. You still have
   // most of the first half to go and earn it yourself, and a passive flight
@@ -220,6 +250,14 @@ export const MOBILE_TRACK_PACING: TrackBuilderConfig = {
   // Three bars a phase instead of four. The arc keeps all eight phases in the
   // same order, so nothing is skipped; each one is simply a bar shorter.
   cyclesPerPhase: 3,
+  // §207 (user decision): on a phone the mechanics get out of the way. ONE
+  // build, 1/7 to 7/7, in the world's own fixed order, that never restarts and
+  // never loses what it has earned. Everything below this line overrules a
+  // rule the desktop keeps.
+  fixedOrderPerWorld: true,
+  clockRunsAtRest: true,
+  keepsTrackAcrossWorlds: true,
+  holdsFullMixWhenComplete: true,
 };
 
 /** A player action the builder interprets (fed from the game's input pulses). */
@@ -511,7 +549,11 @@ export class TrackBuilder {
 
     const track = this.store.getState();
     const moving = flight.velocity > 0.5 || music.dynamics >= config.activityFloor;
-    const active = moving || (music.bpm > 0 && music.tempoConfidence > 0.3);
+    // §207: on a phone the build never stops — speed still decides how fast it
+    // goes (§46), it no longer decides whether it goes at all. A thumb comes
+    // off to steer, to point at something, to answer a message; the desktop
+    // rule turns each of those into the track standing still.
+    const active = config.clockRunsAtRest || moving || (music.bpm > 0 && music.tempoConfidence > 0.3);
     // §46: SPEED IS DEVELOPMENT. Flying harder does not change the tempo — it
     // makes the track grow, deepen and move through its sections faster, so a
     // fast flight finishes a track sooner and reaches the next one sooner.
@@ -538,7 +580,12 @@ export class TrackBuilder {
     // that is being re-clocked underneath you is never quite the record you
     // built. Flying faster still develops the track faster (§46); it never
     // touches the clock.
-    const placeBpm = moving ? regionBpm(genreGrammar(track.genre ?? this.dominant(affinity))) : 0;
+    // §207: when the build runs at rest the clock has to exist at rest too, or
+    // the unlock path below (`tempoExists`) never runs and the promise is empty.
+    const heard = config.keepsTrackAcrossWorlds
+      ? (this.dominant(affinity) ?? track.genre)
+      : (track.genre ?? this.dominant(affinity));
+    const placeBpm = moving || config.clockRunsAtRest ? regionBpm(genreGrammar(heard)) : 0;
     // An earned track keeps its clock through stillness.
     const targetBpm = placeBpm > 0 ? placeBpm : track.bpm;
     // The clock slides toward the flight instead of snapping to it: shifting up
@@ -575,7 +622,10 @@ export class TrackBuilder {
     // §47 (user decision): a track keeps the grammar it was born in. Flying
     // from LOCKED GROOVE into Garage does not rewrite your locked groove track — the region
     // you are in when the NEXT track starts is what decides that one.
-    const genre = track.genre ?? this.dominant(affinity);
+    // §47: a track keeps the grammar it was born in — unless §207 is on, where
+    // the world you fly into recolours the track you are already building
+    // instead of replacing it.
+    const genre = heard;
     // §31/§103: call-and-response was Jazz's alone, and Jazz is gone. The
     // machinery stays (CallResponse is tested and cheap) but nothing asks for
     // it now — if a future world wants the world to answer a phrase, it turns
@@ -590,7 +640,11 @@ export class TrackBuilder {
     const away = this.lastRegion !== null && track.genre !== null && this.lastRegion !== track.genre;
     this.awayMs = away ? this.awayMs + delta : 0;
     const lived = nowMs - this.trackStartedMs;
-    if (this.awayMs >= config.regionSwitchMs && lived >= config.minTrackLifeMs) {
+    if (
+      !config.keepsTrackAcrossWorlds
+      && this.awayMs >= config.regionSwitchMs
+      && lived >= config.minTrackLifeMs
+    ) {
       this.awayMs = 0;
       // §54: a world is a track. Arrive somewhere else and you start there —
       // from the first layer, at that world's tempo, with nothing carried over.
@@ -614,13 +668,20 @@ export class TrackBuilder {
     // each world flies its own order through the eight phases (§61).
     this.arrangement.setStyle(genreGrammar(genre).sectionStyle);
     const barMs = nextBpm > 0 ? (4 * 60_000) / nextBpm : 1800;
-    const section = this.arrangement.tick(
+    const walked = this.arrangement.tick(
       this.paceClockMs,
       paced,
       flight.energy,
       readyToPeak,
       barMs,
     );
+    // §207: once all seven are standing, the arc may keep walking — the
+    // variations still evolve underneath — but the MIX stops changing. `return`
+    // is the one phase that has everything at full; every other one after
+    // `deep` takes something away, and on a phone that lands exactly when the
+    // player has finally got a whole track.
+    const section =
+      config.holdsFullMixWhenComplete && earned === 7 ? ('return' as const) : walked;
 
     if (
       nextBpm !== track.bpm ||
@@ -648,7 +709,12 @@ export class TrackBuilder {
         // the one track that opened on silence. Arriving in a world always
         // gives you that world's first rung, at once.
         const opening = this.ladder(genre)[0];
-        if (genre !== null && opening && !layerUnlocked(this.store.getState(), opening.layer)) {
+        // §207: when the track survives the crossing, the gift of a first rung
+        // only makes sense while there is nothing yet — otherwise wiggling
+        // across a border would hand out layers, and the build would be a
+        // steering trick instead of a build.
+        const bare = config.keepsTrackAcrossWorlds ? earned === 0 : true;
+        if (bare && genre !== null && opening && !layerUnlocked(this.store.getState(), opening.layer)) {
           this.lastRungMs = this.activeMs;
           this.unlock(opening.layer, nowMs);
         }
@@ -667,7 +733,9 @@ export class TrackBuilder {
         this.seed,
       );
     }
-    this.advanceJourney(nowMs, section);
+    // §207: a phone's track is not handed over. Reaching 7/7 is the end of the
+    // build, and what you built keeps playing.
+    if (!config.holdsFullMixWhenComplete) this.advanceJourney(nowMs, section);
 
     // --- The unlock ladder (§29.2, §31): the REGION decides the composition
     // order. Only the next step of this genre's ladder can be earned, so a
@@ -779,7 +847,9 @@ export class TrackBuilder {
     const key = `${genre ?? 'void'}|${this.trackNumberValue}`;
     if (key !== this.formKey || this.form === null) {
       this.formKey = key;
-      this.form = formFor(this.seed, genre, this.trackNumberValue, this.config.maxPaceScale);
+      this.form = this.config.fixedOrderPerWorld
+        ? fixedFormFor(genre)
+        : formFor(this.seed, genre, this.trackNumberValue, this.config.maxPaceScale);
     }
     return this.form;
   }

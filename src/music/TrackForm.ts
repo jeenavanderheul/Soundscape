@@ -153,6 +153,50 @@ export function isPlayableOrder(
 }
 
 /**
+ * §207: THE PHONE'S WRITING — one fixed opening per world, never drawn.
+ *
+ * §128 draws a fresh order for every track so no two journeys build the same
+ * way. That is the right game on a desk and the wrong one in a hand: a player
+ * with one thumb, on a screen, for two minutes, needs the world to be the same
+ * shape every time they arrive so they can learn what it is.
+ *
+ * Each of these is the world saying what it is, in the order it says it — the
+ * machine leads with its pulse, the riot with percussion, sub pressure with the
+ * floor. All six are checked against `isPlayableOrder` by test, not by eye.
+ *
+ * Note what the rules force: no order can put the three pitched layers last,
+ * so a drum always lands late. That is the grammar refusing to let a track
+ * stop being built halfway through, and it applies here too.
+ */
+const FIXED_ORDER: Record<Exclude<TrackGenre, null>, readonly TrackLayerName[]> = {
+  // The machine: pulse, then the hat that measures it, and the floor early.
+  'locked-groove': ['kick', 'hats', 'bass', 'harmony', 'snare', 'melody', 'texture'],
+  // The redline: weight immediately, then the crack of the snare.
+  'heavy-signal': ['kick', 'bass', 'snare', 'harmony', 'hats', 'melody', 'texture'],
+  // The broken machine: the kit arrives askew, snare before kick.
+  'broken-machine': ['snare', 'kick', 'bass', 'texture', 'hats', 'harmony', 'melody'],
+  // The riot: percussion first and percussion loudest — the kick is third.
+  'percussion-riot': ['snare', 'hats', 'kick', 'harmony', 'bass', 'texture', 'melody'],
+  // Sub pressure: the bottom is the first thing in the room.
+  'sub-pressure': ['bass', 'kick', 'texture', 'snare', 'hats', 'harmony', 'melody'],
+  // The void: a floor, then air over it, and the kit fills in slowly.
+  'void-crusher': ['kick', 'bass', 'texture', 'snare', 'harmony', 'hats', 'melody'],
+};
+
+/**
+ * §207: the same reading of a world every time — fixed order, and the world's
+ * own patience with no per-track departure from it.
+ */
+export function fixedFormFor(genre: TrackGenre): TrackForm {
+  const paceScale = genre === null ? 1 : WORLD_PACE[genre];
+  return {
+    order: genre === null ? TRACK_LAYERS : FIXED_ORDER[genre],
+    paceScale,
+    shape: SHAPES.find((s) => paceScale <= s.upTo)!.name,
+  };
+}
+
+/**
  * §128: the form of track N of this world, on this journey.
  *
  * Track 1 of a journey is NOT special — §118 keeps the sound of a first track
