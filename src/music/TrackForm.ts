@@ -106,8 +106,30 @@ function stream(seed: number): () => number {
  * pile. Each one exists because breaking it is audibly wrong, not because it
  * is tidy.
  */
-export function isPlayableOrder(order: readonly TrackLayerName[]): boolean {
+/**
+ * §188: a world's grammar binds the draw. The global rules keep any order
+ * playable; these keep it IN CHARACTER. Locked groove is the one world whose
+ * whole identity is the pulse — §31 opens its written ladder with "repetition
+ * creates the machine, the pulse comes first" — yet the draw could put the
+ * kick fourth: measured over forty journeys, 27 opened without a kick and 8
+ * made you wait three rungs for one, which at a cruise is most of a minute of
+ * machine world with no machine. The user heard exactly that after the rename
+ * reseeded the draws.
+ */
+const WORLD_RULES: Partial<
+  Record<Exclude<TrackGenre, null>, (at: (layer: TrackLayerName) => number) => boolean>
+> = {
+  // The pulse leads: the kick is the first or second thing you earn.
+  'locked-groove': (at) => at('kick') <= 1,
+};
+
+export function isPlayableOrder(
+  order: readonly TrackLayerName[],
+  genre: TrackGenre = null,
+): boolean {
   const at = (layer: TrackLayerName) => order.indexOf(layer);
+  const world = genre === null ? undefined : WORLD_RULES[genre];
+  if (world !== undefined && !world(at)) return false;
   // A pulse has to arrive early or the opening is ambient by accident. The
   // OPENING layer itself is free (user decision) — this only asks that some
   // drum is there by the second rung.
@@ -155,10 +177,10 @@ export function formFor(
       const j = Math.floor(next() * (i + 1));
       [order[i], order[j]] = [order[j]!, order[i]!];
     }
-    if (isPlayableOrder(order)) break;
+    if (isPlayableOrder(order, genre)) break;
   }
   // Guaranteed-valid fallback, so this function cannot return a pile.
-  if (!isPlayableOrder(order)) {
+  if (!isPlayableOrder(order, genre)) {
     order = ['kick', 'hats', 'snare', 'bass', 'harmony', 'melody', 'texture'];
   }
 

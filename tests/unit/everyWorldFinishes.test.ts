@@ -6,6 +6,7 @@ import { SECTORS, zoneAffinity } from '../../src/genres/GenreZones';
 import { curveFor } from '../../src/music/GenreLadder';
 import { createInitialMusicState } from '../../src/music/MusicState';
 import { TrackBuilder } from '../../src/music/TrackBuilder';
+import { formFor } from '../../src/music/TrackForm';
 import {
   createInitialTrackState,
   type TrackEvents,
@@ -113,5 +114,28 @@ describe('staying somewhere goes deeper, not around in a circle', () => {
       builder.tick(now, music, { velocity: 60, hz: 220, energy: 0.5, altitude: 60 } as never, region as never);
     }
     expect(store.getState().rootMidi).toBe(held);
+  });
+});
+
+describe('§188 the machine world leads with its pulse', () => {
+  it('never makes you wait past the second rung for the kick, on any journey', () => {
+    // The draw is free everywhere else; here the grammar binds it. Measured
+    // before: 8 of 40 journeys put the kick third or fourth — most of a minute
+    // of the machine world with no machine at a cruise.
+    for (let i = 0; i < 60; i++) {
+      for (let track = 1; track <= 4; track++) {
+        const form = formFor(`journey-${i}`, 'locked-groove', track);
+        expect(form.order.indexOf('kick'), `journey-${i} track ${track}`).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it('still varies the rest of the order from track to track', () => {
+    // The rule must not collapse the draw into one fixed opening.
+    const orders = new Set<string>();
+    for (let track = 1; track <= 8; track++) {
+      orders.add(formFor('journey-vast', 'locked-groove', track).order.join('>'));
+    }
+    expect(orders.size).toBeGreaterThan(4);
   });
 });

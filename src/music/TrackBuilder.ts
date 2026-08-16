@@ -759,7 +759,7 @@ export class TrackBuilder {
     const rest = form.order.filter((layer) => layer !== wanted);
     const at = rest.indexOf(next);
     const reordered = [...rest.slice(0, at), wanted, ...rest.slice(at)];
-    if (!isPlayableOrder(reordered)) return;
+    if (!isPlayableOrder(reordered, this.store.getState().genre)) return;
     this.form = { ...form, order: reordered };
   }
 
