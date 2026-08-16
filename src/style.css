@@ -167,6 +167,7 @@ body {
 }
 
 #unlock-button,
+#demo-button,
 #pause-overlay button {
   padding: calc(var(--grid) * 1.5) calc(var(--grid) * 3);
   font-family: var(--font-display);
@@ -184,12 +185,15 @@ body {
   transition: color 120ms steps(2), background-color 120ms steps(2), border-color 120ms steps(2);
 }
 
-#pause-overlay button:nth-of-type(even) {
+#pause-overlay button:nth-of-type(even),
+#demo-button {
   transform: rotate(0.14deg);
 }
 
 #unlock-button:hover:not(:disabled),
 #unlock-button:focus-visible,
+#demo-button:hover,
+#demo-button:focus-visible,
 #pause-overlay button:hover,
 #pause-overlay button:focus-visible {
   color: var(--void);
@@ -246,6 +250,113 @@ body {
   color: var(--signal-40);
 }
 
+/**
+ * §195 THE OVERLAYS ON A PHONE (user: "het past niet op het scherm, het is te
+ * groot"). The interface was drawn for a desk and had no responsive layer at
+ * all — one media query in the whole sheet, and it was for reduced motion.
+ *
+ * Measured before, on a 390x844 handset: the start screen needed 397px of
+ * height in landscape against 390 available, so ENTER sat under the fold. On a
+ * real phone it is worse than that measurement suggests, because `vh` counts
+ * the space the browser's own address bar is standing in.
+ *
+ * Three things do the work, in order of how much they matter:
+ *   - `dvh` instead of viewport-relative guesses: the box is the space that is
+ *     actually visible right now, not the space when the toolbar is hidden.
+ *   - the overlay may scroll rather than clip. Whatever else goes wrong, a
+ *     button can always be reached.
+ *   - letter-spacing is what makes this typography wide, so it is what gives
+ *     way first — reduced, never removed. Departure Mono in caps with a hair
+ *     of tracking is still this interface; without any tracking it is not.
+ */
+@media (max-width: 560px), (max-height: 480px) {
+  #unlock-overlay,
+  #pause-overlay {
+    /* The visible viewport, minus whatever the notch and home indicator own. */
+    height: 100dvh;
+    padding: calc(env(safe-area-inset-top) + var(--grid) * 2)
+      calc(env(safe-area-inset-right) + var(--grid) * 2)
+      calc(env(safe-area-inset-bottom) + var(--grid) * 2)
+      calc(env(safe-area-inset-left) + var(--grid) * 2);
+    gap: var(--grid);
+    overflow-y: auto;
+    /* A menu that has to scroll should not drag the world behind it. */
+    overscroll-behavior: contain;
+  }
+
+  #unlock-overlay {
+    gap: calc(var(--grid) * 2);
+  }
+
+  /* The wordmark is the first thing that can afford to give up room. */
+  #unlock-logo {
+    width: min(46vw, 9rem);
+  }
+
+  #unlock-overlay h1::after {
+    margin-top: var(--grid);
+  }
+
+  #unlock-button,
+  #demo-button,
+  #pause-overlay button {
+    /* Never wider than the screen, and still a 44px touch target. */
+    max-width: 100%;
+    padding: calc(var(--grid) * 1.25) calc(var(--grid) * 2);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+  }
+
+  #pause-overlay h2 {
+    margin-bottom: var(--grid);
+    font-size: 0.82rem;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+  }
+
+  #pause-overlay p {
+    font-size: 0.66rem;
+  }
+
+  [data-unlock-error] {
+    /* 32rem is 512px: wider than any phone, so it forced the page sideways. */
+    max-width: 100%;
+    font-size: 0.7rem;
+  }
+
+  .label {
+    letter-spacing: 0.24em;
+    text-indent: 0.24em;
+  }
+
+  .volume-row {
+    margin-top: var(--grid);
+  }
+
+  /* A fixed 11rem slider does not fit next to its label on a narrow screen. */
+  .volume-row input[type='range'] {
+    width: min(11rem, 42vw);
+  }
+}
+
+/* Landscape phones are SHORT, and that is the harder constraint: the start
+   screen has a wordmark and two buttons to fit into 390px of height. */
+@media (max-height: 480px) and (orientation: landscape) {
+  #unlock-logo {
+    width: min(22vw, 6.5rem);
+  }
+
+  #unlock-overlay,
+  #pause-overlay {
+    gap: calc(var(--grid) * 0.5);
+    justify-content: safe center;
+  }
+
+  #pause-overlay h2 {
+    margin-bottom: 0;
+  }
+}
+
 /* ORGANIC: the grain is the only thing that never stops moving. If the player
    asked the system for stillness, it stops too. */
 @media (prefers-reduced-motion: reduce) {
@@ -254,6 +365,7 @@ body {
   }
 
   #unlock-button,
+  #demo-button,
   #pause-overlay button {
     transform: none;
   }
