@@ -5,7 +5,11 @@ dist
 *.local
 
 # §43: vendored sample library — gigabytes, rebuilt with npm run sounds:vendor
-public/samples/
+# public/samples/ is COMMITTED since §202. It is 24 MB of Vorbis, and it has to
+# be in the repository or a deploy built from GitHub has no drums at all —
+# `npm run sounds:vendor:used` fetches 296 MB from a third party, which is not
+# something a build should depend on. Re-vendor it locally and compress it with
+# scripts/compress-samples.mjs if it ever needs rebuilding.
 public/land/
 
 # subagent worktrees: copies of this repo, never part of it
