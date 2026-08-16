@@ -275,3 +275,56 @@ is vastgelegd.
 opslaan of delen. Al geëxporteerde bestanden blijven de oude naam dragen. Dat is
 geen bug, maar wel iets om te weten voordat iemand vraagt waarom oude exports
 anders heten.
+
+---
+
+## 5. Uitgevoerd — LOCKED GROOVE (§186)
+
+De user koos **LOCKED GROOVE**, sleutel `locked-groove` — niet uit de top drie
+hierboven. De vraag was een naam die de TRACK uitlegt in plaats van de wereld
+beschrijft, in de lijn van SUB PRESSURE en PERCUSSION RIOT. Een locked groove is
+de gesloten groef aan het eind van een plaat die zichzelf blijft herhalen: dat is
+wat deze wereld doet, en het is vakjargon net als de buren. Achteraf de betere
+keus dan `iron-grid`, dat een visuele eigenschap benoemde terwijl de vijf andere
+namen allemaal over klank gaan.
+
+### Wat er is gebeurd, per fase
+
+- **Fase 0** — naamruimte B (`hatStyle: 'techno'`, de textuurnaam, de twee
+  laag-id's) is NIET meegegaan, zoals voorgesteld. Zes treffers, allemaal
+  drumvocabulaire, staan met naam en aantal in de bewakingstest.
+- **Fase 1-3** — 53 bestanden herschreven. `TechnoProfile.ts` →
+  `LockedGrooveProfile.ts` en `TechnoPreset.ts` → `LockedGroovePreset.ts` met
+  `git mv`. `tsc` wees de rest aan, zoals gepland.
+- **Fase 4** — `npm run trees:bake` opnieuw gedraaid. Twee dingen om te weten:
+  de bake heeft `@dgreenheck/ez-tree` nodig (stond in `package.json` maar was
+  niet geïnstalleerd), en hij LEEGT eerst `public/trees/` — een mislukte run
+  wist dus alle zes werelden hun bomen. Eerst `npm install`, dan pas bakken.
+  De geometrie hangt niet van de naam af, dus alleen de drie machine-bestanden
+  veranderden; de andere vijf werelden kwamen byte-identiek terug.
+- **Fase 5** — `SCHEMA_VERSION` 4 → 5 met een v4 → v5 stap die alle vier de
+  velden herschrijft. `migrations.ts` is de enige plek in `src/` die de oude
+  naam nog kent.
+- **Fase 6** — drie nieuwe tests, plus de hernoemde `lockedGrooveProfile.test.ts`.
+  868 tests groen (was 862).
+- **Fase 7** — §186 aan de spec toegevoegd. In de spec zijn alleen de regels
+  aangepast die de HUIDIGE staat beschrijven (HUD-voorbeeld, de twee
+  wereldtabellen); de historische amendementen die nog over Ambient, Jazz en DnB
+  gaan zijn met rust gelaten, net als `docs/plans/2026-08-12-*`.
+
+### Twee dingen die het plan niet had voorzien
+
+**De drawn layer order verschuift.** `TrackForm` zaait op
+`journeySeed | world | trackNumber`, dus de wereldnaam zit IN de seed. Een
+andere naam is een andere seed: tracks in deze wereld worden nu anders getrokken
+dan onder de oude naam. Journey codes blijven vooruit deterministisch, maar zijn
+niet vergelijkbaar over de hernoeming heen. Dit is niet verstopt achter een
+stabiel intern id — dat zou een tweede naam voor één wereld zijn geweest (§56).
+
+**Eén test leunde op de oude trekking.** `trackBuilder.test.ts` verwachtte dat
+twee harde releases meteen de SNARE opleveren. Dat gold alleen voor de oude
+seed: `pullIntentForward` weigert een sprong die de opbouw onspeelbaar maakt, dus
+één keer vragen kan geweigerd worden. De test vraagt nu door, zoals een speler
+ook zou doen, en bewijst daarna dat de vraag de wachtrij echt heeft omgegooid
+(de snare komt vóór de texture die de trekking eerder had gezet). Dat toetst het
+mechanisme in plaats van de trekking, en overleeft de volgende hernoeming wel.

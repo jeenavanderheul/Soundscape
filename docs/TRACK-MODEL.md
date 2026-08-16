@@ -25,7 +25,7 @@ An eighth layer, ATMOSPHERE, is never earned: it is the bed under everything.
 Every world builds in its own order (`GenreLadder`), and only the NEXT unearned
 rung can be won — deliberate play brings it forward, never skips it.
 
-    techno     kick → hats → snare → bass → harmony → melody → texture
+    locked-groove  kick → hats → snare → bass → harmony → melody → texture
     garage     hats → kick → snare → bass → harmony → melody → texture
     jazz       harmony → bass → hats → kick → melody → snare → texture
     ambient    texture → harmony → bass → melody → hats → kick (last!)
@@ -52,7 +52,7 @@ rung can be won — deliberate play brings it forward, never skips it.
   grammar it was born in; flying somewhere else starts a NEW track there.
 - **Speed** is not tempo. It is ENERGY and DEVELOPMENT: it decides how fast
   layers are earned, how fast sections move, and how each world spends it
-  (trap subdivides its hats, techno adds voices, ambient adds air, never drums).
+  (trap subdivides its hats, locked groove adds voices, ambient adds air, never drums).
 - **Altitude** is pitch and tempo together, and nothing else.
 - **Wind (LMB)** is force: loudness, note length, and the throttle.
 - **Region tempo** is fixed per world; your own tapped rhythm overrides it.

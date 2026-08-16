@@ -34,7 +34,7 @@ const PHASES: Section[] = ['intro', 'groove', 'discovery', 'build', 'drop', 'dee
 /**
  * §110: a world written as a DOCUMENT arranges itself — its masks are the
  * form, and the arc must not also decide. The rule this guards is "only one
- * authority over presence", not "no masks": for techno that authority is now
+ * authority over presence", not "no masks": for locked groove that authority is now
  * the preset, and `WorldLayerGraph` no longer runs the section mix over it.
  * What must stay true is that no GENERATED world smuggles an arrangement into
  * a template, which is the fault §101 found.

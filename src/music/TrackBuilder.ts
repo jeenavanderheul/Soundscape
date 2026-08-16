@@ -401,7 +401,7 @@ export class TrackBuilder {
     this.bus.emit('track:new', { number: this.trackNumberValue, atMs: nowMs });
     // The opening rung is announced AFTER the handover, not before it. It was
     // emitted while the previous track was still the current one, so the event
-    // stream read as that track earning an eighth layer — measured: techno
+    // stream read as that track earning an eighth layer — measured: locked groove
     // announced `hats` at 18s and again at 95.7s inside "track 1". Anything
     // labelling events by the track that is playing filed it under the wrong
     // one: the cue, the HUD, the strip.
@@ -494,7 +494,7 @@ export class TrackBuilder {
       ? this.melody.phrase(rootMidi).map((n) => foldToRange(n, rootMidi + 24, rootMidi + 36))
       : track.melodyNotes;
     // §47 (user decision): a track keeps the grammar it was born in. Flying
-    // from Techno into Garage does not rewrite your techno track — the region
+    // from LOCKED GROOVE into Garage does not rewrite your locked groove track — the region
     // you are in when the NEXT track starts is what decides that one.
     const genre = track.genre ?? this.dominant(affinity);
     // §31/§103: call-and-response was Jazz's alone, and Jazz is gone. The

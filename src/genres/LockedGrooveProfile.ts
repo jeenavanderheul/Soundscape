@@ -1,12 +1,12 @@
 import type { MusicState } from '../music/MusicState';
 
 /**
- * Techno attractor — REPETITION (spec §9.1).
+ * LOCKED GROOVE attractor — REPETITION (spec §9.1).
  * Signals: high repetition, stable pulse, strong low end, synthetic timbre,
  * medium/high texture and a soft 120–145 BPM tendency. BPM alone never
  * determines genre: the tempo term is a bounded bonus, not a gate.
  */
-export interface TechnoProfileWeights {
+export interface LockedGrooveProfileWeights {
   repetition: number;
   pulse: number;
   lowEnd: number;
@@ -15,7 +15,7 @@ export interface TechnoProfileWeights {
   tempo: number;
 }
 
-export const TECHNO_WEIGHTS: TechnoProfileWeights = {
+export const LOCKED_GROOVE_WEIGHTS: LockedGrooveProfileWeights = {
   repetition: 0.3,
   pulse: 0.25,
   lowEnd: 0.15,
@@ -37,9 +37,9 @@ export function tempoTendency(bpm: number): number {
   return clamp01(1 - Math.abs(bpm - TEMPO_CENTER) / TEMPO_HALF_WIDTH);
 }
 
-export function scoreTechno(
+export function scoreLockedGroove(
   music: MusicState,
-  weights: TechnoProfileWeights = TECHNO_WEIGHTS,
+  weights: LockedGrooveProfileWeights = LOCKED_GROOVE_WEIGHTS,
 ): number {
   // Synthetic timbre: bright or noisy electronic character (square/saw lean).
   const synthetic = clamp01(0.6 * music.timbreBrightness + 0.4 * music.timbreNoise);

@@ -14,7 +14,7 @@ import { LEVEL_DEEP, type TrackState } from '../music/TrackState';
  * §110 established that a world written as a document must BE that document:
  * its masks are the arrangement, nothing else decides presence, and the
  * overlay can therefore show the code one for one because it is the code that
- * is playing. Techno proved it. These four follow the same rule.
+ * is playing. LOCKED GROOVE proved it. These four follow the same rule.
  *
  * What is shared is only the machinery — the live ALT/WIND/EDGE, the
  * earned-gating, the trim. Everything that makes a world sound like itself

@@ -20,7 +20,7 @@ import { GenreAffinityEngine } from '../../src/genres/GenreAffinityEngine';
  * only emitted `track:new`, so the world never announced its name. You saw
  * TRACK 02 and were never told where you had arrived.
  */
-const WORLDS = ['techno', 'heavy-signal', 'broken-machine', 'sub-pressure', 'void-crusher', 'percussion-riot'];
+const WORLDS = ['locked-groove', 'heavy-signal', 'broken-machine', 'sub-pressure', 'void-crusher', 'percussion-riot'];
 const affinityFor = (genre: string) => ({ ...zoneAffinity({ x: 0, y: 6, z: 0 }), [genre]: 1 }) as never;
 
 function sweep(holdMs: number, seconds = 60) {

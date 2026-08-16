@@ -18,13 +18,13 @@ export const LEVEL_EARNED = 0.5;
 export const LEVEL_DEEP = 1;
 
 /**
- * §103 (user decision): TWO worlds. The compass has carried only techno and
+ * §103 (user decision): TWO worlds. The compass has carried only locked groove and
  * SUB PRESSURE since §81, so the other nine grammars were unreachable code
  * that still had to be maintained, audited and kept green. They are in git at
  * tag `soundopbouw-14aug` if they are ever wanted back.
  */
 export type TrackGenre =
-  | 'techno'
+  | 'locked-groove'
   | 'sub-pressure'
   | 'heavy-signal'
   | 'broken-machine'

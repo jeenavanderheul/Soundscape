@@ -25,14 +25,14 @@ describe('§36 the forest is the score', () => {
   });
 
   it('grows the same forest for the same cell, every time', () => {
-    const a = growthsInCell(SEED, 4, -2, ECOLOGIES.techno, undefined);
-    const b = growthsInCell(SEED, 4, -2, ECOLOGIES.techno, undefined);
+    const a = growthsInCell(SEED, 4, -2, ECOLOGIES['locked-groove'], undefined);
+    const b = growthsInCell(SEED, 4, -2, ECOLOGIES['locked-groove'], undefined);
     expect(a).toEqual(b);
   });
 
   it('grows a different forest in a different place', () => {
-    const a = growthsInCell(SEED, 4, -2, ECOLOGIES.techno, undefined);
-    const b = growthsInCell(SEED, 5, -2, ECOLOGIES.techno, undefined);
+    const a = growthsInCell(SEED, 4, -2, ECOLOGIES['locked-groove'], undefined);
+    const b = growthsInCell(SEED, 5, -2, ECOLOGIES['locked-groove'], undefined);
     expect(a).not.toEqual(b);
   });
 
@@ -50,14 +50,14 @@ describe('§36 the forest is the score', () => {
     expect(new Set(names).size).toBe(names.length);
     // §103: two worlds, and they still have to be told apart by eye — the
     // machine forest stands straight, SUB PRESSURE's grows heavier and rougher.
-    expect(ECOLOGIES.techno.irregularity).not.toBe(ECOLOGIES['sub-pressure'].irregularity);
-    expect(ECOLOGIES.techno.heightScale).not.toBe(ECOLOGIES['sub-pressure'].heightScale);
+    expect(ECOLOGIES['locked-groove'].irregularity).not.toBe(ECOLOGIES['sub-pressure'].irregularity);
+    expect(ECOLOGIES['locked-groove'].heightScale).not.toBe(ECOLOGIES['sub-pressure'].heightScale);
     expect(ecologyFor(null)).toBe(NEUTRAL_ECOLOGY);
   });
 
   it('lets each ecology favour its own growths', () => {
     const draws = 400;
-    const count = (ecology: typeof ECOLOGIES.techno, role: GrowthRole) => {
+    const count = (ecology: typeof ECOLOGIES['locked-groove'], role: GrowthRole) => {
       let n = 0;
       for (let i = 0; i < draws; i++) if (roleFor(ecology, i / draws) === role) n++;
       return n;
@@ -65,7 +65,7 @@ describe('§36 the forest is the score', () => {
     // The two worlds favour different growths, or the land would read the same.
     const roles: GrowthRole[] = ['root', 'trunk', 'thin', 'canopy'];
     const differs = roles.some(
-      (role) => count(ECOLOGIES.techno, role) !== count(ECOLOGIES['sub-pressure'], role),
+      (role) => count(ECOLOGIES['locked-groove'], role) !== count(ECOLOGIES['sub-pressure'], role),
     );
     expect(differs).toBe(true);
   });
@@ -104,7 +104,7 @@ describe('§55 every world has its own shape language', () => {
   // §135: all six, not the two that happened to be written first — a shape
   // language only does its job if no two worlds share one.
   const WORLDS = [
-    'techno', 'sub-pressure', 'heavy-signal', 'broken-machine', 'percussion-riot', 'void-crusher',
+    'locked-groove', 'sub-pressure', 'heavy-signal', 'broken-machine', 'percussion-riot', 'void-crusher',
   ] as const;
 
   it('no two worlds are built from the same pair of forms', () => {

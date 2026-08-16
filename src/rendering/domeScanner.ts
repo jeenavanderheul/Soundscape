@@ -89,7 +89,7 @@ export interface ScannerPattern {
 
 export const GENRE_PATTERNS: Record<string, ScannerPattern> = {
   // The metronome world: the light lands on the beat and nowhere else.
-  techno: { rate: 1, steps: 4, gate: 0, stutter: 0, spread: 0 },
+  'locked-groove': { rate: 1, steps: 4, gate: 0, stutter: 0, spread: 0 },
   // Weight, not speed: slow, wide, no chopping.
   'sub-pressure': { rate: 0.6, steps: 0, gate: 0, stutter: 0, spread: 0 },
   // A signal being pushed past its limit: strobed on the eighths.
@@ -139,7 +139,7 @@ export type Formation =
 
 /** Which formation a world reaches for. The section still decides the motion. */
 const GENRE_FORMATION: Record<string, Formation> = {
-  techno: 'quarters',
+  'locked-groove': 'quarters',
   'sub-pressure': 'opposite',
   'heavy-signal': 'pulse',
   'broken-machine': 'alternate',

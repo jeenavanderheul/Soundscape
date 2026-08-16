@@ -42,7 +42,7 @@ const BUILT_IN = new Set([
 
 const WORLD_FILES = [
   'src/audio/worlds.ts',
-  'src/audio/TechnoPreset.ts',
+  'src/audio/LockedGroovePreset.ts',
   'src/lab/SubPressure.ts',
 ];
 
@@ -123,7 +123,7 @@ describe('§114 what the ENGINE renders is playable, offline, everywhere', () =>
   // itself (the finale, the tension engine, the production coats).
   const PHASES: Section[] = ['intro', 'groove', 'discovery', 'build', 'drop', 'deep', 'break', 'return'];
   const WORLDS: Exclude<TrackGenre, null>[] = [
-    'techno', 'sub-pressure', 'heavy-signal',
+    'locked-groove', 'sub-pressure', 'heavy-signal',
     'broken-machine', 'percussion-riot', 'void-crusher',
   ];
 
@@ -169,7 +169,7 @@ describe('§115 every world shows its own layout, not role banners', () => {
   it('all six carry a section title on every voice', () => {
     setSamplesLoaded(true);
     const deep = { unlocked: true, level: LEVEL_DEEP };
-    for (const genre of ['techno', 'sub-pressure', 'heavy-signal',
+    for (const genre of ['locked-groove', 'sub-pressure', 'heavy-signal',
       'broken-machine', 'percussion-riot', 'void-crusher'] as Exclude<TrackGenre, null>[]) {
       const track = {
         ...createInitialTrackState(),
@@ -194,7 +194,7 @@ describe('§116 the bench can scrub through the thirty-two cycles', () => {
     const deep = { unlocked: true, level: LEVEL_DEEP };
     const track = {
       ...createInitialTrackState(),
-      genre: 'techno' as const, form: 'drop' as const, bpm: 134,
+      genre: 'locked-groove' as const, form: 'drop' as const, bpm: 134,
       drums: { kick: deep, snare: deep, hats: deep },
       bass: deep, harmony: deep, melody: deep, texture: deep,
       rootMidi: 45, harmonyIntervals: [0, 3, 7, 10], melodyNotes: [69, 72],
@@ -225,7 +225,7 @@ describe('§116 the bench can scrub through the thirty-two cycles', () => {
 
 describe('§117 no two worlds share a machine or a voice', () => {
   const WORLDS: Exclude<TrackGenre, null>[] = [
-    'techno', 'sub-pressure', 'heavy-signal',
+    'locked-groove', 'sub-pressure', 'heavy-signal',
     'broken-machine', 'percussion-riot', 'void-crusher',
   ];
   const rendered = (genre: Exclude<TrackGenre, null>) => {

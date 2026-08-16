@@ -85,28 +85,28 @@
       "radius": 0.3166
     },
     {
-      "id": "techno-sapling",
+      "id": "locked-groove-sapling",
       "source": "ez-tree",
       "model": "Pine Medium",
-      "world": "techno",
+      "world": "locked-groove",
       "stage": "sapling",
       "points": 450,
       "radius": 0.2747
     },
     {
-      "id": "techno-half",
+      "id": "locked-groove-half",
       "source": "ez-tree",
       "model": "Pine Medium",
-      "world": "techno",
+      "world": "locked-groove",
       "stage": "half",
       "points": 850,
       "radius": 0.3026
     },
     {
-      "id": "techno-full",
+      "id": "locked-groove-full",
       "source": "ez-tree",
       "model": "Pine Medium",
-      "world": "techno",
+      "world": "locked-groove",
       "stage": "full",
       "points": 1200,
       "radius": 0.294

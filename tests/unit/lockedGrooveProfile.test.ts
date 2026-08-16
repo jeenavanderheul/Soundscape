@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createEventBus } from '../../src/core/EventBus';
 import { GenreAffinityEngine, GenreEvents } from '../../src/genres/GenreAffinityEngine';
-import { scoreTechno, tempoTendency } from '../../src/genres/TechnoProfile';
+import { scoreLockedGroove, tempoTendency } from '../../src/genres/LockedGrooveProfile';
 import { createInitialMusicState, type MusicState } from '../../src/music/MusicState';
 
-function technoState(): MusicState {
+function lockedGrooveState(): MusicState {
   return {
     ...createInitialMusicState(),
     bpm: 128,
@@ -18,14 +18,14 @@ function technoState(): MusicState {
   };
 }
 
-describe('scoreTechno (§9.1)', () => {
+describe('scoreLockedGroove (§9.1)', () => {
   it('scores high for a repetitive, pulsed, low-end-heavy 128 BPM state', () => {
-    expect(scoreTechno(technoState())).toBeGreaterThan(0.5);
+    expect(scoreLockedGroove(lockedGrooveState())).toBeGreaterThan(0.5);
   });
 
   it('scores near zero without repetition, whatever the BPM (BPM never decides alone)', () => {
-    const state = { ...technoState(), repetition: 0, rhythmicRegularity: 0.1, tempoConfidence: 0.1 };
-    expect(scoreTechno(state)).toBeLessThan(0.1);
+    const state = { ...lockedGrooveState(), repetition: 0, rhythmicRegularity: 0.1, tempoConfidence: 0.1 };
+    expect(scoreLockedGroove(state)).toBeLessThan(0.1);
   });
 
   it('scores an ambient-like state low', () => {
@@ -37,7 +37,7 @@ describe('scoreTechno (§9.1)', () => {
       timbreBrightness: 0.1,
       textureDensity: 0.1,
     };
-    expect(scoreTechno(state)).toBeLessThan(0.1);
+    expect(scoreLockedGroove(state)).toBeLessThan(0.1);
   });
 
   it('tempoTendency peaks inside 120-145 and is 0 without tempo', () => {
@@ -60,21 +60,21 @@ describe('GenreAffinityEngine (§9)', () => {
     bus.on('genre:snapshot', () => {
       emitted += 1;
     });
-    const state = technoState();
+    const state = lockedGrooveState();
     // Same timestamp twice: second call must be throttled away (never per frame).
     engine.update(0, state);
     engine.update(10, state);
     expect(emitted).toBe(1);
     for (let t = 100; t <= 2000; t += 100) engine.update(t, state);
     const snap = engine.current!;
-    expect(snap.affinity.techno).toBeGreaterThan(0.4);
-    expect(snap.dominant).toBe('techno');
+    expect(snap.affinity['locked-groove']).toBeGreaterThan(0.4);
+    expect(snap.dominant).toBe('locked-groove');
     expect(Object.isFrozen(snap)).toBe(true);
     expect(Object.isFrozen(snap.affinity)).toBe(true);
     expect(engine.history.length).toBeLessThanOrEqual(4);
-    // Affinity decays when the music stops being techno-like.
+    // Affinity decays when the music stops being locked groove-like.
     const silent = createInitialMusicState();
     for (let t = 2100; t <= 4000; t += 100) engine.update(t, silent);
-    expect(engine.current!.affinity.techno).toBeLessThan(0.2);
+    expect(engine.current!.affinity['locked-groove']).toBeLessThan(0.2);
   });
 });

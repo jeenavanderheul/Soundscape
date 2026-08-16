@@ -59,7 +59,7 @@ const MELODIC: ReadonlySet<TrackLayerName> = new Set(['harmony', 'melody', 'text
 const WORLD_PACE: Record<Exclude<TrackGenre, null>, number> = {
   'percussion-riot': 0.62,
   'broken-machine': 0.78,
-  techno: 1,
+  'locked-groove': 1,
   'heavy-signal': 0.95,
   'sub-pressure': 1.1,
   'void-crusher': 1.05,
@@ -117,7 +117,7 @@ export function isPlayableOrder(order: readonly TrackLayerName[]): boolean {
   // The floor cannot arrive last — six rungs of a track with no bottom.
   if (at('bass') > 4) return false;
   // All six worlds are built on a kick. A draw that put it seventh gave a
-  // techno track that went six rungs without one, which reads as broken
+  // locked groove track that went six rungs without one, which reads as broken
   // rather than as a variation — the snare satisfying the pulse rule above is
   // not the same thing as the floor being there.
   if (at('kick') > 3) return false;

@@ -59,7 +59,7 @@ function finishedTrack(genre: Exclude<TrackGenre, null>, section: Section): Trac
 
 function affinityFor(genre: Exclude<TrackGenre, null>): GenreAffinity {
   const zero: GenreAffinity = {
-    techno: 0, 'sub-pressure': 0, 'heavy-signal': 0,
+    'locked-groove': 0, 'sub-pressure': 0, 'heavy-signal': 0,
     'broken-machine': 0, 'percussion-riot': 0, 'void-crusher': 0,
   };
   return { ...zero, [genre]: 1 };
@@ -110,7 +110,7 @@ const inputs = new Map<string, HTMLInputElement>();
 /** What the grammar itself says, before anything on this page touched it. */
 const DEFAULT_SECTION: Section = 'drop';
 
-let preset: GenreLabPreset = 'techno';
+let preset: GenreLabPreset = 'locked-groove';
 let section: Section = 'drop';
 /** §116: the cycle the bench is parked on — 0..31, scrubbed by hand. */
 let scrubCycle = 0;

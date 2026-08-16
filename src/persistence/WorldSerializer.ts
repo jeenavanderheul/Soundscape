@@ -6,7 +6,7 @@ import type { ResonatorData } from '../world/Resonator';
 import { HZ_SCALE_RANGE, type StructureData } from '../world/StructureData';
 
 /** Bump when the save contract changes and register a migration (spec §18). */
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 const WAVEFORMS: readonly Waveform[] = ['sine', 'triangle', 'square', 'saw', 'noise'];
 const FORM_PHASES = ['void', 'intro', 'build', 'peak', 'break', 'return', 'mutation'] as const;
@@ -171,7 +171,7 @@ function genreSnapshot(raw: unknown): GenreSnapshot | null {
   if (!isObject(raw) || !isObject(raw.affinity)) return null;
   const a = raw.affinity;
   const affinity: GenreAffinity = {
-    techno: num(a.techno, 0, 0, 1),
+    'locked-groove': num(a['locked-groove'], 0, 0, 1),
     'sub-pressure': num(a['sub-pressure'], 0, 0, 1),
     'heavy-signal': num(a['heavy-signal'], 0, 0, 1),
     'broken-machine': num(a['broken-machine'], 0, 0, 1),

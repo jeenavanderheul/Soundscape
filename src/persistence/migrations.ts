@@ -48,7 +48,61 @@ function migrateV1Structure(entry: unknown, worldSeed: string): unknown {
   };
 }
 
+/**
+ * §186: the machine world was called `techno` until it got a world name like
+ * its five neighbours. THIS FILE IS THE ONLY PLACE THAT STILL KNOWS THE OLD
+ * NAME — everywhere else it is `locked-groove`, and a hygiene test fails if the
+ * old one comes back. Do not "tidy" these two strings away.
+ *
+ * Without this step nothing would throw: `validate()` reads an unknown genre as
+ * `null` and an unknown affinity key as 0, so a returning player would silently
+ * land in the void with a track that had lost its grammar. Silent is the whole
+ * problem (§56), which is why the rename bought a schema version.
+ */
+const OLD_MACHINE_NAME = 'techno';
+const NEW_MACHINE_NAME = 'locked-groove';
+
+const renameMachine = (value: unknown): unknown =>
+  value === OLD_MACHINE_NAME ? NEW_MACHINE_NAME : value;
+
+/** `{ techno: 0.7, … }` → `{ 'locked-groove': 0.7, … }`, weight and all. */
+function renameAffinityKey(affinity: unknown): unknown {
+  if (!isPlainObject(affinity) || !(OLD_MACHINE_NAME in affinity)) return affinity;
+  const { [OLD_MACHINE_NAME]: weight, ...rest } = affinity;
+  return { [NEW_MACHINE_NAME]: weight, ...rest };
+}
+
+function isPlainObject(value: unknown): value is RawSave {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 const MIGRATIONS: MigrationRegistry = {
+  // v4 → v5: the machine world was renamed (§186). Four fields carry its name.
+  4: (raw) => ({
+    ...raw,
+    trackState: isPlainObject(raw.trackState)
+      ? { ...raw.trackState, genre: renameMachine(raw.trackState.genre) }
+      : raw.trackState,
+    genreHistory: Array.isArray(raw.genreHistory)
+      ? raw.genreHistory.map((entry) =>
+          isPlainObject(entry)
+            ? {
+                ...entry,
+                affinity: renameAffinityKey(entry.affinity),
+                dominant: renameMachine(entry.dominant),
+              }
+            : entry,
+        )
+      : raw.genreHistory,
+    progression: isPlainObject(raw.progression)
+      ? {
+          ...raw.progression,
+          genresSeen: Array.isArray(raw.progression.genresSeen)
+            ? raw.progression.genresSeen.map(renameMachine)
+            : raw.progression.genresSeen,
+        }
+      : raw.progression,
+  }),
   // v3 → v4: TrackState added (§29.4); older saves start with a locked track.
   3: (raw) => ({ ...raw, trackState: null }),
   // v2 → v3: progression grew discovery tracking (§17); defaults are empty.

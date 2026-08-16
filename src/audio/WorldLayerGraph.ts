@@ -1,5 +1,5 @@
 import { buildSubPressureGraph } from '../lab/SubPressure';
-import { buildTechnoGraph } from './TechnoPreset';
+import { buildLockedGrooveGraph } from './LockedGroovePreset';
 import { buildPresetGraph } from './PresetWorlds';
 import { HEAVY_SIGNAL, BROKEN_MACHINE, PERCUSSION_RIOT, VOID_CRUSHER, WORLD_DEFAULTS } from './worlds';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
@@ -34,10 +34,10 @@ export interface WorldLayerGraphInput {
 
 
 export function buildWorldLayerGraph(input: WorldLayerGraphInput): MusicalLayerGraph {
-  if (input.track.genre === 'techno') {
+  if (input.track.genre === 'locked-groove') {
     // §110: this world IS the MACHINE PRESSURE document — its own masks are
     // the arrangement, so nothing else may decide what is sounding.
-    return buildTechnoGraph({
+    return buildLockedGrooveGraph({
       track: input.track,
       ...(input.motion === undefined ? {} : { motion: input.motion }),
       ...(input.energy === undefined ? {} : { energy: input.energy }),
@@ -52,7 +52,7 @@ export function buildWorldLayerGraph(input: WorldLayerGraphInput): MusicalLayerG
     'void-crusher': VOID_CRUSHER,
   }[input.track.genre as 'heavy-signal'];
   if (document !== undefined) {
-    // §111: the same rule as techno — the document arranges itself.
+    // §111: the same rule as locked groove — the document arranges itself.
     return buildPresetGraph(document, {
       track: input.track,
       defaults: WORLD_DEFAULTS[input.track.genre as 'heavy-signal'],

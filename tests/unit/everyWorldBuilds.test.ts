@@ -25,7 +25,7 @@ import { LEVEL_DEEP, createInitialTrackState, type TrackGenre } from '../../src/
  * suite — so the counting is the suite now.
  */
 const PHASES: Section[] = ['intro', 'groove', 'discovery', 'build', 'drop', 'deep', 'break', 'return'];
-const WORLDS: Exclude<TrackGenre, null>[] = ['techno', 'sub-pressure'];
+const WORLDS: Exclude<TrackGenre, null>[] = ['locked-groove', 'sub-pressure'];
 
 /** How many voices this world renders at that point in the arc. */
 function voicesAt(genre: Exclude<TrackGenre, null>, form: Section): number {
@@ -73,11 +73,11 @@ describe.each(WORLDS)('%s builds like one track', (genre) => {
   });
 
   it('has no dead step: every phase but the void brings something new', () => {
-    // §110: techno is a DOCUMENT — its arrangement lives in its own masks, so
+    // §110: locked groove is a DOCUMENT — its arrangement lives in its own masks, so
     // which voices sound in a phase cannot be counted from the graph. What is
     // still checked for it above is what matters: never silent, never a step
     // backwards, opens on a beat, and no tempo transform.
-    if (genre === 'techno') return;
+    if (genre === 'locked-groove') return;
     const n = counts();
     for (let i = 1; i < n.length; i += 1) {
       if (PHASES[i] === 'break') continue; // the void steps back on purpose

@@ -11,12 +11,12 @@ import { compassPoint,
 import type { GenreAffinity } from '../../src/music/MusicState';
 
 const NONE: GenreAffinity = {
-  techno: 0, 'sub-pressure': 0, 'heavy-signal': 0,
+  'locked-groove': 0, 'sub-pressure': 0, 'heavy-signal': 0,
   'broken-machine': 0, 'percussion-riot': 0, 'void-crusher': 0,
 };
 
 describe('§33 zone palette — every direction is a place you can see', () => {
-  it('gives SUB PRESSURE a dark, high-relief identity distinct from Techno', () => {
+  it('gives SUB PRESSURE a dark, high-relief identity distinct from LOCKED GROOVE', () => {
     const pressure = GENRE_LOOKS['sub-pressure'];
     expect(pressure.relief).toBeGreaterThan(0.7);
     // §174: LUMINANCE, not the sum of the channels. Sub-pressure is a
@@ -26,7 +26,7 @@ describe('§33 zone palette — every direction is a place you can see', () => {
     const luma =
       0.2126 * pressure.color.r + 0.7152 * pressure.color.g + 0.0722 * pressure.color.b;
     expect(luma).toBeLessThan(0.35);
-    expect(pressure).not.toEqual(GENRE_LOOKS.techno);
+    expect(pressure).not.toEqual(GENRE_LOOKS['locked-groove']);
   });
 
   it('leaves the void neutral', () => {
@@ -34,33 +34,33 @@ describe('§33 zone palette — every direction is a place you can see', () => {
   });
 
   it('takes on a region fully once that region dominates', () => {
-    const look = lookFor({ ...NONE, techno: 1 });
-    expect(look.color).toEqual(GENRE_LOOKS.techno.color);
-    expect(look.relief).toBeCloseTo(GENRE_LOOKS.techno.relief);
+    const look = lookFor({ ...NONE, 'locked-groove': 1 });
+    expect(look.color).toEqual(GENRE_LOOKS['locked-groove'].color);
+    expect(look.relief).toBeCloseTo(GENRE_LOOKS['locked-groove'].relief);
   });
 
   it('blends an even mix, but lets the dominant region dominate', () => {
-    const red = GENRE_LOOKS.techno.color;
+    const red = GENRE_LOOKS['locked-groove'].color;
     const green = GENRE_LOOKS['sub-pressure'].color;
     // Halfway between two compass points both regions pull hard (cos³ of
     // 22.5° ≈ 0.79), and there the look really is the midpoint.
-    const between = lookFor({ ...NONE, techno: 0.79, 'sub-pressure': 0.79 });
+    const between = lookFor({ ...NONE, 'locked-groove': 0.79, 'sub-pressure': 0.79 });
     expect(between.color.r).toBeCloseTo((red.r + green.r) / 2, 1);
     expect(between.color).not.toEqual(red);
     // A weak pull leaves the world mostly void, as it should.
-    expect(lookFor({ ...NONE, techno: 0.4 }).color.r).toBeLessThan(red.r / 2);
+    expect(lookFor({ ...NONE, 'locked-groove': 0.4 }).color.r).toBeLessThan(red.r / 2);
 
     // §45: at a compass point both neighbours sit at about a third. Weighted
     // linearly that turned every region into the same blend, so the leader
     // has to carry far more than its share.
-    const atPoint = lookFor({ ...NONE, techno: 1, 'sub-pressure': 0.35 });
+    const atPoint = lookFor({ ...NONE, 'locked-groove': 1, 'sub-pressure': 0.35 });
     expect(Math.abs(atPoint.color.r - red.r)).toBeLessThan(0.12);
     expect(Math.abs(atPoint.color.g - red.g)).toBeLessThan(0.12);
   });
 
   it('stays close to the void while the pull is weak', () => {
-    const faint = lookFor({ ...NONE, techno: 0.2 });
-    expect(faint.color.r).toBeLessThan(GENRE_LOOKS.techno.color.r / 2);
+    const faint = lookFor({ ...NONE, 'locked-groove': 0.2 });
+    expect(faint.color.r).toBeLessThan(GENRE_LOOKS['locked-groove'].color.r / 2);
     expect(faint.color.r).toBeGreaterThan(NEUTRAL_LOOK.color.r);
   });
 
@@ -86,7 +86,7 @@ describe('§33 compass', () => {
   it('§112 names the world the heading actually points into', () => {
     // The compass point is how it reads; the world comes from the same maths
     // the land uses, so `flying:` and `here:` can never disagree again.
-    expect(headingLabel(0)).toContain('techno');
+    expect(headingLabel(0)).toContain('locked-groove');
     expect(headingLabel(step)).toContain('heavy-signal');
     expect(headingLabel(step * 2)).toContain('broken-machine');
     expect(headingLabel(step * 3)).toContain('sub-pressure');
@@ -113,7 +113,7 @@ describe('§91 the guide points at the layer standing out there', () => {
     ({ layer: 'bass' as const, bearing, rise, distance });
 
   it('says climb or dive only when the height really differs', () => {
-    const base = { genre: 'techno' as const, heading: 'N · techno', energy: 0.2 };
+    const base = { genre: 'locked-groove' as const, heading: 'N · locked groove', energy: 0.2 };
     expect(guideLines({ ...base, beacon: at(0.9, 25) })[0]).toContain('climb');
     expect(guideLines({ ...base, beacon: at(0.9, -25) })[0]).toContain('dive');
     expect(guideLines({ ...base, beacon: at(0.9, 2) })[0]).not.toContain('climb');
@@ -122,19 +122,19 @@ describe('§91 the guide points at the layer standing out there', () => {
 
   it('says hold it once the layer is on the nose', () => {
     const on = guideLines({
-      genre: 'techno', heading: 'N · techno', energy: 0.8, beacon: at(0.02, 1),
+      genre: 'locked-groove', heading: 'N · locked groove', energy: 0.8, beacon: at(0.02, 1),
     });
     expect(on[0]).toContain('dead ahead');
   });
 
   it('and says the track is full when there is nothing left to collect', () => {
-    const done = guideLines({ genre: 'techno', heading: 'N · techno', energy: 0.8, beacon: null });
+    const done = guideLines({ genre: 'locked-groove', heading: 'N · locked groove', energy: 0.8, beacon: null });
     expect(done[0]).toContain('every layer earned');
   });
 
   it('sends you home when you are heading out of your own world', () => {
     const away = guideLines({
-      genre: 'sub-pressure', heading: 'N · techno', energy: 0.9, beacon: null,
+      genre: 'sub-pressure', heading: 'N · locked groove', energy: 0.9, beacon: null,
     });
     // §157: sub-pressure is due SOUTH. It used to read ESE from a second,
     // ten-point compass table that the land stopped agreeing with when the
@@ -145,14 +145,14 @@ describe('§91 the guide points at the layer standing out there', () => {
   });
 
   it('and asks for a direction while nothing is playing yet', () => {
-    const empty = guideLines({ genre: null, heading: 'N · techno', energy: 0.5, beacon: null });
+    const empty = guideLines({ genre: null, heading: 'N · locked groove', energy: 0.5, beacon: null });
     expect(empty[1]).toContain('pick a direction');
   });
 });
 
 describe('§91 the crosshair: something to line up, not a number to read', () => {
   const state = (bearing: number, rise: number) => ({
-    genre: 'techno' as const, heading: 'N · techno', energy: 0.8,
+    genre: 'locked-groove' as const, heading: 'N · locked groove', energy: 0.8,
     beacon: { layer: 'bass' as const, bearing, rise, distance: 100 },
   });
 
@@ -176,7 +176,7 @@ describe('§91 the crosshair: something to line up, not a number to read', () =>
   });
 
   it('is centred when there is nothing to point at', () => {
-    const none = beaconOffset({ genre: 'techno', heading: 'N', energy: 0.5, beacon: null });
+    const none = beaconOffset({ genre: 'locked-groove', heading: 'N', energy: 0.5, beacon: null });
     expect(none).toEqual({ x: 0, y: 0 });
   });
 });
@@ -203,8 +203,8 @@ describe('§121 one direction, one world, one name', () => {
       worlds.add(headingLabel((Math.PI * 2 * i) / 72).split(' · ')[1]!);
     }
     expect([...worlds].sort()).toEqual([
-      'broken-machine', 'heavy-signal', 'percussion-riot',
-      'sub-pressure', 'techno', 'void-crusher',
+      'broken-machine', 'heavy-signal', 'locked-groove',
+      'percussion-riot', 'sub-pressure', 'void-crusher',
     ]);
   });
 });

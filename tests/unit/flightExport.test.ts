@@ -15,7 +15,7 @@ import { exportFlight, formatFlight } from '../../src/music/FlightExport';
  * flight, and it is complete.
  */
 describe('a flight can be heard without flying', () => {
-  const flight = () => exportFlight({ genre: 'techno', velocity: 66, seconds: 200 });
+  const flight = () => exportFlight({ genre: 'locked-groove', velocity: 66, seconds: 200 });
 
   it('walks the whole arc, one block per phase, in order', () => {
     const phases = flight().map((b) => b.phase);
@@ -29,7 +29,7 @@ describe('a flight can be heard without flying', () => {
     // One lap: at full speed the arc is ~90s, and a finished track hands over
     // to the next one after DROP II — which is why a longer export shows the
     // count drop back to one. That is the journey working, not a regression.
-    const blocks = exportFlight({ genre: 'techno', velocity: 66, seconds: 88 });
+    const blocks = exportFlight({ genre: 'locked-groove', velocity: 66, seconds: 88 });
     expect(blocks[0]!.earned).toBeGreaterThan(0);
     expect(blocks[blocks.length - 1]!.earned).toBeGreaterThan(blocks[0]!.earned);
     for (let i = 1; i < blocks.length; i += 1) {
@@ -43,12 +43,12 @@ describe('a flight can be heard without flying', () => {
   });
 
   it('is deterministic — two exports of the same flight are identical', () => {
-    expect(formatFlight({ genre: 'techno', seconds: 120 }))
-      .toBe(formatFlight({ genre: 'techno', seconds: 120 }));
+    expect(formatFlight({ genre: 'locked-groove', seconds: 120 }))
+      .toBe(formatFlight({ genre: 'locked-groove', seconds: 120 }));
   });
 
   it('writes real, paste-ready Strudel with its own tempo', () => {
-    const text = formatFlight({ genre: 'techno', seconds: 120 });
+    const text = formatFlight({ genre: 'locked-groove', seconds: 120 });
     expect(text).toContain('setcpm(');
     expect(text).toContain('stack(');
     expect(text).toContain('// ── KICK ──');

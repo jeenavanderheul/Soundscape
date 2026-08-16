@@ -5,7 +5,7 @@ import type { TrackGenre, TrackLayerName, TrackState } from './TrackState';
  *
  * This file used to carry a layer ORDER per genre as well as the timings, and
  * that order stopped being true at §128, when the order started being drawn per
- * track from the journey seed (`TrackForm`). The tables still said techno opens
+ * track from the journey seed (`TrackForm`). The tables still said locked groove opens
  * on a kick; measured, it opened on a snare and the kick arrived third. Two
  * answers to one question is what §56 forbids, so the order is gone from here:
  * `TrackForm` says WHICH layer is next, this file says WHEN the world offers a
@@ -32,7 +32,7 @@ const seconds = (...values: number[]): readonly number[] => values.map((v) => v 
  * THE MACHINE: even spacing that widens slightly. Nothing is hurried and
  * nothing is withheld — the reference curve the others are heard against.
  */
-const TECHNO = seconds(3, 7, 11, 16, 23, 31, 40);
+const LOCKED_GROOVE = seconds(3, 7, 11, 16, 23, 31, 40);
 
 /**
  * THE REDLINE: everything arrives at once and then the world makes you wait
@@ -69,7 +69,7 @@ const SUB_PRESSURE = seconds(4, 9, 15, 21, 28, 35, 44);
 const VOID_CRUSHER = seconds(3, 6, 10, 15, 20, 26, 34);
 
 export const GENRE_CURVES: Record<Exclude<TrackGenre, null>, readonly number[]> = {
-  techno: TECHNO,
+  'locked-groove': LOCKED_GROOVE,
   'sub-pressure': SUB_PRESSURE,
   'heavy-signal': HEAVY_SIGNAL,
   'broken-machine': BROKEN_MACHINE,
@@ -77,9 +77,9 @@ export const GENRE_CURVES: Record<Exclude<TrackGenre, null>, readonly number[]> 
   'void-crusher': VOID_CRUSHER,
 };
 
-/** The neutral void builds like Techno: a pulse you can immediately feel. */
+/** The neutral void builds like LOCKED GROOVE: a pulse you can immediately feel. */
 export function curveFor(genre: TrackGenre): readonly number[] {
-  return genre === null ? TECHNO : GENRE_CURVES[genre];
+  return genre === null ? LOCKED_GROOVE : GENRE_CURVES[genre];
 }
 
 export function layerUnlocked(track: Readonly<TrackState>, layer: TrackLayerName): boolean {

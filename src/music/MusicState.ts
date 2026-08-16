@@ -34,7 +34,7 @@ export interface MusicState {
  */
 /** §103: two worlds — see TrackGenre. */
 export interface GenreAffinity {
-  techno: number;
+  'locked-groove': number;
   'sub-pressure': number;
   'heavy-signal': number;
   'broken-machine': number;
@@ -44,7 +44,7 @@ export interface GenreAffinity {
 
 /** Every grammar, in one place (§34) — the list all validation reads from. */
 export const GENRE_NAMES: readonly (keyof GenreAffinity)[] = [
-  'techno', 'sub-pressure', 'heavy-signal', 'broken-machine',
+  'locked-groove', 'sub-pressure', 'heavy-signal', 'broken-machine',
   'percussion-riot', 'void-crusher',
 ];
 

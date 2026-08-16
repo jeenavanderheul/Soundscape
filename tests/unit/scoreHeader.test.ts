@@ -20,7 +20,7 @@ import { LEVEL_DEEP, LEVEL_EARNED, createInitialTrackState } from '../../src/mus
 describe('the score reads like the preset it came from', () => {
   const base = {
     ...createInitialTrackState(),
-    genre: 'techno' as const,
+    genre: 'locked-groove' as const,
     bpm: 134,
     drums: {
       kick: { unlocked: true, level: LEVEL_DEEP },
@@ -36,7 +36,7 @@ describe('the score reads like the preset it came from', () => {
 
   it('names the world, the track and its tempo', () => {
     const text = state();
-    expect(text).toContain('FREQUENCY — TECHNO · TRACK 02');
+    expect(text).toContain('THE LOOP — LOCKED-GROOVE · TRACK 02');
     expect(text).toContain('setcpm(134 / 4)');
   });
 

@@ -1,7 +1,7 @@
 import type { EventBus } from '../core/EventBus';
 import type { GenreAffinity, MusicState } from '../music/MusicState';
 import type { GenreSnapshot } from '../persistence/WorldSerializer';
-import { scoreTechno } from './TechnoProfile';
+import { scoreLockedGroove } from './LockedGrooveProfile';
 import { ACTIVE_WORLD_GENRES } from './ActiveWorlds';
 
 export type GenreEvents = {
@@ -29,7 +29,7 @@ export const GENRE_AFFINITY_CONFIG: GenreAffinityEngineConfig = {
 };
 
 const ZERO_AFFINITY: GenreAffinity = {
-  techno: 0,
+  'locked-groove': 0,
   'sub-pressure': 0,
   'heavy-signal': 0,
   'broken-machine': 0,
@@ -41,12 +41,12 @@ const ZERO_AFFINITY: GenreAffinity = {
  * §34: scored from what the player PLAYS (§9). The regions are places you
  * travel to — their pull is spatial, so blending them with a behaviour score
  * of zero would halve them unfairly. §103 left two worlds; SUB PRESSURE is
- * purely a place, techno is also something you can play your way into.
+ * purely a place, locked groove is also something you can play your way into.
  */
-const BEHAVIOURAL: ReadonlySet<keyof GenreAffinity> = new Set(['techno']);
+const BEHAVIOURAL: ReadonlySet<keyof GenreAffinity> = new Set(['locked-groove']);
 
 /**
- * Genres emerge from MusicState (spec §9). M5 activates only the Techno
+ * Genres emerge from MusicState (spec §9). M5 activates only the LOCKED GROOVE
  * attractor; the other profiles stay 0 until their milestones. Affinities are
  * smoothed over temporal history and may overlap — no menu, no percentages.
  */
@@ -68,7 +68,7 @@ export class GenreAffinityEngine {
   /**
    * `zone` is the spatial pull of the region the player is in (§29.5, user
    * decision: every direction is a genre). Behaviour and place carry equal
-   * weight — flying north leans Techno, and playing Techno-like there makes
+   * weight — flying north leans LOCKED GROOVE, and playing LOCKED GROOVE-like there makes
    * it unmistakable. Both are gated by whether any music exists at all.
    */
   update(nowMs: number, music: Readonly<MusicState>, zone?: GenreAffinity): void {
@@ -78,7 +78,7 @@ export class GenreAffinityEngine {
     this.lastEvalMs = nowMs;
 
     const base = {
-      techno: scoreTechno(music),
+      'locked-groove': scoreLockedGroove(music),
     };
     const behaviour: GenreAffinity = {
       ...ZERO_AFFINITY,

@@ -236,7 +236,7 @@ const VOICE_SOUNDS = new Set([
   'sax',
   'timpani',
   'tubularbells',
-  // §71 techno: the synth voices its reference preset is written on.
+  // §71 'locked-groove': the synth voices its reference preset is written on.
   'pulse', 'supersaw', 'fmpiano', 'clavisynth', 'casio',
 ]);
 
@@ -383,7 +383,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
     clamp(finite(primitive.parameters['gain'] ?? 1, `${primitive.id}.gain`), 0, 1) * layerGain
   ).toFixed(3);
   const p = primitive.parameters;
-  // §32: saturation. Techno and DnB are driven; Ambient and Jazz stay clean.
+  // §32: saturation. LOCKED GROOVE and DnB are driven; Ambient and Jazz stay clean.
   const drive = clamp(finite(p['drive'] ?? 0, `${primitive.id}.drive`), 0, 0.6);
   const bankOf = (value: unknown): string =>
     typeof value === 'string' && DRUM_BANKS.has(value) ? value : DEFAULT_BANK;
@@ -584,7 +584,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           return samplesLoaded
             ? `s("hh ~ ~ hh ~ hh ~ ~")${drumBank}.lpf(4200).gain(${gain})`
             : `s("white ~ ~ white ~ white ~ ~").decay(.03).sustain(0).hpf(6000).lpf(4200).gain(${gain})`;
-        // §71 techno: eighths high and thin, an open hat on the offbeat, and a
+        // §71 'locked-groove': eighths high and thin, an open hat on the offbeat, and a
         // second machine's shuffle whispering underneath.
         case 'techno':
           return samplesLoaded
@@ -635,14 +635,14 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           : `s("~ ~ white ~ ~ white ~ ~").decay(.03).sustain(0).hpf(2500).gain(${gain})`;
       }
       if (p['style'] === 'machine') {
-        // §80 techno depth: one syncopated kick off another machine, filtered
+        // §80 locked groove depth: one syncopated kick off another machine, filtered
         // down so it lands under the four rather than beside it.
         return samplesLoaded
           ? `s("~ ~ bd ~ ~ bd ~ ~")${percBank}.lpf(1800).gain(.214)`
           : `s("~ ~ sbd ~ ~ sbd ~ ~").lpf(1800).gain(.214)`;
       }
       if (p['style'] === 'toms') {
-        // §71 techno: toms walking across the bar, rim ghosts on the other machine.
+        // §71 'locked-groove': toms walking across the bar, rim ghosts on the other machine.
         return samplesLoaded
           ? `stack(s("~ ~ lt ~ ~ mt ~ ht ~")${drumBank}.gain(${gain}), s("~ rim ~ ~ ~ [rim rim] ~ ~")${percBank}.gain(${(Number(gain) * 0.8).toFixed(3)}))`
           : `s("~ ~ white ~ ~ white ~ white ~").decay(.06).sustain(0).lpf(900).gain(${gain})`;
@@ -712,7 +712,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // driven, on the same broken figure as the kick.
         case 'pressure':
           return `note("${notes[0] ?? root} ~ ~ ${notes[0] ?? root} ~ ${notes[1] ?? root} ${notes[2] ?? root} ~").s("sawtooth").lpf(240).shape(.65).gain(${gain})`;
-        // §71 techno: a saw body with a little distortion, a square edge above
+        // §71 'locked-groove': a saw body with a little distortion, a square edge above
         // it and a slow pulse under everything. The sub is its own voice (§32).
         case 'deep':
           return `stack(note("${root} ~ ${root} ${root} ~ ${notes[1] ?? root} ${notes[2] ?? root} ~").s("sawtooth").lpf(416).lpq(11.36).decay(.13).sustain(.1).release(.05).distort(2.216).postgain(.3).gain(.488).orbit(2), note("~ ${root} ~ ~ ${notes[2] ?? root} ~ ${notes[1] ?? root} ${root}").s("square").hpf(145).lpf(855).lpq(9).distort(2.616).postgain(.22).gain(.168).orbit(2))`;
@@ -780,7 +780,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
           // from — that register is what makes it a garage stab and not a pad.
           return `stack(note("[${stacked}]").add(note(12)).struct("~ x ~ ~ x ~ ~ x").s("square").detune(.04).clip(.22).lpf(3200).lpq(3).attack(.002).decay(.12).sustain(.15).release(.1).room(.5).off(.125, x => x.add(note(12)).pan(.75)).gain(${gain}), note("[${stacked}]").s("supersaw").attack(.6).release(1.2).lpf(saw.range(500,3000).slow(16)).lpq(2).room(.7).gain(${(Number(gain) * 0.55).toFixed(3)}))`;
         }
-        // §71 techno: a dark pad holding under a dissonant stab, with an FM
+        // §71 'locked-groove': a dark pad holding under a dissonant stab, with an FM
         // shadow an octave up — three voices, none of them in front.
         if (style === 'darkpad') {
           // §105: the stab WALKS — a bar per chord — and it is played rather
@@ -803,7 +803,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         if (style === 'skank') {
           return `note("[${stacked}]").s("triangle").struct("~ x ~ x").decay(.14).sustain(0).delay(.5).delayfeedback(.6).room(.5).gain(${gain})`;
         }
-        // Techno/DnB: stabs, not pads — the filter sweep makes them speak.
+        // LOCKED GROOVE/DnB: stabs, not pads — the filter sweep makes them speak.
         return `note("[${stacked}]").s("sawtooth").slow(${slow}).lpf("<900 1600 1100 2200>")${shaped}.room(.18).gain(${gain})`;
       }
       const note = p['note'];
@@ -825,14 +825,14 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         // filter breathing, and a high triangle answering it.
         case 'hook2':
           return `stack(note("${notes}").s("supersaw").legato(.28).distort(.32).lpf(sine.slow(8).range(450, 2400)).room(.55).delay(.125).gain(${gain}), note("${notes}").s("triangle").slow(${slow * 2}).legato(.22).lpf(2600).room(.75).delay(.1875).gain(${(Number(gain) * 0.59).toFixed(3)}))`;
-        // §71 techno: sequencers, not a tune — a pulse line, a clavisynth
+        // §71 'locked-groove': sequencers, not a tune — a pulse line, a clavisynth
         // answering it and a casio far above, each on its own clock.
         case 'sequence':
           {
             const phrase = notes.split(' ');
             return `note("${phrase[0]} ~ ~ ${phrase[1] ?? phrase[0]} ~ ${phrase[2] ?? phrase[0]} ~ ${phrase[3] ?? phrase[0]}").s("clavisynth").decay(.035).hpf(850).distort(.588).delay(.3).dfb(.32).dt(60/134).gain(.058)`;
           }
-        // Techno: not a tune but a dark stab — the hook is the rhythm.
+        // LOCKED GROOVE: not a tune but a dark stab — the hook is the rhythm.
         case 'stab':
           return `note("${notes}").s("square").slow(${slow}).lpf("<500 900 650 1300>")${shaped}.decay(.18).sustain(0).gain(${gain})`;
         // §34 trap/breakbeat: bells and mallets, bright and struck.
@@ -910,14 +910,14 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
             ? `s("shaker_small*8").gain(${gain})`
             : `s("white*8").decay(.02).sustain(0).hpf(8000).gain(${gain})`;
         // §34 dub/breakbeat: air and tape, the room breathing.
-        // §71 techno: the machine room — crushed bytebeat, air, rumble, dust.
+        // §71 'locked-groove': the machine room — crushed bytebeat, air, rumble, dust.
         case 'machine':
           return `s("bytebeat").slow(2).bpf(1510).crush(5).distort(1.28).postgain(.3).gain(.023)`;
         case 'machine-room':
           return `stack(s("brown").clip(1).lpf(674).gain(.053).room(.75).orbit(3), s("crackle").hpf(5000).gain(.017).room(.35))`;
         case 'machine-rise':
           // §104: ONE swell every sixteen bars. This is a FIGURE — the mask is
-          // the note, not an arrangement — but §101 removed every techno mask
+          // the note, not an arrangement — but §101 removed every locked groove mask
           // in one sweep and took it with them. Unmasked it fired every single
           // bar: a 0.35s noise swell at 4500 Hz, louder than the texture and
           // the deep hats, landing on nothing. It read as a clap that was not
@@ -939,7 +939,7 @@ function renderPrimitive(primitive: MusicalPrimitive, layer: MusicalLayer): stri
         case 'metallic':
           return `note("c6").s("square").fm("<3 7 5>").slow(3).hpf(3000).delay(.3).room(.4).gain(${gain})`;
         default:
-          // Techno: the top-end shimmer of fast, quiet hats.
+          // LOCKED GROOVE: the top-end shimmer of fast, quiet hats.
           return samplesLoaded
             ? `s("hh*16")${drumBank}.hpf(9000).gain("${(Number(gain) * 0.4).toFixed(3)} ${gain} ${(Number(gain) * 0.3).toFixed(3)} ${gain}")`
             : `s("white*16").decay(.02).sustain(0).hpf(9000).gain(${gain})`;
@@ -1019,7 +1019,7 @@ function applyPerformance(
     // §130: a voice that declared its own HIGH pass has already said which
     // band it lives in, and the flight's brightness must not contradict it.
     // Measured before this: 61 voices across the six worlds were filtered
-    // into silence — the techno texture is `hpf(8200)` and was handed
+    // into silence — the locked groove texture is `hpf(8200)` and was handed
     // `lpf(702)` at ground level, and the 909/808 hats (hpf 6200–9500) sat
     // above the brightness ceiling at EVERY altitude. Layers you had earned,
     // that §127 had just made audible, were gone. Height still colours them;

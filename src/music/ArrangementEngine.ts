@@ -121,7 +121,7 @@ export function rungsDueAt(section: Section, ladder: readonly { layer: string }[
 }
 
 /**
- * §61: a section means something different in each grammar. Techno drops by
+ * §61: a section means something different in each grammar. LOCKED GROOVE drops by
  * slamming the floor back in; Ambient has no floor to slam, so it swells and
  * opens instead; Dub drops by letting the echo answer; Jazz plays dynamics,
  * not filters. Same seven sections, five ways of meaning them.

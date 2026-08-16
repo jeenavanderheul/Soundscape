@@ -4,7 +4,7 @@ import { isActiveWorldGenre, type ActiveWorldGenre } from './ActiveWorlds';
 
 /**
  * §29.5 genre grammar, spatial layer (user decision): every direction of the
- * world is a different genre. North = Techno, East = Jazz, South = Ambient,
+ * world is a different genre. North = LOCKED GROOVE, East = Jazz, South = Ambient,
  * West = Drum & Bass, high altitude = Experimental. Zones overlap in soft
  * cosine lobes so the space between two directions is a hybrid (§9: genres
  * may overlap, no menu, no portal). Around spawn the world stays neutral —
@@ -55,7 +55,7 @@ export type GroundGenre = ActiveWorldGenre;
  * §157: which genre lies in each direction, DERIVED from the six sectors.
  *
  * There used to be a second table here — ten compass points with their own
- * genres, left over from the eight-wind compass — and it still said techno and
+ * genres, left over from the eight-wind compass — and it still said locked groove and
  * sub-pressure long after the world had six sectors. Nothing reading it was
  * wrong, exactly; it was just answering a question the land no longer agreed
  * with, which is what §56 forbids. The guide reads this, the land reads
@@ -88,12 +88,12 @@ export function setZoneGenres(next: Partial<Record<Compass, keyof GenreAffinity>
 /**
  * §112: the six sectors, in compass order — the ONE place a heading becomes a
  * world. `flying:` used to read a separate ten-point table left over from an
- * earlier compass, so the HUD could say you were flying into techno while the
+ * earlier compass, so the HUD could say you were flying into locked groove while the
  * land under you was percussion riot. Two answers to one question is exactly
  * what §56 forbids.
  */
 const sectors: GroundGenre[] = [
-  'techno', 'heavy-signal', 'broken-machine',
+  'locked-groove', 'heavy-signal', 'broken-machine',
   'sub-pressure', 'void-crusher', 'percussion-riot',
 ];
 
@@ -122,7 +122,7 @@ export function worldForHeading(heading: number): keyof GenreAffinity {
 
 export function zoneAffinity(position: Vec3Data, flightHeading?: number): GenreAffinity {
   const affinity: GenreAffinity = {
-  techno: 0,
+  'locked-groove': 0,
   'sub-pressure': 0,
   'heavy-signal': 0,
   'broken-machine': 0,

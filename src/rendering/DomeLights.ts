@@ -325,7 +325,7 @@ export class DomeLights {
   /**
    * §167 (user): a red world has RED lights. The rig used to sit on a floor of
    * roughly half on every channel, which is a polite way of saying it was
-   * white with a hint — techno and void-crusher hung the same lamps. The floor
+   * white with a hint — locked groove and void-crusher hung the same lamps. The floor
    * is now the same 0.12 the forest uses, so the region's colour is what you
    * see and the fixtures name the world from a distance.
    */

@@ -44,11 +44,11 @@ export const GENRE_LOOKS: Record<keyof GenreAffinity, ZoneLook> = {
    * that could be confused are the ones furthest apart.
    */
   // Machine red: hard, hot, industrial.
-  techno: { color: { r: 1.0, g: 0.1, b: 0.08 }, relief: 0.85, haze: 0.2 },
+  'locked-groove': { color: { r: 1.0, g: 0.1, b: 0.08 }, relief: 0.85, haze: 0.2 },
   // Deep blue: mass, pressure, the bottom of the water.
   'sub-pressure': { color: { r: 0.05, g: 0.32, b: 0.95 }, relief: 0.92, haze: 0.58 },
   // Overheated metal, pushed all the way to the yellow end: at orange it sat
-  // 25 degrees from techno's red, and two worlds 25 degrees apart are one
+  // 25 degrees from locked groove's red, and two worlds 25 degrees apart are one
   // world with a mood swing.
   'heavy-signal': { color: { r: 1.0, g: 0.74, b: 0.02 }, relief: 0.95, haze: 0.26 },
   // Acid green: electro, sharp, chemical.
@@ -115,7 +115,7 @@ export function lookFor(affinity: GenreAffinity): ZoneLook {
  *
  * These were the ten of an older compass while §111 gave the world six equal
  * sectors, so a world spanned nearly two points and showed up under both —
- * "N · techno" and "NNE · techno" read as techno being in two directions at
+ * "N · locked groove" and "NNE · locked groove" read as locked groove being in two directions at
  * once. One direction, one world, one name.
  */
 const POINTS = ['N', 'NE', 'SE', 'S', 'SW', 'NW'] as const;

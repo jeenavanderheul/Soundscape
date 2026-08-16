@@ -136,12 +136,12 @@ describe('§146 the dome signal', () => {
   });
 
   it('§148 gives each world its own way of moving the light', () => {
-    // Techno lands on musical positions only: every bearing it ever takes is
+    // LOCKED GROOVE lands on musical positions only: every bearing it ever takes is
     // one of four, however long it runs.
     const seen = new Set<string>();
     let state = SCANNER_START;
     for (let i = 0; i < 600; i++) {
-      state = advanceScanner(state, { ...quiet, genre: 'techno' }, 1 / 60);
+      state = advanceScanner(state, { ...quiet, genre: 'locked-groove' }, 1 / 60);
       seen.add(state.bearing.toFixed(3));
     }
     expect(seen.size).toBe(4);
@@ -153,7 +153,7 @@ describe('§146 the dome signal', () => {
 
     // The riot runs three clusters; everything else runs one.
     expect(run({ ...quiet, genre: 'percussion-riot' }, 1).extraBearings).toHaveLength(3);
-    expect(run({ ...quiet, genre: 'techno' }, 1).extraBearings).toHaveLength(0);
+    expect(run({ ...quiet, genre: 'locked-groove' }, 1).extraBearings).toHaveLength(0);
 
     // The broken machine stumbles: it covers less ground than its own rate
     // would suggest, and it does it the same way every time.
@@ -178,11 +178,11 @@ describe('§146 the dome signal', () => {
 
   it('§175 becomes one circle over every ring at five layers', () => {
     // Below five, the world's own formation holds.
-    expect(run({ ...quiet, genre: 'techno', layers: 4 }, 1).formation).toBe('quarters');
+    expect(run({ ...quiet, genre: 'locked-groove', layers: 4 }, 1).formation).toBe('quarters');
     // At five, the rig drops every trick and simply turns — and it does so
     // even where a section would otherwise take the formation over.
-    expect(run({ ...quiet, genre: 'techno', layers: 5 }, 1).formation).toBe('orbit');
-    expect(run({ ...quiet, genre: 'techno', layers: 7, section: 'drop' }, 1).formation).toBe('orbit');
+    expect(run({ ...quiet, genre: 'locked-groove', layers: 5 }, 1).formation).toBe('orbit');
+    expect(run({ ...quiet, genre: 'locked-groove', layers: 7, section: 'drop' }, 1).formation).toBe('orbit');
     expect(run({ ...quiet, genre: 'void-crusher', layers: 6 }, 1).formation).toBe('orbit');
     // And it keeps the speed the rules give it: a drop still turns faster than
     // a groove, arrived or not.

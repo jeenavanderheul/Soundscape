@@ -32,11 +32,11 @@ export const STRUCTURE_RENDER_CONFIG = {
   minJitterHz: 0.4,
   maxJitterHz: 1.3,
   instabilityThreshold: 0.5,
-  /** §9.1 Techno world tendency: grid cell size structures organize onto. */
+  /** §9.1 LOCKED GROOVE world tendency: grid cell size structures organize onto. */
   gridCell: 8,
 } as const;
 
-/** Nearest grid line for the Techno organization lerp (§9.1). */
+/** Nearest grid line for the LOCKED GROOVE organization lerp (§9.1). */
 export function gridSnap(value: number, cell: number = STRUCTURE_RENDER_CONFIG.gridCell): number {
   return Math.round(value / cell) * cell;
 }
@@ -185,7 +185,7 @@ export class StructureRenderer {
       entry.scaleFactor += (entry.targetScaleFactor - entry.scaleFactor) * blend;
       entry.mesh.scale.setScalar(spawnEase * entry.scaleFactor);
 
-      // §9.1 Techno organization: lerp the resting position toward the grid.
+      // §9.1 LOCKED GROOVE organization: lerp the resting position toward the grid.
       const org = this.organization;
       const ox = entry.baseX + (gridSnap(entry.baseX) - entry.baseX) * org;
       const oy = entry.baseY + (gridSnap(entry.baseY) - entry.baseY) * org;

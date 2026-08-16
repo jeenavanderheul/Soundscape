@@ -40,7 +40,7 @@ function distancesFromPlayer(x: number, z: number): number[] {
   const forest = new ForestRenderer('spread-test');
   forest.setSpecies(bakedSpecies());
   forest.setGroundSampler(() => -6);
-  forest.update({ x, y: 20, z }, 'techno', undefined, 1);
+  forest.update({ x, y: 20, z }, 'locked-groove', undefined, 1);
   const out: number[] = [];
   for (const child of forest.group.children) {
     const points = child as Points;

@@ -79,7 +79,7 @@ describe('§130 the flight colours a voice, it never closes it', () => {
   }
 
   it('never hands a voice a lowpass under its own highpass', () => {
-    // Measured before this: 61 voices were filtered into silence. The techno
+    // Measured before this: 61 voices were filtered into silence. The locked groove
     // texture is hpf(8200) and was given lpf(702) down at ground level; the
     // 909/808 hats sit at hpf 6200–9500, above the brightness ceiling at EVERY
     // height, so they were gone the whole flight. Earned, shown as 7/7, silent.
@@ -92,7 +92,7 @@ describe('§130 the flight colours a voice, it never closes it', () => {
     const cutoff = (altitude: number): number => {
       const performance = performanceFrom(music, { altitude, amplitude: 0.5, velocity: 40 });
       const graph = buildWorldLayerGraph({
-        track: finished('techno'), motion: 1, energy: 0.6, performance,
+        track: finished('locked-groove'), motion: 1, energy: 0.6, performance,
       } as never);
       (graph as { performance?: unknown }).performance = performance;
       const melody = buildPatternCode(graph).split('\n').find((l) => l.includes('clavisynth'))!;

@@ -20,21 +20,21 @@ describe('§111 GenreZones — six worlds, six equal sectors', () => {
 
   it('gives every world one sixth of the compass, in order', () => {
     expect([0, 1, 2, 3, 4, 5].map(at)).toEqual([
-      'techno', 'heavy-signal', 'broken-machine',
+      'locked-groove', 'heavy-signal', 'broken-machine',
       'sub-pressure', 'void-crusher', 'percussion-riot',
     ]);
   });
 
   it('blends neighbours at a border and ignores the far side', () => {
     const between = zoneAffinity(out, step / 2);
-    expect(between.techno).toBeGreaterThan(0.3);
+    expect(between['locked-groove']).toBeGreaterThan(0.3);
     expect(between['heavy-signal']).toBeGreaterThan(0.3);
     expect(between['sub-pressure']).toBeLessThan(0.05);
   });
 
   it('§57 altitude is expression, never a place', () => {
-    expect(dominantZone(zoneAffinity({ x: 0, y: 68, z: -200 }))).toBe('techno');
-    expect(dominantZone(zoneAffinity({ x: 0, y: -3, z: -200 }))).toBe('techno');
+    expect(dominantZone(zoneAffinity({ x: 0, y: 68, z: -200 }))).toBe('locked-groove');
+    expect(dominantZone(zoneAffinity({ x: 0, y: -3, z: -200 }))).toBe('locked-groove');
   });
 });
 
@@ -206,7 +206,7 @@ describe('§53 turning towards a world takes you there', () => {
 
   it('a heading is a world, and turning one sector over is another', () => {
     const out = { x: 0, y: 10, z: -90 };
-    expect(dominantZone(zoneAffinity(out, 0))).toBe('techno');
+    expect(dominantZone(zoneAffinity(out, 0))).toBe('locked-groove');
     expect(dominantZone(zoneAffinity(out, step))).toBe('heavy-signal');
     expect(dominantZone(zoneAffinity(out, step * 3))).toBe('sub-pressure');
   });
@@ -375,7 +375,7 @@ describe('§76 sections build themselves by adding and removing parts', () => {
   const deep = { unlocked: true, level: LEVEL_DEEP };
   const full = (form: Section) => ({
     ...createInitialTrackState(),
-    genre: 'techno' as const,
+    genre: 'locked-groove' as const,
     form,
     bpm: 132,
     drums: { kick: deep, snare: deep, hats: deep },

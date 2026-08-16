@@ -108,7 +108,7 @@ const BASE_MIX: Record<GrowthRole, number> = {
 
 export const ECOLOGIES: Record<Exclude<TrackGenre, null>, Ecology> = {
   // Machine forest: tall thin waveform pillars, perfectly upright.
-  techno: {
+  'locked-groove': {
     name: 'MACHINE FOREST',
     // §135: masts with flat blades hung off them — the machine forest is the
     // one world where nothing is organic, and it must read that way from far.
@@ -249,7 +249,7 @@ export const GROWTH_SCALE = 37;
  *
  * A single multiplier could only ever put the MIDDLE of the forest at 2:1.
  * Measured per world, drawn, against a dancer of 140, that is what it did:
- * techno sat at a median of 1.92 but percussion-riot at 0.28 and the broken
+ * locked groove sat at a median of 1.92 but percussion-riot at 0.28 and the broken
  * machine at 0.35, and the small roles — spore (base 2), canopy (5), branch (6)
  * — were dwarves in every world at 0.13–0.42. Multiplying harder does not fix
  * that: the distribution is 60:1 wide, so any scale that lifts the smallest

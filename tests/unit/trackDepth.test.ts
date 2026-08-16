@@ -26,7 +26,7 @@ const ROAMING: FlightState = { velocity: 12, hz: 220, energy: 0.5 };
 
 function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
   const zero: GenreAffinity = {
-  techno: 0, 'sub-pressure': 0, 'heavy-signal': 0,
+  'locked-groove': 0, 'sub-pressure': 0, 'heavy-signal': 0,
   'broken-machine': 0, 'percussion-riot': 0, 'void-crusher': 0,
 };
   return { ...zero, [genre]: 0.9 };
@@ -80,7 +80,7 @@ describe('§32 depth — a layer grows a second voice by staying with it', () =>
     // lands at half and doubles later, whatever the tuning.
     const landed = (() => {
       for (let s = 1; s <= 120; s += 1) {
-        const { track } = fly('techno', s);
+        const { track } = fly('locked-groove', s);
         if (track.drums.hats.unlocked) return track.drums.hats.level;
       }
       return null;
@@ -88,7 +88,7 @@ describe('§32 depth — a layer grows a second voice by staying with it', () =>
     expect(landed).toBe(LEVEL_EARNED);
     // §123: a track hands over once its seven layers are EARNED, so depth is
     // checked inside one track's own life rather than after several.
-    const late = fly('techno', 100);
+    const late = fly('locked-groove', 100);
     expect(late.track.drums.kick.level).toBe(LEVEL_DEEP);
     expect(late.deepened.length).toBeGreaterThan(0);
   });
@@ -97,27 +97,27 @@ describe('§32 depth — a layer grows a second voice by staying with it', () =>
 
 describe('§32 a finished flight is a produced track, in every grammar', () => {
   it('stacks a body under the snare and dirt over the hats', () => {
-    const code = buildPatternCode(graphOf('techno'));
+    const code = buildPatternCode(graphOf('locked-groove'));
     expect(code).toContain('RolandTR808');
     expect(code).toContain('late(.012)'); // the snare body, a hair behind
     expect(code).toContain('hh*32'); // high frequency dirt
   });
 
   it('keeps the sub under the bass instead of replacing it', () => {
-    const ids = trackParts(graphOf('techno')).map((part) => part.id);
+    const ids = trackParts(graphOf('locked-groove')).map((part) => part.id);
     expect(ids).toContain('track-bass');
     expect(ids).toContain('track-sub');
   });
 
   // §37: a genre is not only a pattern — it is the box the pattern came out of.
-  it('writes the techno lead as a short machine signal, not a tune (§80)', () => {
-    const code = buildPatternCode(graphOf('techno'));
+  it('writes the locked groove lead as a short machine signal, not a tune (§80)', () => {
+    const code = buildPatternCode(graphOf('locked-groove'));
     expect(code).toContain('"clavisynth"');
     expect(code).not.toContain('"casio"');
   });
 
-  it('renders the complete Techno Machine Pressure figures (§80)', () => {
-    const code = buildPatternCode(graphOf('techno'));
+  it('renders the complete LOCKED GROOVE Machine Pressure figures (§80)', () => {
+    const code = buildPatternCode(graphOf('locked-groove'));
 
     expect(code).toContain('s("hh*16")');
     expect(code).toContain('.gain("[.22 .10 .16 .08]*4")');
@@ -132,7 +132,7 @@ describe('§32 a finished flight is a produced track, in every grammar', () => {
 
 describe('§32 export — the flight handed back as source', () => {
   it('produces a numbered, commented, pasteable block', () => {
-    const code = exportTrack({ graph: graphOf('techno'), genre: 'techno', flownSeconds: 154 });
+    const code = exportTrack({ graph: graphOf('locked-groove'), genre: 'locked-groove', flownSeconds: 154 });
     expect(code).toContain('setcpm(140/4)');
     expect(code).toContain('// 01 — KICK / FOUNDATION');
     expect(code).toContain('// 02 — HATS');

@@ -7,7 +7,7 @@
  *
  * §29.5: the genre grammar lives here. Affinities do not switch a genre "on";
  * they hand the Track Builder rules for HOW the player's layers are written.
- * The same earned kick becomes four-on-the-floor in Techno, a break in DnB
+ * The same earned kick becomes four-on-the-floor in LOCKED GROOVE, a break in DnB
  * and a distant heartbeat in Ambient.
  */
 import { isFinale, sectionMix, type SectionStyle } from '../music/ArrangementEngine';
@@ -55,7 +55,7 @@ export interface MusicalLayerGraph {
   variations?: LayerVariations;
   /**
    * §48 production: how hard this grammar's mix pumps and moves. Derived from
-   * the grammar's own `drive`, so techno and drum & bass breathe with the kick
+   * the grammar's own `drive`, so locked groove and drum & bass breathe with the kick
    * while ambient, jazz and breakbeat stay clean and dynamic (user decision).
    */
   production?: { duck: number };
@@ -129,7 +129,7 @@ export type ThrowStyle = 'echo' | 'riser' | 'sweep' | 'bell' | 'impact';
 
 /** §62: how a grammar turns movement energy into music. */
 export type EnergyStyle =
-  | 'layers'      // techno, house: more voices, more fills
+  | 'layers'      // locked groove, house: more voices, more fills
   | 'subdivision' // trap, garage: the hats divide the bar further
   | 'breaks'      // bass: the break gets busier, ghosts appear
   | 'texture'     // ambient, breakbeat: more air, more harmonic layers
@@ -146,7 +146,7 @@ export interface MusicalAction {
 
 /** Left and right throw for each grammar, in that grammar's own palette. */
 const THROWS: Record<Exclude<TrackGenre, null> | 'void', readonly [ThrowStyle, ThrowStyle]> = {
-  techno: ['echo', 'riser'],
+  'locked-groove': ['echo', 'riser'],
   'sub-pressure': ['riser', 'impact'],
   'heavy-signal': ['impact', 'riser'],
   'broken-machine': ['sweep', 'riser'],
@@ -278,8 +278,8 @@ export function createEmptyLayerGraph(bpm = 0): MusicalLayerGraph {
  * every world stays in the key the flight is in (§32) and still travels.
  */
 export const PROGRESSIONS: Record<Exclude<TrackGenre, null>, readonly (readonly number[])[]> = {
-  // i — VI — VII — v: the minor loop techno has always turned on.
-  techno: [
+  // i — VI — VII — v: the minor loop locked groove has always turned on.
+  'locked-groove': [
     [0, 3, 7, 10],
     [8, 12, 15, 19],
     [10, 14, 17, 21],
@@ -305,7 +305,7 @@ export const PROGRESSIONS: Record<Exclude<TrackGenre, null>, readonly (readonly 
 
 /** The four chords of this world, as note names, ready for `<a b c d>`. */
 export function progressionFor(genre: TrackGenre, rootMidi: number, octave = 12): string {
-  const chords = PROGRESSIONS[genre ?? 'techno'];
+  const chords = PROGRESSIONS[genre ?? 'locked-groove'];
   return chords
     .map((chord) => `[${chord.map((n) => midiToNoteName(rootMidi + octave + n)).join(',')}]`)
     .join(' ');
@@ -363,7 +363,7 @@ export type DrumStyle =
   | 'broken'
   /** §73 bass music: four to the floor, distorted and clipped. */
   | 'hardgroove'
-  /** §80 techno: four to the floor, driven and then held down by postgain. */
+  /** §80 'locked-groove': four to the floor, driven and then held down by postgain. */
   | 'machine';
 export type HatStyle =
   | 'offbeat'
@@ -377,9 +377,9 @@ export type HatStyle =
   | 'roll'
   /** §69 breakbeat: minimal, dark, four hits and gone. */
   | 'dark'
-  /** §71 techno: eighths, an offbeat open hat and a second machine under it. */
+  /** §71 'locked-groove': eighths, an offbeat open hat and a second machine under it. */
   | 'techno'
-  /** §80 techno: degraded 808 dust over the 16th-note machine hats. */
+  /** §80 'locked-groove': degraded 808 dust over the 16th-note machine hats. */
   | 'machine-dust'
   /** §73 bass music: hard sixteenths with an open hat above them. */
   | 'pressure'
@@ -403,7 +403,7 @@ export type BassStyle =
   /** §34 breakbeat: the left hand. */
   /** §69 breakbeat: the pressure under the sub — saw, filtered, driven. */
   | 'pressure'
-  /** §71 techno: body, edge and a low pulse over the sub. */
+  /** §71 'locked-groove': body, edge and a low pulse over the sub. */
   | 'deep'
   /** §73 bass music: one note every sixteenth, filtered to a growl. */
   | 'rollingsub'
@@ -415,12 +415,12 @@ export type ChordStyle =
   | 'stab' | 'pad' | 'jazz' | 'piano' | 'organ' | 'skank'
   /** §69 breakbeat: a stab so sparse it reads as a warning light. */
   | 'dark'
-  /** §71 techno: a pad, a stab and an FM shadow, none of them in front. */
+  /** §71 'locked-groove': a pad, a stab and an FM shadow, none of them in front. */
   | 'darkpad'
   /** §73 bass music: an acid line where a chord would be. */
   | 'acid';
 export type MelodyStyle =
-  /** §71 techno: sequencer lines, not a tune. */
+  /** §71 'locked-groove': sequencer lines, not a tune. */
   | 'sequence'
   /** §73 bass music: a supersaw hook with a high twin answering it. */
   | 'hook2'
@@ -436,7 +436,7 @@ export type MelodyStyle =
 export type TextureStyle = 'hats' | 'air' | 'noise' | 'metallic' | 'shaker' | 'tape'
   /** §69 breakbeat: low atmospheric rumble under everything. */
   | 'rumble'
-  /** §71 techno: the machine room — bytebeat, air, rumble and dust. */
+  /** §71 'locked-groove': the machine room — bytebeat, air, rumble and dust. */
   | 'machine'
   | 'machine-room'
   | 'machine-rise'
@@ -497,7 +497,7 @@ export interface GenreGrammar {
   sectionStyle: SectionStyle;
   /**
    * §62: what MOVEMENT ENERGY does here. Speed is never tempo (§46) — it is
-   * musical energy, and every grammar spends that energy its own way. Techno
+   * musical energy, and every grammar spends that energy its own way. LOCKED GROOVE
    * spends it on layers, Trap on subdivisions, DnB on break complexity,
    * Ambient on texture, Jazz on interplay, Dub on echo, Experimental on
    * mutation.
@@ -565,13 +565,13 @@ const NEUTRAL_GRAMMAR: GenreGrammar = {
 };
 
 const GRAMMARS: Record<Exclude<TrackGenre, null>, GenreGrammar> = {
-  // §71 TECHNO, from the reference preset: 132 BPM, a 909 four-to-the-floor
+  // §71 LOCKED GROOVE, from the reference preset: 132 BPM, a 909 four-to-the-floor
   // with a second machine underneath, and everything else quiet enough that
   // the kick and the sub carry the whole thing.
-  // §80 TECHNO / MACHINE PRESSURE, from the reference preset: 134 BPM, a 909
+  // §80 LOCKED GROOVE / MACHINE PRESSURE, from the reference preset: 134 BPM, a 909
   // doubled by an 808 and an OberheimDMX, and everything driven hard and then
   // pulled back with postgain so the weight is pressure, not volume.
-  techno: {
+  'locked-groove': {
     ...NEUTRAL_GRAMMAR,
     bpmCentre: 134,
     bpmMin: 125,
@@ -761,8 +761,8 @@ export type LayerPatterns = Partial<Record<LayerName, string>>;
 
 /**
  * §62: how far the hats divide the bar at this energy. Only the subdivision
- * grammars actually change gear — a techno hat that suddenly ran at 32nds
- * would stop being techno (§19: the groove must survive).
+ * grammars actually change gear — a locked groove hat that suddenly ran at 32nds
+ * would stop being locked groove (§19: the groove must survive).
  */
 export function energyHatCycle(grammar: GenreGrammar, energy: number): number {
   const e = clamp01(energy);
@@ -773,7 +773,7 @@ export function energyHatCycle(grammar: GenreGrammar, energy: number): number {
     case 'breaks':
       return grammar.hatCycle * (e > 0.7 ? 2 : 1);
     case 'layers':
-      // Techno and House keep their grid; the energy goes into voices.
+      // LOCKED GROOVE and House keep their grid; the energy goes into voices.
       return grammar.hatCycle;
     default:
       return grammar.hatCycle;
@@ -875,9 +875,9 @@ export function buildLayerGraph(
       layer: 'drums',
       parameters: {
         style: grammar.kickStyle,
-        // Techno locks four-on-the-floor; everywhere else the player's own
+        // LOCKED GROOVE locks four-on-the-floor; everywhere else the player's own
         // density writes the pulse (§9.1 vs §3.3).
-        steps: resolvedGenre === 'techno' ? 4 : 1 + Math.round(density * 3),
+        steps: resolvedGenre === 'locked-groove' ? 4 : 1 + Math.round(density * 3),
         drive: grammar.drive,
         bank: grammar.drumBank,
         percBank: grammar.percBank,
@@ -916,7 +916,7 @@ export function buildLayerGraph(
       });
     }
   }
-  // A percussion voice on its own cycle length: broken groove in Techno,
+  // A percussion voice on its own cycle length: broken groove in LOCKED GROOVE,
   // ghost hits in DnB, true polymeter in Experimental (§31). It is the
   // kick's second voice, so it arrives once the pulse has been lived with.
   if (grammar.percCycle > 0 && (deep('kick') || energyAddsVoices(grammar, energy))) {
@@ -1173,7 +1173,7 @@ export function buildLayerGraph(
     }
   }
   const atmosphere: MusicalPrimitive[] =
-    track?.genre === 'techno'
+    track?.genre === 'locked-groove'
       ? [
           {
             id: 'techno-machine-room',
@@ -1191,7 +1191,7 @@ export function buildLayerGraph(
           },
         ]
       : [
-          // §102: EVERY world has air. This used to be techno-only plus an
+          // §102: EVERY world has air. This used to be locked groove-only plus an
           // ambient drone, so eight of the eleven grammars had nothing at all
           // in the atmosphere layer — ENTER BIOME, which is meant to be the
           // sound of arriving somewhere, was silent in most of the game, and

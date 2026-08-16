@@ -43,7 +43,7 @@ const COMPASS = {
 } as const;
 
 const EXPECTED = {
-  S0: 'techno', S1: 'heavy-signal', S2: 'broken-machine',
+  S0: 'locked-groove', S1: 'heavy-signal', S2: 'broken-machine',
   S3: 'sub-pressure', S4: 'void-crusher', S5: 'percussion-riot',
 } as const;
 
@@ -63,7 +63,7 @@ describe('the journey: neutral start → a direction → that world', () => {
 
   it('turning one sector over arrives in the next world', () => {
     const deep = { x: 0, z: -120 };
-    expect(regionFlying(deep, COMPASS.S0)).toBe('techno');
+    expect(regionFlying(deep, COMPASS.S0)).toBe('locked-groove');
     expect(regionFlying(deep, COMPASS.S1)).toBe('heavy-signal');
     expect(regionFlying(deep, COMPASS.S5)).toBe('percussion-riot');
   });
@@ -71,12 +71,12 @@ describe('the journey: neutral start → a direction → that world', () => {
   it('§56 what the HUD says you are flying into is what you are in', () => {
     const anywhere = { x: -200, z: 200 };
     expect(regionFlying(anywhere, COMPASS.S2)).toBe('broken-machine');
-    expect(regionFlying(anywhere, COMPASS.S0)).toBe('techno');
+    expect(regionFlying(anywhere, COMPASS.S0)).toBe('locked-groove');
   });
 });
 
 describe('arriving somewhere new starts a track in that world', () => {
-  function fly(region: 'techno' | 'sub-pressure', seconds: number, builder: TrackBuilder, from: number) {
+  function fly(region: 'locked-groove' | 'sub-pressure', seconds: number, builder: TrackBuilder, from: number) {
     // No tapped rhythm: the region decides the tempo (§46). With a confident
     // player tempo the player would win, which is the whole point of §3.4.
     const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.6 };
@@ -94,13 +94,13 @@ describe('arriving somewhere new starts a track in that world', () => {
     bus.on('track:new', () => born.push(store.getState().genre));
     const builder = new TrackBuilder(store, bus);
 
-    let t = fly('techno', 20, builder, 0);
-    expect(store.getState().genre).toBe('techno');
-    const technoTrack = store.getState();
+    let t = fly('locked-groove', 20, builder, 0);
+    expect(store.getState().genre).toBe('locked-groove');
+    const lockedGrooveTrack = store.getState();
     // §128: the OPENING rung is drawn per track (user decision), so what has
     // to hold is that the world gave you something to hear — a track never
     // opens on silence — not that it is always the kick.
-    expect(unlockedLayers(technoTrack).length).toBeGreaterThan(0);
+    expect(unlockedLayers(lockedGrooveTrack).length).toBeGreaterThan(0);
 
     t = fly('sub-pressure', 8, builder, t + 250);
     expect(born).toEqual(['sub-pressure']);
@@ -128,9 +128,9 @@ describe('arriving somewhere new starts a track in that world', () => {
 
   it('and the sounds of that world come with it', () => {
     const pressure = genreGrammar('sub-pressure');
-    const techno = genreGrammar('techno');
-    expect(pressure.drumBank).not.toBe(techno.drumBank);
-    expect(pressure.bpmCentre).not.toBe(techno.bpmCentre);
+    const lockedGroove = genreGrammar('locked-groove');
+    expect(pressure.drumBank).not.toBe(lockedGroove.drumBank);
+    expect(pressure.bpmCentre).not.toBe(lockedGroove.bpmCentre);
   });
 });
 
@@ -144,7 +144,7 @@ describe('staying is the trip: deeper into one world, endlessly', () => {
     bus.on('track:depth', ({ layer }) => deepened.push(layer));
     const builder = new TrackBuilder(store, bus);
     const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.6 };
-    const techno = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    const lockedGroove = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), 'locked-groove': 1 };
 
     const variations: string[] = [];
     // Six minutes in one world: climb, dive, climb, dive — the flight keeps
@@ -155,7 +155,7 @@ describe('staying is the trip: deeper into one world, endlessly', () => {
         t,
         music,
         { velocity: 30, hz: 220, energy: 0.7, altitude: 20, climb: phase },
-        techno,
+        lockedGroove,
       );
       const shape = JSON.stringify(builder.variations);
       if (variations[variations.length - 1] !== shape) variations.push(shape);
@@ -163,8 +163,8 @@ describe('staying is the trip: deeper into one world, endlessly', () => {
 
     // It never leaves the world…
     expect(born.length).toBeGreaterThan(0);
-    expect(new Set(born)).toEqual(new Set(['techno']));
-    expect(store.getState().genre).toBe('techno');
+    expect(new Set(born)).toEqual(new Set(['locked-groove']));
+    expect(store.getState().genre).toBe('locked-groove');
     // …it grows depth…
     expect(deepened.length).toBeGreaterThan(3);
     // …and it keeps rewriting its own parts, so it is never the same loop.

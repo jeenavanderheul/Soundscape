@@ -37,7 +37,7 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     // §91: the WORLD owns the clock, so a track only exists while you are
     // flying somewhere. Standing still no longer borrows a tempo from a
     // rhythm you tapped, which is what this test used to lean on.
-    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), 'locked-groove': 1 };
     const tick = (t: number) =>
       builder.tick(t, music, { velocity: 10, hz: 220, energy: 0.4 }, region);
     // §100/§128: arriving in a world gives you a rung at once, so there is
@@ -61,12 +61,18 @@ describe('TrackBuilder (§29.3, lenient: intent counts)', () => {
     if (opener !== 'hats') expect(store.getState().drums.hats.unlocked).toBe(true);
     // A layer growing its second voice is also a thing arriving, so it takes
     // its turn in the same queue — which is why the snare waits this long.
-    for (let t = 46_800; t <= 75_000; t += 500) tick(t);
-    builder.onAction({ atMs: 75_000, hz: 400, amplitude: 0.8, release: true });
-    builder.onAction({ atMs: 75_500, hz: 400, amplitude: 0.9, release: true });
-    tick(75_600);
-    // …and two hard releases ask for the SNARE, the same way.
+    // …and hard releases ask for the SNARE, the same way. A single ask can be
+    // REFUSED: a layer only jumps the queue if the order still reads as a build
+    // afterwards (§128), so the player keeps asking rather than asking once.
+    for (let t = 46_800; t <= 150_000; t += 500) {
+      builder.onAction({ atMs: t, hz: 400, amplitude: 0.9, release: true });
+      tick(t);
+      if (store.getState().drums.snare.unlocked) break;
+    }
     expect(store.getState().drums.snare.unlocked).toBe(true);
+    // The ask really did reorder the queue: this draw put TEXTURE ahead of the
+    // snare, and the snare arrived first anyway.
+    expect(unlocked).not.toContain('texture');
     // Nothing arrived that was not asked for or drawn: no duplicates, and the
     // opener still stands where it landed.
     expect(new Set(unlocked).size).toBe(unlocked.length);
@@ -101,11 +107,11 @@ describe('the flight earns the layers; time is only patience (§29.3, §31.2)', 
   /** Fly for `ms` at a fixed height above the ground. */
   // A track needs a WORLD: the clock, the ladder and the opening rung all
   // come from the region you are flying in (§46, §100).
-  const TECHNO = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+  const lockedGroove = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), 'locked-groove': 1 };
   function flyAt(altitude: number, ms: number) {
     const { store, builder } = setup();
     for (let t = 0; t <= ms; t += 100) {
-      builder.tick(t, roamingMusic, { ...ROAMING, altitude }, TECHNO);
+      builder.tick(t, roamingMusic, { ...ROAMING, altitude }, lockedGroove);
     }
     return store.getState();
   }
@@ -193,15 +199,15 @@ describe('§46 the region carries the tempo, the flight does not', () => {
     // staying put; landing somewhere else is a cut, and should be.
     const { store, builder } = setup();
     const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0, dynamics: 0.5 };
-    const techno = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    const lockedGroove = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), 'locked-groove': 1 };
     const pressure = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), 'sub-pressure': 1 };
     for (let t = 0; t <= 20_000; t += 100) {
-      builder.tick(t, music, { velocity: 8, hz: 220, energy: 0.4 }, techno);
+      builder.tick(t, music, { velocity: 8, hz: 220, energy: 0.4 }, lockedGroove);
     }
     const settled = store.getState().bpm;
     builder.tick(20_100, music, { velocity: 8, hz: 220, energy: 0.4 }, pressure);
     expect(store.getState().genre).toBe('sub-pressure');
-    // SUB PRESSURE runs faster than techno, and you hear that on arrival.
+    // SUB PRESSURE runs faster than locked groove, and you hear that on arrival.
     expect(store.getState().bpm).toBeGreaterThan(settled);
     expect(store.getState().bpm).toBe(regionBpm(genreGrammar('sub-pressure')));
   });

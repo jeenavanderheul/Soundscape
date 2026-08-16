@@ -37,7 +37,7 @@ describe('track N is not track 1 in another key', () => {
 
   it('track 1 is the document exactly as written', () => {
     // A player meets a world before it starts bending.
-    const dna = dnaFor('techno', 1);
+    const dna = dnaFor('locked-groove', 1);
     expect(dna.character).toBe('as written');
     // Values are normalised on the way through, so `.5` becomes `0.5` — but
     // nothing is MOVED: the numbers come out exactly as they went in.
@@ -46,24 +46,24 @@ describe('track N is not track 1 in another key', () => {
   });
 
   it('every following track is a different reading', () => {
-    const seen = new Set([2, 3, 4, 5, 6, 7, 8].map((n) => render('techno', n)));
+    const seen = new Set([2, 3, 4, 5, 6, 7, 8].map((n) => render('locked-groove', n)));
     expect(seen.size).toBe(7);
   });
 
   it('is deterministic — the same track is the same track, every flight', () => {
-    expect(render('techno', 27)).toBe(render('techno', 27));
-    expect(dnaFor('techno', 27)).toEqual(dnaFor('techno', 27));
+    expect(render('locked-groove', 27)).toBe(render('locked-groove', 27));
+    expect(dnaFor('locked-groove', 27)).toEqual(dnaFor('locked-groove', 27));
   });
 
   it('and differs per world, so depth is a place and not a formula', () => {
-    expect(dnaFor('techno', 27)).not.toEqual(dnaFor('void-crusher', 27));
+    expect(dnaFor('locked-groove', 27)).not.toEqual(dnaFor('void-crusher', 27));
   });
 
   it('reads more freely with depth, without ever leaving the genre', () => {
     // Reach widens and settles: track 50 explores a corner, it does not
     // become another world.
-    const early = dnaFor('techno', 2);
-    const deep = dnaFor('techno', 50);
+    const early = dnaFor('locked-groove', 2);
+    const deep = dnaFor('locked-groove', 50);
     expect(Math.abs(deep.sparse - 0.5)).toBeGreaterThan(Math.abs(early.sparse - 0.5) - 0.5);
     expect(deep.drive).toBeLessThanOrEqual(1);
     expect(Math.abs(deep.tilt)).toBeLessThanOrEqual(1);
@@ -72,8 +72,8 @@ describe('track N is not track 1 in another key', () => {
   it('touches the numbers, never the notes', () => {
     // The whole reason a world stays itself: its figures, its masks and its
     // machines come through a reading untouched.
-    const one = render('techno', 1);
-    const deep = render('techno', 27);
+    const one = render('locked-groove', 1);
+    const deep = render('locked-groove', 27);
     const skeleton = (code: string) =>
       code.replace(/\.(lpf|hpf|bpf|distort|shape|room|degradeBy)\([0-9.]+\)/g, '');
     expect(skeleton(deep)).toBe(skeleton(one));
@@ -81,7 +81,7 @@ describe('track N is not track 1 in another key', () => {
 
   it('never pushes a value out of range', () => {
     for (let n = 1; n <= 60; n += 1) {
-      const out = applyDna('s("x").lpf(9000).hpf(40).distort(2.6).shape(.8).room(.9).degradeBy(.8)', dnaFor('techno', n));
+      const out = applyDna('s("x").lpf(9000).hpf(40).distort(2.6).shape(.8).room(.9).degradeBy(.8)', dnaFor('locked-groove', n));
       const hz = [...out.matchAll(/\.(?:lpf|hpf)\((\d+)\)/g)].map((m) => Number(m[1]));
       expect(hz.every((v) => v >= 30 && v <= 18000)).toBe(true);
       expect(Number(/\.shape\(([0-9.]+)\)/.exec(out)![1]!)).toBeLessThanOrEqual(0.9);
@@ -92,11 +92,11 @@ describe('track N is not track 1 in another key', () => {
 });
 
 describe('§122 an infinite world cannot be predictable', () => {
-  const names = (genre: 'techno' | 'void-crusher', n: number) =>
+  const names = (genre: 'locked-groove' | 'void-crusher', n: number) =>
     Array.from({ length: n }, (_, i) => dnaFor(genre, i + 2).character);
 
   it('uses every character, without cycling through them in order', () => {
-    const sixty = names('techno', 60);
+    const sixty = names('locked-groove', 60);
     expect(new Set(sixty).size).toBe(7);
     // Counting the list off made track 2, 9 and 16 the same reading in the
     // same order — the one thing an endless world must not be.
@@ -104,7 +104,7 @@ describe('§122 an infinite world cannot be predictable', () => {
   });
 
   it('does not repeat itself run after run', () => {
-    const sixty = names('techno', 60);
+    const sixty = names('locked-groove', 60);
     let runs = 0;
     for (let i = 1; i < sixty.length; i += 1) if (sixty[i] === sixty[i - 1]) runs += 1;
     expect(runs).toBeLessThan(sixty.length / 3);
@@ -113,13 +113,13 @@ describe('§122 an infinite world cannot be predictable', () => {
   it('reads differently from the very first variation', () => {
     // §118 shipped with track 2 at tilt 0.03 against track 1's 0.00 —
     // rounding noise at exactly the depth where every player begins.
-    const first = dnaFor('techno', 2);
+    const first = dnaFor('locked-groove', 2);
     const moved = Math.abs(first.tilt) + Math.abs(first.drive - 0.5)
       + Math.abs(first.space - 0.5) + first.sparse;
     expect(moved).toBeGreaterThan(0.3);
   });
 
   it('and every world walks its own sequence', () => {
-    expect(names('techno', 20).join()).not.toBe(names('void-crusher', 20).join());
+    expect(names('locked-groove', 20).join()).not.toBe(names('void-crusher', 20).join());
   });
 });

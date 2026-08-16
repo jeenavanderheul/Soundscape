@@ -54,7 +54,7 @@ function everyInstance(forest: ForestRenderer): { x: number; y: number; z: numbe
 
 describe('the forest stands on the ground', () => {
   it('places every growth exactly on the terrain, in every world', () => {
-    for (const genre of [null, 'techno', 'sub-pressure', 'percussion-riot', 'void-crusher'] as const) {
+    for (const genre of [null, 'locked-groove', 'sub-pressure', 'percussion-riot', 'void-crusher'] as const) {
       const forest = new ForestRenderer('grounded-test');
       forest.setSpecies(bakedSpecies());
       forest.setGroundSampler(ground);
@@ -77,9 +77,9 @@ describe('the forest stands on the ground', () => {
     forest.setSpecies(bakedSpecies());
     let lift = 0;
     forest.setGroundSampler((x, z) => ground(x, z) + lift);
-    forest.update({ x: 0, y: 20, z: 0 }, 'techno', undefined, 0);
+    forest.update({ x: 0, y: 20, z: 0 }, 'locked-groove', undefined, 0);
     lift = 12; // the field swells under the forest
-    forest.update({ x: 0, y: 20, z: 0 }, 'techno', undefined, 1);
+    forest.update({ x: 0, y: 20, z: 0 }, 'locked-groove', undefined, 1);
     for (const instance of everyInstance(forest)) {
       expect(instance.y).toBeCloseTo(ground(instance.x, instance.z) + 12, 3);
     }

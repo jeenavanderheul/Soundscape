@@ -10,7 +10,7 @@ import type { Performance } from '../music/Performance';
 import { LEVEL_DEEP, type TrackState } from '../music/TrackState';
 
 /**
- * §110 TECHNO / MACHINE PRESSURE V2 — the preset IS the world.
+ * §110 LOCKED GROOVE / MACHINE PRESSURE V2 — the preset IS the world.
  *
  * Twice I rebuilt this document into the grammar generator, and twice the
  * result fought itself: the masks the preset uses to arrange itself were
@@ -32,7 +32,7 @@ import { LEVEL_DEEP, type TrackState } from '../music/TrackState';
  * because it is the code that is playing.
  */
 
-export interface TechnoPresetControls {
+export interface LockedGroovePresetControls {
   track?: Readonly<TrackState>;
   motion?: number;
   performance?: Readonly<Performance>;
@@ -104,7 +104,7 @@ interface Part {
   code: (gain: string) => string;
 }
 
-export function buildTechnoGraph(controls: TechnoPresetControls = {}): MusicalLayerGraph {
+export function buildLockedGrooveGraph(controls: LockedGroovePresetControls = {}): MusicalLayerGraph {
   const track = controls.track;
   const motion = step8(controls.motion ?? 1);
   const perf = controls.performance;

@@ -141,7 +141,7 @@ describe('validate', () => {
     world.genreHistory = [{
       atMs: 100,
       affinity: {
-        techno: 0, 'sub-pressure': 0.9, 'heavy-signal': 0,
+        'locked-groove': 0, 'sub-pressure': 0.9, 'heavy-signal': 0,
         'broken-machine': 0, 'percussion-riot': 0, 'void-crusher': 0,
       },
       dominant: 'sub-pressure',

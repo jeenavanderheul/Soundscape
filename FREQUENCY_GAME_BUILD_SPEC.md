@@ -1232,7 +1232,7 @@ Streaks of light stream past the orb, stretched along the direction of travel, t
 
 ### 33.5 The heading is on screen
 
-The HUD names the compass point and the region it leads to (`N · techno`). Direction is never just "away".
+The HUD names the compass point and the region it leads to (`N · locked-groove`). Direction is never just "away".
 
 ---
 
@@ -1799,7 +1799,7 @@ Same rig, same orbit, a different hand on it:
 
 | world | pattern |
 |---|---|
-| techno | lands on the four to the bar and nowhere in between |
+| locked-groove | lands on the four to the bar and nowhere in between |
 | sub-pressure | slow and wide; weight, not speed |
 | heavy-signal | strobed on the eighths — a signal pushed past its limit |
 | broken-machine | advances in jumps and sometimes stalls |
@@ -1916,7 +1916,7 @@ and every one belongs to a drum:
 | OPPOSITE | two arcs facing each other, opening | BASS |
 | RIPPLE | ring by ring outward from the crown | KICK |
 
-Each world reaches for one — techno quarters, sub-pressure opposite,
+Each world reaches for one — locked-groove quarters, sub-pressure opposite,
 heavy-signal pulse, broken-machine alternate, percussion-riot ripple,
 void-crusher sweep — and the music takes it over where it has to: a drop is
 PULSE because a drop is one event, and a break is SWEEP because a break has
@@ -2099,3 +2099,52 @@ fallback when no mesh is present: a worse body, but a working one.
 Licence: CC0 1.0 (MakeHuman assets, released September 2020). Commercial use
 permitted, no attribution required. Note CC0 art. 4a — trademark is not waived,
 so the name must not be used as a brand in the app.
+
+---
+
+## 186. The machine world has a world name (v16 amendment — NORMATIVE)
+
+Five of the six worlds were named for what they DO — SUB PRESSURE, HEAVY
+SIGNAL, BROKEN MACHINE, PERCUSSION RIOT, VOID CRUSHER. The sixth was still
+called `techno`, which is not a world but a shelf in a record shop. It was the
+one name that pointed outside the game.
+
+It is now **LOCKED GROOVE**, code key `locked-groove`. A locked groove is the
+closed groove at the end of a record that never runs out: the needle keeps
+riding the same circle until someone lifts it. That is exactly this world —
+4/4 with the hardest drive, a 909, the straightest pillars, and the reference
+curve the other five are heard against. The name says what the music does, in
+the same vocabulary as its neighbours.
+
+**Normative:**
+
+- `locked-groove` is the only spelling. `GENRE_NAMES`, `ACTIVE_WORLD_GENRES` and
+  the `TrackGenre` union agree, and the HUD, the score header and the exported
+  Strudel code all read the key directly — there is no separate label table and
+  none may be added (§56).
+- An unknown world name must never resolve to a default. `validate()` reading an
+  unknown genre as `null` is the one silent path that exists, and it is the
+  reason the rename bought a schema version rather than being a search-replace.
+- **`SCHEMA_VERSION` 4 → 5.** A v4 save carries the old name in four places:
+  `trackState.genre`, `genreHistory[].affinity` (as an object key),
+  `genreHistory[].dominant` and `progression.genresSeen`. The v4 → v5 migration
+  rewrites all four, weights intact.
+- `src/persistence/migrations.ts` is the ONLY file in `src/` allowed to contain
+  the old name. A test enforces this, and a second test enforces that it still
+  DOES contain it — deleting the migration would strand every earlier save
+  without reporting anything.
+- The baked forest is keyed on the world name: `scripts/bake-trees.mjs` and
+  `public/trees/`. `loadTreeSpecies()` treats "no matching world" as valid and
+  simply draws no trees, so the bake must be re-run with the code, never after.
+
+**Known consequence:** `TrackForm` seeds a track's drawn layer order on
+`journeySeed | world | trackNumber`. Renaming the world changes that seed, so
+tracks in LOCKED GROOVE are drawn differently than they were under the old name.
+Journey codes remain deterministic going forward; they are not comparable across
+the rename. This was accepted rather than papered over with a hidden stable id,
+which would have been a second name for one world.
+
+**Not renamed:** `techno` also survives as drum vocabulary — a hat style, a
+texture name and two layer ids. Those are drum machine terms, not worlds, and
+they are listed one by one in the guard test so nothing else can hide among
+them.

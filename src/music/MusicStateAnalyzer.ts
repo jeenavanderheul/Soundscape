@@ -185,7 +185,7 @@ export class MusicStateAnalyzer {
           smooth(current.transientDensity, transientTarget, config.transientRate, deltaSec),
         ),
         // §9 genre signals: repetition is regular, confident pulse over time;
-        // low end and timbre noise feed the Techno/Ambient profiles.
+        // low end and timbre noise feed the LOCKED GROOVE/Ambient profiles.
         repetition: clamp01(
           smooth(
             current.repetition,

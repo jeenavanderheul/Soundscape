@@ -53,11 +53,11 @@ const SPECIES = [
  */
 const WORLDS = [
   {
-    world: 'techno',
+    world: 'locked-groove',
     preset: 'Pine Medium',
     seed: 1370,
     tune: {
-      // irregularity 0.05: techno is the metronome world, so its tree is a
+      // irregularity 0.05: locked groove is the metronome world, so its tree is a
       // column — no gnarl, no twist, branches at one repeated angle.
       branch: { levels: 2, gnarliness: { 0: 0.0, 1: 0.02, 2: 0.05 }, twist: { 0: 0, 1: 0, 2: 0 }, angle: { 1: 62, 2: 62 } },
       leaves: { count: 8, size: 1.4 },

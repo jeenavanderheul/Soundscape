@@ -86,7 +86,7 @@ export function scoreHeader(state: ScoreHeaderState): string {
 
   return [
     `// ${RULE}`,
-    `// FREQUENCY — ${genre} · TRACK ${String(state.trackNumber).padStart(2, '0')}`,
+    `// THE LOOP — ${genre} · TRACK ${String(state.trackNumber).padStart(2, '0')}`,
     '//',
     `// LADDER:  ${rungs.join(' → ')}`,
     `//          ${held.join('    ')}`,

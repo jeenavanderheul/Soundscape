@@ -96,7 +96,7 @@ export function exportTrack({ graph, genre, flownSeconds, journey, shape }: Trac
   const minutes = Math.floor(flownSeconds / 60);
   const seconds = Math.round(flownSeconds % 60);
   const header = [
-    '// FREQUENCY — this track was flown, not written.',
+    '// THE LOOP — this track was flown, not written.',
     `// ${genre === null ? 'no region' : genre} · ${graph.bpm} bpm · ${minutes}m${String(seconds).padStart(2, '0')}s of flight`,
     ...(journey === undefined ? [] : [`// journey ${journey}${shape === undefined ? '' : ` · ${shape}`}`]),
     '',

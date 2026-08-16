@@ -31,7 +31,7 @@ describe('a beacon is the next rung, standing somewhere you have to fly to', () 
     // The order is handed in now rather than looked up from a written ladder:
     // since §128 draws a fresh order per track, a beacon that read the table
     // could send you after a layer that was not next.
-    const track = { ...createInitialTrackState(), genre: 'techno' as const };
+    const track = { ...createInitialTrackState(), genre: 'locked-groove' as const };
     const order = TRACK_LAYERS;
     expect(remainingLayers(track, order)).toEqual(order);
     track.drums.kick = { unlocked: true, level: 0.5 };
@@ -84,7 +84,7 @@ describe('flying through one earns that layer, there and then', () => {
     // §100: the opening rung is given on arrival, so what a beacon offers is
     // the SECOND rung onwards — reached once DISCOVERY II opens.
     const music = { ...createInitialMusicState(), bpm: 132, tempoConfidence: 0.6, dynamics: 0.5 };
-    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), 'locked-groove': 1 };
     for (let t = 0; t <= 20_000; t += 250) {
       builder.tick(t, music, { velocity: 12, hz: 220, energy: 0.4 }, region);
     }
@@ -103,7 +103,7 @@ describe('flying through one earns that layer, there and then', () => {
   it('and never two on top of each other (§82)', () => {
     const { builder } = setup();
     const music = { ...createInitialMusicState(), bpm: 132, tempoConfidence: 0.6, dynamics: 0.5 };
-    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), techno: 1 };
+    const region = { ...zoneAffinity({ x: 0, y: 6, z: 0 }), 'locked-groove': 1 };
     for (let t = 0; t <= 20_000; t += 250) {
       builder.tick(t, music, { velocity: 12, hz: 220, energy: 0.4 }, region);
     }

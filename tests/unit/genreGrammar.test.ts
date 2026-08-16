@@ -21,7 +21,7 @@ import { LEVEL_DEEP, createInitialTrackState, TrackEvents, type TrackGenre } fro
 
 function affinityOf(genre: Exclude<TrackGenre, null>): GenreAffinity {
   const zero: GenreAffinity = {
-  techno: 0, 'sub-pressure': 0, 'heavy-signal': 0,
+  'locked-groove': 0, 'sub-pressure': 0, 'heavy-signal': 0,
   'broken-machine': 0, 'percussion-riot': 0, 'void-crusher': 0,
 };
   return { ...zero, [genre]: 0.9 };
@@ -89,7 +89,7 @@ describe('§31 Jazz — the world answers', () => {
   });
 });
 
-describe('§47 a direction is a promise: techno can only become more techno', () => {
+describe('§47 a direction is a promise: locked groove can only become more locked groove', () => {
   function flightIn(genre: Exclude<TrackGenre, null>) {
     const store = createStore(createInitialTrackState());
     const bus = createEventBus<TrackEvents>();
@@ -107,7 +107,7 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
 
 
   it('starts the NEXT track in the region the player is still flying in', () => {
-    const { store, genres, fly } = flightIn('techno');
+    const { store, genres, fly } = flightIn('locked-groove');
     const deep = { unlocked: true, level: LEVEL_DEEP };
     store.setState((t) => ({
       ...t, bpm: 132,
@@ -117,9 +117,9 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
     // §87: the arc decides the form now, so a handover means flying the whole
     // thirty-two cycles and coming out the other side of DROP II.
     fly(0, 300_000, 0, 0.9);
-    // Track 02 is born in the same place, so it is techno again — a different
-    // techno, never an ambient one.
-    expect(genres).toEqual(['techno']);
+    // Track 02 is born in the same place, so it is locked groove again — a different
+    // locked groove, never an ambient one.
+    expect(genres).toEqual(['locked-groove']);
   });
 
   it('and keeps the grammar rather than going neutral over empty space', () => {
@@ -131,7 +131,7 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
     const music = { ...createInitialMusicState(), bpm: 128, tempoConfidence: 0.6, dynamics: 0.6 };
     const deep = { unlocked: true, level: LEVEL_DEEP };
     store.setState((t) => ({
-      ...t, bpm: 132, genre: 'techno',
+      ...t, bpm: 132, genre: 'locked-groove',
       drums: { kick: deep, snare: deep, hats: deep },
       bass: deep, harmony: deep, melody: deep, texture: deep,
     }));
@@ -142,14 +142,14 @@ describe('§47 a direction is a promise: techno can only become more techno', ()
       }
     };
     fly(0, 300_000, 0, 0.9);
-    expect(genres).toEqual(['techno']);
+    expect(genres).toEqual(['locked-groove']);
   });
 });
 
 describe('§61 a section means something different in every world', () => {
-  it('§92 techno builds pressure by ADDING the sub, never by removing it', () => {
-    const build = sectionMix('build', genreGrammar('techno').sectionStyle);
-    const drop = sectionMix('drop', genreGrammar('techno').sectionStyle);
+  it('§92 locked groove builds pressure by ADDING the sub, never by removing it', () => {
+    const build = sectionMix('build', genreGrammar('locked-groove').sectionStyle);
+    const drop = sectionMix('drop', genreGrammar('locked-groove').sectionStyle);
     expect(build.bass).toBe(1);
     expect(drop.bass).toBe(1);
   });

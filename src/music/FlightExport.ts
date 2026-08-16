@@ -50,7 +50,7 @@ export interface FlightExportOptions {
 }
 
 const ZERO_AFFINITY: GenreAffinity = {
-  techno: 0,
+  'locked-groove': 0,
   'sub-pressure': 0,
   'heavy-signal': 0,
   'broken-machine': 0,

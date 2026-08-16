@@ -30,7 +30,7 @@ describe('§128 the shape of a track is drawn, not written', () => {
   });
 
   it('keeps the floor under the track: a kick is never later than the fourth rung', () => {
-    // A draw once put it seventh, which is a techno track that goes six rungs
+    // A draw once put it seventh, which is a locked groove track that goes six rungs
     // without a kick — unpredictable, and heard as broken rather than as a
     // variation. Every world here is built on one.
     for (const form of draws()) expect(form.order.indexOf('kick')).toBeLessThan(4);
@@ -47,10 +47,10 @@ describe('§128 the shape of a track is drawn, not written', () => {
   it('gives a journey the same tracks every time — a good flight can be found again', () => {
     // The user chose a shareable code over pure novelty: paste it back and the
     // same worlds write the same tracks.
-    expect(formFor('kx7', 'techno', 3)).toEqual(formFor('kx7', 'techno', 3));
-    expect(formFor('kx7', 'techno', 3)).not.toEqual(formFor('a92', 'techno', 3));
-    expect(formFor('kx7', 'techno', 3)).not.toEqual(formFor('kx7', 'techno', 4));
-    expect(formFor('kx7', 'techno', 3)).not.toEqual(formFor('kx7', 'void-crusher', 3));
+    expect(formFor('kx7', 'locked-groove', 3)).toEqual(formFor('kx7', 'locked-groove', 3));
+    expect(formFor('kx7', 'locked-groove', 3)).not.toEqual(formFor('a92', 'locked-groove', 3));
+    expect(formFor('kx7', 'locked-groove', 3)).not.toEqual(formFor('kx7', 'locked-groove', 4));
+    expect(formFor('kx7', 'locked-groove', 3)).not.toEqual(formFor('kx7', 'void-crusher', 3));
   });
 
   it('keeps each world its own tempo underneath the variation', () => {
@@ -60,7 +60,7 @@ describe('§128 the shape of a track is drawn, not written', () => {
       const all = Array.from({ length: 60 }, (_, i) => formFor(`j${i}`, genre, 1).paceScale);
       return all.reduce((a, b) => a + b, 0) / all.length;
     };
-    expect(paceOf('percussion-riot')).toBeLessThan(paceOf('techno'));
-    expect(paceOf('techno')).toBeLessThan(paceOf('void-crusher'));
+    expect(paceOf('percussion-riot')).toBeLessThan(paceOf('locked-groove'));
+    expect(paceOf('locked-groove')).toBeLessThan(paceOf('void-crusher'));
   });
 });

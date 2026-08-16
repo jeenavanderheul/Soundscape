@@ -22,9 +22,9 @@ describe('the score is grouped by role, and stays honest', () => {
   const deep = { unlocked: true, level: LEVEL_DEEP };
   const track = (form: 'drop' | 'break' | 'return') => ({
     ...createInitialTrackState(),
-    genre: 'techno' as const,
+    genre: 'locked-groove' as const,
     form,
-    bpm: regionBpm(genreGrammar('techno')),
+    bpm: regionBpm(genreGrammar('locked-groove')),
     drums: { kick: deep, snare: deep, hats: deep },
     bass: deep, harmony: deep, melody: deep, texture: deep,
     rootMidi: 45, harmonyIntervals: [0, 3, 7, 10], melodyNotes: [69, 72, 76],
