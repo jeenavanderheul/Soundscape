@@ -303,3 +303,53 @@ describe('§207 one build, seven layers, in the order the world is written', () 
     expect(new Set(long.forms).size).toBeGreaterThan(3);
   });
 });
+
+describe('§215 standing at the gate is not travelling', () => {
+  /** Look around from a standstill, then optionally fly, then look again. */
+  function atTheGate(options: { flyFirst: boolean }): number[] {
+    const store = createStore<TrackState>(createInitialTrackState());
+    const bus = createEventBus<TrackEvents>();
+    const builder = new TrackBuilder(store, bus, TRACK_BUILDER_CONFIG, 'poort');
+    const music = { ...createInitialMusicState(), bpm: 0, tempoConfidence: 0 };
+    const at = (w: string) => ({ ...zoneAffinity({ x: 0, y: 20, z: 0 }), [w]: 1 }) as never;
+    const worlds = ['locked-groove', 'sub-pressure', 'percussion-riot', 'void-crusher'];
+    const counts: number[] = [];
+    let now = 0;
+    const hold = (world: string, seconds: number, velocity: number) => {
+      const until = now + seconds * 1000;
+      while (now < until) {
+        now += 1000 / 30;
+        builder.tick(now, music, { velocity, hz: 220, energy: 0.5, altitude: 60 } as never, at(world));
+      }
+      counts.push(
+        (['kick', 'snare', 'hats'] as const).filter((k) => store.getState().drums[k].unlocked).length
+        + (['bass', 'harmony', 'melody', 'texture'] as const)
+          .filter((k) => store.getState()[k].unlocked).length,
+      );
+    };
+    // Wake up, and turn through several worlds without ever flying.
+    for (const w of worlds) hold(w, 4, 0);
+    if (options.flyFirst) {
+      hold('locked-groove', 6, 66);
+      // …and now turn through the same worlds again, still at a standstill.
+      for (const w of worlds) hold(w, 4, 0);
+    }
+    return counts;
+  }
+
+  it('never draws a stage for a player who has not flown yet', () => {
+    // Reported: standing on the spot, before ever pressing W, looking left and
+    // right jumped the build to 4/7 of somewhere. Turning at the gate is
+    // choosing where to start, not walking between tents.
+    const looking = atTheGate({ flyFirst: false });
+    expect(looking.every((n) => n === 1), `saw ${looking.join(', ')}`).toBe(true);
+  });
+
+  it('starts drawing the moment they do fly, and keeps drawing after', () => {
+    // §215 (user decision): one real flight and the festival has begun for the
+    // rest of the session — standing still again does not put you back.
+    const counts = atTheGate({ flyFirst: true });
+    const afterFlying = counts.slice(5);
+    expect(afterFlying.some((n) => n >= STAGE_MIN_RUNGS), `saw ${counts.join(', ')}`).toBe(true);
+  });
+});

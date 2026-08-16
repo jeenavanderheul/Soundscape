@@ -370,6 +370,13 @@ export class TrackBuilder {
   private turn = 0;
   /** §208: how many stages the player has walked onto this session. */
   private crossings = 0;
+  /**
+   * §215 (user decision): has this player ever actually flown?
+   *
+   * Until they have, turning on the spot is not travelling — it is choosing
+   * where to start. A festival has not begun for someone standing at the gate.
+   */
+  private hasEverFlown = false;
   private layerVariations: LayerVariations = {};
   /** True once the finished track has reached a drop and is waiting to hand over. */
   private handingOver = false;
@@ -486,9 +493,12 @@ export class TrackBuilder {
    * least as far along as the last one is not a set, it is your own progress
    * wearing six costumes. Inside a world the count still only ever climbs.
    */
-  private arriveMidSet(genre: TrackGenre, nowMs: number): void {
-    this.crossings += 1;
-    const wanted = stageRungs(this.seed, this.crossings);
+  private arriveMidSet(genre: TrackGenre, nowMs: number, rungs: number | null = null): void {
+    let wanted = rungs;
+    if (wanted === null) {
+      this.crossings += 1;
+      wanted = stageRungs(this.seed, this.crossings);
+    }
     const standing = new Set(this.ladder(genre).slice(0, wanted).map((step) => step.layer));
     const before = this.store.getState();
     this.store.setState((t) => ({
@@ -640,6 +650,9 @@ export class TrackBuilder {
 
     const track = this.store.getState();
     const moving = flight.velocity > 0.5 || music.dynamics >= config.activityFloor;
+    // §215: one real flight and the festival has started, for the rest of the
+    // session. Standing still again later does not put you back at the gate.
+    if (flight.velocity > 0.5) this.hasEverFlown = true;
     // §207: on a phone the build never stops — speed still decides how fast it
     // goes (§46), it no longer decides whether it goes at all. A thumb comes
     // off to steer, to point at something, to answer a message; the desktop
@@ -740,7 +753,12 @@ export class TrackBuilder {
       // border cannot do this, because it has to be away for `regionSwitchMs`
       // and the stage you are on has to have lived `minTrackLifeMs`.
       if (config.keepsTrackAcrossWorlds) {
-        this.arriveMidSet(this.lastRegion, nowMs);
+        // §215 (user decision): before the first flight, turning is not
+        // travelling — it is picking which world to wake up in. The genre
+        // follows your look and the build stays at 1/7, so a player who is
+        // still deciding cannot be handed four rungs of somewhere by looking
+        // around. The draw starts the moment they do.
+        this.arriveMidSet(this.lastRegion, nowMs, this.hasEverFlown ? null : 1);
         return;
       }
       // §54: a world is a track. Arrive somewhere else and you start there —
