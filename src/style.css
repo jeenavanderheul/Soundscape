@@ -467,9 +467,17 @@ body {
    * was dropped: each is the answer to a question the player may ask at any
    * moment, and a question you cannot ask is worse than small type.
    */
+  /**
+   * §199 (user, portrait 9:16): nothing at the bottom may land on anything
+   * else. Four blocks each knew only their own corner, and the volume readout
+   * sat at the same 6px as the layer strip while overlapping it horizontally —
+   * measured, a 21x10px collision. They are one STACK now, read from the floor
+   * up: strip 6, bearing 26, volume 60, hints 84. Every step clears the block
+   * below it including its line height, so the text can grow without landing
+   * on its neighbour.
+   */
   .hud-hints {
-    /* The floor stacks: layer strip at 6, bearing at 22, hint clear above both. */
-    bottom: calc(env(safe-area-inset-bottom) + 60px);
+    bottom: calc(env(safe-area-inset-bottom) + 84px);
     max-width: 86vw;
     font-size: 8px;
     line-height: 1.4;
@@ -488,7 +496,7 @@ body {
 
   .hud-guide {
     right: calc(env(safe-area-inset-right) + 8px);
-    bottom: calc(env(safe-area-inset-bottom) + 22px);
+    bottom: calc(env(safe-area-inset-bottom) + 26px);
     font-size: 7px;
     line-height: 1.45;
     letter-spacing: 0.02em;
@@ -496,7 +504,8 @@ body {
 
   .hud-volume {
     right: calc(env(safe-area-inset-right) + 8px);
-    bottom: calc(env(safe-area-inset-bottom) + 6px);
+    /* Above the bearing line — it used to land on the layer strip. */
+    bottom: calc(env(safe-area-inset-bottom) + 60px);
     font-size: 8px;
     letter-spacing: 0.1em;
   }
@@ -508,7 +517,13 @@ body {
     font-size: 16px;
     letter-spacing: 0.28em;
     text-align: center;
-  }
+      /* §199: on a 320px screen the cue reached under the readout in the top
+       right — measured, 4x16px. It keeps the left, where nothing else lives. */
+    max-width: 62vw;
+    left: 4vw;
+    transform: none;
+    text-align: left;
+}
 
   .hud-intro-hint {
     bottom: 16dvh;
@@ -611,6 +626,16 @@ body {
 /* Landscape phones are SHORT, and that is the harder constraint: the start
    screen has a wordmark and two buttons to fit into 390px of height. */
 @media (max-height: 480px) and (orientation: landscape) {
+  /**
+   * §199: the stack is 6/26/60/84 from the floor, and in landscape 16dvh lands
+   * the intro line at 62px — right where the volume readout now sits. Short
+   * screens put it above the whole stack instead of at a fraction of a height
+   * that means something else here than it does in portrait.
+   */
+  .hud-intro-hint {
+    bottom: calc(env(safe-area-inset-bottom) + 106px);
+  }
+
   #unlock-logo {
     width: min(22vw, 6.5rem);
   }
