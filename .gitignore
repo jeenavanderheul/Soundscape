@@ -12,3 +12,4 @@ public/land/
 .claude/worktrees/
 .playwright-mcp/
 exports/
+node-compile-cache/
