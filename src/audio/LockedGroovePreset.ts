@@ -55,9 +55,29 @@ export interface LockedGroovePresetControls {
   masks?: boolean;
 }
 
-/** §209: strip this world's own arrangement, leaving the ladder in charge. */
-function unmask(code: string, controls: LockedGroovePresetControls): string {
-  return controls.masks === false ? code.replace(/\.mask\("[^"]*"\)/g, '') : code;
+/**
+ * §214: THE SPINE — one voice per role that sounds the moment its rung is
+ * earned, whatever the document says.
+ *
+ * §110 gives this world a 32-cycle arrangement, and its masks decide WHEN a
+ * voice belongs. That is the composition, and it is worth keeping. What it
+ * cannot be allowed to do is contradict the screen: `machine-signal` is
+ * `<0!22 1!10>`, so a player who earned the melody at 4/7 waited another forty
+ * seconds for it — and since §213 you can walk onto a stage at 4/7 instantly,
+ * with the document wherever it happens to be.
+ *
+ * So these seven lose their mask and the rest keep theirs. Earned is audible;
+ * the deep voices, the tension and the climax still arrive when the document
+ * says. The arrangement shapes the track, it no longer gates it.
+ */
+const SPINE: ReadonlySet<string> = new Set([
+  'kick', 'hats', 'clap', 'sub', 'rave-stab', 'machine-signal', 'texture',
+]);
+
+/** §209/§214: strip the arrangement where the ladder has to be in charge. */
+function unmask(code: string, id: string, controls: LockedGroovePresetControls): string {
+  const free = controls.masks === false || SPINE.has(id);
+  return free ? code.replace(/\.mask\("[^"]*"\)/g, '') : code;
 }
 
 /** §110: the arrangement, exactly as the preset writes it. */
@@ -264,7 +284,7 @@ export function buildLockedGrooveGraph(controls: LockedGroovePresetControls = {}
     const trim = Math.max(0, controls.mix?.[part.layer] ?? 1);
     const level = part.gain * motion * trim;
     if (level <= 0) continue;
-    const primitive = voice(part.id, part.kind, part.layer, unmask(part.code(g3(level)), controls));
+    const primitive = voice(part.id, part.kind, part.layer, unmask(part.code(g3(level)), part.id, controls));
     primitive.parameters['section'] = part.section;
     graph.layers[part.layer].primitives.push(primitive);
   }

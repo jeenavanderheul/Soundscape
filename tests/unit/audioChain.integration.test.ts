@@ -63,11 +63,15 @@ describe('audio chain integration (Game.unlock wiring)', () => {
       bpm: 134,
     };
     const lockedGrooveCode = buildPatternCode(buildWorldLayerGraph({ music, track: lockedGrooveTrack }));
-    // §110: locked groove is its own document now — a 909 kick with the preset's own
-    // mask, not a template picked by a grammar. Note it no longer has a synth
-    // fallback: this world needs its sample banks.
+    // §110: locked groove is its own document — a 909 kick from the preset, not
+    // a template picked by a grammar. Note it no longer has a synth fallback:
+    // this world needs its sample banks.
     expect(lockedGrooveCode).toContain('s("bd*4").bank("RolandTR909")');
-    expect(lockedGrooveCode).toContain('<0!4 1!28>');
+    // §214: the document still ARRANGES — the deep kick keeps its mask — but it
+    // no longer GATES: the spine voice of an earned layer has none, so what the
+    // screen counts is what sounds.
+    expect(lockedGrooveCode).toContain('<0!12 1!12 0!4 1!4>');
+    expect(lockedGrooveCode).not.toContain('<0!4 1!28>');
     expect(lockedGrooveCode).not.toContain('AkaiMPC60');
     expect(worldBankLabel(lockedGrooveTrack)).toBe('RolandTR909');
     expect(worldBankLabel(pressureTrack)).toBe('EmuSP12 / AkaiMPC60');

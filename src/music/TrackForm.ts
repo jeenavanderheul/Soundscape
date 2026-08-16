@@ -119,8 +119,10 @@ function stream(seed: number): () => number {
 const WORLD_RULES: Partial<
   Record<Exclude<TrackGenre, null>, (at: (layer: TrackLayerName) => number) => boolean>
 > = {
-  // The pulse leads: the kick is the first or second thing you earn.
-  'locked-groove': (at) => at('kick') <= 1,
+  // The pulse leads: the kick is the first or second thing you earn. §214
+  // (user decision): and the melody is in by the fourth rung, so 4/7 of this
+  // world is a track with a line in it rather than four ways of saying drums.
+  'locked-groove': (at) => at('kick') <= 1 && at('melody') <= 3,
 };
 
 export function isPlayableOrder(
@@ -169,8 +171,9 @@ export function isPlayableOrder(
  * stop being built halfway through, and it applies here too.
  */
 const FIXED_ORDER: Record<Exclude<TrackGenre, null>, readonly TrackLayerName[]> = {
-  // The machine: pulse, then the hat that measures it, and the floor early.
-  'locked-groove': ['kick', 'hats', 'bass', 'harmony', 'snare', 'melody', 'texture'],
+  // The machine: pulse, the hat that measures it, the floor, and then the line
+  // — §214 puts the melody in by the fourth rung here too.
+  'locked-groove': ['kick', 'hats', 'bass', 'melody', 'snare', 'harmony', 'texture'],
   // The redline: weight immediately, then the crack of the snare.
   'heavy-signal': ['kick', 'bass', 'snare', 'harmony', 'hats', 'melody', 'texture'],
   // The broken machine: the kit arrives askew, snare before kick.
