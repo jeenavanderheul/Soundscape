@@ -481,7 +481,7 @@ export class TrackBuilder {
    */
   private arriveMidSet(genre: TrackGenre, nowMs: number): void {
     this.crossings += 1;
-    const wanted = stageRungs(this.activeMs, this.crossings);
+    const wanted = stageRungs(this.seed, this.crossings);
     const standing = new Set(this.ladder(genre).slice(0, wanted).map((step) => step.layer));
     const before = this.store.getState();
     this.store.setState((t) => ({

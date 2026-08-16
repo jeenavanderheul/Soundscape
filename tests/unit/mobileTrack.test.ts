@@ -161,46 +161,68 @@ describe('§207 one build, seven layers, in the order the world is written', () 
     // that is always at least as far as your last one is not a set — it is your
     // own progress wearing six costumes.
     const seen = new Set<number>();
-    for (const at of [20, 30, 40, 50, 60, 75, 90, 110, 140, 170]) {
+    for (const [i, at] of [20, 30, 40, 50, 60, 75, 90, 110, 140, 170].entries()) {
       const run = fly({
         world: 'locked-groove',
         crossTo: 'percussion-riot',
         crossAtSeconds: at,
         velocity: 66,
         config: MOBILE_TRACK_PACING,
+        // §212: the draw is per (journey, crossing). Ten runs of the SAME
+        // journey each make one crossing, so they must all land on the same
+        // stage — that is the reproducibility, not a bug. Different journeys
+        // are where the variety lives.
+        seed: `reis-${i}`,
       });
       const arrived = run.layers[Math.floor(at * 30) + 2]!;
       seen.add(arrived);
       expect(arrived, `crossing at ${at}s`).toBeGreaterThanOrEqual(STAGE_MIN_RUNGS);
       expect(arrived, `crossing at ${at}s`).toBeLessThanOrEqual(STAGE_MAX_RUNGS);
       // Crossing at 170 s means you were long since at 7/7 — and you still
-      // arrive on whatever that stage is playing, which is fewer.
-      if (at >= 60) expect(arrived, `crossing at ${at}s`).toBeLessThan(7);
+      // arrive on whatever THAT stage is playing, which is usually fewer.
     }
-    // Not one number ten times over: stages differ from each other.
     expect(seen.size).toBeGreaterThan(1);
   });
 
-  it('spreads stages across the whole range of a session', () => {
-    // Asserted on the rule itself rather than through a flight: the integration
-    // above can only ever show one crossing per run, and what matters is that
-    // over a session the stages are not all the same number.
+  it('draws every stage fresh, 3 through 7', () => {
+    // §212 (user decision). §208 grew the number with the session, and in play
+    // that read as no variation at all — the first minute is always 3, so every
+    // world opened on three rungs and the festival was one tent six times.
     const seen = new Set<number>();
-    for (let crossing = 1; crossing <= 12; crossing += 1) {
-      for (const pacedMs of [0, 20_000, 40_000, 60_000, 80_000, 120_000, 400_000]) {
-        const n = stageRungs(pacedMs, crossing);
-        expect(n).toBeGreaterThanOrEqual(STAGE_MIN_RUNGS);
-        expect(n).toBeLessThanOrEqual(STAGE_MAX_RUNGS);
-        seen.add(n);
-      }
+    for (let crossing = 1; crossing <= 60; crossing += 1) {
+      const n = stageRungs('een-reis', crossing);
+      expect(n).toBeGreaterThanOrEqual(STAGE_MIN_RUNGS);
+      expect(n).toBeLessThanOrEqual(STAGE_MAX_RUNGS);
+      seen.add(n);
     }
-    expect([...seen].sort()).toEqual([3, 4, 5, 6]);
-    // Two stages in a row are not always the same reading of the night.
-    const row = Array.from({ length: 12 }, (_, i) => stageRungs(60_000, i + 1));
-    expect(new Set(row).size).toBeGreaterThan(1);
-    // A stage is never over when you get there — there is always something left
-    // to build, or walking up to it is pointless.
-    expect(stageRungs(9_999_999, 3)).toBeLessThan(7);
+    // Every one of the five is reachable — including a set that is already whole.
+    expect([...seen].sort()).toEqual([3, 4, 5, 6, 7]);
+  });
+
+  it('flies the same night twice from the same journey code', () => {
+    // §128: the journey seed decides everything the journey draws, so a flight
+    // that was good can be found again.
+    const a = Array.from({ length: 20 }, (_, i) => stageRungs('reis-a', i + 1));
+    const again = Array.from({ length: 20 }, (_, i) => stageRungs('reis-a', i + 1));
+    expect(again).toEqual(a);
+    const b = Array.from({ length: 20 }, (_, i) => stageRungs('reis-b', i + 1));
+    expect(b).not.toEqual(a);
+  });
+
+  it('does not lean on any one number', () => {
+    // Purely drawn (user decision) — two the same in a row is allowed, but the
+    // spread has to be a spread, not a favourite with exceptions.
+    const counts = new Map<number, number>();
+    for (let i = 1; i <= 500; i += 1) {
+      const n = stageRungs('spreiding', i);
+      counts.set(n, (counts.get(n) ?? 0) + 1);
+    }
+    for (const n of [3, 4, 5, 6, 7]) {
+      // 100 expected out of 500; anything between half and double is a draw,
+      // not a bias.
+      expect(counts.get(n) ?? 0, `${n}/7 came up ${counts.get(n) ?? 0} times`).toBeGreaterThan(50);
+      expect(counts.get(n) ?? 0, `${n}/7 came up ${counts.get(n) ?? 0} times`).toBeLessThan(200);
+    }
   });
 
   it('drops what the new stage is not playing, and stands what it is', () => {
