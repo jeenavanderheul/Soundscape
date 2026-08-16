@@ -983,6 +983,10 @@ export class Game {
     );
     this.playerTone?.update(state, dtSeconds, this.motionLevel);
     this.spatialAudio?.setMotion(this.motionLevel);
+    // §197: the waypoint is a reference, so it settles when you stand still and
+    // ducks under the track. signalIntensity is the same "how loud is this
+    // picture" the crowd and the smoke read.
+    this.spatialAudio?.setPresence(state.velocity > 0.6, this.signalIntensity, dtSeconds);
     this.spatialAudio?.setListenerPose(state.position, state.direction, WORLD_UP);
     this.particles.update(state, dtSeconds);
     this.interference.update(dtSeconds);

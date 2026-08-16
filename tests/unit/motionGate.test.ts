@@ -12,6 +12,7 @@ import { createInitialFrequencyState } from '../../src/player/FrequencyState';
 import { createFirstResonator } from '../../src/world/Resonator';
 import { FakeAudioContext, asContext, asOutput } from './audioFakes';
 import { DRONE_HEADROOM } from '../../src/audio/SpatialAudio';
+import { DRONE_DUCK, droneDuck, nextDronePresence } from '../../src/audio/MotionGate';
 
 /** Runs the gate at 60 fps for `seconds` at a fixed velocity. */
 function settle(level: number, velocity: number, seconds: number): number {
@@ -119,5 +120,46 @@ describe('the world breathes before you have flown', () => {
     // Five seconds is the claim that matters: by then it is inaudible.
     for (let i = 0; i < 300; i++) level = nextMotionLevel(level, 0, 1 / 60, 0);
     expect(level).toBeLessThan(0.04);
+  });
+});
+
+/**
+ * §197 (user: the waypoint tone is "alleen een referentie", nu veel te
+ * aanwezig). Not a smaller number — two behaviours: it ducks under the music,
+ * and it settles once it has been heard.
+ */
+describe('the waypoint drone is a reference, not a layer', () => {
+  const settle = (seconds: number, moving: boolean, from = 1) => {
+    let p = from;
+    for (let i = 0; i < seconds * 60; i++) {
+      p = nextDronePresence(p, { moving, dtSeconds: 1 / 60 });
+    }
+    return p;
+  };
+
+  it('fades to a whisper within a few seconds of standing still', () => {
+    expect(settle(6, false)).toBeLessThan(0.2);
+  });
+
+  it('is still audible in the first moment, so the bearing can be taken', () => {
+    // It announces itself: half a second in it is still most of its level.
+    expect(settle(0.5, false)).toBeGreaterThan(0.7);
+  });
+
+  it('comes back quickly the moment you move again', () => {
+    const settled = settle(8, false);
+    expect(settled).toBeLessThan(0.2);
+    expect(settle(1.5, true, settled)).toBeGreaterThan(0.85);
+  });
+
+  it('disappears under a full track and owns the silence', () => {
+    expect(droneDuck(0)).toBe(1);
+    expect(droneDuck(1)).toBeCloseTo(1 - DRONE_DUCK, 5);
+    expect(droneDuck(1)).toBeLessThan(0.2);
+  });
+
+  it('never goes to absolute zero — §P1 keeps sound as the waypoint', () => {
+    expect(settle(60, false)).toBeGreaterThan(0);
+    expect(droneDuck(1)).toBeGreaterThan(0);
   });
 });

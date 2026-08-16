@@ -1,6 +1,6 @@
 import type { Vec3Data } from '../player/FrequencyState';
 import type { ResonatorData } from '../world/Resonator';
-import { resonatorLevel } from './MotionGate';
+import { droneDuck, nextDronePresence, resonatorLevel } from './MotionGate';
 import { oscillatorType } from './PlayerTone';
 
 /**
@@ -27,7 +27,7 @@ const LISTENER_SMOOTHING_S = 0.02;
  * still stop and listen for where something is — while putting the cue under
  * the music instead of over it.
  */
-export const DRONE_HEADROOM = 0.22;
+export const DRONE_HEADROOM = 0.1;
 
 const FADE_SMOOTHING_S = 0.15;
 const RELEASE_S = 0.6;
@@ -49,6 +49,8 @@ export class SpatialAudio {
   private readonly output: AudioNode;
   private readonly sources = new Map<string, SpatialSource>();
   private motion = 0;
+  private presence = 1;
+  private music = 0;
 
   constructor(context: AudioContext, output: AudioNode) {
     this.context = context;
@@ -61,10 +63,28 @@ export class SpatialAudio {
    */
   setMotion(motion: number): void {
     this.motion = motion;
-    const level = resonatorLevel(motion);
+    this.applyLevels();
+  }
+
+  /**
+   * §197: the drone announces itself, then gets out of the way — it settles
+   * while you stand still and ducks under whatever music is playing.
+   */
+  setPresence(moving: boolean, music: number, dtSeconds: number): void {
+    this.presence = nextDronePresence(this.presence, { moving, dtSeconds });
+    this.music = music;
+    this.applyLevels();
+  }
+
+  private get droneGain(): number {
+    return resonatorLevel(this.motion) * this.presence * droneDuck(this.music) * DRONE_HEADROOM;
+  }
+
+  private applyLevels(): void {
     const now = this.context.currentTime;
+    const level = this.droneGain;
     for (const source of this.sources.values()) {
-      source.gain.gain.setTargetAtTime(source.amplitude * level * DRONE_HEADROOM, now, FADE_SMOOTHING_S);
+      source.gain.gain.setTargetAtTime(source.amplitude * level, now, FADE_SMOOTHING_S);
     }
   }
 
@@ -113,7 +133,7 @@ export class SpatialAudio {
     panner.connect(this.output);
     oscillator.start();
     gain.gain.setTargetAtTime(
-      data.amplitude * resonatorLevel(this.motion) * DRONE_HEADROOM,
+      data.amplitude * this.droneGain,
       this.context.currentTime,
       FADE_SMOOTHING_S,
     );

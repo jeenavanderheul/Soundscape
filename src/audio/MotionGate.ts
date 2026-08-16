@@ -56,6 +56,53 @@ export function nextMotionLevel(
   return clamp01(current + (target - current) * alpha);
 }
 
+/**
+ * §197 (user): the waypoint drone is "alleen een referentie" — it may announce
+ * itself and must then get out of the way. Two behaviours, not a smaller
+ * number: it DUCKS under the music, and it SETTLES after it has been heard.
+ *
+ * Ducking is what makes it a reference rather than a layer: at rest, with
+ * nothing playing, it is the only thing there and can be heard; as the track
+ * fills in, it disappears underneath what you built. Settling is what stops it
+ * droning at someone standing still — it fades toward a whisper over a few
+ * seconds and comes back the moment you move again, which is exactly when a
+ * bearing is worth taking.
+ */
+export const DRONE_DUCK = 0.85;
+/** What it settles to when you stand still and stop asking, as a fraction. */
+export const DRONE_SETTLED = 0.12;
+/** Seconds for that settling — slow enough to read as a fade, not a gate. */
+export const DRONE_SETTLE_TAU_S = 2.2;
+/** Seconds to come back once you are moving again. */
+export const DRONE_WAKE_TAU_S = 0.5;
+
+export interface DroneInput {
+  /**
+   * Is the player actually travelling? NOT the §42 gate: since §184 gave
+   * arrival a floor, that gate reads 0.4 while a visitor stands perfectly
+   * still, so it can no longer answer this question.
+   */
+  moving: boolean;
+  dtSeconds: number;
+}
+
+/**
+ * One step of the drone's own envelope. `current` is a 0..1 presence, not a
+ * gain: `resonatorLevel` still decides the §42 duck, and DRONE_HEADROOM in
+ * SpatialAudio still decides the ceiling.
+ */
+export function nextDronePresence(current: number, input: DroneInput): number {
+  const target = input.moving ? 1 : DRONE_SETTLED;
+  const tau = input.moving ? DRONE_WAKE_TAU_S : DRONE_SETTLE_TAU_S;
+  const alpha = 1 - Math.exp(-Math.max(0, input.dtSeconds) / tau);
+  return clamp01(current + (target - current) * alpha);
+}
+
+/** How much of its level survives the music playing over it. */
+export function droneDuck(music: number): number {
+  return 1 - clamp01(music) * DRONE_DUCK;
+}
+
 /** The level a spatial resonator drone plays at, given the gate. */
 export function resonatorLevel(motion: number): number {
   return RESONATOR_SILENCE_FLOOR + (1 - RESONATOR_SILENCE_FLOOR) * clamp01(motion);
